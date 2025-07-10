@@ -1,0 +1,57 @@
+syntax = proto3;
+
+package im.message;
+
+import "base.proto";
+
+// 消息类型枚举
+enum MessageType {
+    TEXT = 0;         // 文本消息
+    IMAGE = 1;        // 图片消息
+    FILE = 2;         // 文件消息
+    AUDIO = 3;        // 语音消息
+    VIDEO = 4;        // 视频消息
+    SYSTEM = 5;       // 系统消息
+    RECALL = 6;       // 撤回消息通知
+    CARD = 7;         // 名片
+    LOCATION = 8;     // 位置
+    FORWARD = 9;      // 转发
+    CUSTOM = 10;      // 自定义消息
+}
+
+// 业务消息体，仅关注内容本身，元信息全部由 IMHeader 承载
+message MessageBody {
+    string message_id = 1;         // 消息唯一ID
+    MessageType type = 2;          // 消息类型
+    string content = 3;            // 消息内容（文本/图片URL/文件URL/自定义JSON等）
+    bool is_recalled = 4;          // 是否已被撤回
+    bool is_read = 5;              // 是否已读
+    string at_uids = 6;            // @的用户ID列表（逗号分隔，群聊时用）
+    string ext = 7;                // 扩展字段（JSON字符串，便于后续扩展）
+}
+
+// 发送消息请求
+message SendMessageRequest {
+    im.base.IMHeader header = 1;   // 通用消息头
+    MessageBody body = 2;          // 消息体
+}
+
+// 发送消息响应
+message SendMessageResponse {
+    im.base.BaseResponse base = 1; // 通用响应头
+    MessageBody message = 2;       // 实际存储的消息（含服务端补全字段）
+}
+
+// 拉取消息请求
+message PullMessageRequest {
+    im.base.IMHeader header = 1;   // 通用消息头
+    string session_id = 2;         // 会话ID（单聊为对方UID，群聊为群ID）
+    int64 since = 3;               // 起始时间戳/消息ID
+    int32 limit = 4;               // 拉取数量
+}
+
+// 拉取消息响应
+message PullMessageResponse {
+    im.base.BaseResponse base = 1;
+    repeated MessageBody messages = 2; // 拉取到的消息
+}

@@ -1,0 +1,114 @@
+syntax = proto3;
+
+package im.friend;
+
+import "base.proto";
+
+// 好友请求状态
+enum FriendRequestStatus {
+    PENDING = 0;      // 待处理
+    ACCEPTED = 1;     // 已同意
+    REJECTED = 2;     // 已拒绝
+}
+
+// 好友权限枚举，可扩展
+enum FriendPermission {
+    NORMAL = 0;         // 普通
+    NO_CHAT = 1;        // 禁止对方发消息
+    NO_MOMENT = 2;      // 不让对方看朋友圈
+    STAR = 3;           // 置顶/特别关注
+}
+
+// 好友信息结构
+message FriendInfo {
+    string uid = 1;           // 用户ID
+    string remark = 2;        // 备注
+    int64 add_time = 3;       // 添加时间
+    repeated FriendPermission permissions = 4; // 权限列表
+}
+
+// 好友请求结构
+message FriendRequest {
+    string request_id = 1;        // 请求唯一ID
+    string from_uid = 2;          // 申请人ID
+    string to_uid = 3;            // 被申请人ID
+    string message = 4;           // 申请附言
+    FriendRequestStatus status = 5;// 请求状态
+    int64 create_time = 6;        // 请求时间
+}
+
+// 添加好友请求
+message AddFriendRequest {
+    im.base.IMHeader header = 1;  // 通用消息头
+    string to_uid = 2;            // 目标用户ID
+    string message = 3;           // 申请附言
+}
+
+// 添加好友响应
+message AddFriendResponse {
+    im.base.BaseResponse base = 1;
+    FriendRequest request = 2;
+}
+
+// 处理好友请求
+message HandleFriendRequest {
+    im.base.IMHeader header = 1;
+    string request_id = 2;
+    bool accept = 3;
+}
+
+// 处理好友请求响应
+message HandleFriendResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 获取好友列表请求
+message GetFriendListRequest {
+    im.base.IMHeader header = 1;
+}
+
+// 获取好友列表响应
+message GetFriendListResponse {
+    im.base.BaseResponse base = 1;
+    repeated FriendInfo friends = 2;
+}
+
+// 获取好友请求列表请求
+message GetFriendRequestsRequest {
+    im.base.IMHeader header = 1;
+}
+
+// 获取好友请求列表响应
+message GetFriendRequestsResponse {
+    im.base.BaseResponse base = 1;
+    repeated FriendRequest requests = 2;
+}
+
+// ================== 拉黑相关 ==================
+
+// 拉黑请求
+message AddToBlacklistRequest {
+    im.base.IMHeader header = 1;
+    string target_uid = 2; // 要拉黑的用户ID
+}
+message AddToBlacklistResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 取消拉黑
+message RemoveFromBlacklistRequest {
+    im.base.IMHeader header = 1;
+    string target_uid = 2;
+}
+message RemoveFromBlacklistResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 获取黑名单
+message GetBlacklistRequest {
+    im.base.IMHeader header = 1;
+}
+message GetBlacklistResponse {
+    im.base.BaseResponse base = 1;
+    repeated string black_uids = 2;
+}

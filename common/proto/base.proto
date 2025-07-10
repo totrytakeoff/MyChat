@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package im.base;
+
+// 通用消息头，所有业务消息都应带有该头部
+message IMHeader {
+    string version = 1;      // 协议版本
+    uint32 seq = 2;          // 消息序列号（客户端自增，服务端回包原样返回）
+    uint32 cmd_id = 3;       // 命令ID, 对应 command.proto 中的枚举值
+    string from_uid = 4;     // 发送者用户ID
+    string to_uid = 5;       // 接收者用户ID
+    uint64 timestamp = 6;    // 时间戳，单位为毫秒
+    string token = 7;        // 用户令牌，用于身份验证
+    string device_id = 8;    // 设备ID，用于标识发送消息的设备
+    // string platform = 9;  // 平台信息，预留
+}
+
+// 通用错误码定义，所有响应均应使用
+enum ErrorCode {
+    SUCCESS = 0;             // 成功
+    INVALID_REQUEST = 1;     // 无效请求
+    AUTH_FAILED = 2;         // 身份验证失败
+    NOT_FOUND = 3;           // 资源未找到
+    PERMISSION_DENIED = 4;   // 没有权限
+    ALREADY_EXISTS = 5;      // 已存在
+    PARAM_ERROR = 6;         // 参数错误
+    TIMEOUT = 7;             // 超时
+    SERVER_ERROR = 500;      // 服务器内部错误
+    UNKNOWN_ERROR = 1000;    // 未知错误
+}
+
+// 通用响应结构，所有业务响应都应继承或嵌入该结构
+message BaseResponse {
+    ErrorCode error_code = 1;    // 错误码
+    string error_message = 2;    // 错误信息，成功时为空
+    bytes payload = 3;           // 响应数据载荷，通常是JSON或Protobuf序列化后的数据
+}

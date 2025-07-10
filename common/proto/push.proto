@@ -1,0 +1,33 @@
+syntax = proto3;
+
+package im.push;
+
+import "base.proto";
+
+// 推送类型枚举
+enum PushType {
+    PUSH_MESSAGE = 0;      // 普通消息推送
+    PUSH_NOTIFICATION = 1; // 通知类推送
+    PUSH_SYSTEM = 2;       // 系统消息推送
+    PUSH_OFFLINE = 3;      // 离线消息推送
+}
+
+// 推送消息结构
+message PushMessageBody {
+    string push_id = 1;            // 推送唯一ID
+    PushType type = 2;             // 推送类型
+    string content = 3;            // 推送内容
+    string related_message_id = 4; // 关联的消息ID（如有）
+    string ext = 5;                // 扩展字段
+}
+
+// 推送请求
+message PushRequest {
+    im.base.IMHeader header = 1;   // 通用消息头
+    PushMessageBody body = 2;      // 推送内容
+}
+
+// 推送响应
+message PushResponse {
+    im.base.BaseResponse base = 1; // 通用响应头
+}

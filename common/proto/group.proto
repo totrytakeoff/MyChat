@@ -1,0 +1,184 @@
+syntax = proto3;
+
+package im.group;
+
+import "base.proto";
+
+// 群成员角色
+enum GroupRole {
+    MEMBER = 0;      // 普通成员
+    ADMIN = 1;       // 管理员
+    OWNER = 2;       // 群主
+}
+
+// 群信息结构
+message GroupInfo {
+    string group_id = 1;         // 群ID
+    string name = 2;             // 群名称
+    string avatar = 3;           // 群头像
+    string notice = 4;           // 群公告
+    string owner_uid = 5;        // 群主ID
+    int32 is_muted = 6; // 群状态（0=正常，1=禁言, 2=封禁 , 3=勿扰  ）;
+    int64 create_time = 7;       // 创建时间
+}
+
+// 群成员信息
+message GroupMember {
+    string uid = 1;              // 用户ID
+    GroupRole role = 2;          // 成员角色
+    string nickname = 3;          // 昵称
+    int32 is_muted = 4;           // 成员状态（0=正常，1=禁言 ）;
+    int64 join_time = 5;         // 加入时间
+}
+
+// 创建群请求
+message CreateGroupRequest {
+    im.base.IMHeader header = 1; // 通用消息头
+    string name = 2;             // 群名称
+    string avatar = 3;           // 群头像
+    repeated string members = 4; // 初始成员ID列表
+}
+
+// 创建群响应
+message CreateGroupResponse {
+    im.base.BaseResponse base = 1;
+    GroupInfo group = 2;
+}
+
+// 获取群信息请求
+message GetGroupInfoRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+}
+
+// 获取群信息响应
+message GetGroupInfoResponse {
+    im.base.BaseResponse base = 1;
+    GroupInfo group = 2;
+    repeated GroupMember members = 3;
+}
+
+// 获取群列表请求
+message GetGroupListRequest {
+    im.base.IMHeader header = 1;
+}
+
+// 获取群列表响应
+message GetGroupListResponse {
+    im.base.BaseResponse base = 1;
+    repeated GroupInfo groups = 2;
+}
+
+// 修改群信息请求
+message ModifyGroupInfoRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+    string name = 3;
+    string avatar = 4;
+    string notice = 5;
+}
+
+// 修改群信息响应
+message ModifyGroupInfoResponse {
+    im.base.BaseResponse base = 1;
+    GroupInfo group = 2;
+}
+
+// 邀请成员入群请求
+message InviteMemberRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+    repeated string invite_uids = 3;
+}
+
+// 邀请成员入群响应
+message InviteMemberResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 踢出群成员请求
+message KickMemberRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+    repeated string kick_uids = 3;
+}
+
+// 踢出群成员响应
+message KickMemberResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 申请加群请求
+message ApplyJoinGroupRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+    string apply_msg = 3;
+}
+
+// 申请加群响应
+message ApplyJoinGroupResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 退出群组请求
+message QuitGroupRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+}
+
+// 退出群组响应
+message QuitGroupResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 获取群成员列表请求
+message GetGroupMembersRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+}
+
+// 获取群成员列表响应
+message GetGroupMembersResponse {
+    im.base.BaseResponse base = 1;
+    repeated GroupMember members = 2;
+}
+
+// 获取群消息请求
+message GetGroupMessagesRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+    int64 since = 3;
+    int32 limit = 4;
+}
+
+// 获取群消息响应
+message GetGroupMessagesResponse {
+    im.base.BaseResponse base = 1;
+    // 可复用 message.proto 的 MessageBody
+    repeated bytes messages = 2; // 建议用 bytes 或直接 import message.proto
+}
+
+// 转让群主请求
+message TransferGroupOwnerRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+    string new_owner_uid = 3;
+}
+
+// 转让群主响应
+message TransferGroupOwnerResponse {
+    im.base.BaseResponse base = 1;
+}
+
+// 设置/取消管理员请求
+message SetGroupAdminRequest {
+    im.base.IMHeader header = 1;
+    string group_id = 2;
+    string uid = 3;
+    bool set_admin = 4; // true=设置为管理员，false=取消
+}
+
+// 设置/取消管理员响应
+message SetGroupAdminResponse {
+    im.base.BaseResponse base = 1;
+}

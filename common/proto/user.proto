@@ -1,0 +1,109 @@
+syntax = proto3;
+
+package im.user;
+
+import "base.proto";
+
+// 注册类型枚举
+enum RegisterType {
+    REGISTER_UNKNOWN = 0; // 未知
+    REGISTER_PHONE = 1;   // 手机号注册
+    REGISTER_EMAIL = 2;   // 邮箱注册
+}
+
+// 用户性别枚举
+enum Gender {
+    UNKNOWN = 0;    // 未知
+    MALE = 1;       // 男
+    FEMALE = 2;     // 女
+    OTHER = 3;      // 其他
+}
+
+// 用户信息结构，参考主流 IM（如 QQ/微信）设计，字段尽量丰富
+message UserInfo {
+    string uid = 1;           // 用户唯一ID（数据库主键，内部使用）
+    string account = 2;       // 账号（唯一，后台自动生成，支持登录）
+    string nickname = 3;      // 昵称
+    string avatar = 4;        // 头像URL
+    Gender gender = 5;        // 性别
+    string signature = 6;     // 个性签名
+    int64 create_time = 7;    // 注册时间
+    int64 last_login = 8;     // 最后登录时间
+    bool online = 9;          // 是否在线
+    string phone_number = 10; // 手机号（可选）
+    string email = 11;        // 邮箱（可选）
+    string address = 12;      // 地址（可选）
+    string birthday = 13;     // 生日（可选）
+    string company = 14;      // 公司（可选）
+    string job_title = 15;    // 职位（可选）
+    string wxid = 16;         // 微信号（可选）
+    string qqid = 17;         // QQ号（可选）
+    string real_name = 18;    // 真实姓名（可选）
+    string extra = 19;        // 扩展字段（JSON字符串，便于后续扩展）
+}
+
+// 用户注册请求
+message RegisterRequest {
+    im.base.IMHeader header = 1;   // 通用消息头
+    RegisterType type = 2;         // 注册类型（手机号/邮箱）
+    string phone_number = 3;       // 手机号（type=REGISTER_PHONE时必填）
+    string email = 4;              // 邮箱（type=REGISTER_EMAIL时必填）
+    string password = 5;           // 密码
+    string nickname = 6;           // 昵称（可选）
+    string avatar = 7;             // 头像URL（可选）
+    string verify_code = 8;        // 验证码（可选，推荐用于安全）
+}
+
+// 用户注册响应
+message RegisterResponse {
+    im.base.BaseResponse base = 1; // 通用响应头
+    UserInfo user = 2;             // 注册成功后的用户信息
+}
+
+// 登录类型枚举
+enum LoginType {
+    LOGIN_UNKNOWN = 0; // 未知
+    LOGIN_ACCOUNT = 1; // 账号
+    LOGIN_PHONE = 2;   // 手机号
+    LOGIN_EMAIL = 3;   // 邮箱
+}
+
+// 用户登录请求
+message LoginRequest {
+    im.base.IMHeader header = 1;   // 通用消息头
+    LoginType type = 2;            // 登录类型
+    string account = 3;            // 账号（type=LOGIN_ACCOUNT时必填）
+    string phone_number = 4;       // 手机号（type=LOGIN_PHONE时必填）
+    string email = 5;              // 邮箱（type=LOGIN_EMAIL时必填）
+    string password = 6;           // 密码
+}
+
+// 用户登录响应
+message LoginResponse {
+    im.base.BaseResponse base = 1; // 通用响应头
+    UserInfo user = 2;             // 登录成功后的用户信息
+}
+
+// 获取用户信息请求
+message GetUserInfoRequest {
+    im.base.IMHeader header = 1;   // 通用消息头
+    string account = 2;            // 账号（可查他人信息）
+}
+
+// 获取用户信息响应
+message GetUserInfoResponse {
+    im.base.BaseResponse base = 1;
+    UserInfo user = 2;
+}
+
+// 更新用户信息请求
+message UpdateUserInfoRequest {
+    im.base.IMHeader header = 1;   // 通用消息头
+    UserInfo user = 2;             // 新的用户信息（需包含 account 字段）
+}
+
+// 更新用户信息响应
+message UpdateUserInfoResponse {
+    im.base.BaseResponse base = 1;
+    UserInfo user = 2;
+}

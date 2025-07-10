@@ -1,0 +1,65 @@
+syntax = proto3;
+
+package im.command;
+
+// CommandID 枚举定义了 IM 系统所有的指令类型
+// 按功能模块分段，便于扩展和维护
+// 指令分为用户、消息、好友、群组、推送等
+// 消息与推送服务分离，推送相关指令单独编号
+
+enum CommandID { 
+    // 未知指令
+    CMD_UNKNOWN = 0;
+    
+    // ================= 用户相关 =================
+    CMD_LOGIN = 1001;           // 登录
+    CMD_LOGOUT = 1002;          // 登出
+    CMD_REGISTER = 1003;        // 注册
+    CMD_GET_USER_INFO = 1004;   // 获取用户信息
+    CMD_UPDATE_USER_INFO = 1005;// 更新用户信息
+    CMD_USER_ONLINE = 1006;     // 用户上线通知
+    CMD_USER_OFFLINE = 1007;    // 用户下线通知
+
+    // ================= 消息相关 =================
+    CMD_SEND_MESSAGE = 2001;        // 发送消息
+    CMD_PULL_MESSAGE = 2002;        // 拉取消息
+    CMD_DELETE_MESSAGE = 2003;      // 删除消息
+    CMD_RECALL_MESSAGE = 2004;      // 撤回消息
+    CMD_MESSAGE_ACK = 2005;         // 消息已读回执
+    CMD_MESSAGE_DELIVERED = 2006;   // 消息送达回执
+    CMD_MESSAGE_HISTORY = 2007;     // 获取历史消息
+
+    // ================= 好友相关 =================
+    CMD_ADD_FRIEND = 3001;              // 添加好友
+    CMD_REMOVE_FRIEND = 3002;           // 删除好友
+    CMD_GET_FRIEND_LIST = 3003;         // 获取好友列表
+    CMD_GET_FRIEND_REQUESTS = 3004;     // 获取好友请求
+    CMD_HANDLE_FRIEND_REQUEST = 3005;   // 处理好友请求
+    CMD_SEARCH_USER = 3006;             // 搜索用户
+
+    // ================= 群组相关 =================
+    CMD_CREATE_GROUP = 4001;            // 创建群组
+    CMD_GET_GROUP_INFO = 4002;          // 获取群组信息
+    CMD_GET_GROUP_LIST = 4003;          // 获取群组列表
+    CMD_MODIFY_GROUP_INFO = 4004;       // 修改群组信息
+    CMD_INVITE_MEMBER = 4005;           // 邀请成员入群
+    CMD_KICK_MEMBER = 4006;             // 踢出群成员
+    CMD_APPLY_JOIN_GROUP = 4007;        // 申请加群
+    CMD_QUIT_GROUP = 4008;              // 退出群组
+    CMD_GET_GROUP_MEMBERS = 4009;       // 获取群成员列表
+    CMD_GET_GROUP_MESSAGES = 4010;      // 获取群消息
+    CMD_TRANSFER_GROUP_OWNER = 4011;    // 转让群主
+    CMD_SET_GROUP_ADMIN = 4012;         // 设置/取消管理员
+
+    // ================= 推送相关 =================
+    CMD_PUSH_MESSAGE = 5001;            // 推送单条消息
+    CMD_PUSH_BATCH_MESSAGE = 5002;      // 批量推送消息
+    CMD_PUSH_NOTIFICATION = 5003;       // 推送通知
+    CMD_PUSH_SYSTEM = 5004;             // 推送系统消息
+    CMD_PUSH_OFFLINE = 5005;            // 推送离线消息
+
+    // ================= 其他/扩展 =================
+    CMD_HEARTBEAT = 9001;               // 心跳包
+    CMD_SERVER_NOTIFY = 9002;           // 服务端通知
+    CMD_CLIENT_ERROR = 9003;            // 客户端错误上报
+}
