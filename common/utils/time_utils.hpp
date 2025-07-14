@@ -1,3 +1,20 @@
+#pragma once
+
+#ifndef TIME_UTILS_HPP
+#define TIME_UTILS_HPP
+
+/******************************************************************************
+ *
+ * @file       time_utils.hpp
+ * @brief      时间工具
+ *
+ * @author     myself
+ * @date       2025/07/14
+ * 
+ *****************************************************************************/
+
+
+
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -23,3 +40,6 @@ static std::string format_time(uint64_t ms) {
 
 }  // namespace TimeUtils
 }  // namespace utils
+
+
+#endif // TIME_UTILS_HPP

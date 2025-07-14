@@ -1,4 +1,11 @@
 #pragma once
+ 
+#ifndef GLOBAL_HPP
+#define GLOBAL_HPP
+
+
+
+
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -29,4 +36,5 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 #include "time_utils.hpp"
 
 
+#endif // GLOBAL_HPP
 

@@ -1,3 +1,21 @@
+#pragma once
+
+#ifndef SINGLETON_HPP
+#define SINGLETON_HPP
+
+
+/******************************************************************************
+ *
+ * @file       singleton.hpp
+ * @brief      线程安全的懒汉式单例模板类
+ *
+ * @author     myself
+ * @date       2025/07/14
+ * 
+ *****************************************************************************/
+
+
+
 #include <mutex>
 #include <memory>
 
@@ -9,17 +27,8 @@ class Singleton
 public:
     // 获取单例实例，返回 std::shared_ptr<T>
     // 首次调用时线程安全地创建实例，后续直接返回已创建的实例
-    static std::shared_ptr<T> getInstance()
-    {
-        // std::once_flag 保证只初始化一次
-        static std::once_flag flag;
-        // std::call_once 保证 lambda 只被执行一次，实现线程安全的懒加载
-        std::call_once(flag, [&]() {
-            // 创建 T 的实例并赋值给静态成员 instance
-            instance = std::shared_ptr<T>(new T());
-        });
-
-        // 返回单例实例
+    static T& GetInstance() {
+        static T instance;
         return instance;
     }
 
@@ -39,3 +48,4 @@ protected:
 template <typename T>
 std::shared_ptr<T> Singleton<T>::instance = nullptr;
 
+#endif // SINGLETON_HPP
