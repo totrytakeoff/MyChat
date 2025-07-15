@@ -1,3 +1,0 @@
-/home/myself/workspace/MyChat/test/build/CMakeFiles/test_utils.dir
-/home/myself/workspace/MyChat/test/build/CMakeFiles/edit_cache.dir
-/home/myself/workspace/MyChat/test/build/CMakeFiles/rebuild_cache.dir

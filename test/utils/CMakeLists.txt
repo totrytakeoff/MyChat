@@ -27,3 +27,6 @@ target_link_libraries(test_utils
     pthread
     spdlog::spdlog
 ) 
+
+add_executable(test_memory_pool_perf test_memory_pool_perf.cpp)
+target_link_libraries(test_memory_pool_perf GTest::gtest_main pthread) 

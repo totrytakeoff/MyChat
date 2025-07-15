@@ -1,4 +1,0 @@
-[2025-07-14 23:49:33.730] [info] hello file log
-[2025-07-14 23:49:33.730] [info] should not appear
-[2025-07-14 23:57:16.131] [info] hello file log
-[2025-07-14 23:57:16.131] [info] should not appear

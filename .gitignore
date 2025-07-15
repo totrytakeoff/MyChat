@@ -9,3 +9,7 @@ tmp/
 *.log
 
 .env
+
+build/  
+
+**/build/
