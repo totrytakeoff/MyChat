@@ -1,0 +1,12 @@
+{
+    "database": {
+        "host": "localhost",
+        "port": "5432",
+        "username": "admin",
+        "password": "secret"
+    },
+    "server": {
+        "ip": "127.0.0.1",
+        "port": "8080"
+    }
+}
