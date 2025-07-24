@@ -46,7 +46,7 @@ public:
      */
     TCPSession(tcp::socket socket);
 
-    ~TCPSession()=default;
+    ~TCPSession() = default;
 
     // 启动会话
     void start();
@@ -107,6 +107,7 @@ private:
     static constexpr size_t max_body_length = 10 * 1024 * 1024;    // 最大消息体长度
 
     tcp::socket socket_;                    // TCP套接字
+    tcp::endpoint remote_endpoint_;         // 远程端点信息
     net::steady_timer heartbeat_timer_;     // 心跳定时器
     net::steady_timer read_timeout_timer_;  // 读超时定时器
 

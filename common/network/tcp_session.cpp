@@ -2,8 +2,11 @@
 #include "../utils/log_manager.hpp"
 #include "IOService_pool.hpp"
 #include "tcp_session.hpp"
+
+static constexpr size_t max_send_queue_size = 1024;
 TCPSession::TCPSession(tcp::socket socket)
         : socket_(std::move(socket))
+        , remote_endpoint_(socket_.remote_endpoint())
         , heartbeat_timer_(socket_.get_executor())
         , read_timeout_timer_(socket_.get_executor())
         , body_buffer_(max_body_length) {
@@ -14,13 +17,12 @@ TCPSession::TCPSession(tcp::socket socket)
 
 
 
-
 void TCPSession::start() {
     try {
         if (LogManager::IsLoggingEnabled("tcp_session")) {
             LogManager::GetLogger("tcp_session")
                     ->info("🚀Session started with remote endpoint: {}",
-                           socket_.remote_endpoint().address().to_string());
+                           remote_endpoint_.address().to_string());
         }
 
         socket_.set_option(tcp::no_delay(true));  // 禁用Nagle算法,减少延迟
@@ -60,26 +62,33 @@ void TCPSession::close() {
         if (LogManager::IsLoggingEnabled("tcp_session")) {
             LogManager::GetLogger("tcp_session")
                     ->info("🛑Session closed with remote endpoint: {}",
-                           socket_.remote_endpoint().address().to_string());
+                           remote_endpoint_.address().to_string());
         }
     }
 }
 
-tcp::endpoint TCPSession::remote_endpoint() const { return socket_.remote_endpoint(); }
+tcp::endpoint TCPSession::remote_endpoint() const { return remote_endpoint_; }
 
 void TCPSession::send(const std::string& message) {
     // 将发送操作投递到套接字的执行器中，确保线程安全
-    net::post(socket_.get_executor(),[this,self=shared_from_this(), msg = std::move(message)]()mutable{
-        bool write_in_progress = !send_quene_.empty();
-        send_quene_.push_back(std::move(msg));
-        
-        // 如果没有正在写入的数据，则开始写入数据
-        if (!write_in_progress) {
-            do_write();
-        }
-        
-    });
+    net::post(socket_.get_executor(),
+              [this, self = shared_from_this(), msg = std::move(message)]() mutable {
+                  if (send_quene_.size() >= max_send_queue_size) {
+                      if (LogManager::IsLoggingEnabled("tcp_session")) {
+                          LogManager::GetLogger("tcp_session")
+                                  ->warn("Message dropped, send queue full:{}", remote_endpoint().address().to_string());
+                      }
+                      return;
+                  }
 
+                  bool write_in_progress = !send_quene_.empty();
+                  send_quene_.emplace_back(std::move(msg));
+
+                  // 如果没有正在写入的数据，则开始写入数据
+                  if (!write_in_progress) {
+                      do_write();
+                  }
+              });
 }
 
 void TCPSession::set_close_callback(std::function<void()> callback) {
@@ -120,7 +129,7 @@ void TCPSession::reset_read_timeout() {
         if (LogManager::IsLoggingEnabled("tcp_session")) {
             LogManager::GetLogger("tcp_session")
                     ->warn("Read timeout, closing session with remote endpoint: {}",
-                           socket_.remote_endpoint().address().to_string());
+                           remote_endpoint_.address().to_string());
         }
         close();
     });
@@ -154,7 +163,7 @@ void TCPSession::do_read_header() {
                                 LogManager::GetLogger("tcp_session")
                                         ->error("Message too large:{}bytes from {}",
                                                 body_length,
-                                                remote_endpoint());
+                                                remote_endpoint().address().to_string());
                             }
                             close();
                             return;
@@ -233,8 +242,7 @@ void TCPSession::handle_error(const error_code& ec) {
         if (LogManager::IsLoggingEnabled("tcp_session")) {
             LogManager::GetLogger("tcp_session")->info("Connection closed: {}", ec.message());
         }
-    }
-    else if(ec){
+    } else if (ec) {
         if (LogManager::IsLoggingEnabled("tcp_session")) {
             LogManager::GetLogger("tcp_session")->error("❗TCP Connection Error: {}", ec.message());
         }

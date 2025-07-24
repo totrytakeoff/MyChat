@@ -33,8 +33,6 @@ public:
     }
 
 protected:
-    // 静态成员，保存单例实例
-    static std::shared_ptr<T> instance;
     // 构造函数和析构函数设为 protected，防止外部直接构造和析构
     Singleton() = default;
     ~Singleton() = default;
@@ -42,10 +40,5 @@ protected:
     Singleton(const Singleton<T>&) = delete;
     Singleton& operator=(const Singleton<T>& st) = delete;
 };
-
-// 静态成员初始化，初始为 nullptr
-// 必须在类外定义模板静态成员
-template <typename T>
-std::shared_ptr<T> Singleton<T>::instance = nullptr;
 
 #endif // SINGLETON_HPP

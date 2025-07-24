@@ -11,9 +11,13 @@
  * @date       2025/07/22
  *
  *****************************************************************************/
+// 后续优化点: 可自行设置线程数，默认为CPU核数
+// 修改为全局和专用线程池混合模式
+
 
 #include <boost/asio.hpp>
 #include <vector>
+#include <atomic>
 #include "../utils/singleton.hpp"
 
 class IOServicePool : public Singleton<IOServicePool> {
@@ -40,8 +44,8 @@ private:
     std::vector<IOServicePtr> io_services_;
     std::vector<WorkPtr> works_;
     std::vector<std::thread> threads_;
-    std::size_t next_io_service_;
-    std::size_t pool_size_;
+    std::atomic<std::size_t> next_io_service_;
+    std::atomic<std::size_t> pool_size_;
 
 };
 

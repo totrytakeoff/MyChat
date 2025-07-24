@@ -5,19 +5,21 @@ TCPServer::TCPServer(unsigned short port)
         : io_context_(IOServicePool::GetInstance().GetIOService())
         , acceptor_(io_context_, tcp::endpoint(tcp::v4(), port))
         , signal_set_(io_context_, SIGINT, SIGTERM) {
+}
+
+TCPServer::~TCPServer() { stop(); }
+
+void TCPServer::start() {
+    // 注册信号处理器
     signal_set_.async_wait([this](boost::system::error_code const&, int) {
         if (LogManager::IsLoggingEnabled("tcp_server")) {
             LogManager::GetLogger("tcp_server")->info("Stopping server...");
         }
         stop();
-
-        // 开始接受连接
-        start_accpet();
     });
+
+    start_accpet();
 }
-
-TCPServer::~TCPServer() { stop(); }
-
 
 void TCPServer::stop() {
     if (!stopped_.exchange(true)) {
@@ -30,7 +32,17 @@ void TCPServer::stop() {
                         ->error("Error canceling signal set: {}", ec.message());
             }
         }
-        // 关闭接受器
+
+        // 取消acceptor操作
+        acceptor_.cancel(ec);
+        if (ec) {
+            if (LogManager::IsLoggingEnabled("tcp_server")) {
+                LogManager::GetLogger("tcp_server")
+                        ->error("Error canceling acceptor: {}", ec.message());
+            }
+        }
+        
+        // 关闭acceptor
         acceptor_.close(ec);
         if (ec) {
             if (LogManager::IsLoggingEnabled("tcp_server")) {
@@ -39,13 +51,17 @@ void TCPServer::stop() {
             }
         }
 
-        // 关闭所有会话连接
-        for (auto& session : sessions_) {
-            session->close();
+        // 关闭所有活动会话
+        {
+            std::lock_guard<std::mutex> lock(sessions_mutex_);
+            for (const auto& session : sessions_) {
+                session->close();
+            }
+            sessions_.clear();
         }
-        sessions_.clear();
+
         if (LogManager::IsLoggingEnabled("tcp_server")) {
-            LogManager::GetLogger("tcp_server")->info("Stopped TCP server");
+            LogManager::GetLogger("tcp_server")->info("Server stopped");
         }
     }
 }
@@ -80,21 +96,24 @@ void TCPServer::handle_accept(const boost::system::error_code& ec,
         auto session = std::make_shared<TCPSession>(std::move(socket));
 
         // 添加到会话集合
-        sessions_.insert(session);
+        {
+            std::lock_guard<std::mutex> lock(sessions_mutex_);
+            sessions_.insert(session);
+        }
 
         // 设置会话关闭是的清理回调
         session->set_close_callback([this, session] { remove_session(session); });
 
         // 调用新连接回调
-        if(connection_handler_){
+        if (connection_handler_) {
             connection_handler_(session);
         }
 
         // 启动会话
         session->start();
     } catch (error_code ec) {
-        if(LogManager::IsLoggingEnabled("tcp_server")){
-            LogManager::GetLogger("tcp_server")->error("❌Accept session error:{}",ec.message());
+        if (LogManager::IsLoggingEnabled("tcp_server")) {
+            LogManager::GetLogger("tcp_server")->error("❌Accept session error:{}", ec.message());
         }
     }
 
@@ -102,12 +121,16 @@ void TCPServer::handle_accept(const boost::system::error_code& ec,
 }
 
 void TCPServer::remove_session(TCPSession::Ptr session) {
+    std::lock_guard<std::mutex> lock(sessions_mutex_);
     // 从会话集合中移除
     auto it = sessions_.find(session);
     if (it != sessions_.end()) {
         sessions_.erase(it);
-       if(LogManager::IsLoggingEnabled("tcp_server")){
-            LogManager::GetLogger("tcp_server")->info("Session Removed:{},({} active sessions) ",session->remote_endpoint(),sessions_.size() );
+        if (LogManager::IsLoggingEnabled("tcp_server")) {
+            LogManager::GetLogger("tcp_server")
+                    ->info("Session Removed:{},({} active sessions) ",
+                           session->remote_endpoint().address().to_string(),
+                           sessions_.size());
         }
     }
 }

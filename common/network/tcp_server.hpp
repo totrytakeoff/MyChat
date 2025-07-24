@@ -30,7 +30,7 @@
  * 功能包括：
  * 1. 接受新的TCP连接
  * 2. 管理所有活动会话
- * 3. 多线程支持
+ * 3. 多线程支持(基于IOServicePool)
  * 4. 优雅关闭机制
  */
 
@@ -82,6 +82,7 @@ private:
     tcp::acceptor acceptor_;              // 连接接受器
     net::signal_set signal_set_;          // 信号处理器（用于捕获Ctrl+C）
     std::set<TCPSession::Ptr> sessions_;  // 活动会话集合
+    std::mutex sessions_mutex_;           // 会话集合互斥锁
     std::atomic<bool> stopped_{false};    // 服务器停止标志
     std::function<void(TCPSession::Ptr)> connection_handler_;  // 新连接回调
 };
