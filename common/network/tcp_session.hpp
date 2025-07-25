@@ -17,12 +17,14 @@
 #include <functional>
 #include <memory>
 #include <vector>
-
+#include "utils/global.hpp"
 
 // 定义命名空间与简称
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 using error_code = boost::system::error_code;
+
+
 
 /**
  * @class TCPSession
@@ -81,6 +83,12 @@ public:
      */
     void set_message_handler(std::function<void(const std::string&)> callback);
 
+    // 发送ping
+    void send_heartbeat(HeaderMsgType type = HeaderMsgType::PING);
+
+    // 接收pong
+    void handle_pong();
+
 private:
     // 启动心跳检测
     void start_heartbeat();
@@ -106,14 +114,14 @@ private:
     static constexpr std::chrono::seconds read_timeout{120};       // 读超时时间
     static constexpr size_t max_body_length = 10 * 1024 * 1024;    // 最大消息体长度
 
-    tcp::socket socket_;                    // TCP套接字
-    tcp::endpoint remote_endpoint_;         // 远程端点信息
-    net::steady_timer heartbeat_timer_;     // 心跳定时器
-    net::steady_timer read_timeout_timer_;  // 读超时定时器
+    tcp::socket socket_;                                    // TCP套接字
+    tcp::endpoint remote_endpoint_;                         // 远程端点信息
+    net::steady_timer heartbeat_timer_;                     // 心跳定时器
+    net::steady_timer read_timeout_timer_;                  // 读超时定时器
 
-    std::array<char, 4> header_;          // 消息头缓冲区
-    std::vector<char> body_buffer_;       // 消息体缓冲区
-    std::deque<std::string> send_queue_;  // 发送队列
+    std::array<char, HEADER_SIZE> header_;  // 消息头缓冲区
+    std::vector<char> body_buffer_;         // 消息体缓冲区
+    std::deque<std::string> send_queue_;    // 发送队列
 
     std::function<void(const std::string&)> message_handler_;  // 消息处理回调
     std::function<void()> close_callback_;                     // 连接关闭回调

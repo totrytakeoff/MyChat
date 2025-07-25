@@ -35,6 +35,15 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 #include "time_utils.hpp"
 
+static constexpr size_t HEADER_SIZE = 5; // 4 bytes for length + 1 byte for type
+enum class HeaderMsgType :uint8_t{
+    NORMAL,
+    PING,
+    PONG,
+    UNKNOWN,
+    ENUM_END
+};
+
 
 #endif // GLOBAL_HPP
 
