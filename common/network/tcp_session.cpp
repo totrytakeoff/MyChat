@@ -6,31 +6,53 @@
 static constexpr size_t max_send_queue_size = 1024;
 TCPSession::TCPSession(tcp::socket socket)
         : socket_(std::move(socket))
-        , remote_endpoint_(socket_.remote_endpoint())
         , heartbeat_timer_(socket_.get_executor())
         , read_timeout_timer_(socket_.get_executor())
         , body_buffer_(max_body_length) {
     // 初始化定时器为永不超时状态
     heartbeat_timer_.expires_at(std::chrono::steady_clock::time_point::max());
     read_timeout_timer_.expires_at(std::chrono::steady_clock::time_point::max());
+    
+    // 只有在socket已连接的情况下才获取remote_endpoint
+    if (socket_.is_open()) {
+        try {
+            remote_endpoint_ = socket_.remote_endpoint();
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->info("TCPSession created for endpoint: {}", 
+                               remote_endpoint_.address().to_string());
+            }
+        } catch (const std::exception& e) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->warn("Failed to get remote endpoint: {}", e.what());
+            }
+        }
+    }
 }
 
 
 
 void TCPSession::start() {
     try {
-        if (LogManager::IsLoggingEnabled("tcp_session")) {
-            LogManager::GetLogger("tcp_session")
-                    ->info("🚀Session started with remote endpoint: {}",
-                           remote_endpoint_.address().to_string());
+        if (socket_.is_open()) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->info("🚀Session started with remote endpoint: {}",
+                               remote_endpoint_.address().to_string());
+            }
+
+            socket_.set_option(tcp::no_delay(true));  // 禁用Nagle算法,减少延迟
+
+            start_heartbeat();  // 启动心跳检测
+
+            do_read_header();  // 开始读取消息头
+        } else {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->warn("Session started with closed socket");
+            }
         }
-
-        socket_.set_option(tcp::no_delay(true));  // 禁用Nagle算法,减少延迟
-
-        start_heartbeat();  // 启动心跳检测
-
-        do_read_header();  // 开始读取消息头
-
     } catch (const std::exception& e) {
         if (LogManager::IsLoggingEnabled("tcp_session")) {
             LogManager::GetLogger("tcp_session")->error("Error starting session: {}", e.what());
@@ -41,27 +63,62 @@ void TCPSession::start() {
 
 
 void TCPSession::close() {
+    if (LogManager::IsLoggingEnabled("tcp_session")) {
+        LogManager::GetLogger("tcp_session")
+                ->info("Closing session with remote endpoint: {}",
+                       remote_endpoint_.address().to_string());
+    }
+    
     if (socket_.is_open()) {
         error_code ec;
 
         // 优雅地关闭套接字
+        if (LogManager::IsLoggingEnabled("tcp_session")) {
+            LogManager::GetLogger("tcp_session")
+                    ->info("Shutting down socket with remote endpoint: {}",
+                           remote_endpoint_.address().to_string());
+        }
+        
         socket_.shutdown(tcp::socket::shutdown_both, ec);
+        if (ec) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->warn("Error shutting down socket: {}", ec.message());
+            }
+        }
+        
         socket_.close(ec);
-
-        if (ec && LogManager::IsLoggingEnabled("tcp_session")) {
-            LogManager::GetLogger("tcp_session")->error("Error closing socket: {}", ec.message());
+        if (ec) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->warn("Error closing socket: {}", ec.message());
+            }
         }
 
         // 停止定时器
+        if (LogManager::IsLoggingEnabled("tcp_session")) {
+            LogManager::GetLogger("tcp_session")->info("Canceling timers");
+        }
+        
         heartbeat_timer_.cancel();
         read_timeout_timer_.cancel();
 
         if (close_callback_) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")->info("Calling close callback");
+            }
             close_callback_();
         }
+        
         if (LogManager::IsLoggingEnabled("tcp_session")) {
             LogManager::GetLogger("tcp_session")
                     ->info("🛑Session closed with remote endpoint: {}",
+                           remote_endpoint_.address().to_string());
+        }
+    } else {
+        if (LogManager::IsLoggingEnabled("tcp_session")) {
+            LogManager::GetLogger("tcp_session")
+                    ->info("Socket already closed for endpoint: {}",
                            remote_endpoint_.address().to_string());
         }
     }
@@ -105,11 +162,27 @@ void TCPSession::start_heartbeat() {
 
     // 异步等待心跳定时器
     heartbeat_timer_.async_wait([this, self = shared_from_this()](const error_code& ec) {
-        if (ec) return;  // 定时器被取消
+        if (ec) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->info("Heartbeat timer cancelled: {}", ec.message());
+            }
+            return;  // 定时器被取消
+        }
 
-        if (!socket_.is_open()) return;
+        if (!socket_.is_open()) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->info("Socket closed, stopping heartbeat");
+            }
+            return;
+        }
 
         // 发送心跳消息
+        if (LogManager::IsLoggingEnabled("tcp_session")) {
+            LogManager::GetLogger("tcp_session")
+                    ->info("Sending heartbeat to: {}", remote_endpoint().address().to_string());
+        }
         send("HEARTBEAT");
 
         // 设置下一次心跳
@@ -121,9 +194,21 @@ void TCPSession::reset_read_timeout() {
     // 设置读超时定时器
     read_timeout_timer_.expires_after(read_timeout);
     read_timeout_timer_.async_wait([this, self = shared_from_this()](const error_code& ec) {
-        if (ec) return;  // 定时器被取消
+        if (ec) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->info("Read timeout timer cancelled: {}", ec.message());
+            }
+            return;  // 定时器被取消
+        }
 
-        if (!socket_.is_open()) return;
+        if (!socket_.is_open()) {
+            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                LogManager::GetLogger("tcp_session")
+                        ->info("Socket closed, stopping read timeout timer");
+            }
+            return;
+        }
 
         // 超时，关闭连接
         if (LogManager::IsLoggingEnabled("tcp_session")) {
@@ -137,6 +222,12 @@ void TCPSession::reset_read_timeout() {
 
 
 void TCPSession::do_read_header() {
+    if (LogManager::IsLoggingEnabled("tcp_session")) {
+        LogManager::GetLogger("tcp_session")
+                ->info("Starting to read header from: {}", 
+                       remote_endpoint_.address().to_string());
+    }
+    
     // 重置读超时定时器
     reset_read_timeout();
 
@@ -150,6 +241,12 @@ void TCPSession::do_read_header() {
                         read_timeout_timer_.cancel();
 
                         if (ec) {
+                            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                                LogManager::GetLogger("tcp_session")
+                                        ->info("Read header error: {} from {}", 
+                                               ec.message(), 
+                                               remote_endpoint().address().to_string());
+                            }
                             handle_error(ec);
                             return;
                         }
@@ -170,6 +267,12 @@ void TCPSession::do_read_header() {
                         }
 
                         // 继续读取消息体
+                        if (LogManager::IsLoggingEnabled("tcp_session")) {
+                            LogManager::GetLogger("tcp_session")
+                                    ->info("Header read, body length: {} from {}", 
+                                           body_length, 
+                                           remote_endpoint().address().to_string());
+                        }
                         do_read_body(body_length);
                     });
 }
@@ -184,6 +287,12 @@ void TCPSession::do_read_body(size_t length) {
                     net::buffer(body_buffer_),
                     [this, self, length](error_code ec, size_t bytes_transferred) {
                         if (ec) {
+                            if (LogManager::IsLoggingEnabled("tcp_session")) {
+                                LogManager::GetLogger("tcp_session")
+                                        ->info("Read body error: {} from {}", 
+                                               ec.message(), 
+                                               remote_endpoint().address().to_string());
+                            }
                             handle_error(ec);
                             return;
                         }
@@ -247,4 +356,7 @@ void TCPSession::handle_error(const error_code& ec) {
             LogManager::GetLogger("tcp_session")->error("❗TCP Connection Error: {}", ec.message());
         }
     }
+    
+    // 关闭会话
+    close();
 }

@@ -33,8 +33,19 @@ set(NETWORK_SOURCES
 # 创建测试可执行文件
 add_executable(network_tests ${TEST_SOURCES} ${NETWORK_SOURCES})
 
+# 创建简化测试可执行文件
+add_executable(network_simple_tests test_simple_server.cpp ${NETWORK_SOURCES})
+
 # 链接所需的库
 target_link_libraries(network_tests 
+    ${GTEST_BOTH_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    Boost::system
+    spdlog::spdlog
+    stdc++fs
+)
+
+target_link_libraries(network_simple_tests 
     ${GTEST_BOTH_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     Boost::system
@@ -49,8 +60,15 @@ target_include_directories(network_tests PRIVATE
     ../../common/utils
 )
 
+target_include_directories(network_simple_tests PRIVATE 
+    ../../common
+    ../../common/network
+    ../../common/utils
+)
+
 # 启用C++17
 target_compile_features(network_tests PRIVATE cxx_std_17)
+target_compile_features(network_simple_tests PRIVATE cxx_std_17)
 
 # 添加测试
 add_test(NAME NetworkTests COMMAND network_tests)

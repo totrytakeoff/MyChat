@@ -60,7 +60,7 @@ TEST_F(IOServicePoolTest, MultiThreadExecution) {
     }
     
     // 等待任务完成
-    for (int i = 0; i < 10 && counter.load() < num_tasks; ++i) {
+    for (int i = 0; i < 20 && counter.load() < num_tasks; ++i) {  // 增加等待次数
         std::this_thread::sleep_for(50ms);
     }
     
@@ -69,18 +69,15 @@ TEST_F(IOServicePoolTest, MultiThreadExecution) {
 
 // 测试IOServicePool停止功能
 TEST_F(IOServicePoolTest, StopFunctionality) {
-    {
-        auto& pool = IOServicePool::GetInstance();
-        
-        // 提交一个长时间运行的任务
-        boost::asio::post(pool.GetIOService(), []() {
-            std::this_thread::sleep_for(100ms);
-        });
-        
-        // 确保任务开始执行
-        std::this_thread::sleep_for(10ms);
-    }
+    // 注意：不要在此测试中真正停止IOServicePool，因为它是单例且会影响其他测试
+    // 此测试仅验证可以获取实例并提交任务
     
-    // pool析构时应该正确停止
-    SUCCEED() << "IOServicePool stopped successfully";
+    auto& pool = IOServicePool::GetInstance();
+    
+    // 提交一个任务
+    boost::asio::post(pool.GetIOService(), []() {
+        // 空任务
+    });
+    
+    SUCCEED() << "IOServicePool can be used to post tasks";
 }

@@ -64,10 +64,11 @@ TEST_F(TCPServerTest, ServerAcceptConnection) {
     // 设置连接回调
     server->set_connection_handler([&](TCPSession::Ptr session) {
         connection_count++;
+        std::cout << "Connection accepted, count: " << connection_count.load() << std::endl;
+        
         // 设置会话消息处理回调
         session->set_message_handler([](const std::string& message) {
-            // Echo消息
-            // 注意：实际测试中可能不需要回复消息
+            std::cout << "Received message: " << message << std::endl;
         });
         
         // 启动会话
@@ -75,46 +76,61 @@ TEST_F(TCPServerTest, ServerAcceptConnection) {
         
         // 通知连接已建立
         if (connection_count == 1) {
+            std::cout << "Setting promise value" << std::endl;
             connection_established.set_value();
         }
     });
     
     // 启动服务器
     server->start();
+    std::this_thread::sleep_for(50ms); // 确保服务器启动完成
     
     // 创建客户端连接
     boost::asio::io_context client_io_context;
     boost::asio::ip::tcp::socket socket(client_io_context);
     boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::make_address("127.0.0.1"), test_port);
     
+    std::cout << "Connecting to server..." << std::endl;
     boost::system::error_code ec;
     socket.connect(endpoint, ec);
     EXPECT_FALSE(ec) << "Failed to connect to server: " << ec.message();
     
+    std::thread client_thread;
     if (!ec) {
+        std::cout << "Connected to server" << std::endl;
+        
         // 启动客户端io_context的运行循环
-        std::thread client_thread([&client_io_context]() {
+        client_thread = std::thread([&client_io_context]() {
             client_io_context.run();
         });
         
         // 等待连接被服务器接受
+        std::cout << "Waiting for connection establishment..." << std::endl;
         auto wait_result = connection_future.wait_for(5s);
         EXPECT_EQ(wait_result, std::future_status::ready) << "Connection should be established within timeout";
         
         EXPECT_EQ(connection_count, 1) << "Server should have accepted exactly one connection";
         
         // 关闭客户端连接
+        std::cout << "Closing socket..." << std::endl;
         socket.close();
         
-        // 停止客户端io_context
-        client_io_context.stop();
-        if (client_thread.joinable()) {
-            client_thread.join();
-        }
+        // 等待一小段时间确保连接关闭被处理
+        std::this_thread::sleep_for(100ms);
+    }
+    
+    // 停止客户端io_context
+    std::cout << "Stopping client io_context..." << std::endl;
+    client_io_context.stop();
+    if (client_thread.joinable()) {
+        std::cout << "Joining client thread..." << std::endl;
+        client_thread.join();
     }
     
     // 停止服务器
+    std::cout << "Stopping server..." << std::endl;
     server->stop();
+    std::cout << "Server stopped" << std::endl;
 }
 
 // 测试TCPSession能否发送和接收消息
@@ -122,16 +138,20 @@ TEST_F(TCPServerTest, SessionSendMessage) {
     const unsigned short test_port = 20003;
     std::atomic<bool> message_received{false};
     std::string received_message;
+    std::promise<void> message_received_promise;
+    std::future<void> message_received_future = message_received_promise.get_future();
     
     // 创建服务器
     auto server = std::make_unique<TCPServer>(test_port);
     
     // 设置连接回调
-    server->set_connection_handler([&message_received, &received_message](TCPSession::Ptr session) {
+    server->set_connection_handler([&message_received, &received_message, &message_received_promise](TCPSession::Ptr session) {
         // 设置会话消息处理回调
-        session->set_message_handler([&message_received, &received_message](const std::string& message) {
+        session->set_message_handler([&message_received, &received_message, &message_received_promise](const std::string& message) {
+            std::cout << "Server received message: " << message << std::endl;
             received_message = message;
             message_received = true;
+            message_received_promise.set_value(); // 通知消息已接收
         });
         
         // 启动会话
@@ -154,16 +174,18 @@ TEST_F(TCPServerTest, SessionSendMessage) {
     
     EXPECT_FALSE(ec) << "Failed to connect to server: " << ec.message();
     
+    std::thread client_thread;
     if (!ec) {
         // 启动io_context的运行循环
-        std::thread client_thread([&io_context]() {
+        client_thread = std::thread([&io_context]() {
             io_context.run();
         });
         
         // 发送测试消息 (带长度前缀)
         std::string test_message = "Hello, TCPServer!";
-        uint32_t length = htonl(static_cast<uint32_t>(test_message.size()));
+        uint64_t length = htobe64(static_cast<uint64_t>(test_message.size())); // 使用8字节长度前缀
         
+        std::cout << "Sending message..." << std::endl;
         // 发送长度
         boost::asio::write(socket, boost::asio::buffer(&length, sizeof(length)), ec);
         EXPECT_FALSE(ec) << "Failed to send message length: " << ec.message();
@@ -175,9 +197,9 @@ TEST_F(TCPServerTest, SessionSendMessage) {
         }
         
         // 等待消息被处理
-        for (int i = 0; i < 10 && !message_received; ++i) {
-            std::this_thread::sleep_for(50ms);
-        }
+        std::cout << "Waiting for message to be received..." << std::endl;
+        auto wait_result = message_received_future.wait_for(2s); // 等待消息接收完成
+        EXPECT_EQ(wait_result, std::future_status::ready) << "Message should be received within timeout";
         
         EXPECT_TRUE(message_received) << "Server should have received the message";
         if (message_received) {
@@ -187,13 +209,20 @@ TEST_F(TCPServerTest, SessionSendMessage) {
         // 关闭客户端连接
         socket.close();
         
-        // 停止io_context
-        io_context.stop();
-        if (client_thread.joinable()) {
-            client_thread.join();
-        }
+        // 等待一小段时间确保连接关闭被处理
+        std::this_thread::sleep_for(100ms);
+    }
+    
+    // 停止io_context
+    std::cout << "Stopping io_context..." << std::endl;
+    io_context.stop();
+    if (client_thread.joinable()) {
+        std::cout << "Joining client thread..." << std::endl;
+        client_thread.join();
     }
     
     // 停止服务器
+    std::cout << "Stopping server..." << std::endl;
     server->stop();
+    std::cout << "Server stopped" << std::endl;
 }

@@ -23,6 +23,10 @@ void TCPServer::start() {
 
 void TCPServer::stop() {
     if (!stopped_.exchange(true)) {
+        if (LogManager::IsLoggingEnabled("tcp_server")) {
+            LogManager::GetLogger("tcp_server")->info("Stopping server...");
+        }
+        
         error_code ec;
         // 取消信号监听
         signal_set_.cancel(ec);
@@ -53,8 +57,19 @@ void TCPServer::stop() {
 
         // 关闭所有活动会话
         {
+            if (LogManager::IsLoggingEnabled("tcp_server")) {
+                LogManager::GetLogger("tcp_server")->info("Closing all sessions...");
+            }
+            
             std::lock_guard<std::mutex> lock(sessions_mutex_);
+            if (LogManager::IsLoggingEnabled("tcp_server")) {
+                LogManager::GetLogger("tcp_server")->info("Sessions count: {}", sessions_.size());
+            }
+            
             for (const auto& session : sessions_) {
+                if (LogManager::IsLoggingEnabled("tcp_server")) {
+                    LogManager::GetLogger("tcp_server")->info("Closing session...");
+                }
                 session->close();
             }
             sessions_.clear();
@@ -62,6 +77,10 @@ void TCPServer::stop() {
 
         if (LogManager::IsLoggingEnabled("tcp_server")) {
             LogManager::GetLogger("tcp_server")->info("Server stopped");
+        }
+    } else {
+        if (LogManager::IsLoggingEnabled("tcp_server")) {
+            LogManager::GetLogger("tcp_server")->info("Server already stopped");
         }
     }
 }
@@ -117,7 +136,10 @@ void TCPServer::handle_accept(const boost::system::error_code& ec,
         }
     }
 
-    start_accpet();
+    // 继续接受新连接，除非服务器已停止
+    if (!stopped_.load()) {
+        start_accpet();
+    }
 }
 
 void TCPServer::remove_session(TCPSession::Ptr session) {
