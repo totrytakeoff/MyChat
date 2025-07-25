@@ -130,7 +130,7 @@ void TCPSession::send(const std::string& message) {
     // 将发送操作投递到套接字的执行器中，确保线程安全
     net::post(socket_.get_executor(),
               [this, self = shared_from_this(), msg = std::move(message)]() mutable {
-                  if (send_quene_.size() >= max_send_queue_size) {
+                  if (send_queue_.size() >= max_send_queue_size) {
                       if (LogManager::IsLoggingEnabled("tcp_session")) {
                           LogManager::GetLogger("tcp_session")
                                   ->warn("Message dropped, send queue full:{}", remote_endpoint().address().to_string());
@@ -138,8 +138,8 @@ void TCPSession::send(const std::string& message) {
                       return;
                   }
 
-                  bool write_in_progress = !send_quene_.empty();
-                  send_quene_.emplace_back(std::move(msg));
+                  bool write_in_progress = !send_queue_.empty();
+                  send_queue_.emplace_back(std::move(msg));
 
                   // 如果没有正在写入的数据，则开始写入数据
                   if (!write_in_progress) {
@@ -252,7 +252,7 @@ void TCPSession::do_read_header() {
                         }
 
                         // 字节序转换,将网络字节序转换为本机字节序
-                        size_t body_length = ntohl(*reinterpret_cast<size_t*>(header_.data()));
+                        uint32_t body_length = ntohl(*reinterpret_cast<uint32_t*>(header_.data()));
 
                         // 检查消息长度是否合法
                         if (body_length > max_body_length) {
@@ -278,7 +278,7 @@ void TCPSession::do_read_header() {
 }
 
 
-void TCPSession::do_read_body(size_t length) {
+void TCPSession::do_read_body(uint32_t length) {
     auto self(shared_from_this());
 
     body_buffer_.resize(length);
@@ -318,10 +318,10 @@ void TCPSession::do_write() {
     auto self(shared_from_this());
 
     //  从队列中获取一条消息
-    const std::string& message = send_quene_.front();
+    const std::string& message = send_queue_.front();
 
     // 构造带长度前缀的消息
-    size_t length = htonl(static_cast<size_t>(message.size()));
+    uint32_t length = htonl(static_cast<uint32_t>(message.size()));
     std::vector<net::const_buffer> buffers;
     buffers.push_back(net::buffer(&length, sizeof(length)));
     buffers.push_back(net::buffer(message));
@@ -334,9 +334,9 @@ void TCPSession::do_write() {
         }
 
         // 消息发送成功，从队列中删除
-        send_quene_.pop_front();
+        send_queue_.pop_front();
 
-        if (!send_quene_.empty()) {
+        if (!send_queue_.empty()) {
             // 队列中还有消息，继续发送
             do_write();
         }

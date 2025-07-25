@@ -93,7 +93,7 @@ private:
     void do_read_header();
 
     // 读取消息体
-    void do_read_body(std::size_t length);
+    void do_read_body(uint32_t length);
 
     // 发送消息
     // void do_write(const std::string& message);
@@ -113,7 +113,7 @@ private:
 
     std::array<char, 4> header_;          // 消息头缓冲区
     std::vector<char> body_buffer_;       // 消息体缓冲区
-    std::deque<std::string> send_quene_;  // 发送队列
+    std::deque<std::string> send_queue_;  // 发送队列
 
     std::function<void(const std::string&)> message_handler_;  // 消息处理回调
     std::function<void()> close_callback_;                     // 连接关闭回调
