@@ -196,15 +196,21 @@ TEST_F(TCPServerTest, SessionSendMessage) {
         // 等待一小段时间确保连接完全建立
         std::this_thread::sleep_for(50ms);
         
-        // 发送测试消息 (带长度前缀)
+        // 发送测试消息 (带长度前缀和消息类型)
         std::string test_message = "Hello, TCPServer!";
-        uint32_t length = htonl(static_cast<uint32_t>(test_message.size())); // 使用4字节长度前缀
+        uint32_t length = htonl(static_cast<uint32_t>(test_message.size()));
+        uint8_t msg_type = 0; // NORMAL消息类型
         
+        // 准备5字节头部 (4字节长度 + 1字节类型)
+        char header[5];
+        std::memcpy(header, &length, sizeof(length));
+        std::memcpy(header + sizeof(length), &msg_type, sizeof(msg_type));
+
         std::cout << "Client: Sending message..." << std::endl;
-        // 发送长度
-        boost::asio::write(socket, boost::asio::buffer(&length, sizeof(length)), ec);
-        EXPECT_FALSE(ec) << "Failed to send message length: " << ec.message();
-        std::cout << "Client: Sent length, ec=" << ec.message() << std::endl;
+        // 一次性发送整个头部
+        boost::asio::write(socket, boost::asio::buffer(header, sizeof(header)), ec);
+        EXPECT_FALSE(ec) << "Failed to send message header: " << ec.message();
+        std::cout << "Client: Sent header, ec=" << ec.message() << std::endl;
         
         // 发送消息体
         if (!ec) {
@@ -237,18 +243,25 @@ TEST_F(TCPServerTest, SessionSendMessage) {
             server_session->send(server_response);
             
             // 客户端读取服务器发送的消息
-            std::array<char, 4> header_buffer;
+            // 不使用结构体，直接使用字符数组避免内存对齐问题
+            const size_t HEADER_SIZE = 5; // 4字节长度 + 1字节消息类型
+            
+            // 读取头部
+            std::array<char, HEADER_SIZE> header_buffer;
             boost::system::error_code read_ec;
             
-            // 读取4字节长度字段
             std::cout << "Client: Reading header..." << std::endl;
             size_t header_bytes_read = boost::asio::read(socket, boost::asio::buffer(header_buffer), read_ec);
             std::cout << "Client: Header read, bytes=" << header_bytes_read << ", ec=" << read_ec.message() << std::endl;
             
-            if (!read_ec && header_bytes_read == 4) {
-                // 解析长度字段（网络字节序转为主机字节序）
-                uint32_t body_length = ntohl(*reinterpret_cast<uint32_t*>(header_buffer.data()));
-                std::cout << "Client: Body length=" << body_length << std::endl;
+            if (!read_ec && header_bytes_read == HEADER_SIZE) {
+                // 解析头部（网络字节序转为主机字节序）
+                uint32_t body_length;
+                std::memcpy(&body_length, header_buffer.data(), sizeof(body_length));
+                body_length = ntohl(body_length);
+                uint8_t msg_type = *reinterpret_cast<const uint8_t*>(header_buffer.data() + sizeof(body_length));
+                
+                std::cout << "Client: Body length=" << body_length << ", Message Type=" << static_cast<int>(msg_type) << std::endl;
                 
                 // 读取消息体
                 std::vector<char> body_buffer(static_cast<size_t>(body_length));

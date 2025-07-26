@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package test;
+
+message TestMessage {
+    int32 id = 1;
+    string name = 2;
+    double value = 3;
+    repeated string tags = 4;
+    bool is_valid = 5;
+    string data = 6; // 用于大消息测试
+}
+
+message AnotherTestMessage {
+    int64 timestamp = 1;
+    string description = 2;
+}
