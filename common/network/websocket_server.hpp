@@ -1,0 +1,79 @@
+#ifndef WEBSOCKET_SERVER_HPP
+#define WEBSOCKET_SERVER_HPP
+
+/******************************************************************************
+ *
+ * @file       websocket_server.hpp
+ * @brief      websocket 连接管理类
+ *
+ * @author     myself
+ * @date       2025/07/30
+ *
+ *****************************************************************************/
+
+#include <atomic>
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/beast.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/beast/websocket/ssl.hpp>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <unordered_map>
+#include "../utils/log_manager.hpp"
+#include "../utils/thread_pool.hpp"
+
+
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace websocket = beast::websocket;
+namespace net = boost::asio;
+using tcp = boost::asio::ip::tcp;
+using ssl_stream = boost::asio::ssl::stream<tcp::socket>;
+namespace ssl = boost::asio::ssl;  // 添加ssl命名空间
+
+// 前置声明
+class WebSocketSession;
+class WebSocketServer;
+
+// 类型别名
+using SessionPtr = std::shared_ptr<WebSocketSession>;
+using MessageHandler = std::function<void(SessionPtr, beast::flat_buffer&&)>;
+using ErrorHandler = std::function<void(SessionPtr, beast::error_code)>;
+
+
+
+class WebSocketServer {
+public:
+    WebSocketServer(net::io_context& ioc, ssl::context& ssl_ctx, unsigned short port,
+                    MessageHandler msg_handler);
+
+
+    void broadcast(const std::string& message);
+
+    void start();
+
+    void stop();
+
+    void add_session(SessionPtr session);
+
+    void remove_session(SessionPtr session);
+    void remove_session(std::string &session_id);
+
+    size_t get_session_count() const;
+
+private:
+    void do_accept();
+
+private:
+    tcp::acceptor acceptor_;
+    ssl::context& ssl_ctx_;
+    std::unordered_map<std::string, SessionPtr> sessions_;
+    mutable std::mutex sessions_mutex_;
+    MessageHandler message_handler_;
+};
+
+
+
+#endif  // WEBSOCKET_SERVER_HPP

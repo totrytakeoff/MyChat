@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
-#include "../../common/utils/thread_pool.hpp"
+#include <atomic>
+#include <chrono>
+#include <fstream>
+#include <thread>
 #include "../../common/utils/connection_pool.hpp"
 #include "../../common/utils/log_manager.hpp"
-#include <atomic>
-#include <fstream>
-#include <chrono>
-#include <thread>
+#include "../../common/utils/thread_pool.hpp"
 
 // 用于连接池测试的假连接类型
 typedef struct DummyConn {
@@ -23,7 +23,7 @@ TEST(ThreadPoolTest, BasicTaskExecution) {
     auto& pool = ThreadPool::GetInstance();
     pool.Init(4);
     std::atomic<int> result{0};
-    auto fut = pool.Enqueue([&result]{ result = 42; });
+    auto fut = pool.Enqueue([&result] { result = 42; });
     fut.get();
     EXPECT_EQ(result, 42);
     pool.Shutdown();
@@ -65,4 +65,24 @@ TEST(LogManagerTest, LogToFileAndSwitch) {
     }
     fin.close();
     EXPECT_TRUE(found);
-} 
+}
+
+TEST(LogManagerTest, enableORdisable_Log) {
+    LogManager::SetLogToConsole("test");
+    LogManager::GetLogger("test")->info("This is a test log message --- {}", "enable1");
+    if (LogManager::IsLoggingEnabled("test")) {
+        LogManager::GetLogger("test")->info("This is a test log message --- {}", "enable2");
+    }
+
+    LogManager::SetLoggingEnabled("test", false);
+    LogManager::GetLogger("test")->info("This log should not appear 1");
+    if (LogManager::IsLoggingEnabled("test")) {
+        LogManager::GetLogger("test")->info("This log should not appear 2");
+    }
+
+    LogManager::SetLoggingEnabled("test", true);
+    LogManager::GetLogger("test")->info("This is a test log message --- {}", "enable1");
+    if (LogManager::IsLoggingEnabled("test")) {
+        LogManager::GetLogger("test")->info("This is a test log message --- {}", "enable2");
+    }
+}
