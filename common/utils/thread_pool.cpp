@@ -2,6 +2,9 @@
 #include "thread_pool.hpp"
 #include "log_manager.hpp"
 
+namespace im {
+namespace utils {
+
 ThreadPool::ThreadPool() : m_shutdown(false), m_tasksCount(0) {}
 
 ThreadPool::~ThreadPool() { Shutdown(); }
@@ -75,3 +78,6 @@ void ThreadPool::WorkerThread() {
 }
 
 size_t ThreadPool::GetTaskCount() const { return m_tasksCount.load(); }
+
+} // namespace utils
+} // namespace im

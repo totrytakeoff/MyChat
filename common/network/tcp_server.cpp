@@ -1,6 +1,12 @@
 #include "../utils/log_manager.hpp"
 #include "IOService_pool.hpp"
 #include "tcp_server.hpp"
+
+namespace im {
+namespace network {
+
+using im::utils::LogManager;
+
 TCPServer::TCPServer(unsigned short port)
         : io_context_(IOServicePool::GetInstance().GetIOService())
         , acceptor_(io_context_, tcp::endpoint(tcp::v4(), port))
@@ -156,3 +162,6 @@ void TCPServer::remove_session(TCPSession::Ptr session) {
         }
     }
 }
+
+} // namespace network
+} // namespace im

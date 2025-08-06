@@ -9,6 +9,9 @@
 #include <unordered_map>
 #include <mutex>
 
+namespace im {
+namespace utils {
+
 class LogManager {
 public:
     // 设置日志输出到文件
@@ -27,5 +30,8 @@ private:
     static std::unordered_map<std::string, bool> s_loggingEnabled_;
     static std::mutex s_mutex_;
 };
+
+} // namespace utils
+} // namespace im
 
 #endif // LOG_MANAGER_HPP 

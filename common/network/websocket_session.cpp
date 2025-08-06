@@ -1,12 +1,16 @@
 #include "websocket_server.hpp"
 #include "websocket_session.hpp"
 
+namespace im {
+namespace network {
+
+using im::utils::LogManager;
+
 static constexpr size_t max_send_queue_size = 1024;
 
-
-WebSocketSession::WebSocketSession(tcp::socket socket, ssl::context& ssl_ctx,
-                                   WebSocketServer* server, MessageHandler messageHandler = nullptr,
-                                   ErrorHandler errorHandler = nullptr)
+WebSocketSession::WebSocketSession(tcp::socket socket, ssl::context& ssl_ctx, WebSocketServer* server,
+                                   MessageHandler messageHandler,
+                                   ErrorHandler errorHandler)
         : ws_stream_(std::move(socket), ssl_ctx)
         , server_(server)
         , message_handler_(messageHandler)
@@ -72,6 +76,10 @@ void WebSocketSession::on_ssl_handshake() {
         // 注意要先生成id再添加到服务器
         self->session_id_ = self->generate_id();
         self->server_->add_session(self);
+        if (LogManager::IsLoggingEnabled("websocket_session")) {
+            LogManager::GetLogger("websocket_session")
+                    ->info("Session {} successfully added to server", self->session_id_);
+        }
         self->do_read();
     });
 }
@@ -89,11 +97,7 @@ void WebSocketSession::do_read() {
             self->defaultMessageHandler(self, std::move(self->buffer_));
         }
         self->buffer_.consume(self->buffer_.size());  // 清空缓冲区
-        // 继续读取
-        if (self->send_queue_.empty()) {
-            return;
-        }
-        // 继续读取
+        // 继续读取下一个消息
         self->do_read();
     });
 }
@@ -116,6 +120,15 @@ void WebSocketSession::do_write() {
 
 
 
+void WebSocketSession::defaultMessageHandler(SessionPtr session, beast::flat_buffer&& buffer) {
+    // 默认消息处理：记录收到的消息
+    if (LogManager::IsLoggingEnabled("websocket_session")) {
+        std::string message = beast::buffers_to_string(buffer.data());
+        LogManager::GetLogger("websocket_session")
+                ->info("Received message from session {}: {}", session_id_, message);
+    }
+}
+
 void WebSocketSession::defaultErrorHandler(SessionPtr session, beast::error_code ec,
                                            std::string ec_msg) {
     if (ec == websocket::error::closed || ec == net::error::eof ||
@@ -124,7 +137,10 @@ void WebSocketSession::defaultErrorHandler(SessionPtr session, beast::error_code
 
     } else {
         if (LogManager::IsLoggingEnabled("websocket_session")) {
-            LogManager::GetLogger("websocket_session")->error("{}", ec_msg);
+            LogManager::GetLogger("websocket_session")->error("{}: {}", ec_msg, ec.message());
         }
     }
 }
+
+} // namespace network
+} // namespace im

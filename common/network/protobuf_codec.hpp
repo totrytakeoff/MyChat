@@ -5,6 +5,9 @@
 #include <google/protobuf/message.h>
 #include "../proto/base.pb.h"
 
+namespace im {
+namespace network {
+
 /**
  * @brief Protobuf编解码器类
  * 
@@ -85,5 +88,8 @@ private:
      */
     static uint32_t calculateCRC32(const void* data, size_t size);
 };
+
+} // namespace network
+} // namespace im
 
 #endif // PROTOBUF_CODEC_HPP

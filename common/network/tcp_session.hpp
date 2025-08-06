@@ -19,12 +19,13 @@
 #include <vector>
 #include "utils/global.hpp"
 
+namespace im {
+namespace network {
+
 // 定义命名空间与简称
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 using error_code = boost::system::error_code;
-
-
 
 /**
  * @class TCPSession
@@ -127,6 +128,7 @@ private:
     std::function<void()> close_callback_;                     // 连接关闭回调
 };
 
-
+} // namespace network
+} // namespace im
 
 #endif  // TCP_SESSION_HPP

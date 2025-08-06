@@ -29,6 +29,9 @@
 #include "../utils/thread_pool.hpp"
 
 
+namespace im {
+namespace network {
+
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace websocket = beast::websocket;
@@ -53,7 +56,7 @@ public:
                               MessageHandler messageHandler = nullptr,
                               ErrorHandler errorHandler = nullptr);
 
-    ~WebSocketSession() { close(); }
+    ~WebSocketSession() = default;
 
     void start();
 
@@ -105,5 +108,8 @@ private:
 
     std::string session_id_;
 };
+
+} // namespace network
+} // namespace im
 
 #endif  // WEBSOCKET_SESSION_HPP

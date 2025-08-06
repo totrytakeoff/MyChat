@@ -14,6 +14,7 @@ find_package(GTest REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Protobuf REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # # 添加测试源文件
 # set(TEST_SOURCES
@@ -116,3 +117,33 @@ target_include_directories(protobufcodec_test PRIVATE
 target_compile_features(protobufcodec_test PRIVATE cxx_std_17)
 
 add_test(NAME ProtobufCodecTests COMMAND protobufcodec_test)
+
+# WebSocket 测试
+set(WEBSOCKET_SOURCES
+    ../../common/network/websocket_server.cpp
+    ../../common/network/websocket_session.cpp
+    ../../common/utils/log_manager.cpp
+    ../../common/utils/thread_pool.cpp
+)
+
+add_executable(websocket_test test_websocket.cpp ${WEBSOCKET_SOURCES})
+
+target_link_libraries(websocket_test 
+    ${GTEST_BOTH_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+    Boost::system
+    spdlog::spdlog
+    stdc++fs
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
+target_include_directories(websocket_test PRIVATE 
+    ../../common
+    ../../common/network
+    ../../common/utils
+)
+
+target_compile_features(websocket_test PRIVATE cxx_std_17)
+
+add_test(NAME WebSocketTests COMMAND websocket_test)

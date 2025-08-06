@@ -23,6 +23,12 @@
 #include "IOService_pool.hpp"
 #include "tcp_session.hpp"
 
+namespace im {
+namespace network {
+
+using namespace boost::asio;
+using ip::tcp;
+
 /**
  * @class TCPServer
  * @brief 基于IOServicePool的TCP服务器实现，管理所有TCP连接
@@ -87,6 +93,7 @@ private:
     std::function<void(TCPSession::Ptr)> connection_handler_;  // 新连接回调
 };
 
-
+} // namespace network
+} // namespace im
 
 #endif  // TCP_SERVER_HPP

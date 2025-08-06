@@ -23,6 +23,8 @@
 #include "singleton.hpp"
 #include "log_manager.hpp"
 
+namespace im {
+namespace utils {
 
 template <typename T>
 class ConnectionPool : public Singleton<ConnectionPool<T>> {
@@ -214,6 +216,9 @@ size_t ConnectionPool<T>::GetInUsedCount() const {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_poolSize_ - m_connections.size();
 }
+
+} // namespace utils
+} // namespace im
 
 #endif  // CONNECTION_POOL_HPP
 

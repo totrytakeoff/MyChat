@@ -7,6 +7,9 @@
 #include "../utils/global.hpp"
 #include "../utils/log_manager.hpp"
 
+namespace im {
+namespace network {
+
 using namespace google::protobuf;
 using namespace google::protobuf::io;
 
@@ -297,3 +300,6 @@ uint32_t ProtobufCodec::calculateCRC32(const void* data, size_t size) {
     
     return crc ^ 0xffffffff;
 }
+
+} // namespace network
+} // namespace im

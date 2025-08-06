@@ -24,6 +24,9 @@
 #include <thread>
 #include <vector>
 
+namespace im {
+namespace utils {
+
 class ThreadPool : public Singleton<ThreadPool> {
     friend class Singleton<ThreadPool>;
 
@@ -127,5 +130,8 @@ auto ThreadPool::Enqueue(F&& f,
     m_condition.notify_one();  // 通知一个等待的线程，有新任务可处理
     return result;  // 返回 future 对象，调用者可以等待任务完成并获取结果
 }
+
+} // namespace utils
+} // namespace im
 
 #endif  // THREAD_POOL_HPP

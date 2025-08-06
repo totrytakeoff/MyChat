@@ -1,5 +1,8 @@
 #include "log_manager.hpp"
 
+namespace im {
+namespace utils {
+
 std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> LogManager::s_loggers_;
 std::unordered_map<std::string, bool> LogManager::s_loggingEnabled_;
 std::mutex LogManager::s_mutex_;
@@ -48,4 +51,7 @@ bool LogManager::IsLoggingEnabled(const std::string& logger_name) {
         return it->second;
     }
     return true;
-} 
+}
+
+} // namespace utils
+} // namespace im 

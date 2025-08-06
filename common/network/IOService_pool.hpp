@@ -20,6 +20,11 @@
 #include <atomic>
 #include "../utils/singleton.hpp"
 
+namespace im {
+namespace network {
+
+using im::utils::Singleton;
+
 class IOServicePool : public Singleton<IOServicePool> {
     friend class Singleton<IOServicePool>;
 
@@ -49,6 +54,7 @@ private:
 
 };
 
-
+} // namespace network
+} // namespace im
 
 #endif  // IOSERVICE_POOL_HPP

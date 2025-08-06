@@ -2,6 +2,10 @@
 #include "../utils/log_manager.hpp"
 #include "IOService_pool.hpp"
 
+namespace im {
+namespace network {
+
+using im::utils::LogManager;
 
 IOServicePool::IOServicePool(std::size_t pool_size)
         : pool_size_(pool_size), next_io_service_(0) {
@@ -83,3 +87,6 @@ void IOServicePool::Stop() {
     
     pool_size_ = 0; // 标记已停止
 }
+
+} // namespace network
+} // namespace im

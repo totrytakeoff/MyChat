@@ -3,6 +3,11 @@
 #include "IOService_pool.hpp"
 #include "tcp_session.hpp"
 
+namespace im {
+namespace network {
+
+using im::utils::LogManager;
+
 static constexpr size_t max_send_queue_size = 1024;
 TCPSession::TCPSession(tcp::socket socket)
         : socket_(std::move(socket))
@@ -459,3 +464,6 @@ void TCPSession::handle_error(const error_code& ec) {
     // 关闭会话
     close();
 }
+
+} // namespace network
+} // namespace im

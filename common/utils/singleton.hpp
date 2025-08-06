@@ -19,6 +19,9 @@
 #include <mutex>
 #include <memory>
 
+namespace im {
+namespace utils {
+
 // 单例模板类，支持线程安全的懒汉式单例实现
 // 用法：class MyClass : public Singleton<MyClass> { friend class Singleton<MyClass>; ... };
 template <typename T>
@@ -40,5 +43,8 @@ protected:
     Singleton(const Singleton<T>&) = delete;
     Singleton& operator=(const Singleton<T>& st) = delete;
 };
+
+} // namespace utils
+} // namespace im
 
 #endif // SINGLETON_HPP

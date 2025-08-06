@@ -5,6 +5,9 @@
 #include <boost/algorithm/string.hpp>
 #include <filesystem>
 
+namespace im {
+namespace utils {
+
 using json = nlohmann::json;
 
 class ConfigManager {
@@ -62,3 +65,6 @@ private:
     std::unordered_map<std::string, std::string> config_;
     json json_;
 };
+
+} // namespace utils
+} // namespace im

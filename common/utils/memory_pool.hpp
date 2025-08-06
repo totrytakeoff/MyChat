@@ -7,6 +7,9 @@
 #include <cstdint>
 #include <stdexcept>
 
+namespace im {
+namespace utils {
+
 /**
  * @brief 通用线程安全固定大小对象内存池
  *
@@ -74,5 +77,8 @@ private:
     size_t m_poolSize;
     mutable std::mutex m_mutex;
 };
+
+} // namespace utils
+} // namespace im
 
 #endif // MEMORY_POOL_HPP

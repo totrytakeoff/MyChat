@@ -25,6 +25,9 @@
 #include "../utils/thread_pool.hpp"
 
 
+namespace im {
+namespace network {
+
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace websocket = beast::websocket;
@@ -42,8 +45,6 @@ using SessionPtr = std::shared_ptr<WebSocketSession>;
 using MessageHandler = std::function<void(SessionPtr, beast::flat_buffer&&)>;
 using ErrorHandler = std::function<void(SessionPtr, beast::error_code)>;
 
-
-
 class WebSocketServer {
 public:
     WebSocketServer(net::io_context& ioc, ssl::context& ssl_ctx, unsigned short port,
@@ -59,7 +60,7 @@ public:
     void add_session(SessionPtr session);
 
     void remove_session(SessionPtr session);
-    void remove_session(std::string &session_id);
+    void remove_session(const std::string &session_id);
 
     size_t get_session_count() const;
 
@@ -74,6 +75,7 @@ private:
     MessageHandler message_handler_;
 };
 
-
+} // namespace network
+} // namespace im
 
 #endif  // WEBSOCKET_SERVER_HPP

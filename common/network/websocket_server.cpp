@@ -1,7 +1,10 @@
 #include "websocket_server.hpp"
 #include "websocket_session.hpp"
 
+namespace im {
+namespace network {
 
+using im::utils::LogManager;
 
 WebSocketServer::WebSocketServer(net::io_context& ioc, ssl::context& ssl_ctx, unsigned short port,
                                  MessageHandler msg_handler)
@@ -23,11 +26,11 @@ void WebSocketServer::do_accept() {
             return;
         }
         auto session = std::make_shared<WebSocketSession>(
-                std::move(socket), ssl_ctx_, message_handler_, this, this->message_handler_);
+                std::move(socket), ssl_ctx_, this, message_handler_);
         session->start();
         if (LogManager::IsLoggingEnabled("websocket_server")) {
             LogManager::GetLogger("websocket_server")
-                    ->info("New WebSocket session started, current session count: {}", get_session_count());
+                    ->info("New WebSocket session created");
         }
         // 继续接受下一个连接
         do_accept();
@@ -78,7 +81,7 @@ void WebSocketServer::remove_session(SessionPtr session) {
     }
 }
 
-void WebSocketServer::remove_session(std::string& session_id) {
+void WebSocketServer::remove_session(const std::string& session_id) {
     std::lock_guard lock(sessions_mutex_);
     sessions_.erase(session_id);
     if (LogManager::IsLoggingEnabled("websocket_server")) {
@@ -88,8 +91,6 @@ void WebSocketServer::remove_session(std::string& session_id) {
     }
 }
 
+} // namespace network
+} // namespace im
 
-size_t WebSocketServer::get_session_count() const {
-    std::lock_guard lock(sessions_mutex_);
-    return sessions_.size();
-}
