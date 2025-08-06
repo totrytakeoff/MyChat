@@ -43,8 +43,8 @@ public:
 
     void Stop();
 
-private:
     IOServicePool(std::size_t pool_size = std::thread::hardware_concurrency());
+private:
     
     std::vector<IOServicePtr> io_services_;
     std::vector<WorkPtr> works_;

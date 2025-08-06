@@ -1,0 +1,123 @@
+{
+    "gateway": {
+        "name": "MyChat-Gateway-Demo",
+        "version": "1.0.0",
+        "http_host": "0.0.0.0",
+        "http_port": 8080,
+        "websocket_port": 8081,
+        "worker_threads": 4,
+        "max_connections": 1000
+    },
+    "auth": {
+        "token_expire_seconds": 86400,
+        "secret_key": "demo-gateway-secret-key-change-in-production",
+        "max_tokens_per_user": 5,
+        "auto_refresh": true
+    },
+    "services": {
+        "user_service": {
+            "host": "127.0.0.1",
+            "port": 9001,
+            "timeout_ms": 5000,
+            "description": "User management service - handles login, registration, user info"
+        },
+        "message_service": {
+            "host": "127.0.0.1",
+            "port": 9002,
+            "timeout_ms": 5000,
+            "description": "Message service - handles sending, receiving, and storing messages"
+        },
+        "friend_service": {
+            "host": "127.0.0.1",
+            "port": 9003,
+            "timeout_ms": 5000,
+            "description": "Friend management service - handles friend requests, lists"
+        },
+        "group_service": {
+            "host": "127.0.0.1",
+            "port": 9004,
+            "timeout_ms": 5000,
+            "description": "Group management service - handles group creation, membership"
+        },
+        "push_service": {
+            "host": "127.0.0.1",
+            "port": 9005,
+            "timeout_ms": 3000,
+            "description": "Push notification service - handles real-time message delivery"
+        }
+    },
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "password": "",
+        "db": 0,
+        "pool_size": 10,
+        "timeout_ms": 3000,
+        "description": "Redis cache for session storage and message queuing"
+    },
+    "database": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "username": "mychat",
+        "password": "mychat123",
+        "database": "mychat_db",
+        "charset": "utf8mb4",
+        "pool_size": 20,
+        "description": "MySQL database for persistent data storage"
+    },
+    "logs": {
+        "level": "INFO",
+        "path": "logs/",
+        "max_file_size_mb": 100,
+        "max_files": 10,
+        "console_output": true,
+        "file_output": true,
+        "description": "Logging configuration for debugging and monitoring"
+    },
+    "monitoring": {
+        "stats_interval_seconds": 60,
+        "health_check_interval_seconds": 30,
+        "cleanup_interval_seconds": 300,
+        "alert_thresholds": {
+            "max_connection_rate": 0.8,
+            "max_request_rate": 1000,
+            "max_error_rate": 0.1
+        },
+        "description": "Monitoring and alerting configuration"
+    },
+    "demo": {
+        "description": "This is a demo configuration for MyChat Gateway",
+        "test_credentials": {
+            "username": "test",
+            "password": "test",
+            "note": "Use these credentials for testing the login functionality"
+        },
+        "features_enabled": [
+            "http_api",
+            "websocket_support", 
+            "token_authentication",
+            "request_routing",
+            "connection_management",
+            "health_monitoring",
+            "statistics_collection"
+        ],
+        "known_limitations": [
+            "Services are mocked - actual microservices need to be implemented",
+            "Database connections are configured but not used in demo",
+            "Redis caching is configured but not implemented",
+            "Service discovery is not implemented",
+            "Load balancing is basic",
+            "SSL/TLS is not configured"
+        ],
+        "next_steps": [
+            "Implement actual microservices",
+            "Add database integration",
+            "Add Redis caching",
+            "Implement service discovery",
+            "Add SSL/TLS support",
+            "Add more comprehensive monitoring",
+            "Add rate limiting",
+            "Add API documentation"
+        ]
+    }
+}
