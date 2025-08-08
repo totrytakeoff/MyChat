@@ -64,6 +64,15 @@ public:
 
     size_t get_session_count() const;
 
+    SessionPtr get_session(const std::string& session_id) const{
+        std::lock_guard<std::mutex> lock(sessions_mutex_);
+        auto it = sessions_.find(session_id);
+        if (it != sessions_.end()) {
+            return it->second;
+        }
+        return nullptr;
+    }
+
 private:
     void do_accept();
 
