@@ -44,6 +44,16 @@ enum class HeaderMsgType :uint8_t{
     ENUM_END
 };
 
+enum class PlatformType :uint8_t{
+    UNKNOWN,
+    WEB,
+    MiniApp,
+    IOS,
+    ANDROID,
+    DESKTOP,
+    MOBILE,
+    ENUM_END
+};
 
 #endif // GLOBAL_HPP
 

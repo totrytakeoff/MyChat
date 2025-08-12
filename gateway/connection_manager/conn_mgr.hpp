@@ -9,7 +9,11 @@
  * @author     myself
  * @date       2025/08/07
  *
+ * 
+ * 后续需要进行修改以适配多平台认证以及多设备认证，需要修改map的对应逻辑
  *****************************************************************************/
+
+
 
 
 #include "../../common/network/websocket_server.hpp"
@@ -19,6 +23,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+
 
 namespace im::gateway {
 

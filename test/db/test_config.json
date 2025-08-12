@@ -1,0 +1,11 @@
+{
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "password": "myself",
+        "db": 1,
+        "pool_size": 5,
+        "connect_timeout": 2000,
+        "socket_timeout": 2000
+    }
+}

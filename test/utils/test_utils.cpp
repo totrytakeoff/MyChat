@@ -7,6 +7,9 @@
 #include "../../common/utils/log_manager.hpp"
 #include "../../common/utils/thread_pool.hpp"
 
+using namespace im::utils;
+
+
 // 用于连接池测试的假连接类型
 typedef struct DummyConn {
     int id;

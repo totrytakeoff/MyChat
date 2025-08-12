@@ -4,6 +4,7 @@
 
 // 用于测试的临时配置文件路径
 const std::string TEST_CONFIG_PATH = "test_config.json";
+using namespace im::utils;
 
 // 测试夹具类
 class ConfigManagerTest : public ::testing::Test {
@@ -18,7 +19,7 @@ protected:
 
     // 在每个测试用例后删除临时配置文件
     void TearDown() override {
-        std::remove(TEST_CONFIG_PATH.c_str());
+        // std::remove(TEST_CONFIG_PATH.c_str());
     }
 };
 

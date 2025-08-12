@@ -4,6 +4,9 @@
 #include <vector>
 #include <iostream>
 
+using namespace im::utils;
+
+
 struct PerfObj {
     int a, b, c, d;
     PerfObj() : a(0), b(0), c(0), d(0) {}

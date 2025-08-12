@@ -1,0 +1,21 @@
+{
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6379
+    },
+    "mysql": {
+        "host": "127.0.0.2",
+        "port": "3306",
+        "user": "root",
+        "password": "",
+        "database": "test"
+    },
+    "other": {
+        "same": {
+            "1": "a",
+            "2": "b"
+        },
+        "o":true
+    },
+    "host":"127.0.0.3"
+}

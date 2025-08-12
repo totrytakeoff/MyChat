@@ -1,0 +1,67 @@
+{
+    "PlatformTokenStrategy": {
+        "web": {
+            "refresh_precentage": 0.2,
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": false
+        },
+        "android": {
+            "refresh_precentage": 0.2,
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": false
+        },
+        "ios": {
+            "refresh_precentage": 0.2,
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": false
+        },
+        "desktop": {
+            "refresh_precentage": 0.2,
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": false
+        },
+        "miniapp": {
+            "refresh_precentage": 0.2,
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": false
+        },
+        "mobile": {
+            "refresh_precentage": 0.2,
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": false
+        },
+        "unkown": {
+            "refresh_precentage": 0.2,
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": false
+        }
+    }
+}
