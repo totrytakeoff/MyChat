@@ -1,30 +1,37 @@
 #include <uuid/uuid.h>
+#include "../../common/database/redis_mgr.hpp"
 #include "../../common/utils/config_mgr.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "multi_platform_auth.hpp"
 
 
 namespace im::gateway {
+using im::db::RedisConfig;
+using im::db::RedisManager;
 using im::utils::ConfigManager;
-
+using im::utils::LogManager;
 
 PlatformTokenStrategy::PlatformTokenStrategy(std::string config_path) {
     try {
         auto config = ConfigManager(config_path);
 
         // 直接读取各个平台的配置项
-        std::vector<std::string> platforms = {"web", "android", "ios", "desktop", "miniapp", "mobile","unkown"};
-        
+        std::vector<std::string> platforms = {"web",     "android", "ios",   "desktop",
+                                              "miniapp", "mobile",  "unkown"};
+
         for (const auto& platform : platforms) {
             PlatformTokenConfig platform_token_config;
             RefreshConfig refresh_config;
             TokenTimeConfig token_time_config;
 
             std::string prefix = "PlatformTokenStrategy." + platform + ".";
-            
-            refresh_config.auto_refresh_enabled = config.get<bool>(prefix + "auto_refresh_enabled", true);
-            refresh_config.background_refresh = config.get<bool>(prefix + "background_refresh", true);
-            refresh_config.refresh_precentage = config.get<float>(prefix + "refresh_precentage", 0.3f);
+
+            refresh_config.auto_refresh_enabled =
+                    config.get<bool>(prefix + "auto_refresh_enabled", true);
+            refresh_config.background_refresh =
+                    config.get<bool>(prefix + "background_refresh", true);
+            refresh_config.refresh_precentage =
+                    config.get<float>(prefix + "refresh_precentage", 0.3f);
             refresh_config.max_retry_count = config.get<int>(prefix + "max_retry_count", 1);
 
             token_time_config.access_token_expire_seconds =
@@ -57,7 +64,21 @@ const PlatformTokenConfig& PlatformTokenStrategy::get_platform_token_config(
 
 MultiPlatformAuthManager::MultiPlatformAuthManager(std::string secret_key,
                                                    const std::string& config_path)
-        : secret_key_(std::move(secret_key)), platform_token_strategy_(config_path) {}
+        : secret_key_(std::move(secret_key)), platform_token_strategy_(config_path) {
+    try {
+        if (!RedisManager::GetInstance().is_healthy()) {
+            RedisManager::GetInstance().initialize(config_path);
+        }
+        if (!RedisManager::GetInstance().is_healthy()) {
+            LogManager::GetLogger("auth_mgr")->error("redis is not connected or not healthy!");
+            throw;
+        }
+
+    } catch (std::exception& e) {
+        LogManager::GetLogger("auth_mgr")->error("auth_mgr initialize failed!");
+        throw;
+    }
+}
 
 std::string MultiPlatformAuthManager::generate_access_token(const std::string& user_id,
                                                             const std::string& username,
@@ -127,8 +148,13 @@ std::string MultiPlatformAuthManager::generate_refresh_token(const std::string& 
                        {"revoked", false},
                        {"last_used", now.time_since_epoch().count()}};
 
-                       
-                       
+        RedisManager::GetInstance().execute([&](auto& redis) {
+            redis.hset("refresh_tokens", rt, rtMeta.dump());
+            redis.expire("refresh_tokens", times);
+            redis.sadd("user:" + user_id + ":rt", rt);
+            redis.expire("user:" + user_id + ":rt", times);
+        });
+
         return rt;
     }
 
@@ -158,11 +184,12 @@ TokenResult MultiPlatformAuthManager::generate_tokens(const std::string& user_id
     return result;
 }
 
-TokenResult MultiPlatformAuthManager::refresh_access_token(const std::string& refresh_token) {
+TokenResult MultiPlatformAuthManager::refresh_access_token(const std::string& refresh_token,
+                                                           std::string& device_id) {
     TokenResult result;
     try {
         UserTokenInfo user_info;
-        if (!verify_refresh_token(refresh_token, user_info)) {
+        if (!verify_refresh_token(refresh_token, device_id, user_info)) {
             result.sucess = false;
             result.error_message = "Invalid refresh token";
             return result;
@@ -171,7 +198,7 @@ TokenResult MultiPlatformAuthManager::refresh_access_token(const std::string& re
         // 检查是否需要轮换刷新令牌
         if (should_rotate_refresh_token(refresh_token)) {
             // 如果需要轮换，撤销旧的刷新令牌
-            revoke_token(refresh_token);
+            // revoke_token(refresh_token);
             // 生成新的刷新令牌
             result.new_refresh_token = generate_refresh_token(
                     user_info.user_id, user_info.username, user_info.device_id, user_info.platform);
@@ -228,33 +255,108 @@ bool MultiPlatformAuthManager::verify_access_token(const std::string& access_tok
 }
 
 bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_token,
+                                                    std::string& device_id,
                                                     UserTokenInfo& user_info) {
-    return false;
+    try {
+        auto meta = RedisManager::GetInstance().execute(
+                [&](auto& redis) { return redis.hget("refresh_tokens", refresh_token); });
+
+        json decode = json::parse(meta);
+        if (decode) {
+            if (decode["device_id"] != device_id) {
+                // rt和device_id不匹配，属于严重安全问题,后续应该采取如吊销rt等措施
+                revoke_refresh_token(refresh_token);
+                return false;
+            }
+            if (decode["revoked"]) {
+                return false;
+            }
+
+            user_info.device_id = decode["device_id"];
+            user_info.platform = decode["platform"];
+            user_info.user_id = decode["user_id"];
+            user_info.username = decode["username"];
+            user_info.create_time = std::chrono::system_clock::from_time_t(decode["create_time"]);
+            user_info.expire_time = std::chrono::system_clock::from_time_t(decode["expire_time"]);
+            return true;
+        }
+        return false;
+    } catch (const std::exception& e) {
+        spdlog::error("Failed to decode token: {}", e.what());
+        return false;
+    }
 }
 
-void MultiPlatformAuthManager::revoke_token(const std::string& token) {
+bool MultiPlatformAuthManager::revoke_token(const std::string& token) {
     try {
-        std::lock_guard<std::mutex> lock(mutex_);
         std::string jti = extract_jti(token);
         if (!jti.empty()) {
-            std::lock_guard<std::mutex> lock(mutex_);
-            revoked_tokens_.insert(jti);
+            auto conn = RedisManager::GetInstance().get_connection();
+            conn->sadd("revoked_access_tokens", jti);
+            return true;
         }
+
+        return false;
     } catch (...) {
         // 忽略错误
     }
 }
 
-void MultiPlatformAuthManager::unrevoke_token(const std::string& token) {
+bool MultiPlatformAuthManager::unrevoke_token(const std::string& token) {
     try {
-        std::lock_guard<std::mutex> lock(mutex_);
         std::string jti = extract_jti(token);
         if (!jti.empty()) {
-            std::lock_guard<std::mutex> lock(mutex_);
-            revoked_tokens_.erase(jti);
+            auto conn = RedisManager::GetInstance().get_connection();
+            conn->srem("revoked_access_tokens", jti);
+            return true;
         }
+        return false;
     } catch (...) {
         // 忽略错误
+    }
+}
+
+bool MultiPlatformAuthManager::revoke_refresh_token(const std::string& refresh_token) {
+    try {
+        RedisManager::GetInstance().execute([&](auto& redis) {
+            auto meta = redis.hget("refresh_tokens", refresh_token);
+            json decode = json::parse(meta);
+            decode["revoked"] = true;
+            redis.hset("refresh_tokens", refresh_token, decode.dump());
+        });
+
+        return true;
+    } catch (...) {
+        // 忽略错误
+        return false;
+    }
+}
+
+bool MultiPlatformAuthManager::unrevoke_refresh_token(const std::string& refresh_token) {
+    try {
+        RedisManager::GetInstance().execute([&](auto& redis) {
+            auto meta = redis.hget("refresh_tokens", refresh_token);
+            json decode = json::parse(meta);
+            decode["revoked"] = false;
+            redis.hset("refresh_tokens", refresh_token, decode.dump());
+        });
+
+        return true;
+    } catch (...) {
+        // 忽略错误
+        return false;
+    }
+}
+
+bool MultiPlatformAuthManager::del_refresh_token(const std::string& refresh_token) {
+    try {
+        RedisManager::GetInstance().execute(
+                [&](auto& redis) { redis.hdel("refresh_tokens", refresh_token); });
+
+        return true;
+    } catch (...) {
+        // 忽略错误
+        return false;
     }
 }
 
@@ -262,9 +364,9 @@ bool MultiPlatformAuthManager::is_token_revoked(const std::string& token) {
     try {
         std::string jti = extract_jti(token);
         if (jti.empty()) return false;
+        auto conn = RedisManager::GetInstance().get_connection();
+        return conn->sismember("revoked_access_tokens", jti);
 
-        std::lock_guard<std::mutex> lock(mutex_);
-        return revoked_tokens_.find(jti) != revoked_tokens_.end();
     } catch (...) {
         return true;  // 出错时认为已撤销
     }
@@ -272,14 +374,18 @@ bool MultiPlatformAuthManager::is_token_revoked(const std::string& token) {
 
 bool MultiPlatformAuthManager::should_rotate_refresh_token(const std::string& refresh_token) {
     try {
-        auto decoded = jwt::decode(refresh_token);
-        auto issued_at = decoded.get_issued_at();
-        auto expires_at = decoded.get_expires_at();
-        auto now = std::chrono::system_clock::now();
+        auto conn = RedisManager::GetInstance().get_connection();
+        auto meta = conn->hget("refresh_tokens", refresh_token);
+        json decode = json::parse(meta);
+
+
+        auto issued_at = decode["create_time"].get<int>();
+        auto expires_at = decode["expire_time"].get<int>();
+        auto now = std::chrono::system_clock::now().time_since_epoch().count();
 
         return (expires_at - now) / (expires_at - issued_at) <
                platform_token_strategy_
-                       .get_platform_token_config(decoded.get_payload_claim("platform").as_string())
+                       .get_platform_token_config(decode["platform"].get<std::string>())
                        .refresh_config.refresh_precentage;
 
 

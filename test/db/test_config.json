@@ -4,7 +4,7 @@
         "port": 6379,
         "password": "myself",
         "db": 1,
-        "pool_size": 5,
+        "pool_size": 2,
         "connect_timeout": 2000,
         "socket_timeout": 2000
     }

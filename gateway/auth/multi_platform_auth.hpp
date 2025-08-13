@@ -13,20 +13,23 @@
 
 #include <jwt-cpp/jwt.h>
 #include <nlohmann/json.hpp>
+
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include "../../common/utils/global.hpp"
 #include <random>
 #include <algorithm>
+
+#include "../../common/utils/global.hpp"
+#include "../../common/database/redis_mgr.hpp"
 
 namespace im::gateway {
 
 using json = nlohmann::json;
-
+using im::db::RedisManager;
 
 static std::string rt_generate(size_t length = 32) {
         const std::string chars =
@@ -75,9 +78,9 @@ struct UserTokenInfo {
     std::string user_id;   // 用户ID
     std::string username;  // 用户名
     std::string device_id;
+    std::string platform;  // 平台标识，例如 "web", "mobile", "desktop"
     std::chrono::system_clock::time_point create_time;
     std::chrono::system_clock::time_point expire_time;
-    std::string platform;  // 平台标识，例如 "web", "mobile", "desktop"
 };
 
 
@@ -127,18 +130,23 @@ public:
     TokenResult generate_tokens(const std::string& user_id, const std::string& username,
                                 const std::string& device_id, const std::string& platform);
 
-    TokenResult refresh_access_token(const std::string& refresh_token);
+
+    //刷新access_token需要 device_id进行校验,因为refresh_token与device强绑定
+    TokenResult refresh_access_token(const std::string& refresh_token,std::string& device_id);
 
     bool verify_access_token(const std::string& access_token, UserTokenInfo& user_info);
-
-    bool verify_refresh_token(const std::string& refresh_token, UserTokenInfo& user_info);
+    bool verify_refresh_token(const std::string& refresh_token,std::string& device_id, UserTokenInfo& user_info);
 
     bool is_token_revoked(const std::string& token);
 
-    void revoke_token(const std::string& token);
+    bool revoke_token(const std::string& token);
+    bool unrevoke_token(const std::string& token);
 
-    void unrevoke_token(const std::string& token);
+    bool revoke_refresh_token(const std::string& refresh_token);
+    bool unrevoke_refresh_token(const std::string& refresh_token);
 
+    bool del_refresh_token(const std::string& refresh_token);
+    
 private:
     bool should_rotate_refresh_token(const std::string& refresh_token);
 
@@ -146,10 +154,9 @@ private:
 
 private:
     std::string secret_key_;
-    // int access_token_expire_seconds_;
-    // int refresh_token_expire_seconds_;
-    mutable std::mutex mutex_;
-    std::unordered_set<std::string> revoked_tokens_; //暂时使用哈希表，后续可使用Redis等分布式存储
+
+    // mutable std::mutex mutex_;
+    // std::unordered_set<std::string> revoked_tokens_; //暂时使用哈希表，后续可使用Redis等分布式存储
     PlatformTokenStrategy platform_token_strategy_;
 };
 

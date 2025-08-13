@@ -83,13 +83,17 @@ bool RedisManager::initialize(const RedisConfig& config) {
         pool.Init(config.pool_size, [this]() { return create_redis_connection(); });
         
         // 测试连接
+        im::utils::LogManager::GetLogger("redis_manager")->info("Getting test connection...");
         auto test_conn = get_connection();
+        im::utils::LogManager::GetLogger("redis_manager")->info("Got test connection, checking validity...");
         if (!test_conn.is_valid()) {
             throw std::runtime_error("Failed to create test connection");
         }
         
         // 执行ping测试
+        im::utils::LogManager::GetLogger("redis_manager")->info("Executing ping test...");
         test_conn->ping();
+        im::utils::LogManager::GetLogger("redis_manager")->info("Ping test successful");
         
         initialized_ = true;
         
@@ -171,10 +175,17 @@ void RedisManager::shutdown() {
 
 RedisManager::RedisPtr RedisManager::create_redis_connection() {
     try {
+        auto logger = im::utils::LogManager::GetLogger("redis_manager");
+        logger->info("Creating Redis connection to {}:{}", config_.host, config_.port);
+        
         auto conn_opts = config_.to_connection_options();
         
         // 创建Redis连接（注意：不使用内部连接池，因为我们自己管理连接池）
-        return std::make_shared<sw::redis::Redis>(conn_opts);
+        logger->info("Attempting to connect to Redis...");
+        auto redis = std::make_shared<sw::redis::Redis>(conn_opts);
+        logger->info("Redis connection created successfully");
+        
+        return redis;
     } catch (const std::exception& e) {
         im::utils::LogManager::GetLogger("redis_manager")
             ->error("Failed to create Redis connection: {}", e.what());
