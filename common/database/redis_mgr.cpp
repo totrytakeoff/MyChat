@@ -45,6 +45,7 @@ sw::redis::ConnectionPoolOptions RedisConfig::to_pool_options() const {
 // ===== RedisManager::RedisConnection 实现 =====
 RedisManager::RedisConnection::RedisConnection(RedisConnectionPool& pool) 
     : pool_(pool), redis_(pool.GetConnection()) {
+    // 不在构造函数中抛出异常，而是让is_valid()方法检查连接状态
 }
 
 RedisManager::RedisConnection::~RedisConnection() {
@@ -67,26 +68,50 @@ bool RedisManager::initialize(const std::string& config_path) {
 }
 
 bool RedisManager::initialize(const RedisConfig& config) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (initialized_) {
-        im::utils::LogManager::GetLogger("redis_manager")
-            ->warn("Redis manager already initialized");
-        return true;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        
+        if (initialized_) {
+            im::utils::LogManager::GetLogger("redis_manager")
+                ->warn("Redis manager already initialized");
+            return true;
+        }
+        
+        config_ = config;
     }
     
     try {
-        config_ = config;
-  
         // 初始化连接池（使用单例）
         auto& pool = RedisConnectionPool::GetInstance();
         pool.Init(config.pool_size, [this]() { return create_redis_connection(); });
         
+        // 在测试连接前设置初始化标志，否则get_connection会失败
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            initialized_ = true;
+        }
+        
         // 测试连接
         im::utils::LogManager::GetLogger("redis_manager")->info("Getting test connection...");
-        auto test_conn = get_connection();
-        im::utils::LogManager::GetLogger("redis_manager")->info("Got test connection, checking validity...");
+        RedisConnection test_conn = [&]() {
+            try {
+                auto conn = get_connection();
+                im::utils::LogManager::GetLogger("redis_manager")->info("Got test connection, checking validity...");
+                return conn;
+            } catch (const std::exception& e) {
+                im::utils::LogManager::GetLogger("redis_manager")->error("Exception in get_connection: {}", e.what());
+                // 如果测试连接失败，重置初始化状态
+                {
+                    std::lock_guard<std::mutex> lock(mutex_);
+                    initialized_ = false;
+                }
+                throw;
+            }
+        }();
+        
         if (!test_conn.is_valid()) {
+            std::lock_guard<std::mutex> lock(mutex_);
+            initialized_ = false;
             throw std::runtime_error("Failed to create test connection");
         }
         
@@ -95,7 +120,11 @@ bool RedisManager::initialize(const RedisConfig& config) {
         test_conn->ping();
         im::utils::LogManager::GetLogger("redis_manager")->info("Ping test successful");
         
-        initialized_ = true;
+        // 测试成功后再标记为已初始化
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            initialized_ = true;
+        }
         
         im::utils::LogManager::GetLogger("redis_manager")
             ->info("Redis manager initialized successfully. Pool size: {}, Host: {}:{}", 
@@ -103,6 +132,18 @@ bool RedisManager::initialize(const RedisConfig& config) {
         
         return true;
     } catch (const std::exception& e) {
+        // 确保在异常情况下清理资源
+        try {
+            auto& pool = RedisConnectionPool::GetInstance();
+            pool.Close();
+        } catch (...) {
+            // 忽略清理过程中的异常
+        }
+        
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            initialized_ = false;
+        }
         im::utils::LogManager::GetLogger("redis_manager")
             ->error("Failed to initialize Redis manager: {}", e.what());
         return false;
@@ -136,15 +177,16 @@ RedisManager::PoolStats RedisManager::get_pool_stats() const {
 }
 
 bool RedisManager::is_healthy() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (!initialized_) {
-        return false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!initialized_) {
+            return false;
+        }
     }
     
     try {
-        // 尝试获取连接并执行ping
-        auto conn = const_cast<RedisManager*>(this)->get_connection();
+        // 获取连接（不持有锁）
+        RedisConnection conn = const_cast<RedisManager*>(this)->get_connection();
         if (!conn.is_valid()) {
             return false;
         }

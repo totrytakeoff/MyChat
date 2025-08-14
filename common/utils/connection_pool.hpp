@@ -136,32 +136,49 @@ template <typename T>
 typename ConnectionPool<T>::ConnectionPtr ConnectionPool<T>::GetConnection() {
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    m_condVar.wait(lock, [this]() { return m_isClosed || !m_connections.empty(); });
+    // Wait for available connection or timeout (to prevent indefinite blocking)
+    if (!m_condVar.wait_for(lock, std::chrono::seconds(5), [this]() { 
+            return m_isClosed || !m_connections.empty(); 
+        })) {
+        if (LogManager::IsLoggingEnabled("connection_pool")) 
+            LogManager::GetLogger("connection_pool")->error("Timeout waiting for connection from pool.");
+        return nullptr;
+    }
 
     if (m_isClosed) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->error("Connection pool is closed, cannot get connection.");
+        if (LogManager::IsLoggingEnabled("connection_pool")) 
+            LogManager::GetLogger("connection_pool")->error("Connection pool is closed, cannot get connection.");
         return nullptr;
     }
 
     if (m_connections.empty()) {
         // 如果连接池为空，尝试创建新的连接
         if (m_factory) {
-            return m_factory();
+            try {
+                auto conn = m_factory();
+                if (LogManager::IsLoggingEnabled("connection_pool")) 
+                    LogManager::GetLogger("connection_pool")->info("Created new connection outside pool.");
+                return conn;
+            } catch (const std::exception& e) {
+                if (LogManager::IsLoggingEnabled("connection_pool")) 
+                    LogManager::GetLogger("connection_pool")->error("Failed to create new connection: {}", e.what());
+                return nullptr;
+            }
         }
 
-        if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->error("No available connections in the pool.");
+        if (LogManager::IsLoggingEnabled("connection_pool")) 
+            LogManager::GetLogger("connection_pool")->error("No available connections in the pool.");
         return nullptr;
     }
-
 
     // 从连接池中获取一个连接
     auto conn = m_connections.front();
     m_connections.pop();
 
-    if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->info("Connection acquired from pool, remaining connections: {}", m_connections.size());
+    if (LogManager::IsLoggingEnabled("connection_pool")) 
+        LogManager::GetLogger("connection_pool")->info("Connection acquired from pool, remaining connections: {}", m_connections.size());
 
     return conn;
-
 }
 
 
@@ -179,9 +196,11 @@ void ConnectionPool<T>::ReleaseConnection(const ConnectionPtr& conn) {
         return;
     }
 
+    // 如果连接池已满，直接丢弃连接
+    // 但要确保我们不会无限制地丢弃连接
     if (m_connections.size() >= m_poolSize_) {
         if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->warn("Connection pool is full, discarding connection.");
-        return;  // 如果连接池已满，直接丢弃连接
+        return;
     }
 
     m_connections.push(conn);
@@ -200,6 +219,7 @@ void ConnectionPool<T>::Close() {
         m_connections.pop();
     }
     m_factory = nullptr; // 清空工厂函数
+    m_poolSize_ = 0;     // 重置连接池大小，允许重新初始化
     m_condVar.notify_all();  // 通知所有等待的线程
     if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->info("Connection pool closed, all connections released.");
 }
