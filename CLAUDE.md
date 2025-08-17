@@ -48,6 +48,11 @@ make
 
 # Run WebSocket tests
 ./websocket_test
+
+# Run Authentication tests
+cd gateway/auth/build
+make
+./test_multi_platform_auth
 ```
 
 ### Generating Protobuf Files
@@ -70,6 +75,8 @@ protoc --cpp_out=. *.proto
 3. **GatewayServer** - Main gateway service
 4. **ConnectionManager** - Manages client connections
 5. **MessageRouter** - Routes messages to backend services
+6. **MultiPlatformAuthManager** - Handles multi-platform authentication with JWT-based dual token system
+7. **PlatformTokenStrategy** - Manages platform-specific token configurations
 
 ## Development Guidelines
 

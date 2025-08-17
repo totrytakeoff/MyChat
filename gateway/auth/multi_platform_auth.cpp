@@ -174,10 +174,10 @@ TokenResult MultiPlatformAuthManager::generate_tokens(const std::string& user_id
     try {
         result.new_access_token = generate_access_token(user_id, username, device_id, platform);
         result.new_refresh_token = generate_refresh_token(user_id, username, device_id, platform);
-        result.sucess = true;
+        result.success = true;
     } catch (const std::exception& e) {
-        result.sucess = false;
-        result.error_message = e.what() || "Unknown error";
+        result.success = false;
+        result.error_message = e.what() ? e.what() : "Unknown error";
         result.new_access_token = "";
         result.new_refresh_token = "";
     }
@@ -190,7 +190,7 @@ TokenResult MultiPlatformAuthManager::refresh_access_token(const std::string& re
     try {
         UserTokenInfo user_info;
         if (!verify_refresh_token(refresh_token, device_id, user_info)) {
-            result.sucess = false;
+            result.success = false;
             result.error_message = "Invalid refresh token";
             return result;
         }
@@ -209,14 +209,15 @@ TokenResult MultiPlatformAuthManager::refresh_access_token(const std::string& re
                                                         user_info.device_id, user_info.platform);
 
 
-        result.sucess = true;
+        result.success = true;
 
         return result;
     } catch (const std::exception& e) {
-        result.sucess = false;
-        result.error_message = e.what() || "Unknown error";
+        result.success = false;
+        result.error_message = e.what() ? e.what() : "Unknown error";
         result.new_access_token = "";
         result.new_refresh_token = "";
+        return result;
     }
 }
 
@@ -249,7 +250,7 @@ bool MultiPlatformAuthManager::verify_access_token(const std::string& access_tok
         return true;
 
     } catch (const std::exception& e) {
-        // 验证失败（Token无效、过期等）
+        // LogManager::GetLogger("auth_mgr")->error("verify_access_token error: {}", e.what());
         return false;
     }
 }
@@ -261,8 +262,13 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
         auto meta = RedisManager::GetInstance().execute(
                 [&](auto& redis) { return redis.hget("refresh_tokens", refresh_token); });
 
-        json decode = json::parse(meta);
-        if (decode) {
+        // 检查meta是否为空
+        if (!meta) {
+            return false;
+        }
+
+        json decode = json::parse(*meta);
+        if (!decode.is_null()) {
             if (decode["device_id"] != device_id) {
                 // rt和device_id不匹配，属于严重安全问题,后续应该采取如吊销rt等措施
                 revoke_refresh_token(refresh_token);
@@ -276,13 +282,16 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
             user_info.platform = decode["platform"];
             user_info.user_id = decode["user_id"];
             user_info.username = decode["username"];
-            user_info.create_time = std::chrono::system_clock::from_time_t(decode["create_time"]);
-            user_info.expire_time = std::chrono::system_clock::from_time_t(decode["expire_time"]);
+            auto create_time_ns = decode["create_time"].get<int64_t>();
+            auto expire_time_ns = decode["expire_time"].get<int64_t>();
+            user_info.create_time = std::chrono::system_clock::time_point(std::chrono::nanoseconds(create_time_ns));
+            user_info.expire_time = std::chrono::system_clock::time_point(std::chrono::nanoseconds(expire_time_ns));
             return true;
         }
         return false;
     } catch (const std::exception& e) {
-        spdlog::error("Failed to decode token: {}", e.what());
+        // 验证失败（Token无效、过期等）
+        LogManager::GetLogger("auth_mgr")->error("verify_refresh_token error: {}", e.what());
         return false;
     }
 }
@@ -299,6 +308,7 @@ bool MultiPlatformAuthManager::revoke_token(const std::string& token) {
         return false;
     } catch (...) {
         // 忽略错误
+        return false;
     }
 }
 
@@ -313,6 +323,7 @@ bool MultiPlatformAuthManager::unrevoke_token(const std::string& token) {
         return false;
     } catch (...) {
         // 忽略错误
+        return false;
     }
 }
 
@@ -320,7 +331,11 @@ bool MultiPlatformAuthManager::revoke_refresh_token(const std::string& refresh_t
     try {
         RedisManager::GetInstance().execute([&](auto& redis) {
             auto meta = redis.hget("refresh_tokens", refresh_token);
-            json decode = json::parse(meta);
+            // 检查meta是否为空
+            if (!meta) {
+                return;
+            }
+            json decode = json::parse(*meta);
             decode["revoked"] = true;
             redis.hset("refresh_tokens", refresh_token, decode.dump());
         });
@@ -336,7 +351,11 @@ bool MultiPlatformAuthManager::unrevoke_refresh_token(const std::string& refresh
     try {
         RedisManager::GetInstance().execute([&](auto& redis) {
             auto meta = redis.hget("refresh_tokens", refresh_token);
-            json decode = json::parse(meta);
+            // 检查meta是否为空
+            if (!meta) {
+                return;
+            }
+            json decode = json::parse(*meta);
             decode["revoked"] = false;
             redis.hset("refresh_tokens", refresh_token, decode.dump());
         });
@@ -376,14 +395,17 @@ bool MultiPlatformAuthManager::should_rotate_refresh_token(const std::string& re
     try {
         auto conn = RedisManager::GetInstance().get_connection();
         auto meta = conn->hget("refresh_tokens", refresh_token);
-        json decode = json::parse(meta);
+        // 检查meta是否为空
+        if (!meta) {
+            return false;
+        }
+        json decode = json::parse(*meta);
 
-
-        auto issued_at = decode["create_time"].get<int>();
-        auto expires_at = decode["expire_time"].get<int>();
+        auto issued_at = decode["create_time"].get<int64_t>();
+        auto expires_at = decode["expire_time"].get<int64_t>();
         auto now = std::chrono::system_clock::now().time_since_epoch().count();
 
-        return (expires_at - now) / (expires_at - issued_at) <
+        return (double)(expires_at - now) / (double)(expires_at - issued_at) <
                platform_token_strategy_
                        .get_platform_token_config(decode["platform"].get<std::string>())
                        .refresh_config.refresh_precentage;
