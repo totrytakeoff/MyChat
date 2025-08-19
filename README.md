@@ -8,6 +8,10 @@
 - 前端界面第一版使用Qt搭建,后续再考虑electron搭建桌面端,vue网页端,移动端再说
 - git版本管理
 
+## 文档:
+
+- [Redis Structure Design](docs/docs/redis.md) - Detailed Redis data structure design for authentication and connection management modules
+
 ## 功能：
 
 ### core：

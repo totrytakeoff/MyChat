@@ -78,6 +78,10 @@ protoc --cpp_out=. *.proto
 6. **MultiPlatformAuthManager** - Handles multi-platform authentication with JWT-based dual token system
 7. **PlatformTokenStrategy** - Manages platform-specific token configurations
 
+## Documentation
+
+- **Redis Structure** - See `docs/docs/redis.md` for detailed Redis data structure design
+
 ## Development Guidelines
 
 - Follow existing code style and patterns

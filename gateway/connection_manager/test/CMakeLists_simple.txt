@@ -1,0 +1,49 @@
+cmake_minimum_required(VERSION 3.10)
+project(connection_manager_simple_test)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 设置 vcpkg 工具链
+set(CMAKE_TOOLCHAIN_FILE "/home/myself/vcpkg/scripts/buildsystems/vcpkg.cmake" 
+    CACHE STRING "Vcpkg toolchain file")
+
+# 查找依赖包
+find_package(GTest CONFIG REQUIRED)          # 查找 GTest
+find_package(nlohmann_json CONFIG REQUIRED)  # 查找 nlohmann-json
+find_package(spdlog CONFIG REQUIRED)         # 查找 spdlog
+
+# 包含目录
+include_directories(
+    ${PROJECT_SOURCE_DIR}/..
+    ${PROJECT_SOURCE_DIR}/../../../common
+    ${PROJECT_SOURCE_DIR}/../../../
+)
+
+# 添加源文件（只包含必要的文件，避免复杂依赖）
+set(SIMPLE_SOURCES
+    ../../../common/utils/log_manager.cpp
+)
+
+# 创建简单测试可执行文件
+add_executable(simple_test
+    simple_test.cpp
+    ${SIMPLE_SOURCES}
+)
+
+# 链接库
+target_link_libraries(simple_test
+    GTest::gtest_main
+    pthread
+    spdlog::spdlog
+    nlohmann_json::nlohmann_json
+)
+
+# 设置编译选项
+target_compile_definitions(simple_test PRIVATE
+    TESTING=1
+)
+
+# 启用测试
+enable_testing()
+add_test(NAME SimpleTest COMMAND simple_test)
