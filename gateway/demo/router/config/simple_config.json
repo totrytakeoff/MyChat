@@ -1,0 +1,25 @@
+{
+    "api_prefix": "/api/v1",
+    "routes": [
+        {
+            "pattern": "/auth/login",
+            "cmd_id": 1001,
+            "service": "user_service"
+        },
+        {
+            "pattern": "/auth/logout", 
+            "cmd_id": 1002,
+            "service": "user_service"
+        },
+        {
+            "pattern": "/message/send",
+            "cmd_id": 2001,
+            "service": "message_service"
+        },
+        {
+            "pattern": "/friend/list",
+            "cmd_id": 3003,
+            "service": "friend_service"
+        }
+    ]
+}

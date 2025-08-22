@@ -83,6 +83,144 @@ public:
         }
     }
 
+    // 获取数组大小
+    size_t get_array_size(const std::string& key) const {
+        try {
+            std::string path = "/" + key;
+            boost::replace_all(path, ".", "/");
+            if (json_.contains(json::json_pointer(path)) && json_[json::json_pointer(path)].is_array()) {
+                return json_[json::json_pointer(path)].size();
+            }
+        } catch (...) {
+            // 转换失败返回0
+        }
+        return 0;
+    }
+
+    // 获取数组中的单个元素
+    template<typename T>
+    T get_array_item(const std::string& key, size_t index, const T& default_value = T{}) const {
+        try {
+            std::string path = "/" + key + "/" + std::to_string(index);
+            boost::replace_all(path, ".", "/");
+            if (json_.contains(json::json_pointer(path))) {
+                return json_[json::json_pointer(path)].get<T>();
+            }
+        } catch (...) {
+            // 转换失败返回默认值
+        }
+        return default_value;
+    }
+
+    // 获取整个数组
+    template<typename T>
+    std::vector<T> get_array(const std::string& key) const {
+        std::vector<T> result;
+        try {
+            std::string path = "/" + key;
+            boost::replace_all(path, ".", "/");
+            if (json_.contains(json::json_pointer(path)) && json_[json::json_pointer(path)].is_array()) {
+                for (const auto& item : json_[json::json_pointer(path)]) {
+                    result.push_back(item.get<T>());
+                }
+            }
+        } catch (...) {
+            // 转换失败返回空数组
+        }
+        return result;
+    }
+
+    // 获取对象数组中的特定字段
+    template<typename T>
+    std::vector<T> get_array_field(const std::string& array_key, const std::string& field_key) const {
+        std::vector<T> result;
+        try {
+            std::string path = "/" + array_key;
+            boost::replace_all(path, ".", "/");
+            if (json_.contains(json::json_pointer(path)) && json_[json::json_pointer(path)].is_array()) {
+                for (const auto& item : json_[json::json_pointer(path)]) {
+                    if (item.contains(field_key)) {
+                        result.push_back(item[field_key].get<T>());
+                    }
+                }
+            }
+        } catch (...) {
+            // 转换失败返回空数组
+        }
+        return result;
+    }
+
+    // 检查键是否存在
+    bool has_key(const std::string& key) const {
+        try {
+            std::string path = "/" + key;
+            boost::replace_all(path, ".", "/");
+            return json_.contains(json::json_pointer(path));
+        } catch (...) {
+            return false;
+        }
+    }
+
+    // 直接获取JSON对象value（返回nlohmann::json对象）
+    json get_json_value(const std::string& key) const {
+        try {
+            std::string path = "/" + key;
+            boost::replace_all(path, ".", "/");
+            if (json_.contains(json::json_pointer(path))) {
+                return json_[json::json_pointer(path)];
+            }
+        } catch (...) {
+            // 转换失败返回null json
+        }
+        return json(); // 返回null json对象
+    }
+
+    // 获取指定路径的JSON对象（如果不存在返回默认的JSON对象）
+    json get_json_object(const std::string& key, const json& default_value = json::object()) const {
+        try {
+            std::string path = "/" + key;
+            boost::replace_all(path, ".", "/");
+            if (json_.contains(json::json_pointer(path))) {
+                const auto& value = json_[json::json_pointer(path)];
+                return value.is_object() ? value : default_value;
+            }
+        } catch (...) {
+            // 转换失败返回默认值
+        }
+        return default_value;
+    }
+
+    // 获取整个配置文件的裸JSON对象
+    const json& get_raw_json() const {
+        return json_;
+    }
+
+    // 获取整个配置文件的JSON字符串表示
+    std::string get_json_string(int indent = -1) const {
+        if (indent >= 0) {
+            return json_.dump(indent);
+        }
+        return json_.dump();
+    }
+
+    // 获取指定路径的JSON字符串表示
+    std::string get_json_string(const std::string& key, int indent = -1) const {
+        try {
+            std::string path = "/" + key;
+            boost::replace_all(path, ".", "/");
+            if (json_.contains(json::json_pointer(path))) {
+                const auto& value = json_[json::json_pointer(path)];
+                if (indent >= 0) {
+                    return value.dump(indent);
+                }
+                return value.dump();
+            }
+        } catch (...) {
+            // 转换失败返回空字符串
+        }
+        return "{}";
+    }
+
 private:
     // 递归展开嵌套的JSON对象
     void flatten_json(const json& j, const std::string& parent_key, 

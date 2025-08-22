@@ -44,6 +44,9 @@ inline constexpr IMHeader::Impl_::Impl_(
         device_id_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        platform_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         seq_{0u},
         cmd_id_{0u},
         timestamp_{::uint64_t{0u}},
@@ -123,6 +126,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::base::IMHeader, _impl_.timestamp_),
         PROTOBUF_FIELD_OFFSET(::im::base::IMHeader, _impl_.token_),
         PROTOBUF_FIELD_OFFSET(::im::base::IMHeader, _impl_.device_id_),
+        PROTOBUF_FIELD_OFFSET(::im::base::IMHeader, _impl_.platform_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::im::base::BaseResponse, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -139,7 +143,7 @@ const ::uint32_t
 static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::im::base::IMHeader)},
-        {16, -1, -1, sizeof(::im::base::BaseResponse)},
+        {17, -1, -1, sizeof(::im::base::BaseResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::im::base::_IMHeader_default_instance_._instance,
@@ -147,24 +151,25 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 const char descriptor_table_protodef_base_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\nbase.proto\022\007im.base\"\217\001\n\010IMHeader\022\017\n\007ve"
+    "\n\nbase.proto\022\007im.base\"\241\001\n\010IMHeader\022\017\n\007ve"
     "rsion\030\001 \001(\t\022\013\n\003seq\030\002 \001(\r\022\016\n\006cmd_id\030\003 \001(\r"
     "\022\020\n\010from_uid\030\004 \001(\t\022\016\n\006to_uid\030\005 \001(\t\022\021\n\tti"
     "mestamp\030\006 \001(\004\022\r\n\005token\030\007 \001(\t\022\021\n\tdevice_i"
-    "d\030\010 \001(\t\"^\n\014BaseResponse\022&\n\nerror_code\030\001 "
-    "\001(\0162\022.im.base.ErrorCode\022\025\n\rerror_message"
-    "\030\002 \001(\t\022\017\n\007payload\030\003 \001(\014*\275\001\n\tErrorCode\022\013\n"
-    "\007SUCCESS\020\000\022\023\n\017INVALID_REQUEST\020\001\022\017\n\013AUTH_"
-    "FAILED\020\002\022\r\n\tNOT_FOUND\020\003\022\025\n\021PERMISSION_DE"
-    "NIED\020\004\022\022\n\016ALREADY_EXISTS\020\005\022\017\n\013PARAM_ERRO"
-    "R\020\006\022\013\n\007TIMEOUT\020\007\022\021\n\014SERVER_ERROR\020\364\003\022\022\n\rU"
-    "NKNOWN_ERROR\020\350\007b\006proto3"
+    "d\030\010 \001(\t\022\020\n\010platform\030\t \001(\t\"^\n\014BaseRespons"
+    "e\022&\n\nerror_code\030\001 \001(\0162\022.im.base.ErrorCod"
+    "e\022\025\n\rerror_message\030\002 \001(\t\022\017\n\007payload\030\003 \001("
+    "\014*\275\001\n\tErrorCode\022\013\n\007SUCCESS\020\000\022\023\n\017INVALID_"
+    "REQUEST\020\001\022\017\n\013AUTH_FAILED\020\002\022\r\n\tNOT_FOUND\020"
+    "\003\022\025\n\021PERMISSION_DENIED\020\004\022\022\n\016ALREADY_EXIS"
+    "TS\020\005\022\017\n\013PARAM_ERROR\020\006\022\013\n\007TIMEOUT\020\007\022\021\n\014SE"
+    "RVER_ERROR\020\364\003\022\022\n\rUNKNOWN_ERROR\020\350\007b\006proto"
+    "3"
 };
 static ::absl::once_flag descriptor_table_base_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_base_2eproto = {
     false,
     false,
-    463,
+    481,
     descriptor_table_protodef_base_2eproto,
     "base.proto",
     &descriptor_table_base_2eproto_once,
@@ -211,6 +216,7 @@ inline PROTOBUF_NDEBUG_INLINE IMHeader::Impl_::Impl_(
         to_uid_(arena, from.to_uid_),
         token_(arena, from.token_),
         device_id_(arena, from.device_id_),
+        platform_(arena, from.platform_),
         _cached_size_{0} {}
 
 IMHeader::IMHeader(
@@ -244,6 +250,7 @@ inline PROTOBUF_NDEBUG_INLINE IMHeader::Impl_::Impl_(
         to_uid_(arena),
         token_(arena),
         device_id_(arena),
+        platform_(arena),
         _cached_size_{0} {}
 
 inline void IMHeader::SharedCtor(::_pb::Arena* arena) {
@@ -268,6 +275,7 @@ inline void IMHeader::SharedDtor(MessageLite& self) {
   this_._impl_.to_uid_.Destroy();
   this_._impl_.token_.Destroy();
   this_._impl_.device_id_.Destroy();
+  this_._impl_.platform_.Destroy();
   this_._impl_.~Impl_();
 }
 
@@ -307,15 +315,15 @@ const ::google::protobuf::internal::ClassData* IMHeader::GetClassData() const {
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 8, 0, 68, 2> IMHeader::_table_ = {
+const ::_pbi::TcParseTable<4, 9, 0, 76, 2> IMHeader::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    8, 56,  // max_field_number, fast_idx_mask
+    9, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967040,  // skipmap
+    4294966784,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    8,  // num_field_entries
+    9,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -325,9 +333,7 @@ const ::_pbi::TcParseTable<3, 8, 0, 68, 2> IMHeader::_table_ = {
     ::_pbi::TcParser::GetTable<::im::base::IMHeader>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // string device_id = 8;
-    {::_pbi::TcParser::FastUS1,
-     {66, 63, 0, PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.device_id_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // string version = 1;
     {::_pbi::TcParser::FastUS1,
      {10, 63, 0, PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.version_)}},
@@ -349,6 +355,18 @@ const ::_pbi::TcParseTable<3, 8, 0, 68, 2> IMHeader::_table_ = {
     // string token = 7;
     {::_pbi::TcParser::FastUS1,
      {58, 63, 0, PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.token_)}},
+    // string device_id = 8;
+    {::_pbi::TcParser::FastUS1,
+     {66, 63, 0, PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.device_id_)}},
+    // string platform = 9;
+    {::_pbi::TcParser::FastUS1,
+     {74, 63, 0, PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.platform_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
@@ -376,16 +394,20 @@ const ::_pbi::TcParseTable<3, 8, 0, 68, 2> IMHeader::_table_ = {
     // string device_id = 8;
     {PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.device_id_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string platform = 9;
+    {PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.platform_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }},
   // no aux_entries
   {{
-    "\20\7\0\0\10\6\0\5\11\0\0\0\0\0\0\0"
+    "\20\7\0\0\10\6\0\5\11\10\0\0\0\0\0\0"
     "im.base.IMHeader"
     "version"
     "from_uid"
     "to_uid"
     "token"
     "device_id"
+    "platform"
   }},
 };
 
@@ -401,6 +423,7 @@ PROTOBUF_NOINLINE void IMHeader::Clear() {
   _impl_.to_uid_.ClearToEmpty();
   _impl_.token_.ClearToEmpty();
   _impl_.device_id_.ClearToEmpty();
+  _impl_.platform_.ClearToEmpty();
   ::memset(&_impl_.seq_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.timestamp_) -
       reinterpret_cast<char*>(&_impl_.seq_)) + sizeof(_impl_.timestamp_));
@@ -483,6 +506,14 @@ PROTOBUF_NOINLINE void IMHeader::Clear() {
             target = stream->WriteStringMaybeAliased(8, _s, target);
           }
 
+          // string platform = 9;
+          if (!this_._internal_platform().empty()) {
+            const std::string& _s = this_._internal_platform();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.base.IMHeader.platform");
+            target = stream->WriteStringMaybeAliased(9, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -533,6 +564,11 @@ PROTOBUF_NOINLINE void IMHeader::Clear() {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_device_id());
             }
+            // string platform = 9;
+            if (!this_._internal_platform().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_platform());
+            }
             // uint32 seq = 2;
             if (this_._internal_seq() != 0) {
               total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(
@@ -576,6 +612,9 @@ void IMHeader::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google
   if (!from._internal_device_id().empty()) {
     _this->_internal_set_device_id(from._internal_device_id());
   }
+  if (!from._internal_platform().empty()) {
+    _this->_internal_set_platform(from._internal_platform());
+  }
   if (from._internal_seq() != 0) {
     _this->_impl_.seq_ = from._impl_.seq_;
   }
@@ -606,6 +645,7 @@ void IMHeader::InternalSwap(IMHeader* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.to_uid_, &other->_impl_.to_uid_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.token_, &other->_impl_.token_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.device_id_, &other->_impl_.device_id_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.platform_, &other->_impl_.platform_, arena);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(IMHeader, _impl_.timestamp_)
       + sizeof(IMHeader::_impl_.timestamp_)

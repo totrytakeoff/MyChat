@@ -1,5 +1,4 @@
-syntax = proto3;
-
+syntax = "proto3";
 package im.message;
 
 import "base.proto";

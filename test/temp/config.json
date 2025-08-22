@@ -10,12 +10,46 @@
         "password": "",
         "database": "test"
     },
+    "config":{
+      "servers": [
+        {
+            "name": "web-server-1",
+            "host": "192.168.1.10",
+            "port": 8080,
+            "enabled": true
+        },
+        {
+            "name": "web-server-2", 
+            "host": "192.168.1.11",
+            "port": 8081,
+            "enabled": false
+        },
+        {
+            "name": "api-server",
+            "host": "192.168.1.20",
+            "port": 9000,
+            "enabled": true
+        }
+    ],
+    "allowed_ips": [
+        "127.0.0.1",
+        "192.168.1.0/24",
+        "10.0.0.0/8"
+    ]   
+    },
+    "ports": [8080, 8081, 9000, 3306, 6379],
+    "features": {
+        "logging": true,
+        "monitoring": false,
+        "cache": true
+    },
+    "tags": ["production", "web", "api", "database"],
     "other": {
         "same": {
             "1": "a",
             "2": "b"
         },
-        "o":true
+        "o": true
     },
-    "host":"127.0.0.3"
+    "host": "127.0.0.3"
 }

@@ -11,7 +11,7 @@ set(CMAKE_TOOLCHAIN_FILE "/home/myself/vcpkg/scripts/buildsystems/vcpkg.cmake"
 # 分别查找包
 
 find_package(nlohmann_json CONFIG REQUIRED)  # 查找 nlohmann-json
-find_package(spdlog CONFIG REQUIRED)         # 查找 spdlog
+find_package(Boost REQUIRED COMPONENTS algorithm)  # 查找 Boost
 
 # 包含目录
 include_directories(
@@ -27,4 +27,5 @@ add_executable(test_config
 target_link_libraries(test_config
     pthread 
     nlohmann_json::nlohmann_json  # 正确链接 nlohmann-json
+    Boost::boost  # 链接 Boost 头文件库
 )

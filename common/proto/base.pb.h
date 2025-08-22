@@ -261,6 +261,7 @@ class IMHeader final : public ::google::protobuf::Message
     kToUidFieldNumber = 5,
     kTokenFieldNumber = 7,
     kDeviceIdFieldNumber = 8,
+    kPlatformFieldNumber = 9,
     kSeqFieldNumber = 2,
     kCmdIdFieldNumber = 3,
     kTimestampFieldNumber = 6,
@@ -345,6 +346,22 @@ class IMHeader final : public ::google::protobuf::Message
   std::string* _internal_mutable_device_id();
 
   public:
+  // string platform = 9;
+  void clear_platform() ;
+  const std::string& platform() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_platform(Arg_&& arg, Args_... args);
+  std::string* mutable_platform();
+  PROTOBUF_NODISCARD std::string* release_platform();
+  void set_allocated_platform(std::string* value);
+
+  private:
+  const std::string& _internal_platform() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_platform(
+      const std::string& value);
+  std::string* _internal_mutable_platform();
+
+  public:
   // uint32 seq = 2;
   void clear_seq() ;
   ::uint32_t seq() const;
@@ -380,8 +397,8 @@ class IMHeader final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      3, 8, 0,
-      68, 2>
+      4, 9, 0,
+      76, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -403,6 +420,7 @@ class IMHeader final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr to_uid_;
     ::google::protobuf::internal::ArenaStringPtr token_;
     ::google::protobuf::internal::ArenaStringPtr device_id_;
+    ::google::protobuf::internal::ArenaStringPtr platform_;
     ::uint32_t seq_;
     ::uint32_t cmd_id_;
     ::uint64_t timestamp_;
@@ -959,6 +977,54 @@ inline void IMHeader::set_allocated_device_id(std::string* value) {
     _impl_.device_id_.Set("", GetArena());
   }
   // @@protoc_insertion_point(field_set_allocated:im.base.IMHeader.device_id)
+}
+
+// string platform = 9;
+inline void IMHeader::clear_platform() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.platform_.ClearToEmpty();
+}
+inline const std::string& IMHeader::platform() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.base.IMHeader.platform)
+  return _internal_platform();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void IMHeader::set_platform(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.platform_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.base.IMHeader.platform)
+}
+inline std::string* IMHeader::mutable_platform() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_platform();
+  // @@protoc_insertion_point(field_mutable:im.base.IMHeader.platform)
+  return _s;
+}
+inline const std::string& IMHeader::_internal_platform() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.platform_.Get();
+}
+inline void IMHeader::_internal_set_platform(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.platform_.Set(value, GetArena());
+}
+inline std::string* IMHeader::_internal_mutable_platform() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.platform_.Mutable( GetArena());
+}
+inline std::string* IMHeader::release_platform() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.base.IMHeader.platform)
+  return _impl_.platform_.Release();
+}
+inline void IMHeader::set_allocated_platform(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.platform_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.platform_.IsDefault()) {
+    _impl_.platform_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.base.IMHeader.platform)
 }
 
 // -------------------------------------------------------------------

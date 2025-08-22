@@ -1,0 +1,55 @@
+{
+    "http_router": {
+        "api_prefix": "/api/v1",
+        "routes": [
+            {
+                "path": "/auth/login",
+                "cmd_id": 1001,
+                "service_name": "user_service"
+            },
+            {
+                "path": "/auth/logout",
+                "cmd_id": 1002,
+                "service_name": "user_service"
+            },
+            {
+                "path": "/message/send",
+                "cmd_id": 2001,
+                "service_name": "message_service"
+            },
+            {
+                "path": "/friend/list",
+                "cmd_id": 3003,
+                "service_name": "friend_service"
+            }
+        ]
+    },
+    "service_router": {
+        "services": [
+            {
+                "service_name": "user_service",
+                "endpoint": "localhost:8001",
+                "timeout_ms": 5000,
+                "max_connections": 10
+            },
+            {
+                "service_name": "message_service", 
+                "endpoint": "localhost:8002",
+                "timeout_ms": 3000,
+                "max_connections": 20
+            },
+            {
+                "service_name": "friend_service",
+                "endpoint": "localhost:8003",
+                "timeout_ms": 3000,
+                "max_connections": 15
+            },
+            {
+                "service_name": "group_service",
+                "endpoint": "localhost:8004",
+                "timeout_ms": 3000,
+                "max_connections": 15
+            }
+        ]
+    }
+}
