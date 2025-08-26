@@ -10,6 +10,7 @@
 namespace im {
 namespace network {
 
+using im::utils::LogManager;
 using namespace google::protobuf;
 using namespace google::protobuf::io;
 

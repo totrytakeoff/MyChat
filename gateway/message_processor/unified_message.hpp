@@ -82,15 +82,24 @@ public:
     }
     void set_json_body(const std::string& json_body) { json_body_ = json_body; }
     void set_json_body(std::string&& json_body) { json_body_ = std::move(json_body); }
+    
+    // 原始Protobuf数据访问器（优化WebSocket处理）
+    void set_raw_protobuf_data(const std::string& raw_data) { raw_protobuf_data_ = raw_data; }
+    void set_raw_protobuf_data(std::string&& raw_data) { raw_protobuf_data_ = std::move(raw_data); }
+    
     void set_session_context(const SessionContext& context) { session_context_ = context; }
     void set_session_context(SessionContext&& context) { session_context_ = std::move(context); }
 
     // ===== 便利方法 =====
 
+    // 获取器方法
+    const std::string& get_raw_protobuf_data() const { return raw_protobuf_data_; }
+    
     bool is_http() const { return session_context_.protocol == Protocol::HTTP; }
     bool is_websocket() const { return session_context_.protocol == Protocol::WEBSOCKET; }
     bool has_protobuf_message() const { return protobuf_message_ != nullptr; }
     bool has_json_body() const { return !json_body_.empty(); }
+    bool has_raw_protobuf_data() const { return !raw_protobuf_data_.empty(); }
 
     // 调试打印
     void print_info() const {
@@ -126,6 +135,9 @@ public:
             }
         } else {
             std::cout << "Protobuf消息: " << (has_protobuf_message() ? "有" : "无") << std::endl;
+            if (has_raw_protobuf_data()) {
+                std::cout << "原始数据大小: " << raw_protobuf_data_.size() << " bytes" << std::endl;
+            }
         }
 
         // 时间信息
@@ -140,6 +152,7 @@ private:
     im::base::IMHeader header_;  // 最重要：包含cmd_id, token等
     std::unique_ptr<google::protobuf::Message> protobuf_message_;  // Protobuf消息体
     std::string json_body_;                                        // JSON消息体（HTTP用）
+    std::string raw_protobuf_data_;                                // 原始Protobuf数据（避免不必要的对象创建）
     SessionContext session_context_;                               // 会话上下文
 };
 
