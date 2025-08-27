@@ -172,6 +172,8 @@ public:
      * @param config_path 平台配置文件路径
      */
     MultiPlatformAuthManager(std::string secret_key, const std::string& config_path);
+    
+    MultiPlatformAuthManager(const std::string& config_path);
 
 
 

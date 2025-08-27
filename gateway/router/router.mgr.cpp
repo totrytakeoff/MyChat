@@ -2,7 +2,7 @@
  *
  * @file       router.mgr.cpp
  * @brief      统一路由管理器实现
- * 
+ *
  * @details    实现HTTP路由解析、服务发现和统一路由管理功能
  *
  * @author     myself
@@ -22,6 +22,8 @@ namespace gateway {
 
 using im::utils::ConfigManager;
 using im::utils::LogManager;
+using json = nlohmann::json;
+
 
 // ===== HttpRouter 实现 =====
 
@@ -143,6 +145,15 @@ bool ServiceRouter::load_config(const std::string& config_file) {
             uint32_t timeout_ms = service.value("timeout_ms", 3000);
             uint32_t max_connections = service.value("max_connections", 10);
 
+            nlohmann::json cmd_range_json = service.value("cmd_range", json::array());
+
+            std::pair<uint32_t, uint32_t> cmd_range(0, 0);
+            if (cmd_range_json.is_arrry()) {
+                cmd_range.first = cmd_range_json[0];
+                cmd_range.second = cmd_range_json[1];
+            }
+
+
             if (service_name.empty() || endpoint.empty()) {
                 LogManager::GetLogger("service_router")
                         ->warn("Invalid service config at index {} (missing name or endpoint), "
@@ -154,6 +165,7 @@ bool ServiceRouter::load_config(const std::string& config_file) {
             // 创建成功的服务结果
             ServiceRouteResult serviceResult(service_name, endpoint, timeout_ms, max_connections);
             services_.emplace(service_name, serviceResult);
+            cmds_.emplace(cmd_range, service_name);
 
             LogManager::GetLogger("service_router")
                     ->debug("Added service: {} -> Endpoint: {}, Timeout: {}ms, MaxConn: {}",
@@ -200,6 +212,41 @@ std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(const std::strin
         return result;
     }
 }
+
+std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(uint32_t cmd) {
+    auto result = std::make_unique<ServiceRouteResult>();
+
+    try {
+        std::string service_name;
+
+        for (auto cmd : cmds_) {
+            auto range = cmd.first;
+            if (range.first <= cmd && cmd <= range.second) {
+                service_name = cmd.second;
+                break;
+            }
+        }
+        if (service_name.empty()) {
+            result->err_msg = "command not found";
+            return result;
+        }
+
+        // 找到服务，返回成功结果
+        const auto& service_result = services_[service_name];
+        return std::make_unique<ServiceRouteResult>(service_result.service_name,
+                                                    service_result.endpoint,
+                                                    service_result.timeout_ms,
+                                                    service_result.max_connections);
+
+    } catch (const std::exception& e) {
+        LogManager::GetLogger("service_router")
+                ->error("Failed to find service {}: {}", service_name, e.what());
+        result->is_valid = false;
+        result->err_msg = e.what();
+        return result;
+    }
+}
+
 
 // ===== RouterManager 实现 =====
 

@@ -1,4 +1,4 @@
-{
+{   "secret_key": "secret_key",
     "PlatformTokenStrategy": {
         "web": {
             "refresh_precentage": 0.2,

@@ -80,6 +80,27 @@ MultiPlatformAuthManager::MultiPlatformAuthManager(std::string secret_key,
     }
 }
 
+MultiPlatformAuthManager::MultiPlatformAuthManager(const std::string& config_path)
+        : platform_token_strategy_(config_path) {
+    ConfigManager config(config_path);
+    try {
+
+        secret_key_ = config.get<std::string>("secret_key","default_secret_key");
+
+        if (!RedisManager::GetInstance().is_healthy()) {
+            RedisManager::GetInstance().initialize(config_path);
+        }
+        if (!RedisManager::GetInstance().is_healthy()) {
+            LogManager::GetLogger("auth_mgr")->error("redis is not connected or not healthy!");
+            throw;
+        }
+
+    } catch (std::exception& e) {
+        LogManager::GetLogger("auth_mgr")->error("auth_mgr initialize failed!");
+        throw;
+    }
+}
+
 std::string MultiPlatformAuthManager::generate_access_token(const std::string& user_id,
                                                             const std::string& username,
                                                             const std::string& device_id,
@@ -284,8 +305,10 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
             user_info.username = decode["username"];
             auto create_time_ns = decode["create_time"].get<int64_t>();
             auto expire_time_ns = decode["expire_time"].get<int64_t>();
-            user_info.create_time = std::chrono::system_clock::time_point(std::chrono::nanoseconds(create_time_ns));
-            user_info.expire_time = std::chrono::system_clock::time_point(std::chrono::nanoseconds(expire_time_ns));
+            user_info.create_time =
+                    std::chrono::system_clock::time_point(std::chrono::nanoseconds(create_time_ns));
+            user_info.expire_time =
+                    std::chrono::system_clock::time_point(std::chrono::nanoseconds(expire_time_ns));
             return true;
         }
         return false;
