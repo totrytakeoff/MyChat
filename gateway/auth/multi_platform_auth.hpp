@@ -15,17 +15,17 @@
 #include <jwt-cpp/jwt.h>
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <random>
-#include <algorithm>
 
-#include "../../common/utils/global.hpp"
 #include "../../common/database/redis_mgr.hpp"
+#include "../../common/utils/global.hpp"
 
 namespace im::gateway {
 
@@ -38,22 +38,22 @@ using im::db::RedisManager;
  * @return 随机生成的字符串
  */
 static std::string rt_generate(size_t length = 32) {
-        const std::string chars =
+    const std::string chars =
             "abcdefghijklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "0123456789-_";
-        
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, chars.size() - 1);
-        
-        std::string result;
-        result.reserve(length);
-        for (size_t i = 0; i < length; ++i) {
-            result += chars[dis(gen)];
-        }
-        return result;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, chars.size() - 1);
+
+    std::string result;
+    result.reserve(length);
+    for (size_t i = 0; i < length; ++i) {
+        result += chars[dis(gen)];
     }
+    return result;
+}
 
 
 /**
@@ -89,12 +89,12 @@ static PlatformType get_platform_type(const std::string& platform_str) {
  * @brief 用户Token信息结构体，包含认证Token的相关用户信息
  */
 struct UserTokenInfo {
-    std::string user_id;   ///< 用户唯一标识
-    std::string username;  ///< 用户名
-    std::string device_id; ///< 设备唯一标识
-    std::string platform;  ///< 平台标识，例如 "web", "mobile", "desktop"
-    std::chrono::system_clock::time_point create_time; ///< Token创建时间
-    std::chrono::system_clock::time_point expire_time; ///< Token过期时间
+    std::string user_id;    ///< 用户唯一标识
+    std::string username;   ///< 用户名
+    std::string device_id;  ///< 设备唯一标识
+    std::string platform;   ///< 平台标识，例如 "web", "mobile", "desktop"
+    std::chrono::system_clock::time_point create_time;  ///< Token创建时间
+    std::chrono::system_clock::time_point expire_time;  ///< Token过期时间
 };
 
 
@@ -102,7 +102,7 @@ struct UserTokenInfo {
  * @brief 刷新Token配置结构体，定义Refresh Token的刷新策略
  */
 struct RefreshConfig {
-    float refresh_precentage;   ///< 自动刷新率，当剩余有效期比例低于此值时触发刷新
+    float refresh_precentage;  ///< 自动刷新率，当剩余有效期比例低于此值时触发刷新
     bool auto_refresh_enabled;  ///< 是否启用自动刷新功能
     bool background_refresh;    ///< 是否支持后台刷新
     int max_retry_count;        ///< 最大重试次数
@@ -112,27 +112,27 @@ struct RefreshConfig {
  * @brief Token时间配置结构体，定义Access Token和Refresh Token的过期时间
  */
 struct TokenTimeConfig {
-    int access_token_expire_seconds;  ///< Access Token过期时间（秒）
-    int refresh_token_expire_seconds; ///< Refresh Token过期时间（秒）
+    int access_token_expire_seconds;   ///< Access Token过期时间（秒）
+    int refresh_token_expire_seconds;  ///< Refresh Token过期时间（秒）
 };
 
 /**
  * @brief 平台Token配置结构体，定义特定平台的Token配置策略
  */
 struct PlatformTokenConfig {
-    PlatformType platform;           ///< 平台类型
-    RefreshConfig refresh_config;    ///< 刷新配置
-    TokenTimeConfig token_time_config; ///< Token时间配置
-    bool enable_multi_device;        ///< 是否允许多设备登录
+    PlatformType platform;              ///< 平台类型
+    RefreshConfig refresh_config;       ///< 刷新配置
+    TokenTimeConfig token_time_config;  ///< Token时间配置
+    bool enable_multi_device;           ///< 是否允许多设备登录
 };
 /**
  * @brief Token操作结果结构体，封装Token生成或刷新操作的结果
  */
 struct TokenResult {
-    bool success;                 ///< 操作是否成功
-    std::string new_access_token; ///< 新生成的Access Token
-    std::string new_refresh_token;///< 新生成的Refresh Token
-    std::string error_message;    ///< 错误信息（如果操作失败）
+    bool success;                   ///< 操作是否成功
+    std::string new_access_token;   ///< 新生成的Access Token
+    std::string new_refresh_token;  ///< 新生成的Refresh Token
+    std::string error_message;      ///< 错误信息（如果操作失败）
 };
 
 
@@ -156,7 +156,8 @@ public:
     const PlatformTokenConfig& get_platform_token_config(const std::string& platform);
 
 private:
-    std::unordered_map<PlatformType, PlatformTokenConfig> platform_token_configs_; ///< 平台Token配置映射表
+    std::unordered_map<PlatformType, PlatformTokenConfig>
+            platform_token_configs_;  ///< 平台Token配置映射表
 };
 
 
@@ -172,7 +173,7 @@ public:
      * @param config_path 平台配置文件路径
      */
     MultiPlatformAuthManager(std::string secret_key, const std::string& config_path);
-    
+
     MultiPlatformAuthManager(const std::string& config_path);
 
 
@@ -226,9 +227,12 @@ public:
      * @brief 验证Access Token的有效性
      * @param access_token Access Token字符串
      * @param user_info 用户信息结构体，用于返回解析出的用户信息
+     * @param device_id 设备ID，用于验证Token与设备的绑定关系
      * @return Token验证是否成功
      */
     bool verify_access_token(const std::string& access_token, UserTokenInfo& user_info);
+    bool verify_access_token(const std::string& access_token, const std::string& device_id);
+
 
     /**
      * @brief 验证Refresh Token的有效性
@@ -237,7 +241,8 @@ public:
      * @param user_info 用户信息结构体，用于返回解析出的用户信息
      * @return Token验证是否成功
      */
-    bool verify_refresh_token(const std::string& refresh_token, std::string& device_id, UserTokenInfo& user_info);
+    bool verify_refresh_token(const std::string& refresh_token, std::string& device_id,
+                              UserTokenInfo& user_info);
 
     /**
      * @brief 检查Token是否已被撤销
@@ -280,7 +285,7 @@ public:
      * @return 删除操作是否成功
      */
     bool del_refresh_token(const std::string& refresh_token);
-    
+
 private:
     /**
      * @brief 判断是否需要轮换Refresh Token
@@ -297,8 +302,8 @@ private:
     std::string extract_jti(const std::string& token) const;
 
 private:
-    std::string secret_key_;                     ///< JWT签名密钥
-    PlatformTokenStrategy platform_token_strategy_; ///< 平台Token策略管理器
+    std::string secret_key_;                         ///< JWT签名密钥
+    PlatformTokenStrategy platform_token_strategy_;  ///< 平台Token策略管理器
 };
 
 

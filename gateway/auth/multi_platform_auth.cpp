@@ -84,8 +84,7 @@ MultiPlatformAuthManager::MultiPlatformAuthManager(const std::string& config_pat
         : platform_token_strategy_(config_path) {
     ConfigManager config(config_path);
     try {
-
-        secret_key_ = config.get<std::string>("secret_key","default_secret_key");
+        secret_key_ = config.get<std::string>("secret_key", "default_secret_key");
 
         if (!RedisManager::GetInstance().is_healthy()) {
             RedisManager::GetInstance().initialize(config_path);
@@ -138,6 +137,7 @@ std::string MultiPlatformAuthManager::generate_access_token(const std::string& u
         return token;
     } catch (...) {
         // 生成失败
+        LogManager::GetLogger("auth_mgr")->error("generate access token failed!");
         return "";
     }
 }
@@ -183,6 +183,7 @@ std::string MultiPlatformAuthManager::generate_refresh_token(const std::string& 
 
     catch (...) {
         // 生成失败
+        LogManager::GetLogger("auth_mgr")->error("generate refresh token failed!");
         return "";
     }
 }
@@ -271,7 +272,39 @@ bool MultiPlatformAuthManager::verify_access_token(const std::string& access_tok
         return true;
 
     } catch (const std::exception& e) {
-        // LogManager::GetLogger("auth_mgr")->error("verify_access_token error: {}", e.what());
+        LogManager::GetLogger("auth_mgr")->error("verify_access_token error: {}", e.what());
+        return false;
+    }
+}
+
+bool MultiPlatformAuthManager::verify_access_token(const std::string& access_token,
+                                                   const std::string& device_id) {
+    try {
+        // 创建验证器
+        auto verifier = jwt::verify()
+                                .allow_algorithm(jwt::algorithm::hs256{secret_key_})
+                                .with_issuer("mychat-gateway")
+                                .with_audience("mychat-client");
+
+        // 解码和验证Token
+        auto decoded = jwt::decode(access_token);
+        verifier.verify(decoded);
+
+        // 检查是否在黑名单中
+        if (is_token_revoked(access_token)) {
+            return false;
+        }
+
+        // 验证 device_id 是否匹配
+        if (device_id != decoded.get_payload_claim("device_id").as_string()) {
+            return false;
+        }
+
+
+        return true;
+
+    } catch (const std::exception& e) {
+        LogManager::GetLogger("auth_mgr")->error("verify_access_token error: {}", e.what());
         return false;
     }
 }

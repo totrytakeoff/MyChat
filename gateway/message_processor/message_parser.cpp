@@ -14,10 +14,10 @@
  *
  *****************************************************************************/
 
-#include <iomanip>
-#include <iostream>
+
 #include <nlohmann/json.hpp>
 #include "message_parser.hpp"
+#include "../../common/utils/log_manager.hpp"
 
 namespace im {
 namespace gateway {

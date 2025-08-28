@@ -1,0 +1,7 @@
+CompileFlags:
+  Add:
+    - "-std=c++20"
+    - "-I/home/myself/vcpkg/installed/x64-linux/include"
+    - "-L/home/myself/vcpkg/installed/x64-linux/lib"
+  Remove:
+    - "-stdlib=libc++"

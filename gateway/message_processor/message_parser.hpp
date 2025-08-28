@@ -17,16 +17,12 @@
  *****************************************************************************/
 
 #include <atomic>
-#include <chrono>
 #include <memory>
 #include <string>
 #include <shared_mutex>
-#include <stdexcept>
 
 #include <httplib.h>
 #include "../../common/network/protobuf_codec.hpp"
-#include "../../common/proto/base.pb.h"
-#include "../../common/utils/log_manager.hpp"
 #include "../router/router_mgr.hpp"
 #include "unified_message.hpp"
 
