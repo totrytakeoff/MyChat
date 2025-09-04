@@ -27,12 +27,11 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "common/database/redis_mgr.hpp"
-#include "common/network/websocket_session.hpp"
-#include "gateway/auth/multi_platform_auth.hpp"
+#include "../../common/database/redis_mgr.hpp"
+#include "../../common/network/websocket_session.hpp"
+#include "../auth/multi_platform_auth.hpp"
 
 namespace im {
 namespace gateway {

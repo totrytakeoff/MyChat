@@ -21,7 +21,6 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
-#include "../utils/log_manager.hpp"
 #include "../utils/thread_pool.hpp"
 
 

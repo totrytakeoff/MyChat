@@ -21,11 +21,9 @@
 #include <deque>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <unordered_map>
 
-#include "../utils/log_manager.hpp"
 #include "../utils/thread_pool.hpp"
 
 

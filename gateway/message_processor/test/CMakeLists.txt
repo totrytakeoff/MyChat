@@ -33,6 +33,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../common)
 # 源文件列表
 set(MESSAGE_PROCESSOR_SOURCES
     ../message_parser.cpp
+    ../coro_message_processor.cpp
     ../../../common/network/protobuf_codec.cpp
     ../../../common/utils/log_manager.cpp
     ../../router/router.mgr.cpp
@@ -50,6 +51,18 @@ set(TEST_SOURCES
 add_executable(test_message_processor
     ${TEST_SOURCES}
     ${MESSAGE_PROCESSOR_SOURCES}
+)
+
+# 添加简单的测试程序
+add_executable(simple_test
+    simple_test.cpp
+    ../coro_message_processor.cpp
+    ../message_parser.cpp
+    ../../../common/network/protobuf_codec.cpp
+    ../../../common/utils/log_manager.cpp
+    ../../../common/utils/coroutine_manager.cpp
+    ../../router/router.mgr.cpp
+    ../../../common/proto/base.pb.cc
 )
 
 # 链接库

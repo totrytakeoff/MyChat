@@ -58,6 +58,7 @@ struct Task {
     struct promise_type {
         T value;                                    ///< 协程返回值
         std::exception_ptr exception;               ///< 异常指针，用于异常处理
+        std::coroutine_handle<> continuation_;      ///< 等待此协程完成的协程句柄
         
         /**
          * @brief 获取协程对象
@@ -69,15 +70,28 @@ struct Task {
         
         /**
          * @brief 初始挂起点，控制协程是否立即执行
-         * @return std::suspend_always 立即挂起，需要显式恢复
+         * @return std::suspend_never 立即执行，不挂起
          */
-        std::suspend_always initial_suspend() { return {}; }
+        std::suspend_never initial_suspend() { return {}; }
         
         /**
          * @brief 最终挂起点，控制协程结束后的行为
          * @return std::suspend_always 协程结束后挂起，等待销毁
          */
-        std::suspend_always final_suspend() noexcept { return {}; }
+        auto final_suspend() noexcept {
+            struct FinalAwaiter {
+                bool await_ready() noexcept { return false; }
+                std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) noexcept {
+                    auto& promise = h.promise();
+                    if (promise.continuation_) {
+                        return promise.continuation_;
+                    }
+                    return std::noop_coroutine();
+                }
+                void await_resume() noexcept {}
+            };
+            return FinalAwaiter{};
+        }
         
         /**
          * @brief 处理协程返回值
@@ -137,7 +151,37 @@ struct Task {
     }
     
     /**
+     * @brief 检查协程是否已经完成
+     * @return true 如果协程已经完成
+     * @return false 如果协程未完成
+     */
+    bool await_ready() const noexcept {
+        return handle.done();
+    }
+    
+    /**
+     * @brief 挂起当前协程并设置continuation
+     * @param continuation 等待此协程完成的协程句柄
+     */
+    void await_suspend(std::coroutine_handle<> continuation) noexcept {
+        handle.promise().continuation_ = continuation;
+        handle.resume();
+    }
+    
+    /**
      * @brief 获取协程结果
+     * @return T 协程返回值
+     * @throws 重新抛出协程中的异常
+     */
+    T await_resume() {
+        if (handle.promise().exception) {
+            std::rethrow_exception(handle.promise().exception);
+        }
+        return std::move(handle.promise().value);
+    }
+    
+    /**
+     * @brief 获取协程结果（保持向后兼容）
      * @return T 协程返回值
      * @throws 重新抛出协程中的异常
      */
@@ -156,13 +200,28 @@ template<>
 struct Task<void> {
     struct promise_type {
         std::exception_ptr exception;
+        std::coroutine_handle<> continuation_;      ///< 等待此协程完成的协程句柄
         
         Task get_return_object() {
             return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
         }
         
-        std::suspend_always initial_suspend() { return {}; }
-        std::suspend_always final_suspend() noexcept { return {}; }
+        std::suspend_never initial_suspend() { return {}; }
+        
+        auto final_suspend() noexcept {
+            struct FinalAwaiter {
+                bool await_ready() noexcept { return false; }
+                std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) noexcept {
+                    auto& promise = h.promise();
+                    if (promise.continuation_) {
+                        return promise.continuation_;
+                    }
+                    return std::noop_coroutine();
+                }
+                void await_resume() noexcept {}
+            };
+            return FinalAwaiter{};
+        }
         
         void return_void() {}
         
@@ -195,6 +254,38 @@ struct Task<void> {
         return *this;
     }
     
+    /**
+     * @brief 检查协程是否已经完成
+     * @return true 如果协程已经完成
+     * @return false 如果协程未完成
+     */
+    bool await_ready() const noexcept {
+        return handle.done();
+    }
+    
+    /**
+     * @brief 挂起当前协程并设置continuation
+     * @param continuation 等待此协程完成的协程句柄
+     */
+    void await_suspend(std::coroutine_handle<> continuation) noexcept {
+        handle.promise().continuation_ = continuation;
+        handle.resume();
+    }
+    
+    /**
+     * @brief 获取协程结果
+     * @throws 重新抛出协程中的异常
+     */
+    void await_resume() {
+        if (handle.promise().exception) {
+            std::rethrow_exception(handle.promise().exception);
+        }
+    }
+    
+    /**
+     * @brief 获取协程结果（保持向后兼容）
+     * @throws 重新抛出协程中的异常
+     */
     void get() {
         if (handle.promise().exception) {
             std::rethrow_exception(handle.promise().exception);

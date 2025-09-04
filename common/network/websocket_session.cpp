@@ -1,5 +1,6 @@
 #include "websocket_server.hpp"
 #include "websocket_session.hpp"
+#include "../utils/log_manager.hpp"
 
 namespace im {
 namespace network {
