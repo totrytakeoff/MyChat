@@ -280,7 +280,6 @@ bool GatewayServer::InitializeHttpRoutes() {
         http_server_->Get("/health", [this](const httplib::Request& req, httplib::Response& res) {
             HandleHealthCheck(req, res);
         });
-        
         http_server_->Get("/stats", [this](const httplib::Request& req, httplib::Response& res) {
             HandleStatsRequest(req, res);
         });
