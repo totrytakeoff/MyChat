@@ -31,9 +31,7 @@ namespace im {
 namespace network {
 
 namespace beast = boost::beast;
-namespace http = beast::http;
 namespace websocket = beast::websocket;
-namespace net = boost::asio;
 namespace ssl = boost::asio::ssl;  // 添加ssl命名空间
 using tcp = boost::asio::ip::tcp;
 using ssl_stream = boost::asio::ssl::stream<tcp::socket>;
