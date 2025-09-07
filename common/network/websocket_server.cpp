@@ -69,17 +69,38 @@ void WebSocketServer::stop() {
 }
 
 void WebSocketServer::add_session(SessionPtr session) {
-    std::lock_guard lock(sessions_mutex_);
-    sessions_.emplace(session->get_session_id(), session);
+    {
+        std::lock_guard lock(sessions_mutex_);
+        sessions_.emplace(session->get_session_id(), session);
+    }
+    
+    // 调用连接建立回调
+    if (connect_handler_) {
+        connect_handler_(session);
+    }
+    
+    if (LogManager::IsLoggingEnabled("websocket_server")) {
+        LogManager::GetLogger("websocket_server")
+                ->info("Session {} added, current session count: {}", 
+                       session->get_session_id(), get_session_count());
+    }
 }
 
 void WebSocketServer::remove_session(SessionPtr session) {
-    std::lock_guard lock(sessions_mutex_);
-    sessions_.erase(session->get_session_id());
+    {
+        std::lock_guard lock(sessions_mutex_);
+        sessions_.erase(session->get_session_id());
+    }
+    
+    // 调用连接断开回调
+    if (disconnect_handler_) {
+        disconnect_handler_(session);
+    }
+    
     if (LogManager::IsLoggingEnabled("websocket_server")) {
         LogManager::GetLogger("websocket_server")
-                ->info("Session {} removed, current session count: {}", session->get_session_id(),
-                       sessions_.size());
+                ->info("Session {} removed, current session count: {}", 
+                       session->get_session_id(), get_session_count());
     }
 }
 

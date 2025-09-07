@@ -8,11 +8,12 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
+#include "./singleton.hpp"
 
 namespace im {
 namespace utils {
 
-class LogManager {
+class LogManager : public Singleton<LogManager> {
 public:
     // 设置日志输出到文件
     static void SetLogToFile(const std::string& logger_name, const std::string& filename);

@@ -64,6 +64,12 @@ public:
     const std::string& get_session_id() const { return session_id_; }
 
     const WebSocketServer* get_server() const { return server_; }
+    
+    // 获取握手时的Token（从URL查询参数或头部）
+    const std::string& get_token() const { return token_; }
+    
+    // 获取客户端IP地址
+    std::string get_client_ip() const;
 
     void set_message_handler(MessageHandler &messageHandler) {
         message_handler_ = std::move(messageHandler);
@@ -103,6 +109,7 @@ private:
     CloseHandler close_callback_;
 
     std::string session_id_;
+    std::string token_;  // 从握手请求中提取的Token
 };
 
 } // namespace network

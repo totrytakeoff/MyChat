@@ -43,6 +43,8 @@ void WebSocketSession::close() {
             self->defaultErrorHandler(self, ec, "WebSocket close failed");
             return;
         }
+        self->server_->remove_session(self);
+
         if (self->close_callback_) {
             self->close_callback_(self);
         }
@@ -68,6 +70,37 @@ void WebSocketSession::send(const std::string& message) {
 
 
 void WebSocketSession::on_ssl_handshake() {
+    // 设置WebSocket握手装饰器，用于提取Token
+    ws_stream_.set_option(websocket::stream_base::decorator(
+        [self = shared_from_this()](websocket::request_type& req) {
+            // 从URL查询参数中提取token
+            std::string target = req.target();
+            size_t token_pos = target.find("token=");
+            if (token_pos != std::string::npos) {
+                size_t start = token_pos + 6; // "token="的长度
+                size_t end = target.find('&', start);
+                if (end == std::string::npos) {
+                    end = target.length();
+                }
+                self->token_ = target.substr(start, end - start);
+            }
+            
+            // 也可以从Authorization头部获取Token
+            auto auth_it = req.find(beast::http::field::authorization);
+            if (auth_it != req.end()) {
+                std::string auth_value = auth_it->value();
+                if (auth_value.starts_with("Bearer ")) {
+                    self->token_ = auth_value.substr(7); // "Bearer "的长度
+                }
+            }
+            
+            if (LogManager::IsLoggingEnabled("websocket_session")) {
+                LogManager::GetLogger("websocket_session")
+                    ->debug("Extracted token from handshake: {}", 
+                           self->token_.empty() ? "none" : "present");
+            }
+        }));
+
     // 异步websocket握手
     ws_stream_.async_accept([self = shared_from_this()](beast::error_code ec) {
         if (ec) {
@@ -76,10 +109,11 @@ void WebSocketSession::on_ssl_handshake() {
         }
         // 注意要先生成id再添加到服务器
         self->session_id_ = self->generate_id();
-        self->server_->add_session(self);
+        self->server_->add_session(self); //注册session到服务器并执行连接回调
         if (LogManager::IsLoggingEnabled("websocket_session")) {
             LogManager::GetLogger("websocket_session")
-                    ->info("Session {} successfully added to server", self->session_id_);
+                    ->info("Session {} successfully added to server, token: {}", 
+                           self->session_id_, self->token_.empty() ? "none" : "present");
         }
         self->do_read();
     });
@@ -140,6 +174,19 @@ void WebSocketSession::defaultErrorHandler(SessionPtr session, beast::error_code
         if (LogManager::IsLoggingEnabled("websocket_session")) {
             LogManager::GetLogger("websocket_session")->error("{}: {}", ec_msg, ec.message());
         }
+    }
+}
+
+std::string WebSocketSession::get_client_ip() const {
+    try {
+        auto remote_endpoint = ws_stream_.next_layer().next_layer().remote_endpoint();
+        return remote_endpoint.address().to_string();
+    } catch (const std::exception& e) {
+        if (LogManager::IsLoggingEnabled("websocket_session")) {
+            LogManager::GetLogger("websocket_session")
+                ->error("Failed to get client IP: {}", e.what());
+        }
+        return "unknown";
     }
 }
 

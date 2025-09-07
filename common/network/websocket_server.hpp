@@ -43,6 +43,8 @@ class WebSocketServer;
 using SessionPtr = std::shared_ptr<WebSocketSession>;
 using MessageHandler = std::function<void(SessionPtr, beast::flat_buffer&&)>;
 using ErrorHandler = std::function<void(SessionPtr, beast::error_code)>;
+using ConnectHandler = std::function<void(SessionPtr)>;
+using DisconnectHandler = std::function<void(SessionPtr)>;
 
 class WebSocketServer {
 public:
@@ -72,6 +74,16 @@ public:
         return nullptr;
     }
 
+    // 设置连接建立回调
+    void set_connect_handler(ConnectHandler handler) {
+        connect_handler_ = std::move(handler);
+    }
+
+    // 设置连接断开回调
+    void set_disconnect_handler(DisconnectHandler handler) {
+        disconnect_handler_ = std::move(handler);
+    }
+
 private:
     void do_accept();
 
@@ -81,6 +93,8 @@ private:
     std::unordered_map<std::string, SessionPtr> sessions_;
     mutable std::mutex sessions_mutex_;
     MessageHandler message_handler_;
+    ConnectHandler connect_handler_;
+    DisconnectHandler disconnect_handler_;
 };
 
 } // namespace network

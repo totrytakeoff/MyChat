@@ -40,6 +40,22 @@ public:
     }
 
     /**
+     * @brief 构建统一格式的JSON响应字符串
+     * @param code 状态码
+     * @param body JSON格式的响应体内容，可以为null
+     * @param err_msg 错误信息
+     * @return 统一格式的JSON响应字符串: {"code": xxx, "body": xxx, "err_msg": xxx}
+     */
+    static std::string buildUnifiedResponse(int code, const json& body = nullptr, 
+                                          const std::string& err_msg = "") {
+        json response;
+        response["code"] = code;
+        response["body"] = body.is_null() ? nullptr : body;
+        response["err_msg"] = err_msg;
+        return response.dump();
+    }
+
+    /**
      * @brief 直接构建httplib响应对象
      * @param res httplib响应对象引用
      * @param status_code HTTP状态码

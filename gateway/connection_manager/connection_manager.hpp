@@ -163,6 +163,7 @@ public:
      */
     bool is_user_online_on_platform(const std::string& user_id, const std::string& platform);
 
+
 private:
     /**
      * @brief 检查是否需要踢掉同平台的旧连接
