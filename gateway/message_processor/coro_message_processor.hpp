@@ -47,12 +47,19 @@ using im::common::CoroutineManager;
  * @details 与原版本ProcessorResult保持一致的接口，确保兼容性
  *          封装消息处理的结果信息，包括状态码、错误信息和响应数据
  *          支持Protobuf和JSON两种响应格式
+ *  json_body: {
+ *     code,
+ *     body,
+ *     err_msg
+ *  }
+ * 
+ *
  */
 struct CoroProcessorResult {
     int status_code;                ///< 状态码，0表示成功，其他表示错误类型
     std::string error_message;      ///< 错误信息描述
-    std::string protobuf_message;   ///< Protobuf格式的响应数据
-    std::string json_body;          ///< JSON格式的响应数据
+    std::string protobuf_message;   ///< Protobuf格式的响应数据 (header + body ,需配合protobufcodec进行使用)
+    std::string json_body;          ///< JSON格式的响应数据 
 
     /**
      * @brief 默认构造函数，创建成功状态的结果

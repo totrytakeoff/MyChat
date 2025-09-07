@@ -195,11 +195,16 @@ int get_callback_count() const;
 ```cpp
 /**
  * @brief 消息处理结果结构体
+ *  json_body: {
+ *     code,
+ *     body,
+ *     err_msg
+ *  }
  */
 struct ProcessorResult {
     int status_code;                ///< 状态码，0表示成功，其他表示错误类型
     std::string error_message;      ///< 错误信息描述
-    std::string protobuf_message;   ///< Protobuf格式的响应数据
+    std::string protobuf_message;   ///< Protobuf格式的响应数据,结合protobufcodec使用
     std::string json_body;          ///< JSON格式的响应数据
 
     // 构造函数

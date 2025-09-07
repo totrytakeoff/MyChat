@@ -40,7 +40,7 @@ MessageParser::MessageParser(const std::string& config_file) {
 
     try {
         // 2. 初始化RouterManager
-        router_manager_ = std::make_unique<RouterManager>(config_file);
+        router_manager_ = std::make_shared<RouterManager>(config_file);
         if (!router_manager_) {
             throw std::runtime_error("Failed to create RouterManager instance");
         }
@@ -61,6 +61,33 @@ MessageParser::MessageParser(const std::string& config_file) {
         logger->error("Failed to initialize MessageParser: {}", e.what());
         throw std::runtime_error("RouterManager initialization failed: " + std::string(e.what()));
     }
+}
+
+MessageParser::MessageParser(RouterManager& routerMgr) {
+    auto logger = LogManager::GetLogger("message_parser");
+    logger->info("Initializing MessageParser with existing RouterManager reference");
+
+    // 创建一个新的RouterManager实例，复制传入的RouterManager的配置
+    router_manager_ = std::make_shared<RouterManager>(routerMgr);
+    if (!router_manager_) {
+        throw std::runtime_error("Failed to create RouterManager instance");
+    }
+
+    logger->info("MessageParser initialized successfully with RouterManager reference");
+}
+
+MessageParser::MessageParser(std::shared_ptr<RouterManager> routerMgr) {
+    auto logger = LogManager::GetLogger("message_parser");
+    logger->info("Initializing MessageParser with shared RouterManager");
+
+    // 直接使用传入的shared_ptr
+    if (!routerMgr) {
+        throw std::invalid_argument("RouterManager shared_ptr cannot be null");
+    }
+
+    router_manager_ = routerMgr;
+    
+    logger->info("MessageParser initialized successfully with shared RouterManager");
 }
 
 bool MessageParser::reload_config() {

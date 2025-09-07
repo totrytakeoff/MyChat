@@ -15,6 +15,8 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <sstream>
+#include <iomanip>
 #include "../../common/proto/base.pb.h"
 
 namespace im {
@@ -103,48 +105,57 @@ public:
 
     // 调试打印
     void print_info() const {
-        std::cout << "\n=== 统一消息信息 ===" << std::endl;
-        std::cout << "协议类型: " << (is_http() ? "HTTP" : "WebSocket") << std::endl;
-        std::cout << "命令ID: " << get_cmd_id() << std::endl;
-        std::cout << "会话ID: " << get_session_id() << std::endl;
+        std::ostringstream oss = format_info();
+        std::cout << oss.str();
+    }
+    
+    // 格式化信息为字符串流，便于自定义输出目标
+    std::ostringstream format_info() const {
+        std::ostringstream oss;
+        oss << "\n=== 统一消息信息 ===" << std::endl;
+        oss << "协议类型: " << (is_http() ? "HTTP" : "WebSocket") << std::endl;
+        oss << "命令ID: " << get_cmd_id() << std::endl;
+        oss << "会话ID: " << get_session_id() << std::endl;
 
         if (!get_token().empty()) {
-            std::cout << "Token: " << get_token().substr(0, 10) << "..." << std::endl;
+            oss << "Token: " << get_token().substr(0, 10) << "..." << std::endl;
         }
         if (!get_device_id().empty()) {
-            std::cout << "设备ID: " << get_device_id() << std::endl;
+            oss << "设备ID: " << get_device_id() << std::endl;
         }
         if (!get_platform().empty()) {
-            std::cout << "平台: " << get_platform() << std::endl;
+            oss << "平台: " << get_platform() << std::endl;
         }
         if (!get_from_uid().empty()) {
-            std::cout << "发送者: " << get_from_uid() << std::endl;
+            oss << "发送者: " << get_from_uid() << std::endl;
         }
         if (!get_to_uid().empty()) {
-            std::cout << "接收者: " << get_to_uid() << std::endl;
+            oss << "接收者: " << get_to_uid() << std::endl;
         }
 
         if (is_http()) {
-            std::cout << "HTTP方法: " << session_context_.http_method << std::endl;
-            std::cout << "原始路径: " << session_context_.original_path << std::endl;
+            oss << "HTTP方法: " << session_context_.http_method << std::endl;
+            oss << "原始路径: " << session_context_.original_path << std::endl;
             if (has_json_body()) {
-                std::cout << "JSON消息体: "
-                          << (json_body_.length() > 100 ? json_body_.substr(0, 100) + "..."
-                                                        : json_body_)
-                          << std::endl;
+                oss << "JSON消息体: "
+                    << (json_body_.length() > 100 ? json_body_.substr(0, 100) + "..."
+                                                  : json_body_)
+                    << std::endl;
             }
         } else {
-            std::cout << "Protobuf消息: " << (has_protobuf_message() ? "有" : "无") << std::endl;
+            oss << "Protobuf消息: " << (has_protobuf_message() ? "有" : "无") << std::endl;
             if (has_raw_protobuf_data()) {
-                std::cout << "原始数据大小: " << raw_protobuf_data_.size() << " bytes" << std::endl;
+                oss << "原始数据大小: " << raw_protobuf_data_.size() << " bytes" << std::endl;
             }
         }
 
         // 时间信息
         auto time_t = std::chrono::system_clock::to_time_t(session_context_.receive_time);
-        std::cout << "接收时间: " << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S")
-                  << std::endl;
-        std::cout << "===================" << std::endl;
+        oss << "接收时间: " << std::put_time(std::localtime(&time_t), "%Y-%m-%d %H:%M:%S")
+            << std::endl;
+        oss << "===================" << std::endl;
+        
+        return oss;
     };
 
 private:

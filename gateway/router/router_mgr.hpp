@@ -32,6 +32,16 @@
 namespace im {
 namespace gateway {
 
+// 为std::pair<uint32_t, uint32_t>定义哈希函数
+struct PairHash {
+    std::size_t operator()(const std::pair<uint32_t, uint32_t>& p) const {
+        // 使用std::hash组合两个值
+        auto h1 = std::hash<uint32_t>{}(p.first);
+        auto h2 = std::hash<uint32_t>{}(p.second);
+        return h1 ^ (h2 << 1);
+    }
+};
+
 /**
  * @brief HTTP路由解析结果
  *
@@ -203,8 +213,8 @@ private:
     std::unordered_map<std::string, ServiceRouteResult>
             services_;  ///< 服务映射表：服务名 -> 服务信息
 
-    std::unordered_map<std::pair<uint32_t, uint32_t>, std::string>
-            cmds_;  ///< cmd映射表 cmdRange -> 服务名
+    std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash>
+            cmds_{};  ///< cmd映射表 cmdRange -> 服务名
 };
 
 /**

@@ -74,6 +74,8 @@ public:
                       im::base::IMHeader& header, 
                       google::protobuf::Message& message);
 
+    // 根据请求header构建返回header
+    static base::IMHeader returnHeaderBuilder(base::IMHeader header,std::string device_id,std::string platform);
 private:
     /**
      * @brief 计算数据的CRC32校验值

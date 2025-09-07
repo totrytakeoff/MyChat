@@ -118,7 +118,7 @@ bool HttpRouter::load_config(const std::string& config_file) {
 
 // ===== ServiceRouter 实现 =====
 
-ServiceRouter::ServiceRouter() {
+ServiceRouter::ServiceRouter() : cmds_() {
     // 默认构造函数，需要后续调用load_config
 }
 
@@ -148,7 +148,7 @@ bool ServiceRouter::load_config(const std::string& config_file) {
             nlohmann::json cmd_range_json = service.value("cmd_range", json::array());
 
             std::pair<uint32_t, uint32_t> cmd_range(0, 0);
-            if (cmd_range_json.is_arrry()) {
+            if (cmd_range_json.is_array()) {
                 cmd_range.first = cmd_range_json[0];
                 cmd_range.second = cmd_range_json[1];
             }
@@ -216,13 +216,13 @@ std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(const std::strin
 std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(uint32_t cmd) {
     auto result = std::make_unique<ServiceRouteResult>();
 
+    std::string service_name;
     try {
-        std::string service_name;
 
-        for (auto cmd : cmds_) {
-            auto range = cmd.first;
+        for (const auto& route : cmds_) {
+            const auto& range = route.first;
             if (range.first <= cmd && cmd <= range.second) {
-                service_name = cmd.second;
+                service_name = route.second;
                 break;
             }
         }

@@ -80,6 +80,7 @@ public:
      */
     explicit MessageParser(const std::string& config_file);
     explicit MessageParser(RouterManager& routerMgr);
+    explicit MessageParser(std::shared_ptr<RouterManager> routerMgr);
     /**
      * @brief 重新加载配置
      *
@@ -205,7 +206,7 @@ private:
 
 private:
     // 核心组件
-    std::unique_ptr<RouterManager> router_manager_;  ///< 路由管理器
+    std::shared_ptr<RouterManager> router_manager_;  ///< 路由管理器
     im::network::ProtobufCodec protobuf_codec_;      ///< Protobuf编解码器
 
     // 统计信息（线程安全）
