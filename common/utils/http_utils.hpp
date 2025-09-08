@@ -16,10 +16,20 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+namespace im {
+namespace utils {
+
 using json = nlohmann::json;
 
 class HttpUtils {
 public:
+    HttpUtils() = delete;
+    ~HttpUtils() = delete;
+    HttpUtils(const HttpUtils&) = delete;
+    HttpUtils& operator=(const HttpUtils&) = delete;
+    HttpUtils(HttpUtils&&) = delete;
+    HttpUtils& operator=(HttpUtils&&) = delete;
+
     enum StatusLevel { ERROR, WARNING, INFO };
 
 public:
@@ -46,8 +56,8 @@ public:
      * @param err_msg 错误信息
      * @return 统一格式的JSON响应字符串: {"code": xxx, "body": xxx, "err_msg": xxx}
      */
-    static std::string buildUnifiedResponse(int code, const json& body = nullptr, 
-                                          const std::string& err_msg = "") {
+    static std::string buildUnifiedResponse(int code, const json& body = nullptr,
+                                            const std::string& err_msg = "") {
         json response;
         response["code"] = code;
         response["body"] = body.is_null() ? nullptr : body;
@@ -135,5 +145,7 @@ public:
      */
     static bool isSuccessStatus(int status_code) { return status_code >= 200 && status_code < 300; }
 };
+}  // namespace utils
+}  // namespace im
 
 #endif  // HTTP_UTILS_HPP

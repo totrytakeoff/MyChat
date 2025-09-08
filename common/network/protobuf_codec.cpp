@@ -4,6 +4,7 @@
 #include "protobuf_codec.hpp"
 // 包含Protobuf定义
 #include "../proto/base.pb.h"  // 正确的BaseResponse定义路径
+#include "../proto/command.pb.h"
 #include "../utils/global.hpp"
 #include "../utils/log_manager.hpp"
 
@@ -311,7 +312,7 @@ base::IMHeader ProtobufCodec::returnHeaderBuilder(base::IMHeader header, std::st
 
     returnHeader.set_version(header.version());
     returnHeader.set_seq(header.seq());
-    returnHeader.set_cmd_id(header.cmd_id());
+    returnHeader.set_cmd_id(command::CommandID::CMD_SERVER_NOTIFY);  // 服务器通知
     returnHeader.set_from_uid(header.to_uid());
     returnHeader.set_to_uid(header.from_uid());
 
@@ -328,6 +329,47 @@ base::IMHeader ProtobufCodec::returnHeaderBuilder(base::IMHeader header, std::st
     returnHeader.set_platform(platform);
 
     return returnHeader;
+}
+
+std::string ProtobufCodec::buildAuthFailedResponse(const base::IMHeader& request_header, 
+                                                  const std::string& error_message) {
+    return buildErrorResponse(request_header, base::ErrorCode::AUTH_FAILED, error_message);
+}
+
+std::string ProtobufCodec::buildTimeoutResponse(const base::IMHeader& request_header,
+                                               const std::string& error_message) {
+    return buildErrorResponse(request_header, base::ErrorCode::TIMEOUT, error_message);
+}
+
+std::string ProtobufCodec::buildErrorResponse(const base::IMHeader& request_header,
+                                             base::ErrorCode error_code,
+                                             const std::string& error_message) {
+    try {
+        // 构建响应头
+        base::IMHeader response_header = returnHeaderBuilder(request_header, 
+                                                           request_header.device_id(), 
+                                                           request_header.platform());
+        
+        // 构建BaseResponse
+        base::BaseResponse response;
+        response.set_error_code(error_code);
+        response.set_error_message(error_message);
+        
+        // 编码为protobuf二进制数据
+        std::string encoded_data;
+        if (encode(response_header, response, encoded_data)) {
+            return encoded_data;
+        } else {
+            auto logger = LogManager::GetLogger("protobuf_codec");
+            logger->error("Failed to encode error response: {}", error_message);
+            return "";
+        }
+        
+    } catch (const std::exception& e) {
+        auto logger = LogManager::GetLogger("protobuf_codec");
+        logger->error("Exception in buildErrorResponse: {}", e.what());
+        return "";
+    }
 }
 
 }  // namespace network

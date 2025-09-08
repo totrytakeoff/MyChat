@@ -76,6 +76,35 @@ public:
 
     // 根据请求header构建返回header
     static base::IMHeader returnHeaderBuilder(base::IMHeader header,std::string device_id,std::string platform);
+    
+    /**
+     * @brief 构建认证失败的protobuf响应消息
+     * @param request_header 请求头（用于构建响应头）
+     * @param error_message 错误消息
+     * @return 编码后的protobuf二进制数据
+     */
+    static std::string buildAuthFailedResponse(const base::IMHeader& request_header, 
+                                              const std::string& error_message = "Authentication failed");
+    
+    /**
+     * @brief 构建超时的protobuf响应消息
+     * @param request_header 请求头（用于构建响应头）
+     * @param error_message 错误消息
+     * @return 编码后的protobuf二进制数据
+     */
+    static std::string buildTimeoutResponse(const base::IMHeader& request_header,
+                                           const std::string& error_message = "Authentication timeout");
+    
+    /**
+     * @brief 构建通用错误的protobuf响应消息
+     * @param request_header 请求头（用于构建响应头）
+     * @param error_code 错误码
+     * @param error_message 错误消息
+     * @return 编码后的protobuf二进制数据
+     */
+    static std::string buildErrorResponse(const base::IMHeader& request_header,
+                                         base::ErrorCode error_code,
+                                         const std::string& error_message);
 private:
     /**
      * @brief 计算数据的CRC32校验值

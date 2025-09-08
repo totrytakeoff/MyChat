@@ -268,31 +268,36 @@ void CoroMessageProcessor::update_processing_options(const CoroProcessingOptions
  * @brief 协程化的Token认证验证实现
  */
 Task<bool> CoroMessageProcessor::coro_verify_authentication(const UnifiedMessage& message) {
-    // 协议差异化处理：HTTP每次请求都进行token验证，WebSocket只在连接时验证
-    if (message.get_protocol() == UnifiedMessage::Protocol::HTTP) {
-        std::string token = message.get_token();
-        std::string device_id = message.get_device_id();
-        
-        // 这里可以添加异步的Token验证逻辑，比如查询Redis缓存
-        // 为了演示，这里添加一个小的延迟模拟异步验证过程
+    // 新架构：HTTP和WebSocket都进行token验证，只负责验证逻辑，不管理连接状态
+    std::string token = message.get_token();
+    std::string device_id = message.get_device_id();
+    
+    // 检查token是否为空
+    if (token.empty()) {
         if (options_.enable_request_logging) {
-            co_await DelayAwaiter(std::chrono::milliseconds(1)); // 模拟异步验证延迟
-        }
-        
-        // 验证访问令牌
-        bool is_valid = auth_mgr_->verify_access_token(token, device_id);
-        
-        if (!is_valid && options_.enable_request_logging) {
             LogManager::GetLogger("coro_message_processor")
-                    ->warn("CoroMessageProcessor::coro_verify_authentication: invalid token for device: {}", 
-                           device_id);
+                    ->warn("CoroMessageProcessor::coro_verify_authentication: empty token for protocol: {}", 
+                           static_cast<int>(message.get_protocol()));
         }
-        
-        co_return is_valid;
+        co_return false;
     }
     
-    // WebSocket消息假设已在连接时验证
-    co_return true;
+    // 这里可以添加异步的Token验证逻辑，比如查询Redis缓存
+    // 为了演示，这里添加一个小的延迟模拟异步验证过程
+    if (options_.enable_request_logging) {
+        co_await DelayAwaiter(std::chrono::milliseconds(1)); // 模拟异步验证延迟
+    }
+    
+    // 验证访问令牌
+    bool is_valid = auth_mgr_->verify_access_token(token, device_id);
+    
+    if (!is_valid && options_.enable_request_logging) {
+        LogManager::GetLogger("coro_message_processor")
+                ->warn("CoroMessageProcessor::coro_verify_authentication: invalid token for device: {} protocol: {}", 
+                       device_id, static_cast<int>(message.get_protocol()));
+    }
+    
+    co_return is_valid;
 }
 
 /**

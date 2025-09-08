@@ -10,6 +10,11 @@ package im.command;
 enum CommandID { 
     // 未知指令
     CMD_UNKNOWN = 0;
+    // ================= 通用指令 =================
+    CMD_HEARTBEAT = 1;
+    CMD_SERVER_NOTIFY = 2;
+    CMD_CLIENT_ERROR = 3;
+    CMD_REFRESH_TOKEN = 4;
     
     // ================= 用户相关 =================
     CMD_LOGIN = 1001;           // 登录
@@ -59,7 +64,7 @@ enum CommandID {
     CMD_PUSH_OFFLINE = 5005;            // 推送离线消息
 
     // ================= 其他/扩展 =================
-    CMD_HEARTBEAT = 9001;               // 心跳包
-    CMD_SERVER_NOTIFY = 9002;           // 服务端通知
-    CMD_CLIENT_ERROR = 9003;            // 客户端错误上报
+    // CMD_HEARTBEAT = 9001;               // 心跳包
+    // CMD_SERVER_NOTIFY = 9002;           // 服务端通知
+    // CMD_CLIENT_ERROR = 9003;            // 客户端错误上报
 }
