@@ -46,9 +46,7 @@ public:
     void revoke_token(const std::string& token);
 
     void unrevoke_token(const std::string& token);
-    bool is_token_revoked(const std::string& token) {
-        return revoked_tokens_.find(token) != revoked_tokens_.end();
-    }
+    bool is_token_revoked(const std::string& token);
 
 
 private:

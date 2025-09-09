@@ -11,6 +11,7 @@
  *
  *****************************************************************************/
 
+#include <cstdint>
 #include <nlohmann/json.hpp>
 #include "../../common/utils/config_mgr.hpp"
 #include "../../common/utils/log_manager.hpp"
@@ -218,7 +219,6 @@ std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(uint32_t cmd) {
 
     std::string service_name;
     try {
-
         for (const auto& route : cmds_) {
             const auto& range = route.first;
             if (range.first <= cmd && cmd <= range.second) {
@@ -283,6 +283,9 @@ std::unique_ptr<HttpRouteResult> RouterManager::parse_http_route(const std::stri
 
 std::unique_ptr<ServiceRouteResult> RouterManager::find_service(const std::string& service_name) {
     return service_router_->find_service(service_name);
+}
+std::unique_ptr<ServiceRouteResult> RouterManager::find_service(uint32_t service_id) {
+    return service_router_->find_service(service_id);
 }
 
 std::unique_ptr<RouterManager::CompleteRouteResult> RouterManager::route_request(

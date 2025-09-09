@@ -6,7 +6,7 @@ namespace im::common {
  * @brief 构造函数，初始化线程池
  */
 CoroutineManager::CoroutineManager() 
-    : thread_pool_(std::make_shared<utils::ThreadPool>()) {
+    : thread_pool_(&utils::ThreadPool::GetInstance()) {
 }
 
 // getInstance() 已在头文件中内联实现
@@ -19,10 +19,15 @@ CoroutineManager::CoroutineManager()
  */
 template<typename T>
 void CoroutineManager::schedule(Task<T>&& task, std::shared_ptr<utils::ThreadPool> pool) {
-    auto executor = pool ? pool : thread_pool_;
-    executor->Enqueue([handle = task.handle]() mutable {
-        handle.resume();
-    });
+    if (pool) {
+        pool->Enqueue([handle = task.handle]() mutable {
+            handle.resume();
+        });
+    } else {
+        thread_pool_->Enqueue([handle = task.handle]() mutable {
+            handle.resume();
+        });
+    }
 }
 
 // 显式实例化常用的模板类型

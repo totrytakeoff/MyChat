@@ -1,0 +1,51 @@
+{
+    "platforms": {
+        "ios": {
+            "platform_name": "ios",
+            "redis_key_prefix": "ios:",
+            "max_devices_per_user": 3,
+            "allow_duplicate_login": false,
+            "kick_strategy": "oldest_device",
+            "session_timeout_minutes": 30
+        },
+        "android": {
+            "platform_name": "android", 
+            "redis_key_prefix": "android:",
+            "max_devices_per_user": 3,
+            "allow_duplicate_login": false,
+            "kick_strategy": "oldest_device", 
+            "session_timeout_minutes": 30
+        },
+        "web": {
+            "platform_name": "web",
+            "redis_key_prefix": "web:",
+            "max_devices_per_user": 5,
+            "allow_duplicate_login": true,
+            "kick_strategy": "none",
+            "session_timeout_minutes": 60
+        },
+        "pc": {
+            "platform_name": "pc",
+            "redis_key_prefix": "pc:",
+            "max_devices_per_user": 2,
+            "allow_duplicate_login": false,
+            "kick_strategy": "oldest_device",
+            "session_timeout_minutes": 120
+        }
+    },
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "password": "",
+        "db": 0,
+        "connection_pool_size": 10,
+        "connection_timeout_ms": 3000,
+        "command_timeout_ms": 1000
+    },
+    "session_management": {
+        "heartbeat_interval_seconds": 30,
+        "cleanup_interval_minutes": 5,
+        "max_idle_time_minutes": 60,
+        "enable_session_persistence": true
+    }
+}

@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 
 #ifndef THREAD_POOL_HPP
 #define THREAD_POOL_HPP
@@ -14,7 +14,6 @@
  *****************************************************************************/
 
 #include "singleton.hpp"
-// #include "logger.hpp"
 #include <atomic>
 #include <condition_variable>
 #include <functional>

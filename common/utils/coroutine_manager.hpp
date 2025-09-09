@@ -390,7 +390,7 @@ class CoroutineManager : public utils::Singleton<CoroutineManager> {
     friend class utils::Singleton<CoroutineManager>;
     
 private:
-    std::shared_ptr<utils::ThreadPool> thread_pool_;  ///< 线程池，用于调度协程
+    utils::ThreadPool* thread_pool_;  ///< 线程池，用于调度协程（单例引用）
     
     /**
      * @brief 构造函数

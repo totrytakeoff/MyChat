@@ -63,18 +63,6 @@ MessageParser::MessageParser(const std::string& config_file) {
     }
 }
 
-MessageParser::MessageParser(RouterManager& routerMgr) {
-    auto logger = LogManager::GetLogger("message_parser");
-    logger->info("Initializing MessageParser with existing RouterManager reference");
-
-    // 创建一个新的RouterManager实例，复制传入的RouterManager的配置
-    router_manager_ = std::make_shared<RouterManager>(routerMgr);
-    if (!router_manager_) {
-        throw std::runtime_error("Failed to create RouterManager instance");
-    }
-
-    logger->info("MessageParser initialized successfully with RouterManager reference");
-}
 
 MessageParser::MessageParser(std::shared_ptr<RouterManager> routerMgr) {
     auto logger = LogManager::GetLogger("message_parser");

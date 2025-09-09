@@ -1,0 +1,50 @@
+{
+    "http_router": {
+        "api_prefix": "/api/v1",
+        "routes": [
+            {
+                "path": "/auth/login",
+                "cmd_id": 1001,
+                "service_name": "user_service"
+            },
+            {
+                "path": "/auth/logout", 
+                "cmd_id": 1002,
+                "service_name": "user_service"
+            },
+            {
+                "path": "/auth/refresh",
+                "cmd_id": 1003,
+                "service_name": "user_service"
+            },
+            {
+                "path": "/message/send",
+                "cmd_id": 2001,
+                "service_name": "message_service"
+            },
+            {
+                "path": "/message/history",
+                "cmd_id": 2002,
+                "service_name": "message_service"
+            }
+        ]
+    },
+    "service_router": {
+        "services": [
+            {
+                "service_name": "user_service",
+                "endpoint": "localhost:9001", 
+                "timeout_ms": 3000,
+                "max_connections": 5,
+                "cmd_range": [1001, 1010]
+            },
+            {
+                "service_name": "message_service",
+                "endpoint": "localhost:9002",
+                "timeout_ms": 3000,
+                "max_connections": 5,
+                "cmd_range": [2001, 2010]
+            }
+        ]
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "gateway-test-clients",
+  "version": "1.0.0",
+  "description": "Mock clients for testing gateway server",
+  "main": "mock_client.js",
+  "scripts": {
+    "test": "node mock_client.js"
+  },
+  "dependencies": {
+    "ws": "^8.0.0"
+  },
+  "keywords": ["test", "gateway", "websocket", "http"],
+  "author": "Test",
+  "license": "MIT"
+}
