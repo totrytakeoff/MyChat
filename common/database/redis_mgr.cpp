@@ -83,7 +83,7 @@ bool RedisManager::initialize(const RedisConfig& config) {
     try {
         // 初始化连接池（使用单例）
         auto& pool = RedisConnectionPool::GetInstance();
-        pool.Init(config.pool_size, [this]() { return create_redis_connection(); });
+        pool.Init(config.pool_size, [this]() { return create_redis_connection(); },"redis");
         
         // 在测试连接前设置初始化标志，否则get_connection会失败
         {

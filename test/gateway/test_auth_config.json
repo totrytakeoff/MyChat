@@ -1,25 +1,68 @@
 {
-    "platforms": {
-        "ios": {
-            "platform_name": "ios",
-            "jwt_secret": "test_gateway_ios_secret_key_1234567890",
-            "access_token_ttl_minutes": 30,
-            "refresh_token_ttl_days": 30,
-            "enable_refresh": true
+    "secret_key": "test_secret_key",
+    "PlatformTokenStrategy": {
+        "web": {
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "refresh_precentage": 0.3,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 3600,
+            "refresh_token_expire_seconds": 604800,
+            "enable_multi_device": true
         },
         "android": {
-            "platform_name": "android", 
-            "jwt_secret": "test_gateway_android_secret_key_1234567890",
-            "access_token_ttl_minutes": 30,
-            "refresh_token_ttl_days": 30,
-            "enable_refresh": true
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "refresh_precentage": 0.4,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 1209600,
+            "enable_multi_device": false
         },
-        "web": {
-            "platform_name": "web",
-            "jwt_secret": "test_gateway_web_secret_key_1234567890",
-            "access_token_ttl_minutes": 60,
-            "refresh_token_ttl_days": 7,
-            "enable_refresh": true
+        "ios": {
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "refresh_precentage": 0.4,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 1209600,
+            "enable_multi_device": false
+        },
+        "desktop": {
+            "auto_refresh_enabled": true,
+            "background_refresh": false,
+            "refresh_precentage": 0.2,
+            "max_retry_count": 5,
+            "access_token_expire_seconds": 14400,
+            "refresh_token_expire_seconds": 2592000,
+            "enable_multi_device": true
+        },
+        "miniapp": {
+            "auto_refresh_enabled": true,
+            "background_refresh": false,
+            "refresh_precentage": 0.5,
+            "max_retry_count": 2,
+            "access_token_expire_seconds": 1800,
+            "refresh_token_expire_seconds": 86400,
+            "enable_multi_device": false
+        },
+        "mobile": {
+            "auto_refresh_enabled": true,
+            "background_refresh": true,
+            "refresh_precentage": 0.4,
+            "max_retry_count": 3,
+            "access_token_expire_seconds": 7200,
+            "refresh_token_expire_seconds": 1209600,
+            "enable_multi_device": false
+        },
+        "unkown": {
+            "auto_refresh_enabled": false,
+            "background_refresh": false,
+            "refresh_precentage": 0.7,
+            "max_retry_count": 1,
+            "access_token_expire_seconds": 300,
+            "refresh_token_expire_seconds": 3600,
+            "enable_multi_device": false
         }
     },
     "redis": {

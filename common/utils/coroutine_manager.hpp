@@ -17,6 +17,7 @@
 
 #include <coroutine>
 #include <exception>
+#include <stdexcept>
 #include <chrono>
 #include <future>
 #include <functional>
@@ -72,7 +73,8 @@ struct Task {
          * @brief 初始挂起点，控制协程是否立即执行
          * @return std::suspend_never 立即执行，不挂起
          */
-        std::suspend_never initial_suspend() { return {}; }
+        // Start suspended so scheduler controls first resume
+        std::suspend_always initial_suspend() { return {}; }
         
         /**
          * @brief 最终挂起点，控制协程结束后的行为
@@ -156,7 +158,8 @@ struct Task {
      * @return false 如果协程未完成
      */
     bool await_ready() const noexcept {
-        return handle.done();
+        // If handle is null, treat as ready to avoid resuming an invalid coroutine
+        return !handle || handle.done();
     }
     
     /**
@@ -164,8 +167,15 @@ struct Task {
      * @param continuation 等待此协程完成的协程句柄
      */
     void await_suspend(std::coroutine_handle<> continuation) noexcept {
+        if (!handle) {
+            // No inner coroutine to resume; continue the awaiting coroutine to avoid deadlock
+            if (continuation) continuation.resume();
+            return;
+        }
         handle.promise().continuation_ = continuation;
-        handle.resume();
+        if (!handle.done()) {
+            handle.resume();
+        }
     }
     
     /**
@@ -174,6 +184,9 @@ struct Task {
      * @throws 重新抛出协程中的异常
      */
     T await_resume() {
+        if (!handle) {
+            throw std::runtime_error("Task<T>::await_resume on invalid coroutine handle");
+        }
         if (handle.promise().exception) {
             std::rethrow_exception(handle.promise().exception);
         }
@@ -206,7 +219,8 @@ struct Task<void> {
             return Task{std::coroutine_handle<promise_type>::from_promise(*this)};
         }
         
-        std::suspend_never initial_suspend() { return {}; }
+        // Start suspended so scheduler controls first resume
+        std::suspend_always initial_suspend() { return {}; }
         
         auto final_suspend() noexcept {
             struct FinalAwaiter {
@@ -260,7 +274,7 @@ struct Task<void> {
      * @return false 如果协程未完成
      */
     bool await_ready() const noexcept {
-        return handle.done();
+        return !handle || handle.done();
     }
     
     /**
@@ -268,8 +282,14 @@ struct Task<void> {
      * @param continuation 等待此协程完成的协程句柄
      */
     void await_suspend(std::coroutine_handle<> continuation) noexcept {
+        if (!handle) {
+            if (continuation) continuation.resume();
+            return;
+        }
         handle.promise().continuation_ = continuation;
-        handle.resume();
+        if (!handle.done()) {
+            handle.resume();
+        }
     }
     
     /**
@@ -277,6 +297,9 @@ struct Task<void> {
      * @throws 重新抛出协程中的异常
      */
     void await_resume() {
+        if (!handle) {
+            throw std::runtime_error("Task<void>::await_resume on invalid coroutine handle");
+        }
         if (handle.promise().exception) {
             std::rethrow_exception(handle.promise().exception);
         }

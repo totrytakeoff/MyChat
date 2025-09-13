@@ -280,6 +280,10 @@ bool MultiPlatformAuthManager::verify_access_token(const std::string& access_tok
 bool MultiPlatformAuthManager::verify_access_token(const std::string& access_token,
                                                    const std::string& device_id) {
     try {
+        if (access_token.empty()) {
+            throw std::runtime_error("Empty token");
+        }
+
         // 创建验证器
         auto verifier = jwt::verify()
                                 .allow_algorithm(jwt::algorithm::hs256{secret_key_})
@@ -292,12 +296,12 @@ bool MultiPlatformAuthManager::verify_access_token(const std::string& access_tok
 
         // 检查是否在黑名单中
         if (is_token_revoked(access_token)) {
-            return false;
+            throw std::runtime_error("Token is revoked");
         }
 
         // 验证 device_id 是否匹配
         if (device_id != decoded.get_payload_claim("device_id").as_string()) {
-            return false;
+            throw std::runtime_error("Device ID does not match");
         }
 
 
@@ -313,6 +317,10 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
                                                     std::string& device_id,
                                                     UserTokenInfo& user_info) {
     try {
+        if (refresh_token.empty()) {
+            throw std::runtime_error("Empty token");
+        }
+
         auto meta = RedisManager::GetInstance().execute(
                 [&](auto& redis) { return redis.hget("refresh_tokens", refresh_token); });
 
@@ -326,10 +334,10 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
             if (decode["device_id"] != device_id) {
                 // rt和device_id不匹配，属于严重安全问题,后续应该采取如吊销rt等措施
                 revoke_refresh_token(refresh_token);
-                return false;
+                throw std::runtime_error("Device ID does not match");
             }
             if (decode["revoked"]) {
-                return false;
+                throw std::runtime_error("Token is revoked");
             }
 
             user_info.device_id = decode["device_id"];
@@ -344,7 +352,7 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
                     std::chrono::system_clock::time_point(std::chrono::nanoseconds(expire_time_ns));
             return true;
         }
-        return false;
+        throw std::runtime_error("Invalid refresh token");
     } catch (const std::exception& e) {
         // 验证失败（Token无效、过期等）
         LogManager::GetLogger("auth_mgr")->error("verify_refresh_token error: {}", e.what());

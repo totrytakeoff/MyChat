@@ -19,14 +19,21 @@ CoroutineManager::CoroutineManager()
  */
 template<typename T>
 void CoroutineManager::schedule(Task<T>&& task, std::shared_ptr<utils::ThreadPool> pool) {
+    // Detach the coroutine handle from Task to avoid destruction on Task's dtor
+    auto handle = task.handle;
+    task.handle = nullptr;
+
+    auto runner = [handle]() mutable {
+        if (handle) {
+            handle.resume();
+            // 不在这里销毁，由上层拥有的 Task/promise 生命周期管理
+        }
+    };
+
     if (pool) {
-        pool->Enqueue([handle = task.handle]() mutable {
-            handle.resume();
-        });
+        pool->Enqueue(runner);
     } else {
-        thread_pool_->Enqueue([handle = task.handle]() mutable {
-            handle.resume();
-        });
+        thread_pool_->Enqueue(runner);
     }
 }
 

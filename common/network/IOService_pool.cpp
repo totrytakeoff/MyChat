@@ -40,7 +40,6 @@ IOServicePool::IOServicePool(std::size_t pool_size)
 
 IOServicePool::~IOServicePool() {
     Stop();
-    std::cout << "IOServicePool destroyed." << std::endl;
 }
 
 /**
@@ -86,6 +85,7 @@ void IOServicePool::Stop() {
     io_services_.clear(); // 清空io_service容器
     
     pool_size_ = 0; // 标记已停止
+    LogManager::GetLogger("io_service_pool")->info("IOServicePool stopped");
 }
 
 } // namespace network

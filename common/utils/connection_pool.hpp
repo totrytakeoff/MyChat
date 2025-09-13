@@ -44,7 +44,7 @@ public:
      * @param[in]   factory   连接工厂函数，用于创建连接实例
      * @return     void
      */
-    void Init(size_t poolSize, ConnectionFactory factory);
+    void Init(size_t poolSize, ConnectionFactory factory,const std::string &log_prefix="");
 
     /**
      * @brief      获取连接
@@ -74,6 +74,10 @@ public:
 
     size_t GetInUsedCount() const;
 
+    void setLogPrefix(const std::string &log_prefix){
+        m_logPrefix_ = log_prefix;
+    }
+
 private:
     ConnectionPool() ;
     // 禁止拷贝构造和赋值，防止多实例
@@ -92,6 +96,8 @@ private:
     std::condition_variable m_condVar;
     // 是否已关闭标志
     std::atomic<bool> m_isClosed{false};
+
+    std::string m_logPrefix_;
 };
 
 
@@ -107,10 +113,13 @@ ConnectionPool<T>::~ConnectionPool() {
 
 
 template <typename T>
-void ConnectionPool<T>::Init(size_t poolSize, ConnectionFactory factory) {
+void ConnectionPool<T>::Init(size_t poolSize, ConnectionFactory factory,const std::string &log_prefix) {
     std::lock_guard<std::mutex> lock(m_mutex);
+    m_logPrefix_ = log_prefix;
+
+
     if (m_poolSize_ > 0) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->warn("Connection pool already initialized.");
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->warn("Connection pool already initialized.");
         return;
     }
     m_poolSize_ = poolSize;
@@ -125,11 +134,11 @@ void ConnectionPool<T>::Init(size_t poolSize, ConnectionFactory factory) {
             }
         }
     } catch (const std::exception& e) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->error("Failed to initialize connection pool: {}", e.what());
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->error("Failed to initialize connection pool: {}", e.what());
         throw;
     }
 
-    if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->info("Connection pool initialized with size: {}", m_poolSize_);
+    if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->info("Connection pool initialized with size: {}", m_poolSize_);
 }
 
 template <typename T>
@@ -140,14 +149,14 @@ typename ConnectionPool<T>::ConnectionPtr ConnectionPool<T>::GetConnection() {
     if (!m_condVar.wait_for(lock, std::chrono::seconds(5), [this]() { 
             return m_isClosed || !m_connections.empty(); 
         })) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) 
-            LogManager::GetLogger("connection_pool")->error("Timeout waiting for connection from pool.");
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) 
+            LogManager::GetLogger(m_logPrefix_+"_connection_pool")->error("Timeout waiting for connection from pool.");
         return nullptr;
     }
 
     if (m_isClosed) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) 
-            LogManager::GetLogger("connection_pool")->error("Connection pool is closed, cannot get connection.");
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) 
+            LogManager::GetLogger(m_logPrefix_+"_connection_pool")->error("Connection pool is closed, cannot get connection.");
         return nullptr;
     }
 
@@ -156,18 +165,18 @@ typename ConnectionPool<T>::ConnectionPtr ConnectionPool<T>::GetConnection() {
         if (m_factory) {
             try {
                 auto conn = m_factory();
-                if (LogManager::IsLoggingEnabled("connection_pool")) 
-                    LogManager::GetLogger("connection_pool")->info("Created new connection outside pool.");
+                if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) 
+                    LogManager::GetLogger(m_logPrefix_+"_connection_pool")->info("Created new connection outside pool.");
                 return conn;
             } catch (const std::exception& e) {
-                if (LogManager::IsLoggingEnabled("connection_pool")) 
-                    LogManager::GetLogger("connection_pool")->error("Failed to create new connection: {}", e.what());
+                if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) 
+                    LogManager::GetLogger(m_logPrefix_+"_connection_pool")->error("Failed to create new connection: {}", e.what());
                 return nullptr;
             }
         }
 
-        if (LogManager::IsLoggingEnabled("connection_pool")) 
-            LogManager::GetLogger("connection_pool")->error("No available connections in the pool.");
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) 
+            LogManager::GetLogger(m_logPrefix_+"_connection_pool")->error("No available connections in the pool.");
         return nullptr;
     }
 
@@ -175,8 +184,8 @@ typename ConnectionPool<T>::ConnectionPtr ConnectionPool<T>::GetConnection() {
     auto conn = m_connections.front();
     m_connections.pop();
 
-    if (LogManager::IsLoggingEnabled("connection_pool")) 
-        LogManager::GetLogger("connection_pool")->info("Connection acquired from pool, remaining connections: {}", m_connections.size());
+    if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) 
+        LogManager::GetLogger(m_logPrefix_+"_connection_pool")->info("Connection acquired from pool, remaining connections: {}", m_connections.size());
 
     return conn;
 }
@@ -185,28 +194,28 @@ typename ConnectionPool<T>::ConnectionPtr ConnectionPool<T>::GetConnection() {
 template <typename T>
 void ConnectionPool<T>::ReleaseConnection(const ConnectionPtr& conn) {
     if (!conn) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->error("Attempted to release a null connection.");
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->error("Attempted to release a null connection.");
         return;
     }
 
     std::lock_guard<std::mutex> lock(m_mutex);
 
     if (m_isClosed) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->warn("Connection pool is closed, cannot release connection.");
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->warn("Connection pool is closed, cannot release connection.");
         return;
     }
 
     // 如果连接池已满，直接丢弃连接
     // 但要确保我们不会无限制地丢弃连接
     if (m_connections.size() >= m_poolSize_) {
-        if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->warn("Connection pool is full, discarding connection.");
+        if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->warn("Connection pool is full, discarding connection.");
         return;
     }
 
     m_connections.push(conn);
     m_condVar.notify_one();  // 通知等待获取连接的线程
 
-    if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->debug("Connection released back to pool, total connections: {}", m_connections.size());
+    if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->debug("Connection released back to pool, total connections: {}", m_connections.size());
 }
 
 
@@ -221,7 +230,7 @@ void ConnectionPool<T>::Close() {
     m_factory = nullptr; // 清空工厂函数
     m_poolSize_ = 0;     // 重置连接池大小，允许重新初始化
     m_condVar.notify_all();  // 通知所有等待的线程
-    if (LogManager::IsLoggingEnabled("connection_pool")) LogManager::GetLogger("connection_pool")->info("Connection pool closed, all connections released.");
+    if (LogManager::IsLoggingEnabled(m_logPrefix_+"_connection_pool")) LogManager::GetLogger(m_logPrefix_+"_connection_pool")->info("Connection pool closed, all connections released.");
 }
 
 template <typename T>

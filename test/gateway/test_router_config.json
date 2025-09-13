@@ -17,6 +17,11 @@
                 "cmd_id": 1003,
                 "service_name": "user_service"
             },
+            {   
+                "path": "/auth/info",
+                "cmd_id": 1004,
+                "service_name": "user_service"
+            },
             {
                 "path": "/message/send",
                 "cmd_id": 2001,

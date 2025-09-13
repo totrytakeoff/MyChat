@@ -283,10 +283,7 @@ Task<bool> CoroMessageProcessor::coro_verify_authentication(const UnifiedMessage
     }
     
     // 这里可以添加异步的Token验证逻辑，比如查询Redis缓存
-    // 为了演示，这里添加一个小的延迟模拟异步验证过程
-    if (options_.enable_request_logging) {
-        co_await DelayAwaiter(std::chrono::milliseconds(1)); // 模拟异步验证延迟
-    }
+    // 为避免跨线程恢复协程导致的未定义行为，测试环境下不做人为延迟
     
     // 验证访问令牌
     bool is_valid = auth_mgr_->verify_access_token(token, device_id);

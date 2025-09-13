@@ -177,6 +177,9 @@ public:
     int get_callback_count() const { return processor_map_.size(); }
 
 private:
+        bool verify_access_token(const UnifiedMessage& message);
+
+private:
     /// 路由管理器，用于服务发现和cmd_id到服务的映射
     std::shared_ptr<RouterManager> router_mgr_;
 

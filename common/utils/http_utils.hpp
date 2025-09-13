@@ -45,7 +45,7 @@ public:
         json response;
         response["code"] = status_code;
         response["body"] = body;
-        response["error_message"] = err_message;
+        response["err_msg"] = err_message;
         return response.dump();
     }
 
@@ -92,7 +92,12 @@ public:
 
 
     static int statusCodeFromJson(const json& json_body) {
-        if (json_body["code"]) {
+        /*
+         * Attention!
+         * 注意 判断是否存在时需要使用 contains()
+         * 方法,不然可能导致类型解析错误,把code解析成bool,导致模板推断错误引起类型冲突问题!
+         */
+        if (json_body.contains("code")) {
             return json_body["code"].get<int>();
         }
 
@@ -100,7 +105,14 @@ public:
     }
 
     static int statusCodeFromJson(const std::string& json_body) {
-        return statusCodeFromJson(json::parse(json_body));
+        try {
+            return statusCodeFromJson(json::parse(json_body));
+        } catch (const json::exception& e) {
+            // 添加调试信息
+            std::cerr << "JSON parsing error in statusCodeFromJson: " << e.what() << std::endl;
+            std::cerr << "JSON body: " << json_body << std::endl;
+            throw;
+        }
     }
 
     static std::string err_msgFromJson(const json& json_body) {

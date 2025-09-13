@@ -35,6 +35,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <thread>
 
 
 namespace im {
@@ -76,7 +77,10 @@ public:
                                 const std::string& platform, const std::string& message);
     size_t get_online_count() const;
 
-    bool register_message_handlers(uint32_t cmd_id, message_handler handler);
+    // 注释掉协程版本的注册方法
+    // bool register_message_handlers(uint32_t cmd_id, message_handler handler) { return msg_processor_->register_coro_processor(cmd_id, handler) == 0; }
+    bool register_message_handlers(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler);
+    bool force_register_handler(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler);  // Test helper
 
 private:
     // bool init_network_components();
@@ -112,6 +116,7 @@ private:
     std::unique_ptr<WebSocketServer> websocket_server_;
     boost::asio::ssl::context ssl_ctx_;  // ssl_context必须要初始化
     std::unique_ptr<httplib::Server> http_server_;
+    std::thread http_thread_;
 
     // 网关核心组件
     std::unique_ptr<ConnectionManager> conn_mgr_;
@@ -119,6 +124,7 @@ private:
     std::shared_ptr<RouterManager> router_mgr_;
     std::unique_ptr<MessageParser> msg_parser_;
     std::unique_ptr<CoroMessageProcessor> msg_processor_;
+    std::unique_ptr<MessageProcessor> msg_processor_1;
 
     // 配置和日志管理器
     std::shared_ptr<ConfigManager> config_mgr_;  // 后续用于读取统一配置

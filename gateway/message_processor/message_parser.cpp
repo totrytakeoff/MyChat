@@ -16,8 +16,8 @@
 
 
 #include <nlohmann/json.hpp>
-#include "message_parser.hpp"
 #include "../../common/utils/log_manager.hpp"
+#include "message_parser.hpp"
 
 namespace im {
 namespace gateway {
@@ -74,7 +74,7 @@ MessageParser::MessageParser(std::shared_ptr<RouterManager> routerMgr) {
     }
 
     router_manager_ = routerMgr;
-    
+
     logger->info("MessageParser initialized successfully with shared RouterManager");
 }
 
@@ -93,8 +93,8 @@ bool MessageParser::reload_config() {
     }
 }
 
-std::unique_ptr<UnifiedMessage> MessageParser::parse_http_request(
-        const httplib::Request& req, const std::string& session_id) {
+std::unique_ptr<UnifiedMessage> MessageParser::parse_http_request(const httplib::Request& req,
+                                                                  const std::string& session_id) {
     auto logger = LogManager::GetLogger("message_parser");
     logger->debug("Parsing HTTP request: {} {}", req.method, req.path);
 
@@ -192,20 +192,20 @@ std::unique_ptr<UnifiedMessage> MessageParser::parse_http_request(
     }
 }
 
-ParseResult MessageParser::parse_http_request_enhanced(
-        const httplib::Request& req, const std::string& session_id) {
+ParseResult MessageParser::parse_http_request_enhanced(const httplib::Request& req,
+                                                       const std::string& session_id) {
     auto logger = LogManager::GetLogger("message_parser");
     logger->debug("Parsing HTTP request (enhanced): {} {}", req.method, req.path);
 
     // 输入验证
     if (req.path.empty()) {
         return ParseResult::error_result(ParseResult::INVALID_REQUEST,
-                                           "HTTP request path cannot be empty");
+                                         "HTTP request path cannot be empty");
     }
 
     if (req.method.empty()) {
         return ParseResult::error_result(ParseResult::INVALID_REQUEST,
-                                           "HTTP request method cannot be empty");
+                                         "HTTP request method cannot be empty");
     }
 
     // 使用共享锁保护配置读取
@@ -251,10 +251,34 @@ ParseResult MessageParser::parse_http_request_enhanced(
 
         message->set_session_context(std::move(context));
 
-        // 5. 处理消息体和参数
-        if (req.method == "POST" && !req.body.empty()) {
-            message->set_json_body(req.body);
-            logger->debug("Processed POST body, size: {}", req.body.size());
+        // 5. 处理消息体和参数（更健壮的解析）
+        // 检测Content-Type是否为application/json（包含charset等情况）
+        bool is_json_content = false;
+        auto ct_it = req.headers.find("Content-Type");
+        if (ct_it != req.headers.end()) {
+            const std::string& ct = ct_it->second;
+            if (ct.find("application/json") != std::string::npos) {
+                is_json_content = true;
+            }
+        }
+
+        // 针对POST/PUT/PATCH：仅在Content-Type为JSON时才设置json_body
+        if ((req.method == "POST" || req.method == "PUT" || req.method == "PATCH")) {
+            if (is_json_content) {
+                if (!req.body.empty()) {
+                    message->set_json_body(req.body);
+                    logger->debug("Processed {} body, size: {}", req.method, req.body.size());
+                } else {
+                    // 空体但声明为JSON，容错处理为{}，避免解析异常
+                    message->set_json_body("{}");
+                    logger->debug("{} with empty JSON body -> using {} as fallback", req.method,
+                                   "{}");
+                }
+            } else {
+                // 非JSON类型，不设置json_body（由业务自行处理raw_body）
+                logger->debug("{} with non-JSON Content-Type: {}; skip JSON parsing", req.method,
+                               ct_it != req.headers.end() ? ct_it->second : std::string("<none>"));
+            }
         } else if (req.method == "GET" && !req.params.empty()) {
             nlohmann::json params_json;
             for (const auto& param : req.params) {
@@ -264,13 +288,41 @@ ParseResult MessageParser::parse_http_request_enhanced(
             logger->debug("Processed GET params, count: {}", req.params.size());
         }
 
-        // 提取from_uid和to_uid
-        nlohmann::json get_uid = nlohmann::json::parse(message->get_json_body().c_str());
-        if (get_uid.contains("from_uid")) {
-            header.set_from_uid(get_uid["from_uid"].get<std::string>());
-        }
-        if (get_uid.contains("to_uid")) {
-            header.set_to_uid(get_uid["to_uid"].get<std::string>());
+        // 提取from_uid和to_uid（仅在确有JSON内容时解析）
+        if (!message->get_json_body().empty()) {
+            try {
+                logger->debug("Parsing JSON body: {}", message->get_json_body());
+                nlohmann::json get_uid =
+                        nlohmann::json::parse(message->get_json_body().c_str());
+
+                if (get_uid.contains("from_uid")) {
+                    if (get_uid["from_uid"].is_string()) {
+                        header.set_from_uid(get_uid["from_uid"].get<std::string>());
+                    } else {
+                        logger->warn("from_uid is not a string type: {}",
+                                     get_uid["from_uid"].dump());
+                        // 尝试转换为字符串
+                        header.set_from_uid(std::to_string(get_uid["from_uid"].get<int>()));
+                    }
+                }
+                if (get_uid.contains("to_uid")) {
+                    if (get_uid["to_uid"].is_string()) {
+                        header.set_to_uid(get_uid["to_uid"].get<std::string>());
+                    } else {
+                        logger->warn("to_uid is not a string type: {}",
+                                     get_uid["to_uid"].dump());
+                        // 尝试转换为字符串
+                        header.set_to_uid(std::to_string(get_uid["to_uid"].get<int>()));
+                    }
+                }
+            } catch (const nlohmann::json::exception& e) {
+                // 仅当确实有内容但解析失败时才返回错误
+                logger->error("JSON parsing error: {}, raw body: {}", e.what(),
+                              message->get_json_body());
+                return ParseResult::error_result(ParseResult::PARSE_ERROR,
+                                                 "JSON parsing error: " +
+                                                         std::string(e.what()));
+            }
         }
 
         // 6. 设置IMHeader
@@ -352,20 +404,20 @@ std::unique_ptr<UnifiedMessage> MessageParser::parse_websocket_message(
     }
 }
 
-ParseResult MessageParser::parse_websocket_message_enhanced(
-        const std::string& raw_message, const std::string& session_id) {
+ParseResult MessageParser::parse_websocket_message_enhanced(const std::string& raw_message,
+                                                            const std::string& session_id) {
     auto logger = LogManager::GetLogger("message_parser");
     logger->debug("Parsing WebSocket message (enhanced), size: {} bytes", raw_message.size());
 
     // 输入验证
     if (raw_message.empty()) {
         return ParseResult::error_result(ParseResult::INVALID_REQUEST,
-                                           "WebSocket message cannot be empty");
+                                         "WebSocket message cannot be empty");
     }
 
     if (raw_message.size() > 10 * 1024 * 1024) {  // 10MB limit
         return ParseResult::error_result(ParseResult::INVALID_REQUEST,
-                                           "WebSocket message too large (>10MB)");
+                                         "WebSocket message too large (>10MB)");
     }
 
     // 使用共享锁保护配置读取

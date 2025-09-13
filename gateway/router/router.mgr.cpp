@@ -240,7 +240,7 @@ std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(uint32_t cmd) {
 
     } catch (const std::exception& e) {
         LogManager::GetLogger("service_router")
-                ->error("Failed to find service {}: {}", service_name, e.what());
+                ->error("Failed to find service for cmd {}: {}", cmd, e.what());
         result->is_valid = false;
         result->err_msg = e.what();
         return result;
