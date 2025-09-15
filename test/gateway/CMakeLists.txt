@@ -12,7 +12,7 @@ endif()
 # 查找包
 find_package(GTest REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system thread coroutine context filesystem)
 find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(httplib REQUIRED)
@@ -230,6 +230,87 @@ target_link_libraries(gateway_server_tests_1
 
 # 编译选项
 target_compile_options(gateway_server_tests_1 PRIVATE
+    -Wall
+    -Wextra
+    -pedantic
+    -fcoroutines)
+
+# WebSocket测试可执行文件（直接编译源码集合，与 gateway_server_tests_1 一致的方式）
+add_executable(gateway_websocket_tests
+    gateway_websocket_test.cpp
+    ${CMAKE_SOURCE_DIR}/../../gateway/gateway_server/gateway_server-t1.cpp
+    ${CMAKE_SOURCE_DIR}/../../gateway/connection_manager/connection_manager.cpp
+    ${CMAKE_SOURCE_DIR}/../../gateway/auth/multi_platform_auth.cpp
+    ${CMAKE_SOURCE_DIR}/../../gateway/router/router.mgr.cpp
+    ${CMAKE_SOURCE_DIR}/../../gateway/message_processor/message_parser.cpp
+    ${CMAKE_SOURCE_DIR}/../../gateway/message_processor/coro_message_processor.cpp
+    ${CMAKE_SOURCE_DIR}/../../gateway/message_processor/message_processor.cpp
+    ${COMMON_SOURCES}
+    ${PROTO_SOURCES}
+)
+
+# WebSocket测试链接第三方库（复用 gateway_server_tests_1 的外部依赖）
+target_link_libraries(gateway_websocket_tests
+    GTest::gtest
+    GTest::gtest_main
+    Threads::Threads
+    Boost::system
+    jwt-cpp::jwt-cpp
+    nlohmann_json::nlohmann_json
+    httplib::httplib
+    OpenSSL::SSL
+    OpenSSL::Crypto
+    redis++::redis++_static
+    spdlog::spdlog
+    unofficial::UUID::uuid
+    ${Protobuf_LIBRARIES}
+    utf8_range::utf8_range
+    utf8_range::utf8_validity
+    absl::base
+    absl::strings
+    absl::str_format
+    absl::time
+    absl::synchronization
+    absl::memory
+    absl::status
+    absl::statusor
+    absl::log
+    absl::raw_logging_internal
+    absl::log_internal_check_op
+    absl::log_internal_message
+    absl::log_internal_globals
+    absl::log_internal_config
+    absl::log_internal_flags
+    absl::log_internal_log_sink_set
+    absl::log_sink
+    absl::log_entry
+    absl::log_severity
+    absl::log_internal_nullstream
+    absl::log_internal_voidify
+    absl::log_internal_append_truncated
+    absl::log_internal_strip
+    absl::log_internal_format
+    absl::log_internal_proto
+    absl::log_internal_structured
+    absl::log_internal_structured_proto
+    absl::log_globals
+    absl::log_initialize
+    absl::log_flags
+    absl::log_streamer
+    absl::log_structured
+    absl::scoped_set_env
+    absl::config
+    absl::core_headers
+    absl::dynamic_annotations
+    absl::errno_saver
+    absl::throw_delegate
+    absl::utility
+    absl::type_traits
+    absl::meta
+)
+
+# WebSocket测试编译选项
+target_compile_options(gateway_websocket_tests PRIVATE
     -Wall
     -Wextra
     -pedantic

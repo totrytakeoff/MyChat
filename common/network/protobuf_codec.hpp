@@ -74,6 +74,26 @@ public:
                       im::base::IMHeader& header, 
                       google::protobuf::Message& message);
 
+    /**
+     * @brief 解包但不解析消息体
+     *
+     * 按照编码格式解析出 header、type_name 以及消息体原始字节（不反序列化为具体类型）。
+     * 进行CRC校验并校验header完整性。
+     *
+     * 布局：
+     * [header_size(varint)][type_name_size(varint)][type_name_string][header_data][message_data][CRC32]
+     *
+     * @param input 输入的二进制帧
+     * @param header_out 输出解析后的IMHeader
+     * @param type_name_out 输出类型全名，例如 "im.base.BaseRequest"
+     * @param message_bytes_out 输出消息体的原始字节（不含CRC、长度前缀、type_name、header）
+     * @return 是否解析成功
+     */
+    static bool decodeEnvelope(const std::string& input,
+                               im::base::IMHeader& header_out,
+                               std::string& type_name_out,
+                               std::string& message_bytes_out);
+
     // 根据请求header构建返回header
     static base::IMHeader returnHeaderBuilder(base::IMHeader header,std::string device_id,std::string platform);
     

@@ -58,6 +58,10 @@ namespace im {
 namespace command {
 enum CommandID : int {
   CMD_UNKNOWN = 0,
+  CMD_HEARTBEAT = 1,
+  CMD_SERVER_NOTIFY = 2,
+  CMD_CLIENT_ERROR = 3,
+  CMD_REFRESH_TOKEN = 4,
   CMD_LOGIN = 1001,
   CMD_LOGOUT = 1002,
   CMD_REGISTER = 1003,
@@ -95,9 +99,6 @@ enum CommandID : int {
   CMD_PUSH_NOTIFICATION = 5003,
   CMD_PUSH_SYSTEM = 5004,
   CMD_PUSH_OFFLINE = 5005,
-  CMD_HEARTBEAT = 9001,
-  CMD_SERVER_NOTIFY = 9002,
-  CMD_CLIENT_ERROR = 9003,
   CommandID_INT_MIN_SENTINEL_DO_NOT_USE_ =
       std::numeric_limits<::int32_t>::min(),
   CommandID_INT_MAX_SENTINEL_DO_NOT_USE_ =
@@ -107,8 +108,8 @@ enum CommandID : int {
 bool CommandID_IsValid(int value);
 extern const uint32_t CommandID_internal_data_[];
 constexpr CommandID CommandID_MIN = static_cast<CommandID>(0);
-constexpr CommandID CommandID_MAX = static_cast<CommandID>(9003);
-constexpr int CommandID_ARRAYSIZE = 9003 + 1;
+constexpr CommandID CommandID_MAX = static_cast<CommandID>(5005);
+constexpr int CommandID_ARRAYSIZE = 5005 + 1;
 const ::google::protobuf::EnumDescriptor*
 CommandID_descriptor();
 template <typename T>

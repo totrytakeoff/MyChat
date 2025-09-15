@@ -67,6 +67,10 @@ public:
     }
     const std::string& get_json_body() const { return json_body_; }
 
+    // 新增：WS解包信息访问
+    const std::string& get_protobuf_type_name() const { return protobuf_type_name_; }
+    const std::string& get_protobuf_payload() const { return protobuf_payload_bytes_; }
+
     // 会话信息访问
     const SessionContext& get_session_context() const { return session_context_; }
     Protocol get_protocol() const { return session_context_.protocol; }
@@ -88,6 +92,12 @@ public:
     // 原始Protobuf数据访问器（优化WebSocket处理）
     void set_raw_protobuf_data(const std::string& raw_data) { raw_protobuf_data_ = raw_data; }
     void set_raw_protobuf_data(std::string&& raw_data) { raw_protobuf_data_ = std::move(raw_data); }
+
+    // 新增：WS解包字段设置
+    void set_protobuf_type_name(const std::string& type_name) { protobuf_type_name_ = type_name; }
+    void set_protobuf_type_name(std::string&& type_name) { protobuf_type_name_ = std::move(type_name); }
+    void set_protobuf_payload(const std::string& payload_bytes) { protobuf_payload_bytes_ = payload_bytes; }
+    void set_protobuf_payload(std::string&& payload_bytes) { protobuf_payload_bytes_ = std::move(payload_bytes); }
     
     void set_session_context(const SessionContext& context) { session_context_ = context; }
     void set_session_context(SessionContext&& context) { session_context_ = std::move(context); }
@@ -102,6 +112,8 @@ public:
     bool has_protobuf_message() const { return protobuf_message_ != nullptr; }
     bool has_json_body() const { return !json_body_.empty(); }
     bool has_raw_protobuf_data() const { return !raw_protobuf_data_.empty(); }
+    bool has_protobuf_payload() const { return !protobuf_payload_bytes_.empty(); }
+    bool has_protobuf_type_name() const { return !protobuf_type_name_.empty(); }
 
     // 调试打印
     void print_info() const {
@@ -144,8 +156,14 @@ public:
             }
         } else {
             oss << "Protobuf消息: " << (has_protobuf_message() ? "有" : "无") << std::endl;
+            if (has_protobuf_type_name()) {
+                oss << "Protobuf类型: " << protobuf_type_name_ << std::endl;
+            }
             if (has_raw_protobuf_data()) {
                 oss << "原始数据大小: " << raw_protobuf_data_.size() << " bytes" << std::endl;
+            }
+            if (has_protobuf_payload()) {
+                oss << "消息体大小: " << protobuf_payload_bytes_.size() << " bytes" << std::endl;
             }
         }
 
@@ -164,6 +182,8 @@ private:
     std::unique_ptr<google::protobuf::Message> protobuf_message_;  // Protobuf消息体
     std::string json_body_;                                        // JSON消息体（HTTP用）
     std::string raw_protobuf_data_;                                // 原始Protobuf数据（避免不必要的对象创建）
+    std::string protobuf_type_name_;                               // 原始消息的类型名（WS按需解析）
+    std::string protobuf_payload_bytes_;                           // 解包后的消息体原始字节
     SessionContext session_context_;                               // 会话上下文
 };
 

@@ -132,6 +132,9 @@ bool ConnectionManager::add_connection(const std::string& user_id,
             redis.hset(session_user_key, "user_id", user_id);
             redis.hset(session_user_key, "device_id", device_id);
             redis.hset(session_user_key, "platform", platform);
+
+            // 4. 将用户加入全局在线集合
+            redis.sadd("online:users", user_id);
         });
 
         return true;
@@ -183,6 +186,13 @@ void ConnectionManager::remove_connection(const std::string& user_id,
                         break;
                     }
                 }
+            }
+
+            // 如果用户已无任何会话，移出全局在线集合
+            std::unordered_map<std::string, std::string> after_sessions;
+            redis.hgetall(sessions_key, std::inserter(after_sessions, after_sessions.begin()));
+            if (after_sessions.empty()) {
+                redis.srem("online:users", user_id);
             }
         });
     } catch (const std::exception& e) {

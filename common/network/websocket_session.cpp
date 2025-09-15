@@ -70,53 +70,63 @@ void WebSocketSession::send(const std::string& message) {
 
 
 void WebSocketSession::on_ssl_handshake() {
-    // 设置WebSocket握手装饰器，用于提取Token
-    ws_stream_.set_option(websocket::stream_base::decorator(
-        [self = shared_from_this()](websocket::request_type& req) {
+    // 手动读取HTTP升级请求以便在握手前提取token，然后使用该请求完成WS握手
+    auto self = shared_from_this();
+    auto req = std::make_shared<beast::http::request<beast::http::string_body>>();
+    beast::http::async_read(ws_stream_.next_layer(), buffer_, *req,
+        [self, req](beast::error_code ec, std::size_t /*bytes_transferred*/) {
+            if (ec) {
+                self->defaultErrorHandler(self, ec, "Read websocket upgrade request failed");
+                return;
+            }
+
             // 从URL查询参数中提取token
-            std::string target = req.target();
+            std::string target = std::string(req->target());
             size_t token_pos = target.find("token=");
             if (token_pos != std::string::npos) {
-                size_t start = token_pos + 6; // "token="的长度
+                size_t start = token_pos + 6; // "token="长度
                 size_t end = target.find('&', start);
                 if (end == std::string::npos) {
                     end = target.length();
                 }
                 self->token_ = target.substr(start, end - start);
             }
-            
             // 也可以从Authorization头部获取Token
-            auto auth_it = req.find(beast::http::field::authorization);
-            if (auth_it != req.end()) {
-                std::string auth_value = auth_it->value();
-                if (auth_value.starts_with("Bearer ")) {
-                    self->token_ = auth_value.substr(7); // "Bearer "的长度
+            auto auth_it = req->find(beast::http::field::authorization);
+            if (auth_it != req->end()) {
+                std::string auth_value = std::string(auth_it->value());
+                if (auth_value.rfind("Bearer ", 0) == 0) {
+                    self->token_ = auth_value.substr(7);
                 }
             }
-            
+
             if (LogManager::IsLoggingEnabled("websocket_session")) {
                 LogManager::GetLogger("websocket_session")
-                    ->debug("Extracted token from handshake: {}", 
-                           self->token_.empty() ? "none" : "present");
+                        ->debug("Extracted token from handshake: {}",
+                                self->token_.empty() ? "none" : "present");
             }
-        }));
 
-    // 异步websocket握手
-    ws_stream_.async_accept([self = shared_from_this()](beast::error_code ec) {
-        if (ec) {
-            self->defaultErrorHandler(self, ec, "WebSocket handshake failed");
-            return;
-        }
-        // 注意要先生成id再添加到服务器
-        self->session_id_ = self->generate_id();
-        self->server_->add_session(self); //注册session到服务器并执行连接回调
-        if (LogManager::IsLoggingEnabled("websocket_session")) {
-            LogManager::GetLogger("websocket_session")
-                    ->info("Session {} successfully added to server, token: {}", 
-                           self->session_id_, self->token_.empty() ? "none" : "present");
-        }
-        self->do_read();
-    });
+            // 使用解析到的请求完成WebSocket握手
+            self->ws_stream_.async_accept(*req, [self](beast::error_code ec2) {
+                if (ec2) {
+                    self->defaultErrorHandler(self, ec2, "WebSocket handshake failed");
+                    return;
+                }
+                // 清空HTTP读取时的缓冲
+                self->buffer_.consume(self->buffer_.size());
+                // 使用二进制帧进行通信（protobuf）
+                self->ws_stream_.text(false);
+                // 生成id并注册到服务器
+                self->session_id_ = self->generate_id();
+                self->server_->add_session(self);
+                if (LogManager::IsLoggingEnabled("websocket_session")) {
+                    LogManager::GetLogger("websocket_session")
+                            ->info("Session {} successfully added to server, token: {}",
+                                   self->session_id_, self->token_.empty() ? "none" : "present");
+                }
+                self->do_read();
+            });
+        });
 }
 
 void WebSocketSession::do_read() {

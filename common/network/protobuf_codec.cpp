@@ -1,6 +1,7 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/message.h>
 #include <cstring>
+#include <bit>
 #include "protobuf_codec.hpp"
 // 包含Protobuf定义
 #include "../proto/base.pb.h"  // 正确的BaseResponse定义路径
@@ -281,6 +282,95 @@ bool ProtobufCodec::decode(const std::string& input,
         return true;
     } catch (const std::exception& e) {
         LogManager::GetLogger("protobuf_codec")->error("Decode error: {}", e.what());
+        return false;
+    }
+}
+
+bool ProtobufCodec::decodeEnvelope(const std::string& input,
+                                   im::base::IMHeader& header_out,
+                                   std::string& type_name_out,
+                                   std::string& message_bytes_out) {
+    try {
+        // 基本检查
+        if (input.empty() || input.size() < 4) {
+            LogManager::GetLogger("protobuf_codec")->warn("Empty or too small input data");
+            return false;
+        }
+
+        // CRC 校验
+        uint32_t received_crc;
+        memcpy(&received_crc, input.data() + input.size() - 4, 4);
+        uint32_t calculated_crc = calculateCRC32(input.data(), input.size() - 4);
+        if (received_crc != calculated_crc) {
+            LogManager::GetLogger("protobuf_codec")
+                    ->error("CRC32 verification failed. Expected: {}, Received: {}", calculated_crc,
+                            received_crc);
+            return false;
+        }
+
+        // 去除CRC部分
+        std::string data_without_crc = input.substr(0, input.size() - 4);
+        ArrayInputStream array_in(data_without_crc.data(), static_cast<int>(data_without_crc.size()));
+        CodedInputStream coded_in(&array_in);
+        coded_in.SetTotalBytesLimit(64 << 20);
+
+        // 读取 header_size 和 type_name_size
+        uint32_t header_size = 0;
+        if (!coded_in.ReadVarint32(&header_size)) {
+            LogManager::GetLogger("protobuf_codec")->error("Failed to read header size");
+            return false;
+        }
+        uint32_t type_name_size = 0;
+        if (!coded_in.ReadVarint32(&type_name_size)) {
+            LogManager::GetLogger("protobuf_codec")->error("Failed to read type name size");
+            return false;
+        }
+
+        if (header_size == 0 || type_name_size == 0) {
+            LogManager::GetLogger("protobuf_codec")->error("Invalid sizes: header={}, type_name={}",
+                                                             header_size, type_name_size);
+            return false;
+        }
+
+        int after_sizes = coded_in.CurrentPosition();
+        int remaining_bytes = static_cast<int>(data_without_crc.size()) - after_sizes;
+        if ((header_size + type_name_size) > static_cast<uint32_t>(remaining_bytes)) {
+            LogManager::GetLogger("protobuf_codec")
+                    ->error("Header and type name size {} exceeds available data {}",
+                            (header_size + type_name_size), remaining_bytes);
+            return false;
+        }
+
+        // 读取类型名
+        type_name_out.assign(data_without_crc.data() + after_sizes, type_name_size);
+        if (!coded_in.Skip(type_name_size)) {
+            LogManager::GetLogger("protobuf_codec")->error("Failed to skip type name data");
+            return false;
+        }
+
+        // 读取 header bytes 并解析 header
+        std::string header_data(data_without_crc.data() + after_sizes + type_name_size, header_size);
+        if (!coded_in.Skip(header_size)) {
+            LogManager::GetLogger("protobuf_codec")->error("Failed to skip header data");
+            return false;
+        }
+        if (!header_out.ParseFromString(header_data) || !header_out.IsInitialized()) {
+            LogManager::GetLogger("protobuf_codec")->error("Failed to parse IMHeader");
+            return false;
+        }
+
+        // 剩余部分即为消息体原始字节
+        int message_position = coded_in.CurrentPosition();
+        int message_size = static_cast<int>(data_without_crc.size()) - message_position;
+        if (message_size < 0) message_size = 0;
+        message_bytes_out.assign(data_without_crc.data() + message_position, message_size);
+
+        LogManager::GetLogger("protobuf_codec")
+                ->debug("Decoded envelope: cmd_id={}, type={}, payload_size={}",
+                        header_out.cmd_id(), type_name_out, message_size);
+        return true;
+    } catch (const std::exception& e) {
+        LogManager::GetLogger("protobuf_codec")->error("decodeEnvelope error: {}", e.what());
         return false;
     }
 }

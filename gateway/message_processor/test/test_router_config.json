@@ -35,13 +35,21 @@
                 "service_name": "user_service",
                 "endpoint": "127.0.0.1:8001",
                 "timeout_ms": 5000,
-                "max_connections": 10
+                "max_connections": 10,
+                "cmd_range": [
+                    10001,
+                    10099
+                ]
             },
             {
                 "service_name": "message_service",
                 "endpoint": "127.0.0.1:8002",
                 "timeout_ms": 5000,
-                "max_connections": 10
+                "max_connections": 10,
+                "cmd_range": [
+                    20001,
+                    20099
+                ]
             }
         ]
     },

@@ -35,3 +35,12 @@ message BaseResponse {
     string error_message = 2;  // 错误信息，成功时为空
     bytes payload = 3;         // 响应数据载荷，通常是JSON或Protobuf序列化后的数据
 }
+
+// message BaseRequest {
+//     IMHeader header = 1;  // 消息头
+//     bytes payload = 2;    // 请求数据载荷，通常是JSON或Protobuf序列化后的数据
+// }
+
+message BaseRequest {
+    bytes payload = 1;  // 请求数据载荷，通常是JSON或Protobuf序列化后的数据
+}

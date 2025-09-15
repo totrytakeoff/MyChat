@@ -255,6 +255,25 @@ void GatewayServer::init_io_service_pool() {
 
 void GatewayServer::init_ws_server(uint16_t port) {
     try {
+        // 配置SSL上下文（测试环境下通过环境变量加载证书）
+        try {
+            ssl_ctx_.set_options(boost::asio::ssl::context::default_workarounds |
+                                  boost::asio::ssl::context::no_sslv2 |
+                                  boost::asio::ssl::context::no_sslv3 |
+                                  boost::asio::ssl::context::single_dh_use);
+
+            const char* cert_path = "/home/myself/workspace/MyChat/test/network/test_cert.pem";
+            const char* key_path  = "/home/myself/workspace/MyChat/test/network/test_key.pem";
+            // 强制使用测试环境的绝对路径
+                server_logger->info("Using hardcoded test SSL cert: {} and key: {}", cert_path, key_path);
+                ssl_ctx_.use_certificate_chain_file("/home/myself/workspace/MyChat/test/network/test_cert.pem");
+                ssl_ctx_.use_private_key_file("/home/myself/workspace/MyChat/test/network/test_key.pem", boost::asio::ssl::context::pem);
+            // 始终使用测试证书
+            server_logger->info("Using hardcoded test SSL cert");
+        } catch (const std::exception& e) {
+            server_logger->error("SSL context configuration failed: {}", e.what());
+        }
+
         // 构造websocket服务器消息处理函数
         std::function<void(SessionPtr, beast::flat_buffer&&)>
         message_handler([this](SessionPtr sessionPtr, beast::flat_buffer&& buffer) -> void {
@@ -267,29 +286,27 @@ void GatewayServer::init_ws_server(uint16_t port) {
                         result.error_message, result.error_code);
                 return;  // 解析失败，直接返回
             }
-            if (msg_processor_) {
-                // 新架构：认证检查由MessageProcessor负责，Gateway根据错误码处理连接
+            if (msg_processor_1) {
                 // 在移动消息前保存header信息，用于构建错误响应时的seq
                 base::IMHeader original_header = result.message->get_header();
 
-                auto coro_task =
-                        this->msg_processor_->coro_process_message(std::move(result.message));
+                // 使用普通消息处理器，避免协程
+                auto future = this->msg_processor_1->process_message(std::move(result.message));
 
-                auto&& coro_mgr = CoroutineManager::getInstance();
-
-                coro_mgr.schedule([this, task = std::move(coro_task), sessionPtr,
-                                   original_header]() mutable -> im::common::Task<void> {
+                std::thread([this, sessionPtr, original_header, fut = std::move(future)]() mutable {
                     try {
-                        auto result = co_await task;
+                        auto final_result = fut.get();
+                        this->server_logger->info(
+                                "WS processing completed: status_code={}, has_pb={}, has_json={}",
+                                final_result.status_code,
+                                !final_result.protobuf_message.empty(),
+                                !final_result.json_body.empty());
 
-                        // 根据错误码处理
-                        if (result.status_code == base::ErrorCode::AUTH_FAILED) {
-                            // 认证失败：发送错误消息，断开连接，从ConnectionManager移除
+                        if (final_result.status_code == base::ErrorCode::AUTH_FAILED) {
                             this->server_logger->warn(
                                     "Authentication failed for session {}, closing connection",
                                     sessionPtr->get_session_id());
 
-                            // 构建protobuf格式的认证失败响应，使用原始请求的seq
                             base::IMHeader error_header = ProtobufCodec::returnHeaderBuilder(
                                     original_header,
                                     im::utils::ServiceId::getDeviceId(),
@@ -298,55 +315,47 @@ void GatewayServer::init_ws_server(uint16_t port) {
                             std::string protobuf_response = ProtobufCodec::buildAuthFailedResponse(
                                     error_header,
                                     "Token verification failed. Connection will be closed.");
-
                             if (!protobuf_response.empty()) {
                                 sessionPtr->send(protobuf_response);
                             }
 
-                            // 从ConnectionManager中移除连接
                             if (this->conn_mgr_) {
                                 this->conn_mgr_->remove_connection(sessionPtr);
                                 this->server_logger->debug(
-                                        "Removed session {} from ConnectionManager due to auth "
-                                        "failure",
+                                        "Removed session {} from ConnectionManager due to auth failure",
                                         sessionPtr->get_session_id());
                             }
 
-                            // 延迟关闭连接，确保错误消息能发送出去
                             std::thread([sessionPtr]() {
                                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
                                 sessionPtr->close();
                             }).detach();
-
-                        } else if (result.status_code != 0) {
-                            // 其他错误情况
+                        } else if (final_result.status_code != 0) {
                             this->server_logger->error("Message processing error: {} (code: {})",
-                                                       result.error_message, result.status_code);
-
-                            // 发送错误响应（如果有protobuf响应数据）
-                            if (!result.protobuf_message.empty()) {
-                                sessionPtr->send(result.protobuf_message);
+                                                       final_result.error_message, final_result.status_code);
+                            if (!final_result.protobuf_message.empty()) {
+                                sessionPtr->send(final_result.protobuf_message);
+                            } else if (!final_result.json_body.empty()) {
+                                sessionPtr->send(final_result.json_body);
                             }
                         } else {
-                            // 成功情况：发送响应给客户端
-                            if (!result.protobuf_message.empty()) {
-                                sessionPtr->send(result.protobuf_message);
-                            } else if (!result.json_body.empty()) {
-                                // 注意：WebSocket应该优先使用protobuf格式
+                            this->server_logger->info("WS success branch, sending response");
+                            if (!final_result.protobuf_message.empty()) {
+                                sessionPtr->send(final_result.protobuf_message);
+                            } else if (!final_result.json_body.empty()) {
                                 this->server_logger->warn(
                                         "WebSocket sending JSON response, should use protobuf");
-                                sessionPtr->send(result.json_body);
+                                sessionPtr->send(final_result.json_body);
                             }
                         }
                     } catch (const std::exception& e) {
-                        // 处理协程执行异常
                         this->server_logger->error(
-                                "CoroMessageProcessor exception in gateway.ws_server callback: {}",
+                                "MessageProcessor exception in gateway.ws_server callback: {}",
                                 e.what());
                     }
-                }());
+                }).detach();
             } else {
-                server_logger->error("CoroMessageProcessor is not initialized.");
+                server_logger->error("MessageProcessor is not initialized.");
                 init_msg_processor();
             }
         });

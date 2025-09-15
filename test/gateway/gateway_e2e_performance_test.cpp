@@ -8,6 +8,7 @@
 #include <httplib.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <fstream>
 
 using namespace std;
 #include "../../gateway/auth/multi_platform_auth.hpp"
@@ -40,6 +41,37 @@ std::string make_json_body(const std::string& from_uid, const std::string& to_ui
     j["to_uid"] = to_uid;
     j["text"] = text;
     return j.dump();
+}
+
+// Generic HTTP request helper
+bool http_request(httplib::Client& cli, const std::string& method, const std::string& path,
+                  const httplib::Headers& headers, const std::string& body,
+                  const char* content_type, int expected_status, std::string* out_body = nullptr) {
+    if (method == "GET") {
+        auto res = cli.Get(path.c_str(), headers);
+        if (!res) return false;
+        if (out_body) *out_body = res->body;
+        return res->status == expected_status;
+    } else if (method == "POST") {
+        auto res = content_type ? cli.Post(path.c_str(), headers, body, content_type)
+                                : cli.Post(path.c_str(), headers, body, "application/octet-stream");
+        if (!res) return false;
+        if (out_body) *out_body = res->body;
+        return res->status == expected_status;
+    } else if (method == "PUT") {
+        auto res = content_type ? cli.Put(path.c_str(), headers, body, content_type)
+                                : cli.Put(path.c_str(), headers, body, "application/octet-stream");
+        if (!res) return false;
+        if (out_body) *out_body = res->body;
+        return res->status == expected_status;
+    } else if (method == "PATCH") {
+        auto res = content_type ? cli.Patch(path.c_str(), headers, body, content_type)
+                                : cli.Patch(path.c_str(), headers, body, "application/octet-stream");
+        if (!res) return false;
+        if (out_body) *out_body = res->body;
+        return res->status == expected_status;
+    }
+    return false;
 }
 
 }  // namespace
@@ -125,6 +157,21 @@ protected:
         return res->status == expected_status;
     }
 
+    httplib::Client make_client() const {
+        httplib::Client cli(host, http_port);
+        cli.set_keep_alive(false);
+        cli.set_connection_timeout(2, 0);
+        cli.set_read_timeout(30, 0);
+        cli.set_write_timeout(5, 0);
+        return cli;
+    }
+
+    httplib::Headers default_headers(bool with_bearer = true) const {
+        return {{"Authorization", (with_bearer ? std::string("Bearer ") : std::string("")) + token},
+                {"X-Device-ID", device_id},
+                {"X-Platform", platform}};
+    }
+
 protected:
     std::string platform_config_path;
     std::string router_config_path;
@@ -151,6 +198,47 @@ TEST_F(GatewayE2EPerfTest, HttpSendMessage_InvalidToken) {
     bool ok = http_send_message_once(/*expected_status ignored*/ 0);
     token = old;
     ASSERT_TRUE(ok);  // 只要有响应即可
+}
+
+// 健壮性：空JSON体但Content-Type=application/json
+TEST_F(GatewayE2EPerfTest, Http_EmptyJsonBody_IsTolerated) {
+    auto cli = make_client();
+    auto headers = default_headers();
+    std::string body;
+    bool ok = http_request(cli, "POST", "/api/v1/message/send", headers, "{}",
+                           "application/json", 200, &body);
+    ASSERT_TRUE(ok);
+}
+
+// 健壮性：POST 非JSON Content-Type 不解析为JSON
+TEST_F(GatewayE2EPerfTest, Http_NonJsonContentType_NoJsonParsing) {
+    auto cli = make_client();
+    auto headers = default_headers();
+    std::string body;
+    bool ok = http_request(cli, "POST", "/api/v1/message/send", headers, "raw-bytes",
+                           "application/octet-stream", 200, &body);
+    ASSERT_TRUE(ok);
+}
+
+// 健壮性：GET带参数解析为JSON
+TEST_F(GatewayE2EPerfTest, Http_Get_With_Params_AsJson) {
+    auto cli = make_client();
+    auto headers = default_headers();
+    auto res = cli.Get("/api/v1/message/send?from_uid=aa&to_uid=bb&text=hi", headers);
+    ASSERT_TRUE(res);
+    // 处理器始终返回200
+    EXPECT_EQ(res->status, 200);
+}
+
+// 健壮性：缺失Device-ID 导致401
+TEST_F(GatewayE2EPerfTest, Http_Missing_DeviceId_Should_401) {
+    auto cli = make_client();
+    httplib::Headers headers = {{"Authorization", std::string("Bearer ") + token},
+                                {"X-Platform", platform}};  // no device-id
+    auto res = cli.Post("/api/v1/message/send", headers, make_json_body(user_id, user_id, "hi"),
+                        "application/json");
+    ASSERT_TRUE(res);
+    EXPECT_EQ(res->status, 401);
 }
 
 // 性能：单线程串行请求，采样P50/P95
@@ -219,4 +307,69 @@ TEST_F(GatewayE2EPerfTest, Perf_Concurrent_Requests) {
     EXPECT_LT(p.p95_ms, 400.0);
     EXPECT_LT(p.max_ms, 1200.0);
     EXPECT_GT(rps, 150.0);
+}
+
+// 性能：对比简单/复杂处理逻辑，并保存结果
+TEST_F(GatewayE2EPerfTest, Perf_Simple_vs_Complex_SaveToFile) {
+    // 简单：直接返回JSON（已注册2001）
+    // 复杂：模拟较重处理——附加注册一个处理器2002，执行一些CPU与sleep
+    server->register_message_handlers(2002, [this](const UnifiedMessage& msg) -> ProcessorResult {
+        // 模拟复杂处理
+        volatile double sink = 0;
+        for (int i = 0; i < 200000; ++i) sink += std::sqrt(static_cast<double>(i));
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        nlohmann::json j;
+        j["code"] = 200;
+        j["body"] = "complex_response";
+        j["err_msg"] = "";
+        return ProcessorResult(0, "", "", j.dump());
+    });
+
+    auto cli = make_client();
+    auto headers = default_headers();
+
+    auto bench = [&](const std::string& path, int N) -> std::vector<double> {
+        std::vector<double> samples_ms; samples_ms.reserve(N);
+        for (int i = 0; i < N; ++i) {
+            auto t0 = std::chrono::high_resolution_clock::now();
+            auto res = cli.Post(path.c_str(), headers, make_json_body(user_id, user_id, "hi"),
+                                "application/json");
+            auto t1 = std::chrono::high_resolution_clock::now();
+            EXPECT_TRUE(static_cast<bool>(res));
+            if (res) {
+                EXPECT_EQ(res->status, 200);
+            }
+            samples_ms.push_back(std::chrono::duration<double, std::milli>(t1 - t0).count());
+        }
+        return samples_ms;
+    };
+
+    // 预热
+    for (int i = 0; i < 5; ++i)
+        ASSERT_TRUE(http_send_message_once(200));
+
+    auto simple_ms = bench("/api/v1/message/send", 60);
+    auto complex_ms = bench("/api/v1/message/history", 60);  // 映射到2002
+
+    auto ps = compute_percentiles(simple_ms);
+    auto pc = compute_percentiles(complex_ms);
+
+    // 控制台打印
+    std::cout << "Simple P50/P95/Max (ms): " << ps.p50_ms << ", " << ps.p95_ms << ", "
+              << ps.max_ms << std::endl;
+    std::cout << "Complex P50/P95/Max (ms): " << pc.p50_ms << ", " << pc.p95_ms << ", "
+              << pc.max_ms << std::endl;
+
+    // 保存到文件
+    std::ofstream ofs("gateway_http_perf_results.json", std::ios::out | std::ios::trunc);
+    ASSERT_TRUE(ofs.is_open());
+    nlohmann::json jr;
+    jr["simple"]["p50_ms"] = ps.p50_ms;
+    jr["simple"]["p95_ms"] = ps.p95_ms;
+    jr["simple"]["max_ms"] = ps.max_ms;
+    jr["complex"]["p50_ms"] = pc.p50_ms;
+    jr["complex"]["p95_ms"] = pc.p95_ms;
+    jr["complex"]["max_ms"] = pc.max_ms;
+    ofs << jr.dump(2);
+    ofs.close();
 }

@@ -351,18 +351,18 @@ std::unique_ptr<UnifiedMessage> MessageParser::parse_websocket_message(
     std::shared_lock<std::shared_mutex> lock(config_mutex_);
 
     try {
-        // 1. 使用ProtobufCodec解码WebSocket消息
+        // 1. 仅解包，不解析消息体
         im::base::IMHeader header;
-
-        // 临时消息对象用于解析
-        im::base::BaseResponse temp_message;
-        if (!protobuf_codec_.decode(raw_message, header, temp_message)) {
+        std::string type_name;
+        std::string payload_bytes;
+        if (!im::network::ProtobufCodec::decodeEnvelope(raw_message, header, type_name, payload_bytes)) {
             decode_failures_.fetch_add(1);
-            logger->warn("Failed to decode WebSocket Protobuf message");
+            logger->warn("Failed to decode WebSocket envelope");
             return nullptr;
         }
 
-        logger->debug("WebSocket message decoded successfully: CMD_ID={}", header.cmd_id());
+        logger->debug("WebSocket message decoded successfully: CMD_ID={}, type={}",
+                      header.cmd_id(), type_name);
 
         // 2. 创建UnifiedMessage
         auto message = std::make_unique<UnifiedMessage>();
@@ -379,17 +379,10 @@ std::unique_ptr<UnifiedMessage> MessageParser::parse_websocket_message(
 
         message->set_session_context(std::move(context));
 
-        // 5. WebSocket优化：存储原始数据，避免不必要的对象创建
-        // IMHeader已经包含了所有必要信息（cmd_id, token, device_id等）
-        // 上层业务可以根据需要选择使用原始数据或解析为具体对象
+        // 5. 保存原始帧、类型名与消息体原始字节
         message->set_raw_protobuf_data(raw_message);
-
-        // 可选：如果上层确实需要BaseResponse对象，也可以设置
-        // 但大多数情况下，直接使用raw_data更高效
-        if (logger->should_log(spdlog::level::debug)) {
-            // 只在debug模式下创建对象用于日志
-            message->set_protobuf_message(std::make_unique<im::base::BaseResponse>(temp_message));
-        }
+        message->set_protobuf_type_name(std::move(type_name));
+        message->set_protobuf_payload(std::move(payload_bytes));
 
         logger->debug("WebSocket message processed efficiently with raw data preservation");
 
@@ -424,20 +417,20 @@ ParseResult MessageParser::parse_websocket_message_enhanced(const std::string& r
     std::shared_lock<std::shared_mutex> lock(config_mutex_);
 
     try {
-        // 1. 使用ProtobufCodec解码WebSocket消息
+        // 1. 仅解包，不解析消息体
         im::base::IMHeader header;
-
-        // 临时消息对象用于解析
-        im::base::BaseResponse temp_message;
-        if (!protobuf_codec_.decode(raw_message, header, temp_message)) {
+        std::string type_name;
+        std::string payload_bytes;
+        if (!im::network::ProtobufCodec::decodeEnvelope(raw_message, header, type_name, payload_bytes)) {
             decode_failures_.fetch_add(1);
-            std::string error_msg = "Failed to decode WebSocket Protobuf message, size: " +
+            std::string error_msg = "Failed to decode WebSocket envelope, size: " +
                                     std::to_string(raw_message.size()) + " bytes";
             logger->warn(error_msg);
             return ParseResult::error_result(ParseResult::DECODE_FAILED, error_msg);
         }
 
-        logger->debug("WebSocket message decoded successfully: CMD_ID={}", header.cmd_id());
+        logger->debug("WebSocket message decoded successfully: CMD_ID={}, type={}",
+                      header.cmd_id(), type_name);
 
         // 2. 验证解码后的数据
         if (header.cmd_id() == 0) {
@@ -460,13 +453,10 @@ ParseResult MessageParser::parse_websocket_message_enhanced(const std::string& r
 
         message->set_session_context(std::move(context));
 
-        // 6. WebSocket优化：存储原始数据，避免不必要的对象创建
+        // 6. 保存原始数据、类型名与消息体原始字节
         message->set_raw_protobuf_data(raw_message);
-
-        // 可选：如果需要BaseResponse对象，也可以设置
-        if (logger->should_log(spdlog::level::debug)) {
-            message->set_protobuf_message(std::make_unique<im::base::BaseResponse>(temp_message));
-        }
+        message->set_protobuf_type_name(std::move(type_name));
+        message->set_protobuf_payload(std::move(payload_bytes));
 
         websocket_messages_parsed_.fetch_add(1);
         logger->debug("WebSocket message processing completed successfully");

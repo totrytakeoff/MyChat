@@ -219,6 +219,13 @@ TEST_F(MessageParserTest, ParseWebSocketMessage_Heartbeat) {
     EXPECT_EQ(result->get_token(), "heartbeat_token");
     EXPECT_EQ(result->get_device_id(), "heartbeat_device");
     EXPECT_EQ(result->get_platform(), "test_platform");
+
+    // 新增：断言类型名与payload
+    EXPECT_TRUE(result->has_protobuf_type_name());
+    EXPECT_EQ(result->get_protobuf_type_name(), im::base::BaseResponse::descriptor()->full_name());
+    EXPECT_TRUE(result->has_protobuf_payload());
+    im::base::BaseResponse resp;
+    ASSERT_TRUE(resp.ParseFromString(result->get_protobuf_payload()));
 }
 
 TEST_F(MessageParserTest, ParseWebSocketMessage_Login) {
@@ -238,6 +245,13 @@ TEST_F(MessageParserTest, ParseWebSocketMessage_Login) {
     EXPECT_EQ(result->get_platform(), "mobile");
     EXPECT_EQ(result->get_from_uid(), "wsuser");
     EXPECT_TRUE(result->has_raw_protobuf_data());
+
+    // 新增：断言类型名与payload
+    EXPECT_TRUE(result->has_protobuf_type_name());
+    EXPECT_EQ(result->get_protobuf_type_name(), im::base::BaseResponse::descriptor()->full_name());
+    EXPECT_TRUE(result->has_protobuf_payload());
+    im::base::BaseResponse resp;
+    ASSERT_TRUE(resp.ParseFromString(result->get_protobuf_payload()));
 }
 
 TEST_F(MessageParserTest, ParseWebSocketMessage_Chat) {
@@ -271,6 +285,13 @@ TEST_F(MessageParserTest, ParseWebSocketMessageEnhanced_Success) {
     EXPECT_TRUE(result.error_message.empty());
     ASSERT_NE(result.message, nullptr);
     EXPECT_EQ(result.message->get_session_id(), "ws_session_enhanced");
+
+    // 新增：断言类型名与payload
+    EXPECT_TRUE(result.message->has_protobuf_type_name());
+    EXPECT_EQ(result.message->get_protobuf_type_name(), im::base::BaseResponse::descriptor()->full_name());
+    EXPECT_TRUE(result.message->has_protobuf_payload());
+    im::base::BaseResponse resp;
+    ASSERT_TRUE(resp.ParseFromString(result.message->get_protobuf_payload()));
 }
 
 TEST_F(MessageParserTest, ParseWebSocketMessageEnhanced_EmptyMessage) {

@@ -82,6 +82,11 @@ public:
     bool register_message_handlers(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler);
     bool force_register_handler(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler);  // Test helper
 
+    // 测试辅助：注册协程处理器（用于WebSocket路径）
+    int register_coro_message_handler(uint32_t cmd_id, CoroProcessorFunction handler) {
+        return msg_processor_ ? msg_processor_->register_coro_processor(cmd_id, std::move(handler)) : -2;
+    }
+
 private:
     // bool init_network_components();
     void init_ws_server(uint16_t port);  // param : ioc , ssl_context ,port , message_callback
