@@ -84,7 +84,7 @@ public:
 
     // 测试辅助：注册协程处理器（用于WebSocket路径）
     int register_coro_message_handler(uint32_t cmd_id, CoroProcessorFunction handler) {
-        return msg_processor_ ? msg_processor_->register_coro_processor(cmd_id, std::move(handler)) : -2;
+        return coro_msg_processor_ ?coro_msg_processor_->register_coro_processor(cmd_id, std::move(handler)) : -2;
     }
 
 private:
@@ -128,8 +128,8 @@ private:
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<RouterManager> router_mgr_;
     std::unique_ptr<MessageParser> msg_parser_;
-    std::unique_ptr<CoroMessageProcessor> msg_processor_;
-    std::unique_ptr<MessageProcessor> msg_processor_1;
+    std::unique_ptr<CoroMessageProcessor> coro_msg_processor_;
+    std::unique_ptr<MessageProcessor> msg_processor_;
 
     // 配置和日志管理器
     std::shared_ptr<ConfigManager> config_mgr_;  // 后续用于读取统一配置

@@ -156,9 +156,9 @@ std::string GatewayServer::get_server_stats() const {
        << msg_parser_->get_stats().websocket_messages_parsed << std::endl;
     ss << " parse.decode failed count: " << msg_parser_->get_stats().decode_failures << std::endl;
     ss << " parse.routing failed count:" << msg_parser_->get_stats().routing_failures << std::endl;
-    ss << " processor.coro_callback_count: " << msg_processor_->get_coro_callback_count()
+    ss << " processor.coro_callback_count: " << coro_msg_processor_->get_coro_callback_count()
        << std::endl;
-    ss << " processor.get_active_task_count:" << msg_processor_->get_active_task_count()
+    ss << " processor.get_active_task_count:" << coro_msg_processor_->get_active_task_count()
        << std::endl;
     return std::string(ss.str());
 }
@@ -286,12 +286,12 @@ void GatewayServer::init_ws_server(uint16_t port) {
                         result.error_message, result.error_code);
                 return;  // 解析失败，直接返回
             }
-            if (msg_processor_1) {
+            if (msg_processor_) {
                 // 在移动消息前保存header信息，用于构建错误响应时的seq
                 base::IMHeader original_header = result.message->get_header();
 
                 // 使用普通消息处理器，避免协程
-                auto future = this->msg_processor_1->process_message(std::move(result.message));
+                auto future = this->msg_processor_->process_message(std::move(result.message));
 
                 std::thread([this, sessionPtr, original_header, fut = std::move(future)]() mutable {
                     try {
@@ -415,11 +415,11 @@ void GatewayServer::init_http_server(uint16_t port) {
                                 parse_result.message ? parse_result.message->format_info().str()
                                                      : "unknown";
 
-                        if (msg_processor_) {
+                        if (coro_msg_processor_) {
                             server_logger->debug("Processing message: {}",
                                                  parse_result.message->format_info().str());
                             // HTTP需要同步等待结果，使用std::promise/std::future机制更安全
-                            auto future = msg_processor_1->process_message(
+                            auto future = msg_processor_->process_message(
                                     std::move(parse_result.message));
 
                             // 等待结果，带超时
@@ -529,20 +529,20 @@ void GatewayServer::init_msg_parser() {
 }
 
 void GatewayServer::init_msg_processor() {
-    msg_processor_ = std::make_unique<CoroMessageProcessor>(router_mgr_, auth_mgr_);
-    msg_processor_1 = std::make_unique<MessageProcessor>(router_mgr_, auth_mgr_);
+    coro_msg_processor_ = std::make_unique<CoroMessageProcessor>(router_mgr_, auth_mgr_);
+    msg_processor_ = std::make_unique<MessageProcessor>(router_mgr_, auth_mgr_);
 }
 
 bool GatewayServer::register_message_handlers(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler) {
     server_logger->info("GatewayServer::register_message_handlers called for cmd_id: {}", cmd_id);
-    if (!msg_processor_1) {
+    if (!msg_processor_) {
         server_logger->error("MessageProcessor is not initialized.");
         return false;
     }
     try {
-        server_logger->info("Calling msg_processor_1->register_processor for cmd_id: {}", cmd_id);
-        int ret = msg_processor_1->register_processor(cmd_id, handler);
-        server_logger->info("msg_processor_1->register_processor returned: {} for cmd_id: {}", ret, cmd_id);
+        server_logger->info("Calling msg_processor_->register_processor for cmd_id: {}", cmd_id);
+        int ret = msg_processor_->register_processor(cmd_id, handler);
+        server_logger->info("msg_processor_->register_processor returned: {} for cmd_id: {}", ret, cmd_id);
         if (ret != 0) {
             switch (ret) {
                 case 1:
@@ -606,7 +606,7 @@ void GatewayServer::register_message_handlers() {
         return;
 
         // 发送消息处理器示例 (CMD 2001) - 使用protobuf响应
-        msg_processor_->register_coro_processor(
+        coro_msg_processor_->register_coro_processor(
                 2001, [this](const UnifiedMessage& msg) -> Task<CoroProcessorResult> {
                     server_logger->info("Processing send message from user: {} to user: {}",
                                         msg.get_from_uid(), msg.get_to_uid());
