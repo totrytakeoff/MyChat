@@ -24,34 +24,24 @@ include_directories(
   ${gRPC_INCLUDE_DIRS}
 )
 
-# 生成的proto代码
-set(CODEC_PROTO_SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/proto/codec_service.pb.cc
-  ${CMAKE_CURRENT_SOURCE_DIR}/proto/codec_service.grpc.pb.cc
-)
-
-# 服务实现代码
-set(CODEC_SERVICE_SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/codec_service_impl.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/codec_grpc_server.cpp
+# 收集源文件 - 只包含本服务的源文件
+set(SOURCES
+    main.cpp
+    codec_service_impl.cpp
 )
 
 # 创建可执行文件
-add_executable(codec_service 
-  ${CODEC_PROTO_SRCS}
-  ${CODEC_SERVICE_SRCS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-)
+add_executable(codec_service ${SOURCES})
 
 # 链接库
 target_link_libraries(codec_service
-  ${gRPC::grpc++}
-  ${Protobuf_LIBRARIES}
-  im_network
-  im_utils
-  im_base
-  pthread
-  dl
+    PRIVATE
+        gRPC::grpc++
+        gRPC::grpc++_reflection
+        im::codec_service
+        im::utils
+        im::network
+        Threads::Threads
 )
 
 # 如果 im_network/im_utils/im_base 是通过 add_subdirectory 引入的 target，确保它们也被链接

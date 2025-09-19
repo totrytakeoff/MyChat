@@ -63,8 +63,6 @@ target_link_libraries(gateway_manual_server
 )
 
 
-file(COPY test_auth_config.json test_auth_config.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY test_auth_config.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # 添加测试目标
 include(CTest)

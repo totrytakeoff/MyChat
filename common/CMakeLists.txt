@@ -1,7 +1,7 @@
 # common/CMakeLists.txt
 
 # 网络库
-add_library(im::network STATIC
+add_library(im_network STATIC
     network/IOService_pool.cpp
     network/tcp_server.cpp
     network/tcp_session.cpp
@@ -10,9 +10,9 @@ add_library(im::network STATIC
     network/protobuf_codec.cpp
 )
 
-target_compile_options(im::network PRIVATE -fcoroutines)
+target_compile_options(im_network PRIVATE -fcoroutines)
 
-target_link_libraries(im::network
+target_link_libraries(im_network
     PUBLIC
         Threads::Threads
         Boost::system
@@ -21,13 +21,16 @@ target_link_libraries(im::network
         ${Protobuf_LIBRARIES}
 )
 
-target_include_directories(im::network
+target_include_directories(im_network
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/network
 )
 
+# 创建命名空间别名
+add_library(im::network ALIAS im_network)
+
 # 工具库
-add_library(im::utils STATIC
+add_library(im_utils STATIC
     utils/log_manager.cpp
     utils/coroutine_manager.cpp
     utils/service_identity.cpp
@@ -41,37 +44,43 @@ add_library(im::utils STATIC
     utils/time_utils.hpp
 )
 
-target_compile_options(im::utils PRIVATE -fcoroutines)
+target_compile_options(im_utils PRIVATE -fcoroutines)
 
-target_link_libraries(im::utils
+target_link_libraries(im_utils
     PUBLIC
         spdlog::spdlog
         nlohmann_json::nlohmann_json
 )
 
-target_include_directories(im::utils
+target_include_directories(im_utils
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/utils
 )
 
+# 创建命名空间别名
+add_library(im::utils ALIAS im_utils)
+
 # 数据库库
-add_library(im::database STATIC
+add_library(im_database STATIC
     database/redis_mgr.cpp
 )
 
-target_link_libraries(im::database
+target_link_libraries(im_database
     PUBLIC
         redis++::redis++_static
         nlohmann_json::nlohmann_json
 )
 
-target_include_directories(im::database
+target_include_directories(im_database
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/database
 )
 
+# 创建命名空间别名
+add_library(im::database ALIAS im_database)
+
 # Protobuf库
-add_library(im::proto STATIC
+add_library(im_proto STATIC
     proto/base.pb.cc
     proto/command.pb.cc
     proto/user.pb.cc
@@ -81,15 +90,18 @@ add_library(im::proto STATIC
     proto/push.pb.cc
 )
 
-target_link_libraries(im::proto
+target_link_libraries(im_proto
     PUBLIC
         ${Protobuf_LIBRARIES}
         ${ABSL_LIBRARIES}
         utf8_range::utf8_range utf8_range::utf8_validity
 )
 
-target_include_directories(im::proto
+target_include_directories(im_proto
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/proto
         ${Protobuf_INCLUDE_DIRS}
 )
+
+# 创建命名空间别名
+add_library(im::proto ALIAS im_proto)

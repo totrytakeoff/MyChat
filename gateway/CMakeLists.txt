@@ -1,6 +1,6 @@
 # gateway/CMakeLists.txt
 
-add_library(im::gateway_core STATIC
+add_library(im_gateway_core STATIC
     gateway_server/gateway_server-t1.cpp
     connection_manager/connection_manager.cpp
     router/router.mgr.cpp
@@ -9,7 +9,7 @@ add_library(im::gateway_core STATIC
     message_processor/message_processor.cpp
 )
 
-target_link_libraries(im::gateway_core
+target_link_libraries(im_gateway_core
     PUBLIC
         im::network
         im::utils
@@ -21,7 +21,7 @@ target_link_libraries(im::gateway_core
         ${ABSL_LIBRARIES}
 )
 
-target_include_directories(im::gateway_core
+target_include_directories(im_gateway_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/gateway_server
         ${CMAKE_CURRENT_SOURCE_DIR}/connection_manager
@@ -29,11 +29,14 @@ target_include_directories(im::gateway_core
         ${CMAKE_CURRENT_SOURCE_DIR}/message_processor
 )
 
-add_library(im::gateway_auth STATIC
+# 创建命名空间别名
+add_library(im::gateway_core ALIAS im_gateway_core)
+
+add_library(im_gateway_auth STATIC
     auth/multi_platform_auth.cpp
 )
 
-target_link_libraries(im::gateway_auth
+target_link_libraries(im_gateway_auth
     PUBLIC
         im::utils
         im::database
@@ -42,10 +45,13 @@ target_link_libraries(im::gateway_auth
         unofficial::UUID::uuid
 )
 
-target_include_directories(im::gateway_auth
+target_include_directories(im_gateway_auth
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/auth
 )
+
+# 创建命名空间别名
+add_library(im::gateway_auth ALIAS im_gateway_auth)
 
 add_executable(gateway_server
     main.cpp

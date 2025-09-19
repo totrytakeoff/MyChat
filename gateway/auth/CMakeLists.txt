@@ -1,55 +1,35 @@
-cmake_minimum_required(VERSION 3.16)
-project(MyChat_Auth_Tests)
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# 查找必要的包
-find_package(PkgConfig REQUIRED)
-find_package(GTest REQUIRED)
-
-# 使用vcpkg查找依赖
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
-find_package(redis++ CONFIG REQUIRED)
-find_package(jwt-cpp CONFIG REQUIRED)
-find_package(unofficial-libuuid CONFIG REQUIRED)
-
-# 设置包含目录
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../
-)
-
-# 添加源文件
-set(AUTH_SOURCES
-    multi_platform_auth.cpp
-    ../../common/database/redis_mgr.cpp
-    ../../common/utils/log_manager.cpp
-)
+# gateway/auth/CMakeLists.txt
 
 # 添加测试可执行文件
 add_executable(test_multi_platform_auth
     test_multi_platform_auth.cpp
-    ${AUTH_SOURCES}
+    multi_platform_auth.cpp
 )
 
-# 链接库
+# 链接库（使用新的组件库）
 target_link_libraries(test_multi_platform_auth
     PRIVATE
-    GTest::GTest
-    GTest::Main
-    nlohmann_json::nlohmann_json
-    spdlog::spdlog
-    redis++::redis++_static
-    jwt-cpp::jwt-cpp
-    unofficial::UUID::uuid
-    pthread
+        GTest::gtest
+        GTest::gtest_main
+        im::gateway_auth  # 使用新的认证库
+        im::database      # 使用新的数据库库
+        im::utils         # 使用新的工具库
+        nlohmann_json::nlohmann_json
+        spdlog::spdlog
+        redis++::redis++_static
+        jwt-cpp::jwt-cpp
+        unofficial::UUID::uuid
+        Threads::Threads
 )
 
 # 编译选项
 target_compile_options(test_multi_platform_auth PRIVATE
     -Wall -Wextra -g
+)
+
+# 包含目录
+target_include_directories(test_multi_platform_auth PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 # 添加测试
