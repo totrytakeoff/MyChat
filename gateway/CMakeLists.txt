@@ -66,3 +66,16 @@ target_link_libraries(gateway_server
         im::database
         im::proto
 )
+add_executable(gateway_server_test
+    main_example.cpp
+)
+
+target_link_libraries(gateway_server_test
+    PRIVATE
+        im::gateway_core
+        im::gateway_auth
+        im::network
+        im::utils
+        im::database
+        im::proto
+)

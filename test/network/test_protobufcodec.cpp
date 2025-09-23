@@ -5,6 +5,10 @@
 #include "../../common/utils/log_manager.hpp"  // IMHeader定义
 using namespace im::base;
 
+using namespace im::utils;
+using namespace im::network;
+
+
 class ProtobufCodecTest : public ::testing::Test {
 protected:
     void SetUp() override {

@@ -53,5 +53,39 @@ bool LogManager::IsLoggingEnabled(const std::string& logger_name) {
     return true;
 }
 
-} // namespace utils
-} // namespace im 
+void LogManager::SetLogLevel(spdlog::level::level_enum level, const std::string& logger_name) {
+    if (logger_name.empty()) {
+        for (auto& logger : s_loggers_) {
+            logger.second->set_level(level);
+        }
+        return;
+    }
+    auto logge = GetLogger(logger_name);
+    if (logge != nullptr) {
+        logge->set_level(level);
+    }
+    return;
+}
+
+void LogManager::SetLogLevel(std::string level, const std::string& logger_name) {
+    spdlog::level::level_enum log_level = spdlog::level::from_str(level);
+    SetLogLevel(log_level, logger_name);
+}
+
+void LogManager::SetLogLevel(spdlog::level::level_enum level,
+                             std::vector<std::string>& logger_names) {
+    for (auto& logger_name : logger_names) {
+        SetLogLevel(level, logger_name);
+    }
+}
+
+void LogManager::SetLogLevel(std::string level, std::vector<std::string>& logger_names) {
+    for (auto& logger_name : logger_names) {
+        SetLogLevel(level, logger_name);
+    }
+}
+
+
+
+}  // namespace utils
+}  // namespace im

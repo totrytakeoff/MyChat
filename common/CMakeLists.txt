@@ -36,6 +36,8 @@ add_library(im_utils STATIC
     utils/service_identity.cpp
     utils/thread_pool.cpp
     utils/config_mgr.hpp
+    utils/signal_handler.hpp
+    utils/cli_parser.hpp
     utils/connection_pool.hpp
     utils/global.hpp
     utils/http_utils.hpp

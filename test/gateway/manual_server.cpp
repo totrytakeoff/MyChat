@@ -11,9 +11,9 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/beast/websocket/ssl.hpp>
+#include <cstdlib>
 #include <iostream>
 #include <string>
-#include <cstdlib>
 
 #include <google/protobuf/message.h>
 
@@ -74,10 +74,14 @@ int main() {
                 });
         server->register_message_handlers(
                 1005, [](const im::gateway::UnifiedMessage& msg) -> im::gateway::ProcessorResult {
-                    google::protobuf::Message* messagess = google::protobuf::ParseFromString(msg.get_protobuf_payload());
-                    auto message = static_cast<const im::base::BaseRequest*>(messagess);
-
-                    std::cout << "--receive message: " << message->payload() << std::endl;
+                    im::base::BaseRequest request;
+                    if (!request.ParseFromString(msg.get_protobuf_payload())) {
+                        // Handle parse error
+                        return im::gateway::ProcessorResult(
+                                static_cast<int>(im::base::ErrorCode::INVALID_REQUEST),
+                                "Parse error", "", "");
+                    }
+                    std::cout << "--receive message: " << request.payload() << std::endl;
 
                     im::base::IMHeader header = im::network::ProtobufCodec::returnHeaderBuilder(
                             msg.get_header(), "gateway_server", "linux_x86_64");
@@ -140,7 +144,7 @@ int main() {
         // WebSocket 握手（将token放到URL查询参数，服务端在decorator里读取）
         std::string target = std::string("/") + "?token=" + token;
         ws.handshake(host, target);
-        ws.binary(true); // 使用二进制帧传输protobuf
+        ws.binary(true);  // 使用二进制帧传输protobuf
 
         im::base::IMHeader headers;
         headers.set_version("1");
@@ -188,7 +192,7 @@ int main() {
             // }
         }
         server->stop();
-        
+
 
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
