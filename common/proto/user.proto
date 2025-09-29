@@ -29,7 +29,7 @@ message UserInfo {
     string signature = 6;     // 个性签名
     int64 create_time = 7;    // 注册时间
     int64 last_login = 8;     // 最后登录时间
-    bool online = 9;          // 是否在线
+    bool online = 9;          // 是否在线 后续可添加status标识其他在线状态
     string phone_number = 10; // 手机号（可选）
     string email = 11;        // 邮箱（可选）
     string address = 12;      // 地址（可选）

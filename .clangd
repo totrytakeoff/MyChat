@@ -5,3 +5,7 @@ CompileFlags:
     - "-L/home/myself/vcpkg/installed/x64-linux/lib"
   Remove:
     - "-stdlib=libc++"
+
+Refactor:
+  Enable: true
+  Experimental: true  # 即使标记为实验性也强制启用

@@ -18,7 +18,6 @@
 #include <string>
 #include <fstream>
 #include <thread>
-#include <atomic>
 #include <chrono>
 #include <unistd.h>    // for getpid(), fork(), setsid(), chdir()
 #include <sys/stat.h>  // for file permissions
@@ -47,13 +46,25 @@ std::unique_ptr<ConfigManager> g_config_mgr;
 std::shared_ptr<GatewayServer> g_server;
 
 /**
- * @brief 优雅关闭回调函数（仅置位标志，实际清理在主线程完成）
+ * @brief 优雅关闭回调函数
  */
-static std::atomic<bool> g_shutdown_requested_flag{false};
 void gracefulShutdown(int signal, const std::string& signal_name) {
-    (void)signal;
     std::cout << "\n=== Received " << signal_name << " signal ===" << std::endl;
-    g_shutdown_requested_flag.store(true);
+    std::cout << "Initiating graceful shutdown..." << std::endl;
+
+    if (g_server) {
+        std::cout << "Stopping gateway server..." << std::endl;
+        g_server->stop();
+        std::cout << "✓ Gateway server stopped successfully" << std::endl;
+    }
+
+    // 清理PID文件
+    if (!g_config.pid_file.empty() && std::filesystem::exists(g_config.pid_file)) {
+        std::filesystem::remove(g_config.pid_file);
+        std::cout << "✓ PID file removed: " << g_config.pid_file << std::endl;
+    }
+
+    std::cout << "Graceful shutdown completed." << std::endl;
 }
 
 /**
@@ -416,14 +427,23 @@ int main(int argc, char* argv[]) {
             std::cout << "PID file removed: " << g_config.pid_file << std::endl;
         }
 
+        // 清理信号处理器
+        SignalHandler::getInstance().cleanup();
+
         std::cout << "Gateway server shutdown complete." << std::endl;
 
     } catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << std::endl;
 
+        // 清理信号处理器
+        SignalHandler::getInstance().cleanup();
+
         return 1;
     } catch (...) {
         std::cerr << "Unknown fatal error occurred" << std::endl;
+
+        // 清理信号处理器
+        SignalHandler::getInstance().cleanup();
 
         return 1;
     }

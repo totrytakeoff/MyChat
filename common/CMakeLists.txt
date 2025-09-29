@@ -64,7 +64,7 @@ add_library(im::utils ALIAS im_utils)
 
 # 数据库库
 add_library(im_database STATIC
-    database/redis_mgr.cpp
+    database/redis/redis_mgr.cpp
 )
 
 target_link_libraries(im_database
