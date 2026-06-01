@@ -4,7 +4,7 @@ type: review
 status: changes_requested
 from: planner_reviewer
 to: implementation_agent
-revision: 0
+revision: 1
 decision: CHANGES_REQUESTED
 next_action: revise_same_task
 ---
@@ -18,6 +18,19 @@ CHANGES_REQUESTED
 The implementation is not ready to commit as the Task 6 baseline. The core
 controller idea is in the right direction, but the Gateway integration path is
 currently not functional and the handoff is incomplete.
+
+## Re-Review After Summary
+
+Decision remains `CHANGES_REQUESTED`.
+
+`docs/agent_context/task6-summary.md` now exists, but the summary confirms the
+same contract mismatch: it documents `/api/v1/register`, `/api/v1/login`, and
+`/api/v1/user/profile` instead of the planned `/api/v1/auth/register`,
+`/api/v1/auth/login`, and `/api/v1/auth/info`.
+
+Code inspection also confirms the route registration order and
+`INVALID_ACCOUNT` mapping have not changed. `build-noodb/` is still present in
+the working tree.
 
 ## Findings
 
@@ -70,11 +83,12 @@ currently not functional and the handoff is incomplete.
    least one test must exercise the registered Gateway HTTP routes or a
    route-registration unit seam that would fail with the current ordering.
 
-5. **Blocking: Task handoff docs are missing.**
+5. **Blocking: Task handoff docs are still incomplete/inaccurate.**
 
-   `docs/agent_context/task6-summary.md` was not created, and the expected
-   Phase 6 devlog/current-progress updates are also missing. The agent
-   workflow requires the implementation summary before approval.
+   `docs/agent_context/task6-summary.md` now exists, but it records the wrong
+   endpoint contract as completed. The expected Phase 6 devlog/current-progress
+   updates are still missing from the working tree. The implementation summary
+   must describe the corrected final behavior before approval.
 
 6. **Blocking: generated local build directory is left untracked.**
 
@@ -84,8 +98,8 @@ currently not functional and the handoff is incomplete.
 
 ## Required Fixes
 
-- Create `docs/agent_context/task6-summary.md` and
-  `docs/devlog/phase6_gateway_user_integration.md`.
+- Correct `docs/agent_context/task6-summary.md` after the implementation is
+  actually fixed, and create `docs/devlog/phase6_gateway_user_integration.md`.
 - Initialize `user_http_controller_` before route registration, or refactor
   route registration so direct user routes are installed after the controller
   exists.
