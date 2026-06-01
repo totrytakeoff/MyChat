@@ -1,4 +1,4 @@
-# Task 3 Plan: ODB User Model Cleanup and Documentation Sync
+# Task 3 Plan: ODB User Persistence Baseline
 
 ## Status
 
@@ -12,18 +12,45 @@ Implementation Agent.
 
 Planner/Reviewer Agent.
 
+## Toolchain Check
+
+Planner verified the local toolchain on 2026-06-01:
+
+```bash
+command -v odb
+odb --version
+```
+
+Result:
+
+```text
+/usr/bin/odb
+ODB object-relational mapping (ORM) compiler for C++ 2.5.0
+```
+
+Additional verified state:
+
+- Docker Redis/PostgreSQL are running and healthy.
+- PostgreSQL accepts connections for database `mychat`, user `mychat`.
+- vcpkg manifest feature `pgsql-odb` installs:
+  - `libodb:x64-linux@2.4.0#12`
+  - `libodb-pgsql:x64-linux@2.4.0#8`
+  - `libpq:x64-linux@16.9`
+- CMake configure with
+  `-DVCPKG_MANIFEST_FEATURES=pgsql-odb -DMYCHAT_BUILD_PGSQL_ODB=ON`
+  finds `odb::libodb` and `odb::libodb-pgsql`.
+
+Important risk: the ODB compiler is 2.5.0 while the vcpkg runtime packages are
+2.4.0. This may still work, but Task 3 must prove it by generating, compiling,
+linking, and running a minimal PostgreSQL persistence test. Do not assume
+compatibility just because configure succeeds.
+
 ## Context
 
-Task 2 approved the optional PostgreSQL/ODB runtime baseline:
-
-- default Gateway/Auth builds do not install ODB runtime packages;
-- `-DVCPKG_MANIFEST_FEATURES=pgsql-odb -DMYCHAT_BUILD_PGSQL_ODB=ON` enables
-  `im_pgsql`;
-- the `odb` compiler binary is still missing, so generated ODB mapping files
-  and real persistence tests remain blocked.
-
-Before starting User Service business logic, clean the user persistent model so
-it is ready for ODB generation once the compiler is installed.
+Task 2 established the optional ODB runtime build gate, but stopped before
+entity generation because the `odb` compiler was missing at that time. The
+compiler is now installed, so the next task should move from runtime-only
+validation to real ODB generation and PostgreSQL persistence.
 
 Existing model:
 
@@ -32,43 +59,42 @@ Existing model:
 Known issues:
 
 - `#pragma db id auto` is applied to `std::string uid_`; ODB auto IDs require an
-  integral type, so this is invalid/surprising.
+  integral type and should not be used here.
 - The class and enums are in the global namespace.
-- The model has no password hash field, which blocks register/login MVP.
-- The public type name is lowercase `user`, which is awkward for project code
-  and can collide with PostgreSQL/user terminology.
-- Architecture docs still contain stale status about Redis token storage and
-  PostgreSQL/ODB validation.
+- The class name is lowercase `user`.
+- The model lacks `password_hash`, blocking register/login MVP.
+- Architecture docs still contain stale statements about PostgreSQL/ODB status
+  and already-fixed Redis token storage.
 
 ## Goal
 
-Make the user ODB model structurally ready for User Service MVP without
-pretending persistence is complete.
+Create the first real PostgreSQL/ODB persistence baseline for the User domain.
 
 At the end of this task:
 
-1. The user model should be namespaced and compile as a normal C++ header.
-2. The primary key should be a manual string UID or another explicitly chosen
-   valid design, not `string id auto`.
-3. Password hash storage needed by register/login should exist.
-4. A focused compile-level test should verify the model API without requiring
-   the `odb` compiler.
-5. Architecture/progress docs should match the current Task 2 baseline.
+1. `services/odb/user.hpp` has a valid, namespaced user entity model.
+2. ODB generated files for the user model are produced by the documented
+   `odb` command.
+3. Generated files are built through CMake behind the existing ODB gate.
+4. A focused test persists and loads one user row from Docker PostgreSQL.
+5. Docs record the exact generation/build/test flow and any version warnings.
 
-## Required Design
+## Required Model Design
 
-Prefer this conservative model direction unless you find a concrete blocker:
+Use this conservative shape unless there is a concrete ODB blocker:
 
-- Namespace: `im::service::user` or `im::services::user`.
-- Entity name: `User`.
-- Primary key: manual string UID:
+- Namespace: `im::service::user`
+- Entity class: `User`
+- Table name: choose an explicit non-reserved table name such as `im_users`
+  using an ODB pragma.
+- Primary key: manual string UID, not auto-generated:
 
 ```cpp
 #pragma db id
 std::string uid_;
 ```
 
-- Required fields for User Service MVP:
+- Required fields:
   - `uid`
   - `account`
   - `password_hash`
@@ -79,65 +105,174 @@ std::string uid_;
   - `create_time`
   - `last_login`
   - `online`
-  - optional contact/profile fields may remain, but do not expand the model.
 
-Keep comments useful but not noisy. Comment the persistence decisions that are
-easy to misuse later, especially manual UID and password hash.
+Optional contact/profile fields may remain if they do not complicate ODB
+generation. Do not expand the model beyond current scope.
 
-Do not generate ODB mapping files in this task unless the `odb` compiler is
-actually available. If it is unavailable, document the blocker and keep the test
-compile-only.
+Document in a short code comment why UID is manual and why only a password hash
+is stored.
 
-## Required Implementation
+## Required ODB Generation
 
-1. Update `services/odb/user.hpp`.
-2. Add a focused test under `test/odb` or another clearly named test directory.
-   The test should:
-   - include `services/odb/user.hpp`;
-   - construct a `User`;
-   - verify UID/account/password hash/nickname/profile getters/setters;
-   - verify enum use;
-   - not connect to PostgreSQL;
-   - not require generated `*-odb.*` files.
-3. Wire the test into CMake only when ODB runtime headers are available:
-   - likely behind `MYCHAT_BUILD_PGSQL_ODB AND MYCHAT_HAS_ODB_RUNTIME`;
-   - use the existing `pgsql-odb` vcpkg feature path.
-4. Update stale docs:
-   - `docs/architecture/mvp_architecture.md`
-   - `docs/architecture/service_mvp_roadmap.md`
-   - `docs/devlog/current_progress.md`
-   - optionally add `docs/devlog/phase3_odb_user_model.md`
-5. Write `docs/agent_context/task3-summary.md`.
+Generate PostgreSQL ODB files from `services/odb/user.hpp`.
 
-## Documentation Corrections Required
+Preferred generated-file location:
 
-`docs/architecture/mvp_architecture.md` currently has stale statements:
+```text
+services/odb/generated/
+```
 
-- it says PostgreSQL/ODB is not part of the validated build/test baseline;
-- it lists refresh-token/access-revocation Redis work as pending even though
-  Task 1 completed it.
+Preferred generated files:
 
-Update it to say:
+```text
+services/odb/generated/user-odb.hxx
+services/odb/generated/user-odb.ixx
+services/odb/generated/user-odb.cxx
+services/odb/generated/user.sql
+```
 
-- PostgreSQL/ODB runtime baseline is validated behind the optional `pgsql-odb`
-  feature;
-- ODB compiler and generated mapping/persistence tests remain blocked;
-- Auth Redis token storage has been hardened;
-- User Service MVP is still not implemented.
+Use an explicit command similar to:
 
-`docs/architecture/service_mvp_roadmap.md` Phase C should be updated from "not
-started" to "runtime baseline complete; ODB compiler/persistence test blocked".
+```bash
+mkdir -p services/odb/generated
+odb \
+  --database pgsql \
+  --std c++20 \
+  --generate-query \
+  --generate-schema \
+  --schema-format sql \
+  --output-dir services/odb/generated \
+  --hxx-suffix .hxx \
+  --ixx-suffix .ixx \
+  --cxx-suffix .cxx \
+  --sql-suffix .sql \
+  services/odb/user.hpp
+```
+
+If this exact command fails, adjust it minimally and document the final working
+command in `docs/devlog/phase3_odb_user_persistence.md`.
+
+Do not manually edit generated ODB files except to recover from a generator
+bug, and only if documented clearly. Generated files should be treated as
+mechanical artifacts.
+
+## Required Build Design
+
+Add a CMake target for the generated user ODB model behind:
+
+```cmake
+if(MYCHAT_BUILD_PGSQL_ODB AND MYCHAT_HAS_ODB_RUNTIME)
+```
+
+Expected target shape:
+
+- static library target, e.g. `im_user_odb`
+- source:
+  - `services/odb/generated/user-odb.cxx`
+- include directories:
+  - `services/odb`
+  - `services/odb/generated`
+- link:
+  - `odb::libodb`
+  - `odb::libodb-pgsql`
+
+Expose an alias if useful, e.g. `im::user_odb`.
+
+If generated files are absent and `MYCHAT_BUILD_PGSQL_ODB=ON`, CMake should
+fail with a clear message telling the developer to run the documented `odb`
+generation command. Silent skipping is not acceptable once this task owns the
+generated baseline.
+
+## Required Persistence Test
+
+Add a focused test under `test/odb` or `test/pgsql`.
+
+Test name:
+
+```text
+ODBUserPersistenceTest
+```
+
+The test should:
+
+- connect to Docker PostgreSQL using the dev/test config values:
+  - host `127.0.0.1`
+  - port `5432`
+  - database `mychat`
+  - user `mychat`
+  - password `mychat-dev-pass`
+- create or reset the generated user table for the test;
+- persist one `User`;
+- load it by UID;
+- verify account, password hash, nickname, and at least one profile/status
+  field;
+- clean up inserted test data;
+- be deterministic when run repeatedly.
+
+Prefer using the generated `user.sql` schema for setup if practical. If direct
+SQL is needed for cleanup/setup, keep it narrow and document why.
+
+Do not implement register/login service logic in this test. This is a storage
+baseline, not User Service MVP behavior.
+
+## Documentation Requirements
+
+Update or create:
+
+- `docs/devlog/phase3_odb_user_persistence.md`
+- `docs/devlog/current_progress.md`
+- `docs/architecture/mvp_architecture.md`
+- `docs/architecture/service_mvp_roadmap.md`
+- `docs/agent_context/task3-summary.md`
+
+Docs must include:
+
+- exact `odb --version`;
+- exact generation command;
+- generated files list;
+- CMake configure/build/test commands;
+- note about ODB compiler 2.5.0 vs runtime 2.4.0, and whether the generated
+  persistence test proves compatibility;
+- remaining boundary before User Service MVP starts.
+
+Architecture docs currently have stale claims:
+
+- PostgreSQL/ODB is not part of the validated build/test baseline;
+- refresh-token/access-revocation Redis work is still pending.
+
+Correct them:
+
+- ODB runtime baseline is complete behind `pgsql-odb`;
+- after this task, user ODB persistence baseline should be marked complete if
+  the test passes;
+- Auth Redis token storage hardening is already complete;
+- User Service business logic remains not implemented.
 
 ## Required Verification
 
-Always start Docker dependencies first, even though this task's new test should
-not use PostgreSQL directly:
+Start dependencies:
 
 ```bash
 docker compose up -d redis postgres
+docker compose exec -T postgres pg_isready -U mychat -d mychat
+docker compose exec -T redis redis-cli -a mychat-dev-pass ping
 ```
 
-ODB-runtime enabled configure/build/test:
+ODB toolchain:
+
+```bash
+odb --version
+```
+
+Generate ODB files:
+
+```bash
+rm -rf services/odb/generated
+mkdir -p services/odb/generated
+# run the final documented odb command
+```
+
+ODB-enabled configure/build/test:
 
 ```bash
 cmake -S . -B /tmp/mychat-task3 \
@@ -149,9 +284,9 @@ cmake -S . -B /tmp/mychat-task3 \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DCMAKE_BUILD_TYPE=Debug
 cmake --build /tmp/mychat-task3 \
-  --target im_pgsql test_odb_user_model test_auth_tokens test_redis_hiredis -j2
+  --target im_pgsql im_user_odb test_odb_user_persistence test_auth_tokens test_redis_hiredis -j2
 ctest --test-dir /tmp/mychat-task3 \
-  -R 'ODBUserModelTest|AuthTokenTest|RedisHiredisTest' --output-on-failure
+  -R 'ODBUserPersistenceTest|AuthTokenTest|RedisHiredisTest' --output-on-failure
 ```
 
 Default no-ODB baseline:
@@ -169,33 +304,29 @@ ctest --test-dir /tmp/mychat-task3-no-odb \
   -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
 ```
 
-Also check:
-
-```bash
-command -v odb
-odb --version
-```
-
-If the compiler is still absent, record that in the summary and docs.
+If `/tmp` quota becomes an issue, clean old `/tmp/mychat-*` build directories
+and rerun the same commands. Document any environment-only failure separately
+from code/test failures.
 
 ## Out Of Scope
 
 - User Service register/login implementation.
-- Password hashing implementation.
-- PostgreSQL schema migration.
-- Generated ODB files, unless `odb` is available and generation succeeds
-  without expanding scope.
+- Password hashing algorithm implementation.
 - Gateway-to-User integration.
-- Broad cleanup of old tests unrelated to this model.
+- Full schema migration framework.
+- Message/Friend/Group persistence models.
+- Broad cleanup of old tests unrelated to ODB user persistence.
 
 ## Acceptance Criteria
 
 The task is ready for review when:
 
-- `services/odb/user.hpp` has a valid, namespaced model shape for later ODB
-  generation.
-- A compile-level model test passes when ODB runtime is enabled.
+- User model is valid, namespaced, and includes `password_hash`.
+- ODB generated files are present and reproducible with a documented command.
+- CMake builds the generated user ODB target behind the ODB gate.
+- `ODBUserPersistenceTest` passes against Docker PostgreSQL.
+- Existing Auth/Redis focused tests still pass.
 - Default no-ODB Gateway/Auth baseline still passes.
-- Docs no longer contradict Task 1 and Task 2 outcomes.
+- Docs accurately reflect the new ODB toolchain and persistence status.
 - `docs/agent_context/task3-summary.md` is written with files changed,
   behavior changed, verification results, known limitations, and deviations.
