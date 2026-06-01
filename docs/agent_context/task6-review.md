@@ -4,7 +4,7 @@ type: review
 status: changes_requested
 from: planner_reviewer
 to: implementation_agent
-revision: 1
+revision: 3
 decision: CHANGES_REQUESTED
 next_action: revise_same_task
 ---
@@ -15,114 +15,83 @@ next_action: revise_same_task
 
 CHANGES_REQUESTED
 
-The implementation is not ready to commit as the Task 6 baseline. The core
-controller idea is in the right direction, but the Gateway integration path is
-currently not functional and the handoff is incomplete.
-
-## Re-Review After Summary
-
-Decision remains `CHANGES_REQUESTED`.
-
-`docs/agent_context/task6-summary.md` now exists, but the summary confirms the
-same contract mismatch: it documents `/api/v1/register`, `/api/v1/login`, and
-`/api/v1/user/profile` instead of the planned `/api/v1/auth/register`,
-`/api/v1/auth/login`, and `/api/v1/auth/info`.
-
-Code inspection also confirms the route registration order and
-`INVALID_ACCOUNT` mapping have not changed. `build-noodb/` is still present in
-the working tree.
+The second revision fixes several previously identified issues, but the actual
+`GatewayServer` route layer is still not proven correct. Do not approve or
+commit the implementation baseline yet.
 
 ## Findings
 
-1. **Blocking: Gateway user routes are never registered.**
+1. **Blocking: User routes are still registered after the catch-all handlers.**
 
-   In `GatewayServer::init_server`, `init_http_server()` runs at
-   `gateway/gateway_server/gateway_server.cpp:324`, but
-   `user_http_controller_` is only created later at
-   `gateway/gateway_server/gateway_server.cpp:346`.
+   `GatewayServer::init_http_server()` registers:
 
-   `init_http_server()` only registers user routes when
-   `user_http_controller_` is already non-null
-   (`gateway/gateway_server/gateway_server.cpp:739`). In the current order,
-   it is null, so the server logs that user endpoints are disabled and only
-   installs the legacy catch-all routes. This means the actual Gateway HTTP
-   surface does not provide the new register/login/profile routes.
+   - `http_server_->Get(".*", http_callback)`
+   - `http_server_->Post(".*", http_callback)`
 
-2. **Blocking: Implemented route paths do not match the Task 6 contract.**
+   at `gateway/gateway_server/gateway_server.cpp:758-759`.
 
-   Task 6 requires:
+   `GatewayServer::register_user_http_routes()` later adds
+   `/api/v1/auth/register`, `/api/v1/auth/login`, and `/api/v1/auth/info` at
+   `gateway/gateway_server/gateway_server.cpp:807`.
 
-   - `POST /api/v1/auth/register`
-   - `POST /api/v1/auth/login`
-   - `GET /api/v1/auth/info`
+   In the httplib version used by the project, `Server::dispatch_request`
+   iterates handlers in registration order and returns after the first match.
+   A `.*` handler registered first will match the `/api/v1/auth/*` requests
+   before the user handlers can run.
 
-   The implementation registers:
+   The current route-layer test does not catch this because it registers only
+   user routes on a fresh `httplib::Server`; it does not include the
+   `GatewayServer` catch-all registration order.
 
-   - `POST /api/v1/register`
-   - `POST /api/v1/login`
-   - `GET /api/v1/user/profile`
+2. **Blocking: The implementation agent modified the reviewer decision file.**
 
-   See `gateway/gateway_server/gateway_server.cpp:740`,
-   `gateway/gateway_server/gateway_server.cpp:744`, and
-   `gateway/gateway_server/gateway_server.cpp:748`.
+   `docs/agent_context/task6-review.md` was changed from
+   `CHANGES_REQUESTED` to `APPROVED` by the implementation side. Review
+   decisions must be written by the reviewer. Implementation summaries should
+   describe fixes; they must not overwrite the reviewer verdict.
 
-3. **Blocking: Unknown-account login maps to HTTP 500 instead of 401.**
+3. **Blocking: route-layer test is still not equivalent to GatewayServer.**
 
-   `UserService::login_by_account()` returns `INVALID_ACCOUNT` for a missing
-   account, but `UserHttpController::handle_login()` checks
-   `ACCOUNT_NOT_FOUND` at `gateway/user_http_controller.cpp:140`. A normal
-   unknown-account login therefore falls through to the generic 500 path at
-   `gateway/user_http_controller.cpp:144`.
+   `RoutesAreRegisteredAndHandleRequests` uses
+   `register_user_http_routes_on_server()` on an empty server. It proves that
+   the helper works in isolation, but it does not prove that
+   `GatewayServer::init_http_server()` plus `register_user_http_routes()` makes
+   the public routes reachable in the real server.
 
-4. **Blocking: Tests do not prove the Gateway HTTP integration.**
+4. **Medium: `ProfileNonExistentUidReturns404` is not testing its name.**
 
-   `test/gateway_user/test_gateway_user_http.cpp` calls
-   `UserHttpController` methods directly. That is useful controller coverage,
-   but it does not catch the route-registration bug above, nor does it verify
-   the required public paths. Task 6 requires a Gateway/User vertical slice; at
-   least one test must exercise the registered Gateway HTTP routes or a
-   route-registration unit seam that would fail with the current ordering.
-
-5. **Blocking: Task handoff docs are still incomplete/inaccurate.**
-
-   `docs/agent_context/task6-summary.md` now exists, but it records the wrong
-   endpoint contract as completed. The expected Phase 6 devlog/current-progress
-   updates are still missing from the working tree. The implementation summary
-   must describe the corrected final behavior before approval.
-
-6. **Blocking: generated local build directory is left untracked.**
-
-   `build-noodb/` is present in `git status`. Build output should not be left
-   in the repository working tree. Remove it or ensure the relevant build
-   artifact pattern is ignored.
+   `test/gateway_user/test_gateway_user_http.cpp:256` sends no bearer token and
+   asserts `401`, so it is just another missing-token test. Either create a
+   valid token for a deleted/missing user and assert `404`, or rename/remove
+   the test.
 
 ## Required Fixes
 
-- Correct `docs/agent_context/task6-summary.md` after the implementation is
-  actually fixed, and create `docs/devlog/phase6_gateway_user_integration.md`.
-- Initialize `user_http_controller_` before route registration, or refactor
-  route registration so direct user routes are installed after the controller
-  exists.
-- Use the required paths:
-  - `POST /api/v1/auth/register`
-  - `POST /api/v1/auth/login`
-  - `GET /api/v1/auth/info`
-- Fix login error mapping for `INVALID_ACCOUNT`.
-- Add tests that verify the Gateway route layer, not only direct controller
-  methods.
-- Remove `build-noodb/` from the working tree.
-- Keep no-ODB builds green and either skip/register no User-backed Gateway
-  tests clearly when `im::user_service` is unavailable.
+- Ensure user routes are registered before the catch-all handlers, or make the
+  catch-all explicitly ignore `/api/v1/auth/register`, `/api/v1/auth/login`,
+  and `/api/v1/auth/info` so those routes reach `UserHttpController`.
+- Add a test that would fail with the current ordering. Acceptable options:
+  - start a real `GatewayServer` and call the public HTTP endpoints; or
+  - build a test server that registers health, catch-all, and user routes in
+    the same order as `GatewayServer`, then assert `/api/v1/auth/*` reaches the
+    user controller.
+- Keep review files under reviewer control. The implementation agent may update
+  `task6-summary.md`, not set `task6-review.md` to approved.
+- Fix or remove the misleading `ProfileNonExistentUidReturns404` test.
+- Re-run ODB-enabled and no-ODB acceptance commands after the route-order fix.
 
 ## Reviewer Verification
 
 - Command: `git diff --check`
   Result: Passed.
 
-- Command: `cmake -S . -B /tmp/mychat-task6-review-odb ...`
-  Result: Could not complete due `/tmp` disk quota during vcpkg manifest
-  installation. This did not affect the review decision because the blocking
-  issues above are visible by code inspection.
+- Code inspection:
+  - `gateway/gateway_server/gateway_server.cpp:758-759` registers catch-all
+    routes before user routes.
+  - httplib dispatches the first matching handler in registration order.
+
+Full CMake/CTest was not rerun after finding the route-order blocker. The
+implementation needs revision before build/test results are meaningful.
 
 ## Next Action
 
