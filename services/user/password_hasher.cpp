@@ -1,5 +1,6 @@
 #include "password_hasher.hpp"
 
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
@@ -32,6 +33,9 @@ std::string ToHex(const unsigned char* data, size_t len) {
 bool FromHex(const std::string& hex, unsigned char* out, size_t out_len) {
     if (hex.size() != out_len * 2) return false;
     for (size_t i = 0; i < out_len; ++i) {
+        auto hi = static_cast<unsigned char>(hex[i * 2]);
+        auto lo = static_cast<unsigned char>(hex[i * 2 + 1]);
+        if (!std::isxdigit(hi) || !std::isxdigit(lo)) return false;
         auto byte_str = hex.substr(i * 2, 2);
         char* end = nullptr;
         long val = std::strtol(byte_str.c_str(), &end, 16);
@@ -88,6 +92,9 @@ bool PasswordHasher::verify(const std::string& password,
     if (!std::getline(iss, part, kDelimiter)) return false;
     unsigned char expected_hash[kHashLength];
     if (!FromHex(part, expected_hash, kHashLength)) return false;
+
+    // Reject extra trailing fields after the hash value
+    if (iss.peek() != EOF) return false;
 
     unsigned char computed_hash[kHashLength];
     if (PKCS5_PBKDF2_HMAC(password.c_str(), static_cast<int>(password.size()),

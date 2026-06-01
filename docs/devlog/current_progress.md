@@ -32,7 +32,7 @@ Known working:
 Most recently verified commands:
 
 ```bash
-cmake -S . -B /tmp/mychat-task4-build \
+cmake -S . -B /tmp/mychat-task5-odb \
   -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
@@ -40,33 +40,24 @@ cmake -S . -B /tmp/mychat-task4-build \
   -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task4-build \
-  --target im_user_service test_user_service test_auth_tokens \
-          test_redis_hiredis test_odb_user_persistence -j2
-ctest --test-dir /tmp/mychat-task4-build \
-  -R 'UserServiceCoreTest|ODBUserPersistenceTest|AuthTokenTest|RedisHiredisTest' \
-  --output-on-failure
+cmake --build /tmp/mychat-task5-odb -j2
+ctest --test-dir /tmp/mychat-task5-odb --output-on-failure
 ```
 
-Result (ODB enabled):
-
-```text
-Tests: 100% passed, 0 tests failed out of 4
-```
+Result (ODB enabled): 100% passed, 0 failed out of 4.
 
 No-ODB baseline:
 
 ```bash
-cmake -S . -B /tmp/mychat-task4-no-odb \
+cmake -S . -B /tmp/mychat-task5-no-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
-  -DMYCHAT_BUILD_SERVICES=OFF \
+  -DMYCHAT_BUILD_SERVICES=ON \
   -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
+  -DMYCHAT_BUILD_PGSQL_ODB=OFF \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task4-no-odb \
-  --target test_auth_tokens test_redis_hiredis gateway_server -j2
-ctest --test-dir /tmp/mychat-task4-no-odb \
-  -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
+cmake --build /tmp/mychat-task5-no-odb -j2
+ctest --test-dir /tmp/mychat-task5-no-odb --output-on-failure
 ```
 
 Result: Baseline green, 100% passed out of 2.
@@ -121,32 +112,28 @@ Result: Baseline green, 100% passed out of 2.
   - Duplicate accounts rejected explicitly (`DUPLICATE_ACCOUNT`).
   - `pgsql_conn.hpp` template issues remain unfixed; User Service bypasses
     by using `odb::pgsql::database` directly.
+- Build gating and test hygiene:
+  - Added `MYCHAT_BUILD_USER_SERVICE` (ON by default), `MYCHAT_BUILD_CODEC_SERVICE`
+    (OFF by default), `MYCHAT_BUILD_LEGACY_UNIT_TESTS` (OFF by default).
+  - Codec service properly gated with gRPC dependency detection; FATAL_ERROR if
+    explicitly enabled but deps missing.
+  - User service gated on `MYCHAT_BUILD_USER_SERVICE AND TARGET im::user_odb`.
+  - Legacy tests (router, utils, network) gated behind `MYCHAT_BUILD_LEGACY_UNIT_TESTS`.
+  - Full `cmake --build ... -j2` now succeeds without stale codec failures.
+  - Fresh `ctest` only registers buildable active baseline tests (4 with ODB,
+    2 without).
 
 ## In Progress
 
-Gateway Service MVP hardening:
-
-- Gateway handler registration needs production/service-contract cleanup.
-- Old Gateway integration tests remain disabled behind
-  `MYCHAT_BUILD_LEGACY_GATEWAY_TESTS`.
-
-PostgreSQL/ODB foundation:
-
-- ODB 2.5.0 runtime installed via `scripts/build_odb_runtime_2_5.sh`. CMake
-  requires ODB 2.5.0 (detected via `MYCHAT_ODB_ROOT` or default `.odb/installed/`)
-  and fails at configure time with instructions if not found. No silent fallback
-  to vcpkg 2.4.0.
-- ODB user persistence baseline is **reproducible**. Run `scripts/build_odb_runtime_2_5.sh`
-  then `cmake ... -DMYCHAT_BUILD_PGSQL_ODB=ON`. User entity persists/loads from
-  Docker PostgreSQL.
+- (none — gating complete, ready for Phase E)
 
 ## Next Immediate Tasks
 
-1. Gateway-to-User Service integration (Phase E) — wire Gateway auth HTTP routes
-   to User Service for register/login/profile endpoints.
-2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
+1. **Phase E: Gateway-to-User Service Integration** — wire Gateway auth HTTP
+   routes to User Service for register/login/profile endpoints.
+2. Message Service MVP (Phase F) after Gateway integration stabilizes.
+3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
-3. Message Service MVP (Phase F) after Gateway integration stabilizes.
 
 ## Risks
 
@@ -172,3 +159,4 @@ PostgreSQL/ODB foundation:
 - ODB toolchain status: `docs/devlog/phase2_odb_toolchain.md`
 - ODB user persistence: `docs/devlog/phase3_odb_user_persistence.md`
 - User Service core: `docs/devlog/phase4_user_service_core.md`
+- Build gating and test hygiene: `docs/devlog/phase5_build_gating.md`

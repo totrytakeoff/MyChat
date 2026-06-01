@@ -115,7 +115,7 @@ Exit criteria (all met):
 
 ## Phase E: Gateway + User Service Integration
 
-Status: not started.
+Status: ready to start.
 
 Scope:
 

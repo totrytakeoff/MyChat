@@ -1,34 +1,53 @@
 # services/CMakeLists.txt
 
-# Codec服务库
-add_library(im_codec_service STATIC
-    codec/codec_service.pb.cc
-    codec/codec_service.grpc.pb.cc
-    codec/base.pb.cc
-)
+# 获取所需依赖（仅当需要构建对应服务时）
+if(MYCHAT_BUILD_CODEC_SERVICE)
+    find_package(gRPC CONFIG QUIET)
+endif()
 
-target_link_libraries(im_codec_service
-    PUBLIC
-        im::proto
-        ${Protobuf_LIBRARIES}
-        utf8_range::utf8_range utf8_range::utf8_validity
-)
+# Codec服务库 — 仅在 MYCHAT_BUILD_CODEC_SERVICE=ON 时构建。
+if(MYCHAT_BUILD_CODEC_SERVICE)
+    if(gRPC_FOUND AND TARGET gRPC::grpc++)
+        add_library(im_codec_service STATIC
+            codec/codec_service.pb.cc
+            codec/codec_service.grpc.pb.cc
+            codec/base.pb.cc
+        )
 
-target_include_directories(im_codec_service
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/codec
-)
+        target_link_libraries(im_codec_service
+            PUBLIC
+                im::proto
+                gRPC::grpc++
+                gRPC::grpc
+                ${Protobuf_LIBRARIES}
+                utf8_range::utf8_range utf8_range::utf8_validity
+        )
 
-# 创建命名空间别名
-add_library(im::codec_service ALIAS im_codec_service)
+        target_include_directories(im_codec_service
+            PUBLIC
+                ${CMAKE_CURRENT_SOURCE_DIR}/codec
+        )
 
-# 用户服务库 — gated on ODB persistence layer availability
-if(TARGET im::user_odb)
+        add_library(im::codec_service ALIAS im_codec_service)
+        message(STATUS "Codec service (im_codec_service) is enabled.")
+    else()
+        message(FATAL_ERROR
+            "MYCHAT_BUILD_CODEC_SERVICE=ON was set, but gRPC dependencies are not available. "
+            "Install gRPC via vcpkg and ensure gRPC++ targets are found.")
+    endif()
+else()
+    message(STATUS "Codec service is disabled. Set MYCHAT_BUILD_CODEC_SERVICE=ON and install gRPC to enable.")
+endif()
+
+# 用户服务库 — gated on MYCHAT_BUILD_USER_SERVICE and ODB persistence layer.
+if(MYCHAT_BUILD_USER_SERVICE AND TARGET im::user_odb)
     add_subdirectory(user)
     message(STATUS "User service (im_user_service) is enabled.")
-else()
-    message(STATUS "User service is disabled (requires im::user_odb). "
+elseif(MYCHAT_BUILD_USER_SERVICE)
+    message(STATUS "User service is disabled (MYCHAT_BUILD_USER_SERVICE=ON but im::user_odb not available). "
         "Enable MYCHAT_BUILD_PGSQL_ODB=ON and ensure ODB 2.5.0 runtime is available.")
+else()
+    message(STATUS "User service is disabled (MYCHAT_BUILD_USER_SERVICE=OFF).")
 endif()
 
 # 好友服务库

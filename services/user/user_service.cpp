@@ -106,8 +106,11 @@ LoginResult UserService::login_by_account(const std::string& account,
         return result;
     }
 
+    auto prev_last_login = user.last_login();
     user.last_login(now_ms);
-    repo_->update_last_login(user.uid(), now_ms);
+    if (!repo_->update_last_login(user.uid(), now_ms)) {
+        user.last_login(prev_last_login);
+    }
 
     result.ok = true;
     result.profile = to_profile(user);
