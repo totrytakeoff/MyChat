@@ -1,0 +1,14 @@
+{
+  "workflow_id": "MyChat-2026-06-01-001",
+  "project": "MyChat",
+  "context_dir": "docs/agent_context",
+  "current_task": "task001",
+  "current_stage": "init",
+  "status": "running",
+  "iteration": 0,
+  "last_decision": null,
+  "next_agent": "planner",
+  "max_revisions_per_task": 3,
+  "agent_sessions": {},
+  "updated_at": "2026-06-01T14:34:01.680265+00:00"
+}
