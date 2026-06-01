@@ -30,9 +30,14 @@ Known working:
 Most recently verified commands:
 
 ```bash
-cmake --build /tmp/mychat-phase1 --target gateway_server -j2
-cmake --build /tmp/mychat-phase1-tests --target test_auth_tokens test_redis_hiredis -j2
-ctest --test-dir /tmp/mychat-phase1-tests -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
+cmake -S . -B /tmp/mychat-task1 \
+  -DMYCHAT_BUILD_TESTS=ON \
+  -DMYCHAT_BUILD_GATEWAY=ON \
+  -DMYCHAT_BUILD_SERVICES=OFF \
+  -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
+  -DCMAKE_BUILD_TYPE=Debug
+cmake --build /tmp/mychat-task1 --target test_auth_tokens test_redis_hiredis gateway_server -j2
+ctest --test-dir /tmp/mychat-task1 -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
 ```
 
 Result:
@@ -44,7 +49,9 @@ Result:
 Gateway smoke result:
 
 ```text
-GET /api/v1/health -> {"status": "ok"}
+/tmp/mychat-task1/gateway/gateway_server --config config/dev.json
+curl http://127.0.0.1:8102/api/v1/health
+{"status": "ok"}
 SIGINT shutdown -> exit code 0
 ```
 
@@ -65,12 +72,17 @@ SIGINT shutdown -> exit code 0
 - Gateway can start from `config/dev.json`.
 - Gateway TLS development cert paths are config-driven.
 - PostgreSQL init SQL was made Docker-repeatable.
+- Auth Redis token storage hardened to per-token/per-JTI keys:
+  - `refresh_token:<token>` per-token metadata keys with independent TTL.
+  - `revoked_access_token:<jti>` per-JTI keys with TTL aligned to token expiry.
+  - `user:<user_id>:refresh_tokens` user index set.
+  - Added `set`, `get`, `exists`, `ttl`, `keys` primitives to RedisClient.
+  - Updated `AuthTokenTest` with 8 focused tests covering the new model.
 
 ## In Progress
 
 Gateway Service MVP hardening:
 
-- Auth token storage model needs cleanup.
 - Gateway handler registration needs production/service-contract cleanup.
 - Old Gateway integration tests remain disabled behind
   `MYCHAT_BUILD_LEGACY_GATEWAY_TESTS`.
@@ -83,11 +95,7 @@ PostgreSQL/ODB foundation:
 
 ## Next Immediate Tasks
 
-1. Update Auth Redis token storage:
-   - refresh tokens become per-token keys;
-   - revoked access tokens become per-JTI keys with TTL;
-   - update `AuthTokenTest`.
-2. Verify and install/document ODB toolchain:
+1. Verify and install/document ODB toolchain:
    - confirm package source;
    - add CMake detection;
    - document generation command.

@@ -141,8 +141,42 @@ int64_t RedisClient::scard(const std::string& key) {
     return reply->type == REDIS_REPLY_INTEGER ? reply->integer : 0;
 }
 
+void RedisClient::set(const std::string& key, const std::string& value) {
+    command("SET %b %b", key.data(), key.size(), value.data(), value.size());
+}
+
+std::optional<std::string> RedisClient::get(const std::string& key) {
+    auto reply = command("GET %b", key.data(), key.size());
+    if (reply->type == REDIS_REPLY_NIL) {
+        return std::nullopt;
+    }
+    return reply_string(reply.get());
+}
+
+bool RedisClient::exists(const std::string& key) {
+    auto reply = command("EXISTS %b", key.data(), key.size());
+    return reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
+}
+
+int64_t RedisClient::ttl(const std::string& key) {
+    auto reply = command("TTL %b", key.data(), key.size());
+    return reply->type == REDIS_REPLY_INTEGER ? reply->integer : -2;
+}
+
 void RedisClient::del(const std::string& key) {
     command("DEL %b", key.data(), key.size());
+}
+
+std::vector<std::string> RedisClient::keys(const std::string& pattern) {
+    auto reply = command("KEYS %b", pattern.data(), pattern.size());
+    std::vector<std::string> result;
+    if (reply->type == REDIS_REPLY_ARRAY) {
+        result.reserve(reply->elements);
+        for (size_t i = 0; i < reply->elements; ++i) {
+            result.push_back(reply_string(reply->element[i]));
+        }
+    }
+    return result;
 }
 
 void RedisClient::expire(const std::string& key, int seconds) {

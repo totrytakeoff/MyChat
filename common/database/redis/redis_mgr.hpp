@@ -59,7 +59,13 @@ public:
     template <typename OutputIt>
     void smembers(const std::string& key, OutputIt out);
 
+    void set(const std::string& key, const std::string& value);
+    std::optional<std::string> get(const std::string& key);
+    bool exists(const std::string& key);
+    int64_t ttl(const std::string& key);
+
     void del(const std::string& key);
+    std::vector<std::string> keys(const std::string& pattern);
     void expire(const std::string& key, int seconds);
 
 private:

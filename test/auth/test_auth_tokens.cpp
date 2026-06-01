@@ -48,6 +48,14 @@ protected:
         im::db::redis_manager().shutdown();
     }
 
+    static void cleanup_keys_like(const std::string& pattern) {
+        auto keys = im::db::redis_manager().execute(
+                [&](auto& redis) { return redis.keys(pattern); });
+        for (const auto& key : keys) {
+            im::db::redis_manager().execute([&](auto& redis) { redis.del(key); });
+        }
+    }
+
     void cleanup() {
         im::db::redis_manager().safe_execute(
                 [](auto& redis) {
@@ -55,9 +63,13 @@ protected:
                     redis.del("revoked_access_tokens");
                     redis.del("user:test-user:rt");
                     redis.del("user:test-user-2:rt");
+                    redis.del("user:test-user:refresh_tokens");
+                    redis.del("user:test-user-2:refresh_tokens");
                     return true;
                 },
                 false);
+        cleanup_keys_like("refresh_token:*");
+        cleanup_keys_like("revoked_access_token:*");
     }
 
     std::unique_ptr<im::gateway::MultiPlatformAuthManager> auth_;
@@ -155,4 +167,78 @@ TEST_F(AuthTokenTest, DeleteRefreshToken) {
     im::gateway::UserTokenInfo user_info;
     auto device_id = device_id_;
     EXPECT_FALSE(auth_->verify_refresh_token(refresh_token, device_id, user_info));
+}
+
+TEST_F(AuthTokenTest, RefreshTokenCreatesPerTokenKey) {
+    auto rt = auth_->generate_refresh_token(user_id_, username_, device_id_, platform_, 60);
+    ASSERT_FALSE(rt.empty());
+
+    bool key_exists = im::db::redis_manager().execute(
+            [&](auto& redis) { return redis.exists("refresh_token:" + rt); });
+    EXPECT_TRUE(key_exists) << "Per-token key refresh_token:<token> must exist after generation";
+
+    bool old_hash_exists = im::db::redis_manager().execute(
+            [&](auto& redis) { return redis.exists("refresh_tokens"); });
+    EXPECT_FALSE(old_hash_exists)
+            << "Shared refresh_tokens hash must not be used by new tokens";
+}
+
+TEST_F(AuthTokenTest, IndependentExpiryPerRefreshToken) {
+    auto rt1 = auth_->generate_refresh_token(user_id_, username_, device_id_, platform_, 60);
+    ASSERT_FALSE(rt1.empty());
+
+    auto rt2 = auth_->generate_refresh_token(user_id_, username_, device_id_, platform_, 2);
+    ASSERT_FALSE(rt2.empty());
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(3100));
+
+    im::gateway::UserTokenInfo user_info;
+    auto dev = device_id_;
+    EXPECT_TRUE(auth_->verify_refresh_token(rt1, dev, user_info))
+            << "rt1 (60s TTL) should still be valid after rt2 (2s TTL) expires";
+    EXPECT_FALSE(auth_->verify_refresh_token(rt2, dev, user_info))
+            << "rt2 (2s TTL) should be expired";
+}
+
+TEST_F(AuthTokenTest, WrongDeviceRevokesOnlyThatToken) {
+    auto rt1 = auth_->generate_refresh_token(user_id_, username_, "dev-1", platform_, 60);
+    ASSERT_FALSE(rt1.empty());
+    auto rt2 = auth_->generate_refresh_token(user_id_, username_, "dev-2", platform_, 60);
+    ASSERT_FALSE(rt2.empty());
+
+    im::gateway::UserTokenInfo user_info;
+    auto wrong_dev = std::string("wrong-device");
+    EXPECT_FALSE(auth_->verify_refresh_token(rt1, wrong_dev, user_info));
+
+    auto dev2 = std::string("dev-2");
+    EXPECT_TRUE(auth_->verify_refresh_token(rt2, dev2, user_info))
+            << "rt2 should still be valid after wrong-device attempt on rt1";
+
+    auto dev1 = std::string("dev-1");
+    EXPECT_FALSE(auth_->verify_refresh_token(rt1, dev1, user_info))
+            << "rt1 should be revoked after wrong-device attempt";
+}
+
+TEST_F(AuthTokenTest, RevokedAccessTokenCreatesPerJtiKey) {
+    auto token = auth_->generate_access_token(user_id_, username_, device_id_, platform_, 60);
+    ASSERT_FALSE(token.empty());
+
+    EXPECT_TRUE(auth_->revoke_token(token));
+    EXPECT_TRUE(auth_->is_token_revoked(token));
+
+    std::string jti;
+    {
+        auto decoded = jwt::decode(token);
+        jti = decoded.get_id();
+    }
+    bool jti_exists = im::db::redis_manager().execute(
+            [&](auto& redis) { return redis.exists("revoked_access_token:" + jti); });
+    EXPECT_TRUE(jti_exists) << "revoked_access_token:<jti> key must exist after revoke";
+
+    EXPECT_TRUE(auth_->unrevoke_token(token));
+    EXPECT_FALSE(auth_->is_token_revoked(token));
+
+    bool jti_gone = im::db::redis_manager().execute(
+            [&](auto& redis) { return redis.exists("revoked_access_token:" + jti); });
+    EXPECT_FALSE(jti_gone) << "revoked_access_token:<jti> key must be deleted after unrevoke";
 }

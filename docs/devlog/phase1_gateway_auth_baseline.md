@@ -37,6 +37,13 @@ focused tests, and the existing JWT auth code has a focused token test suite.
   whole `refresh_tokens` hash immediately.
 - Made Auth tests use an absolute source-tree config path instead of depending
   on the current working directory used by CTest.
+- **Task 1**: Auth Redis token storage hardened to per-token/per-JTI model:
+  - `refresh_token:<token>` per-token metadata keys with independent TTL.
+  - `revoked_access_token:<jti>` per-JTI keys with TTL aligned to token expiry.
+  - `user:<user_id>:refresh_tokens` user index set.
+  - Added `set`, `get`, `exists`, `ttl`, `keys` primitives to RedisClient.
+  - Added test coverage: per-token key existence, independent TTLs, wrong-device
+    isolation, per-JTI key lifecycle.
 
 ## Verification
 
@@ -86,29 +93,37 @@ The health endpoint returned:
 
 SIGINT shutdown exited with code `0`.
 
+## Auth Redis Model (Post-Task-1)
+
+Refresh tokens now use per-token keys:
+
+```text
+refresh_token:<token>       # JSON metadata, independent TTL
+user:<user_id>:refresh_tokens  # user index set (SADD/SREM)
+```
+
+Access token revocation uses per-JTI keys:
+
+```text
+revoked_access_token:<jti>  # TTL aligned to remaining token lifetime
+```
+
+Redis primitives added: `set`, `get`, `exists`, `ttl`, `keys`.
+
 ## Current Auth Caveats
 
-- Refresh tokens are stored as fields inside one Redis hash named
-  `refresh_tokens`. Setting `EXPIRE` on that hash applies to all refresh tokens,
-  so one token can extend or shorten the lifetime of every token in the hash.
-  This is acceptable only as a temporary MVP compatibility point. The next auth
-  cleanup should move to per-token keys such as `refresh_token:<token>` with
-  independent TTLs.
-- Access-token revocation stores JWT IDs in one Redis set without per-token TTL.
-  This can grow indefinitely. A follow-up should store revoked token IDs with
-  expiry aligned to the access token expiry.
-- Wrong-device refresh attempts currently revoke the refresh token. The test
-  suite now documents this behavior.
+- Redis wrapper is single-connection and mutex-serialized. Adequate for
+  correctness, not for performance.
+- Wrong-device refresh attempts revoke the refresh token. This behavior is
+  documented by the test suite.
 
 ## Next Work
 
-1. Replace refresh-token hash storage with per-token Redis keys and update
-   tests.
-2. Verify and document the ODB compiler/toolchain, then bring the PostgreSQL ODB
+1. Verify and document the ODB compiler/toolchain, then bring the PostgreSQL ODB
    wrapper into the validated build.
-3. Build `services/user` as an independent User Service MVP using ODB-backed
+2. Build `services/user` as an independent User Service MVP using ODB-backed
    PostgreSQL persistence.
-4. Wire Gateway auth routes to the User Service contract:
+3. Wire Gateway auth routes to the User Service contract:
    `/api/v1/auth/register`, `/api/v1/auth/login`, and `/api/v1/auth/refresh`.
-5. Add focused service-level tests before enabling endpoint-level Gateway/User
+4. Add focused service-level tests before enabling endpoint-level Gateway/User
    integration tests.

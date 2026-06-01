@@ -172,10 +172,10 @@ std::string MultiPlatformAuthManager::generate_refresh_token(const std::string& 
                        {"last_used", now.time_since_epoch().count()}};
 
         RedisManager::GetInstance().execute([&](auto& redis) {
-            redis.hset("refresh_tokens", rt, rtMeta.dump());
-            redis.expire("refresh_tokens", actual_expire_seconds);
-            redis.sadd("user:" + user_id + ":rt", rt);
-            redis.expire("user:" + user_id + ":rt", actual_expire_seconds);
+            redis.set("refresh_token:" + rt, rtMeta.dump());
+            redis.expire("refresh_token:" + rt, actual_expire_seconds);
+            redis.sadd("user:" + user_id + ":refresh_tokens", rt);
+            redis.expire("user:" + user_id + ":refresh_tokens", actual_expire_seconds);
         });
 
         return rt;
@@ -324,7 +324,7 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
         }
 
         auto meta = RedisManager::GetInstance().execute(
-                [&](auto& redis) { return redis.hget("refresh_tokens", refresh_token); });
+                [&](auto& redis) { return redis.get("refresh_token:" + refresh_token); });
 
         // 检查meta是否为空
         if (!meta) {
@@ -365,15 +365,26 @@ bool MultiPlatformAuthManager::verify_refresh_token(const std::string& refresh_t
 bool MultiPlatformAuthManager::revoke_token(const std::string& token) {
     try {
         std::string jti = extract_jti(token);
-        if (!jti.empty()) {
-            auto conn = RedisManager::GetInstance().get_connection();
-            conn->sadd("revoked_access_tokens", jti);
-            return true;
+        if (jti.empty()) return false;
+
+        auto decoded = jwt::decode(token);
+        auto now = std::chrono::system_clock::now();
+        auto exp = decoded.get_expires_at();
+
+        int ttl = 0;
+        if (exp > now) {
+            ttl = static_cast<int>(
+                    std::chrono::duration_cast<std::chrono::seconds>(exp - now).count());
         }
 
-        return false;
+        RedisManager::GetInstance().execute([&](auto& redis) {
+            redis.set("revoked_access_token:" + jti, "1");
+            if (ttl > 0) {
+                redis.expire("revoked_access_token:" + jti, ttl);
+            }
+        });
+        return true;
     } catch (...) {
-        // 忽略错误
         return false;
     }
 }
@@ -383,64 +394,70 @@ bool MultiPlatformAuthManager::unrevoke_token(const std::string& token) {
         std::string jti = extract_jti(token);
         if (!jti.empty()) {
             auto conn = RedisManager::GetInstance().get_connection();
-            conn->srem("revoked_access_tokens", jti);
+            conn->del("revoked_access_token:" + jti);
             return true;
         }
         return false;
     } catch (...) {
-        // 忽略错误
         return false;
     }
 }
 
 bool MultiPlatformAuthManager::revoke_refresh_token(const std::string& refresh_token) {
     try {
-        RedisManager::GetInstance().execute([&](auto& redis) {
-            auto meta = redis.hget("refresh_tokens", refresh_token);
-            // 检查meta是否为空
+        return RedisManager::GetInstance().execute([&](auto& redis) -> bool {
+            auto meta = redis.get("refresh_token:" + refresh_token);
             if (!meta) {
-                return;
+                return false;
             }
+            auto remaining = redis.ttl("refresh_token:" + refresh_token);
             json decode = json::parse(*meta);
             decode["revoked"] = true;
-            redis.hset("refresh_tokens", refresh_token, decode.dump());
+            redis.set("refresh_token:" + refresh_token, decode.dump());
+            if (remaining > 0) {
+                redis.expire("refresh_token:" + refresh_token, static_cast<int>(remaining));
+            }
+            return true;
         });
-
-        return true;
     } catch (...) {
-        // 忽略错误
         return false;
     }
 }
 
 bool MultiPlatformAuthManager::unrevoke_refresh_token(const std::string& refresh_token) {
     try {
-        RedisManager::GetInstance().execute([&](auto& redis) {
-            auto meta = redis.hget("refresh_tokens", refresh_token);
-            // 检查meta是否为空
+        return RedisManager::GetInstance().execute([&](auto& redis) -> bool {
+            auto meta = redis.get("refresh_token:" + refresh_token);
             if (!meta) {
-                return;
+                return false;
             }
+            auto remaining = redis.ttl("refresh_token:" + refresh_token);
             json decode = json::parse(*meta);
             decode["revoked"] = false;
-            redis.hset("refresh_tokens", refresh_token, decode.dump());
+            redis.set("refresh_token:" + refresh_token, decode.dump());
+            if (remaining > 0) {
+                redis.expire("refresh_token:" + refresh_token, static_cast<int>(remaining));
+            }
+            return true;
         });
-
-        return true;
     } catch (...) {
-        // 忽略错误
         return false;
     }
 }
 
 bool MultiPlatformAuthManager::del_refresh_token(const std::string& refresh_token) {
     try {
-        RedisManager::GetInstance().execute(
-                [&](auto& redis) { redis.hdel("refresh_tokens", refresh_token); });
-
+        RedisManager::GetInstance().execute([&](auto& redis) {
+            auto meta = redis.get("refresh_token:" + refresh_token);
+            redis.del("refresh_token:" + refresh_token);
+            if (meta) {
+                json decode = json::parse(*meta);
+                std::string user_id = decode["user_id"];
+                redis.srem("user:" + user_id + ":refresh_tokens", refresh_token);
+            }
+        });
         return true;
     } catch (...) {
-        // 忽略错误
         return false;
     }
 }
@@ -450,7 +467,7 @@ bool MultiPlatformAuthManager::is_token_revoked(const std::string& token) {
         std::string jti = extract_jti(token);
         if (jti.empty()) return false;
         auto conn = RedisManager::GetInstance().get_connection();
-        return conn->sismember("revoked_access_tokens", jti);
+        return conn->exists("revoked_access_token:" + jti);
 
     } catch (...) {
         return true;  // 出错时认为已撤销
@@ -460,7 +477,7 @@ bool MultiPlatformAuthManager::is_token_revoked(const std::string& token) {
 bool MultiPlatformAuthManager::should_rotate_refresh_token(const std::string& refresh_token) {
     try {
         auto conn = RedisManager::GetInstance().get_connection();
-        auto meta = conn->hget("refresh_tokens", refresh_token);
+        auto meta = conn->get("refresh_token:" + refresh_token);
         // 检查meta是否为空
         if (!meta) {
             return false;
