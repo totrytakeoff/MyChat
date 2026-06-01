@@ -186,8 +186,6 @@ Not complete yet:
 
 - Gateway default business handlers are still incomplete.
 - Gateway-to-service calls are not yet restored as real service boundaries.
-- PostgreSQL/ODB infrastructure exists in source form but is not yet part of the
-  validated build/test baseline.
 - User Service is not yet a working service MVP.
 - Message/Friend/Group/Push service MVPs are not started.
 - `services/codec` contains stale generated gRPC/protobuf files and remains
@@ -200,8 +198,8 @@ Not complete yet:
 - Access-token revocation currently uses one Redis set and needs per-token TTL
   cleanup.
 - Redis wrapper is a minimal hiredis adapter, not a production connection pool.
-- ODB compiler/toolchain availability must be verified and documented.
-- PostgreSQL ODB models need generated mapping files and tests.
+- ODB 2.5.0 runtime must be built from source; not yet available in vcpkg.
+- `pgsql_conn.hpp` RAII wrapper has string-ID and shared-ptr issues.
 - Several old test suites still reflect `redis-plus-plus` or experimental
   Gateway APIs.
 - Gateway handler registration includes temporary test-oriented paths and needs

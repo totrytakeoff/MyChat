@@ -98,6 +98,12 @@ Result: Baseline green, PgSQL targets skipped gracefully.
   - Added `MYCHAT_BUILD_PGSQL_ODB` CMake option (default OFF).
   - `im_pgsql` library target compiles from `pgsql_conn.cpp`.
   - Fixed `auto`/`extern` logger conflict in `pgsql_conn.cpp`.
+- ODB user persistence baseline established:
+  - `services/odb/user.hpp` rewritten with valid namespaced model (manual
+    string UID, password_hash, `im_users` table, `im::service::user::User`).
+  - ODB generated files produced by `odb 2.5.0` compiler.
+  - `im_user_odb` static library target builds behind ODB gate.
+  - `ODBUserPersistenceTest` passes against Docker PostgreSQL.
 
 ## In Progress
 
@@ -109,30 +115,31 @@ Gateway Service MVP hardening:
 
 PostgreSQL/ODB foundation:
 
-- ODB runtime libraries (libodb, libodb-pgsql) are available behind vcpkg
-  feature `pgsql-odb`. To enable:
-  ```bash
-  cmake ... -DVCPKG_MANIFEST_FEATURES=pgsql-odb -DMYCHAT_BUILD_PGSQL_ODB=ON
-  ```
-- `im_pgsql` library builds with `MYCHAT_BUILD_PGSQL_ODB=ON`.
-- ODB compiler (`odb`) is NOT available — blocks ODB entity compilation and
-  persistence tests.
-- `services/odb/user.hpp` has known issues (string `id auto`, missing
-  password_hash, no namespace).
+- ODB 2.5.0 runtime installed via `scripts/build_odb_runtime_2_5.sh`. CMake
+  requires ODB 2.5.0 (detected via `MYCHAT_ODB_ROOT` or default `.odb/installed/`)
+  and fails at configure time with instructions if not found. No silent fallback
+  to vcpkg 2.4.0.
+- ODB user persistence baseline is **reproducible**. Run `scripts/build_odb_runtime_2_5.sh`
+  then `cmake ... -DMYCHAT_BUILD_PGSQL_ODB=ON`. User entity persists/loads from
+  Docker PostgreSQL.
+- `pgsql_conn.hpp` RAII wrapper has pre-existing issues (string ID
+  `std::to_string`, raw-pointer vs shared_ptr) — not blocking baseline but
+  needs fixing before User Service implementation.
 
 ## Next Immediate Tasks
 
-1. Install ODB compiler (`odb`) from https://www.codesynthesis.com/odb/.
-2. Fix `services/odb/user.hpp` model issues.
-3. Generate ODB mapping files and add minimal ODB persistence test.
-4. Start User Service MVP only after ODB persistence baseline passes.
+1. Start User Service MVP: register/login/profile workflows with ODB
+   persistence and password hashing.
+2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling).
+3. Gateway-to-User service integration after User Service MVP is complete.
 
 ## Risks
 
-- ODB compiler (`odb`) not installed. ODB entity build and persistence tests
-  blocked until compiler is installed separately.
-- `services/odb/user.hpp` has known defects (string `id auto`, missing
-  password_hash, no namespace) that must be fixed before User Service MVP.
+- ODB 2.5.0 runtime must be built from source (until vcpkg packages are
+  updated). Developers must run `scripts/build_odb_runtime_2_5.sh` before
+  enabling ODB builds. CMake fails at configure time if runtime is missing.
+- `pgsql_conn.hpp` RAII wrapper has pre-existing issues that will surface
+  during User Service implementation.
 - Existing `services/codec` generated files are stale. Regenerating gRPC/proto
   artifacts should be a deliberate phase, not an accidental side effect.
 - Old tests still contain references to removed dependencies and may fail if
@@ -148,3 +155,4 @@ PostgreSQL/ODB foundation:
 - Gateway/Auth baseline log: `docs/devlog/phase1_gateway_auth_baseline.md`
 - Current progress: `docs/devlog/current_progress.md`
 - ODB toolchain status: `docs/devlog/phase2_odb_toolchain.md`
+- ODB user persistence: `docs/devlog/phase3_odb_user_persistence.md`

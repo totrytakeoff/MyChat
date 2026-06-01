@@ -22,3 +22,9 @@ cmake_install.cmake
 Makefile
 
 logs/
+
+# Local ODB build/runtime cache
+.odb/
+
+# Agent handoff scratch assets
+docs/agent_context/image/

@@ -1,47 +1,29 @@
-#ifndef USER_HPP
-#define USER_HPP
-
-/******************************************************************************
- *
- * @file       user.hpp
- * @brief      用户实体类定义
- *
- * @author     myself
- * @date       2025/09/25
- *
- *****************************************************************************/
+#ifndef IM_SERVICE_USER_USER_HPP
+#define IM_SERVICE_USER_USER_HPP
 
 #include <odb/core.hxx>
-#include <odb/nullable.hxx>
 #include <string>
 #include <cstdint>
 
-// 前向声明枚举类型
-#pragma db enum
+namespace im {
+namespace service {
+namespace user {
+
 enum class Gender {
-    UNKNOWN = 0,    // 未知
-    MALE = 1,       // 男
-    FEMALE = 2,     // 女
-    OTHER = 3       // 其他
+    UNKNOWN = 0,
+    MALE    = 1,
+    FEMALE  = 2,
+    OTHER   = 3
 };
 
-// 注册类型枚举
-#pragma db enum
-enum class RegisterType {
-    REGISTER_UNKNOWN = 0, // 未知
-    REGISTER_PHONE = 1,   // 手机号注册
-    REGISTER_EMAIL = 2    // 邮箱注册
-};
-
-// 用户实体类
-#pragma db object
-class user {
+#pragma db object table("im_users")
+class User {
 public:
-    // 构造函数
-    user() : create_time_(0), last_login_(0), online_(false) {}
-    
-    user(const std::string& uid, 
-         const std::string& account, 
+    User() : create_time_(0), last_login_(0), online_(false) {}
+
+    User(const std::string& uid,
+         const std::string& account,
+         const std::string& password_hash,
          const std::string& nickname,
          const std::string& avatar,
          Gender gender = Gender::UNKNOWN,
@@ -49,97 +31,72 @@ public:
          int64_t create_time = 0,
          int64_t last_login = 0,
          bool online = false)
-        : uid_(uid), account_(account), nickname_(nickname), avatar_(avatar),
-          gender_(gender), signature_(signature), create_time_(create_time),
+        : uid_(uid), account_(account), password_hash_(password_hash),
+          nickname_(nickname), avatar_(avatar), gender_(gender),
+          signature_(signature), create_time_(create_time),
           last_login_(last_login), online_(online) {}
 
-    // Getter和Setter方法
     const std::string& uid() const { return uid_; }
-    void uid(const std::string& uid) { uid_ = uid; }
-    
+    void uid(const std::string& v) { uid_ = v; }
+
     const std::string& account() const { return account_; }
-    void account(const std::string& account) { account_ = account; }
-    
+    void account(const std::string& v) { account_ = v; }
+
+    const std::string& password_hash() const { return password_hash_; }
+    void password_hash(const std::string& v) { password_hash_ = v; }
+
     const std::string& nickname() const { return nickname_; }
-    void nickname(const std::string& nickname) { nickname_ = nickname; }
-    
+    void nickname(const std::string& v) { nickname_ = v; }
+
     const std::string& avatar() const { return avatar_; }
-    void avatar(const std::string& avatar) { avatar_ = avatar; }
-    
+    void avatar(const std::string& v) { avatar_ = v; }
+
     Gender gender() const { return gender_; }
-    void gender(Gender gender) { gender_ = gender; }
-    
+    void gender(const Gender v) { gender_ = v; }
+
     const std::string& signature() const { return signature_; }
-    void signature(const std::string& signature) { signature_ = signature; }
-    
+    void signature(const std::string& v) { signature_ = v; }
+
     int64_t create_time() const { return create_time_; }
-    void create_time(int64_t create_time) { create_time_ = create_time; }
-    
+    void create_time(const int64_t v) { create_time_ = v; }
+
     int64_t last_login() const { return last_login_; }
-    void last_login(int64_t last_login) { last_login_ = last_login; }
-    
+    void last_login(const int64_t v) { last_login_ = v; }
+
     bool online() const { return online_; }
-    void online(bool online) { online_ = online; }
-    
-    const std::string& phone_number() const { return phone_number_; }
-    void phone_number(const std::string& phone_number) { phone_number_ = phone_number; }
-    
-    const std::string& email() const { return email_; }
-    void email(const std::string& email) { email_ = email; }
-    
-    const std::string& address() const { return address_; }
-    void address(const std::string& address) { address_ = address; }
-    
-    const std::string& birthday() const { return birthday_; }
-    void birthday(const std::string& birthday) { birthday_ = birthday; }
-    
-    const std::string& company() const { return company_; }
-    void company(const std::string& company) { company_ = company; }
-    
-    const std::string& job_title() const { return job_title_; }
-    void job_title(const std::string& job_title) { job_title_ = job_title; }
-    
-    const std::string& wxid() const { return wxid_; }
-    void wxid(const std::string& wxid) { wxid_ = wxid; }
-    
-    const std::string& qqid() const { return qqid_; }
-    void qqid(const std::string& qqid) { qqid_ = qqid; }
-    
-    const std::string& real_name() const { return real_name_; }
-    void real_name(const std::string& real_name) { real_name_ = real_name; }
-    
-    const std::string& extra() const { return extra_; }
-    void extra(const std::string& extra) { extra_ = extra; }
+    void online(const bool v) { online_ = v; }
 
 private:
-    // 数据库字段映射
-    #pragma db id auto
+    friend class odb::access;
+
+    // Manual string UID: user IDs are assigned by the application (UUID-based)
+    // rather than auto-generated by the database. ODB `auto` requires an integral
+    // type and is not appropriate for our distributed ID scheme.
+    #pragma db id
     std::string uid_;
-    
+
     #pragma db not_null unique
     std::string account_;
-    
+
+    // Only the password hash is stored, never the plaintext password.
+    // Hashing is performed by the User Service before persistence.
+    #pragma db not_null
+    std::string password_hash_;
+
     std::string nickname_;
     std::string avatar_;
-    
+
     #pragma db value_not_null
     Gender gender_;
-    
+
     std::string signature_;
     int64_t create_time_;
     int64_t last_login_;
     bool online_;
-    
-    std::string phone_number_;
-    std::string email_;
-    std::string address_;
-    std::string birthday_;
-    std::string company_;
-    std::string job_title_;
-    std::string wxid_;
-    std::string qqid_;
-    std::string real_name_;
-    std::string extra_;
 };
 
-#endif  // USER_HPP
+} // namespace user
+} // namespace service
+} // namespace im
+
+#endif // IM_SERVICE_USER_USER_HPP

@@ -68,34 +68,127 @@ find_package(jwt-cpp CONFIG QUIET)
 find_package(httplib CONFIG QUIET)
 find_package(unofficial-libuuid CONFIG QUIET)
 
-# ODB runtime libraries (used when MYCHAT_BUILD_PGSQL_ODB is ON).
-# ODB runtime packages are behind a vcpkg feature to keep the default
-# dependency set free of PostgreSQL/ODB. Pass
-#   -DVCPKG_MANIFEST_FEATURES=pgsql-odb
-# to install them.
+# ODB 2.5.0 runtime detection.
+#
+# The generated ODB files (services/odb/generated/user-odb.hxx) require
+# ODB runtime version 2.5.0 (ODB_VERSION==20500). CMake finds the runtime
+# through these paths, in priority order:
+#
+#   1. MYCHAT_ODB_ROOT variable (explicit path, e.g. -DMYCHAT_ODB_ROOT=/opt/odb)
+#   2. .odb/installed/ (default, created by scripts/build_odb_runtime_2_5.sh)
+#
+# If a compatible runtime is not found, CMake fails at configure time with
+# instructions to run the build script. There is no silent fallback to
+# vcpkg's ODB 2.4.0 — that version is incompatible with the generated files.
 if(MYCHAT_BUILD_PGSQL_ODB)
-    find_package(odb CONFIG COMPONENTS libodb pgsql QUIET)
-    if(odb_FOUND)
-        if(NOT TARGET odb::libodb)
-            message(WARNING "MYCHAT_BUILD_PGSQL_ODB=ON but odb::libodb target not found. "
-                "Install libodb via vcpkg (pass -DVCPKG_MANIFEST_FEATURES=pgsql-odb).")
-            set(MYCHAT_HAS_ODB_RUNTIME FALSE)
-        elseif(NOT TARGET odb::libodb-pgsql)
-            message(WARNING "MYCHAT_BUILD_PGSQL_ODB=ON but odb::libodb-pgsql target not found. "
-                "Install libodb-pgsql via vcpkg (pass -DVCPKG_MANIFEST_FEATURES=pgsql-odb).")
-            set(MYCHAT_HAS_ODB_RUNTIME FALSE)
+    set(_odb_prefix "")
+    set(_odb_err_suffix "")
+
+    # Priority 1: MYCHAT_ODB_ROOT
+    if(NOT "${MYCHAT_ODB_ROOT}" STREQUAL "")
+        if(EXISTS "${MYCHAT_ODB_ROOT}/lib/libodb.a")
+            set(_odb_prefix "${MYCHAT_ODB_ROOT}")
+            message(STATUS "MYCHAT_ODB_ROOT=${_odb_prefix}")
         else()
+            message(FATAL_ERROR
+                "MYCHAT_ODB_ROOT=${MYCHAT_ODB_ROOT} does not contain libodb.a. "
+                "Set MYCHAT_ODB_ROOT to the ODB 2.5.0 install prefix.")
+        endif()
+    endif()
+
+    # Priority 2: default .odb/installed location
+    if("${_odb_prefix}" STREQUAL "")
+        set(_odb_default "${CMAKE_SOURCE_DIR}/.odb/installed")
+        if(EXISTS "${_odb_default}/lib/libodb.a")
+            set(_odb_prefix "${_odb_default}")
+            message(STATUS "Using ODB runtime from default location: ${_odb_default}")
+        endif()
+    endif()
+
+    # Verify version and define imported targets
+    if(NOT "${_odb_prefix}" STREQUAL "")
+        set(_vh "${_odb_prefix}/include/odb/version.hxx")
+        if(NOT EXISTS "${_vh}")
+            message(FATAL_ERROR
+                "ODB runtime at ${_odb_prefix} is missing version.hxx. "
+                "Reinstall the ODB 2.5.0 runtime.")
+        endif()
+
+        file(READ "${_vh}" _version_hxx)
+        if(_version_hxx MATCHES "#define[ \t]+ODB_VERSION[ \t]+20500")
+            message(STATUS "Found ODB runtime 2.5.0 at ${_odb_prefix}")
+
+            # Add include path early to shadow any vcpkg 2.4.0 headers.
+            include_directories(BEFORE "${_odb_prefix}/include")
+
+            add_library(odb::libodb STATIC IMPORTED GLOBAL)
+            set_target_properties(odb::libodb PROPERTIES
+                IMPORTED_LOCATION "${_odb_prefix}/lib/libodb.a"
+                INTERFACE_INCLUDE_DIRECTORIES "${_odb_prefix}/include"
+            )
+
+            find_package(PostgreSQL QUIET)
+
+            add_library(odb::libodb-pgsql STATIC IMPORTED GLOBAL)
+            set_property(TARGET odb::libodb-pgsql PROPERTY IMPORTED_LOCATION
+                "${_odb_prefix}/lib/libodb-pgsql.a")
+            set_property(TARGET odb::libodb-pgsql APPEND PROPERTY
+                INTERFACE_INCLUDE_DIRECTORIES "${_odb_prefix}/include")
+            set_property(TARGET odb::libodb-pgsql APPEND PROPERTY
+                INTERFACE_LINK_LIBRARIES odb::libodb)
+            if(PostgreSQL_FOUND)
+                set_property(TARGET odb::libodb-pgsql APPEND PROPERTY
+                    INTERFACE_INCLUDE_DIRECTORIES "${PostgreSQL_INCLUDE_DIRS}")
+                set_property(TARGET odb::libodb-pgsql APPEND PROPERTY
+                    INTERFACE_LINK_LIBRARIES "PostgreSQL::PostgreSQL")
+            endif()
+
             set(MYCHAT_HAS_ODB_RUNTIME TRUE)
-            message(STATUS "ODB runtime libraries found. PostgreSQL/ODB support enabled.")
+            message(STATUS "PostgreSQL/ODB support enabled.")
+        else()
+            string(REGEX MATCH "#define[ \t]+ODB_VERSION[ \t]+([0-9]+)" _vm "${_version_hxx}")
+            message(FATAL_ERROR
+                "ODB runtime at ${_odb_prefix} has ODB_VERSION=${CMAKE_MATCH_1}, "
+                "but version 20500 (2.5.0) is required.\n"
+                "Rebuild the runtime:\n"
+                "  scripts/build_odb_runtime_2_5.sh${_odb_err_suffix}")
         endif()
     else()
-        message(WARNING "MYCHAT_BUILD_PGSQL_ODB=ON but ODB CMake package not found. "
-            "Install ODB runtime libraries via vcpkg: add -DVCPKG_MANIFEST_FEATURES=pgsql-odb "
-            "to your CMake configure command.")
+        # No ODB runtime found at any location.
         set(MYCHAT_HAS_ODB_RUNTIME FALSE)
+
+        # Check if generated ODB files exist — they mandate 2.5.0.
+        if(EXISTS "${CMAKE_SOURCE_DIR}/services/odb/generated/user-odb.hxx")
+            message(FATAL_ERROR
+                "ODB 2.5.0 runtime not found.\n"
+                "Generated ODB files require runtime 2.5.0.\n\n"
+                "To build the ODB 2.5.0 runtime, run:\n"
+                "  scripts/build_odb_runtime_2_5.sh\n\n"
+                "Or set MYCHAT_ODB_ROOT to an existing installation:\n"
+                "  cmake ... -DMYCHAT_ODB_ROOT=/path/to/odb-2.5.0 ...\n\n"
+                "Also ensure vcpkg feature pgsql-odb is enabled:\n"
+                "  -DVCPKG_MANIFEST_FEATURES=pgsql-odb")
+        else()
+            message(WARNING
+                "ODB 2.5.0 runtime not found.\n"
+                "Run the build script to enable ODB support:\n"
+                "  scripts/build_odb_runtime_2_5.sh")
+        endif()
     endif()
+
+    unset(_odb_prefix)
+    unset(_odb_err_suffix)
+    unset(_odb_default)
+    unset(_vh)
+    unset(_version_hxx)
+    unset(_vm)
 else()
     set(MYCHAT_HAS_ODB_RUNTIME FALSE)
+endif()
+
+# ODB-generated user persistence model (requires ODB runtime).
+if(MYCHAT_BUILD_PGSQL_ODB AND MYCHAT_HAS_ODB_RUNTIME)
+    add_subdirectory(services/odb)
 endif()
 
 file(GLOB MYCHAT_COMMON_PROTO_FILES CONFIGURE_DEPENDS
@@ -140,6 +233,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common/database)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/common/proto)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/gateway)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/services)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/services/odb)
 
 # 添加子目录
 add_subdirectory(common)

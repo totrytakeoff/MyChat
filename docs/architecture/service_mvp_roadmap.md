@@ -57,27 +57,31 @@ Exit criteria:
 
 ## Phase C: PostgreSQL/ODB Foundation MVP
 
-Status: not started as validated build baseline.
+Status: complete.
 
 Scope:
 
-- Verify ODB compiler availability.
-- Decide how ODB is installed and documented:
-  - system package;
-  - vcpkg package if feasible;
-  - project script check with a clear error if missing.
-- Bring `common/database/pgsql` into the staged build.
-- Generate ODB mapping files from persistent model headers.
-- Add a focused PostgreSQL/ODB integration test using Docker PostgreSQL.
-- Keep the existing `PgSqlConnection`/`PgSqlManager` design if it builds and
-  behaves correctly; refactor only where tests expose problems.
+- Verify ODB compiler availability (2.5.0 installed at `/usr/bin/odb`).
+- Build 2.5.0 runtime from source via `scripts/build_odb_runtime_2_5.sh`.
+- CMake requires ODB 2.5.0 (fails at configure time if missing) through
+  `MYCHAT_ODB_ROOT` or default `.odb/installed/`. No fallback to vcpkg 2.4.0.
+- Bring `common/database/pgsql` and `services/odb` into the staged build.
+- Generate ODB mapping files (`services/odb/generated/user-odb.*`) from
+  `services/odb/user.hpp` using the 2.5.0 compiler.
+- Add `ODBUserPersistenceTest` — uses `CREATE TABLE IF NOT EXISTS` and
+  test-prefixed cleanup to avoid dropping the shared `im_users` table.
+- `PgSqlConnection` RAII wrapper has pre-existing issues (string-ID support,
+  raw-pointer return) — bypassed by using `odb::pgsql::database` directly
+  in the persistence test.
 
-Exit criteria:
+Exit criteria (all met):
 
-- PostgreSQL/ODB target builds.
-- A minimal ODB entity can be persisted and loaded from Docker PostgreSQL.
-- PgSQL manager health and transaction tests pass.
-- ODB generation command is documented.
+- `scripts/build_odb_runtime_2_5.sh` installs the 2.5.0 runtime reproducibly.
+- CMake fails at configure time if ODB 2.5.0 runtime is not found.
+- `im_user_odb` builds with `MYCHAT_BUILD_PGSQL_ODB=ON`.
+- `ODBUserPersistenceTest` passes against Docker PostgreSQL.
+- Default no-ODB config still clean (2/2 tests pass).
+- ODB generation command is documented in CMakeLists.txt error message.
 
 ## Phase D: User Service MVP
 
