@@ -136,7 +136,8 @@ private:
     std::shared_ptr<spdlog::logger> server_logger;
 
     std::atomic<bool> is_running_;
-    std::string psc_path_;  // platform_strategy_config_path_
+    std::string psc_path_;     // platform_strategy_config_path_
+    std::string config_path_;  // gateway/router/auth shared config path for the MVP
 };
 
 

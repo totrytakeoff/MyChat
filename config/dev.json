@@ -1,0 +1,153 @@
+{
+  "gateway": {
+    "host": "0.0.0.0",
+    "websocket_port": 8101,
+    "http_port": 8102,
+    "cert_file": "test/network/test_cert.pem",
+    "key_file": "test/network/test_key.pem"
+  },
+  "redis": {
+    "host": "127.0.0.1",
+    "port": 6379,
+    "password": "mychat-dev-pass",
+    "db": 0,
+    "pool_size": 8,
+    "connect_timeout": 2000,
+    "socket_timeout": 2000
+  },
+  "postgres": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "database": "mychat",
+    "username": "mychat",
+    "password": "mychat-dev-pass"
+  },
+  "auth": {
+    "secret_key": "replace-this-dev-secret-before-production"
+  },
+  "secret_key": "replace-this-dev-secret-before-production",
+  "PlatformTokenStrategy": {
+    "web": {
+      "auto_refresh_enabled": true,
+      "background_refresh": true,
+      "refresh_precentage": 0.3,
+      "max_retry_count": 3,
+      "access_token_expire_seconds": 3600,
+      "refresh_token_expire_seconds": 604800,
+      "enable_multi_device": true
+    },
+    "android": {
+      "auto_refresh_enabled": true,
+      "background_refresh": true,
+      "refresh_precentage": 0.4,
+      "max_retry_count": 3,
+      "access_token_expire_seconds": 7200,
+      "refresh_token_expire_seconds": 1209600,
+      "enable_multi_device": false
+    },
+    "ios": {
+      "auto_refresh_enabled": true,
+      "background_refresh": true,
+      "refresh_precentage": 0.4,
+      "max_retry_count": 3,
+      "access_token_expire_seconds": 7200,
+      "refresh_token_expire_seconds": 1209600,
+      "enable_multi_device": false
+    },
+    "desktop": {
+      "auto_refresh_enabled": true,
+      "background_refresh": false,
+      "refresh_precentage": 0.2,
+      "max_retry_count": 5,
+      "access_token_expire_seconds": 14400,
+      "refresh_token_expire_seconds": 2592000,
+      "enable_multi_device": true
+    },
+    "miniapp": {
+      "auto_refresh_enabled": true,
+      "background_refresh": false,
+      "refresh_precentage": 0.5,
+      "max_retry_count": 2,
+      "access_token_expire_seconds": 1800,
+      "refresh_token_expire_seconds": 86400,
+      "enable_multi_device": false
+    },
+    "mobile": {
+      "auto_refresh_enabled": true,
+      "background_refresh": true,
+      "refresh_precentage": 0.4,
+      "max_retry_count": 3,
+      "access_token_expire_seconds": 7200,
+      "refresh_token_expire_seconds": 1209600,
+      "enable_multi_device": false
+    },
+    "unkown": {
+      "auto_refresh_enabled": false,
+      "background_refresh": false,
+      "refresh_precentage": 0.7,
+      "max_retry_count": 1,
+      "access_token_expire_seconds": 300,
+      "refresh_token_expire_seconds": 3600,
+      "enable_multi_device": false
+    }
+  },
+  "http_router": {
+    "api_prefix": "/api/v1",
+    "routes": [
+      {
+        "path": "/auth/login",
+        "cmd_id": 1001,
+        "service_name": "user_service"
+      },
+      {
+        "path": "/auth/logout",
+        "cmd_id": 1002,
+        "service_name": "user_service"
+      },
+      {
+        "path": "/auth/refresh",
+        "cmd_id": 1003,
+        "service_name": "user_service"
+      },
+      {
+        "path": "/auth/info",
+        "cmd_id": 1004,
+        "service_name": "user_service"
+      },
+      {
+        "path": "/message/send",
+        "cmd_id": 2001,
+        "service_name": "message_service"
+      },
+      {
+        "path": "/message/history",
+        "cmd_id": 2002,
+        "service_name": "message_service"
+      }
+    ]
+  },
+  "service_router": {
+    "services": [
+      {
+        "service_name": "user_service",
+        "endpoint": "localhost:9001",
+        "timeout_ms": 3000,
+        "max_connections": 5,
+        "cmd_range": [
+          1001,
+          1010
+        ]
+      },
+      {
+        "service_name": "message_service",
+        "endpoint": "localhost:9002",
+        "timeout_ms": 3000,
+        "max_connections": 5,
+        "cmd_range": [
+          2001,
+          2010
+        ]
+      }
+    ]
+  }
+}

@@ -1,171 +1,168 @@
 #ifndef REDIS_MGR_HPP
 #define REDIS_MGR_HPP
 
-/******************************************************************************
- *
- * @file       redis_mgr.hpp
- * @brief      Redis管理器，基于连接池管理sw::redis::Redis连接
- *
- * @author     myself
- * @date       2025/08/12
- * 
- *****************************************************************************/
+#include <hiredis/hiredis.h>
+#include <nlohmann/json.hpp>
 
-#include <sw/redis++/redis++.h>
-#include <string>
+#include <chrono>
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
-#include <functional>
-#include <nlohmann/json.hpp>
-#include "../utils/connection_pool.hpp"
-#include "../utils/config_mgr.hpp"
-#include "../utils/log_manager.hpp"
-#include "../utils/singleton.hpp"
+#include <optional>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
+#include "../../utils/config_mgr.hpp"
+#include "../../utils/log_manager.hpp"
+#include "../../utils/singleton.hpp"
 
 namespace im::db {
 
-/**
- * Redis配置结构
- */
 struct RedisConfig {
     std::string host = "127.0.0.1";
     int port = 6379;
-    std::string password = "";
+    std::string password;
     int db = 0;
-    int pool_size = 10;
-    int connect_timeout = 1000;  // ms
-    int socket_timeout = 1000;   // ms
-    
-    // 从配置文件加载
+    int pool_size = 1;
+    int connect_timeout = 1000;
+    int socket_timeout = 1000;
+
     static RedisConfig from_file(const std::string& config_path);
-    
-    // 转换为redis-plus-plus连接选项
-    sw::redis::ConnectionOptions to_connection_options() const;
-    sw::redis::ConnectionPoolOptions to_pool_options() const;
 };
 
-/**
- * Redis连接池管理器
- * 直接使用sw::redis::Redis，通过连接池管理连接
- */
+class RedisClient {
+public:
+    explicit RedisClient(RedisConfig config);
+    ~RedisClient();
+
+    RedisClient(const RedisClient&) = delete;
+    RedisClient& operator=(const RedisClient&) = delete;
+
+    std::string ping();
+
+    void hset(const std::string& key, const std::string& field, const std::string& value);
+    std::optional<std::string> hget(const std::string& key, const std::string& field);
+    template <typename OutputIt>
+    void hgetall(const std::string& key, OutputIt out);
+    void hdel(const std::string& key, const std::string& field);
+
+    void sadd(const std::string& key, const std::string& member);
+    void srem(const std::string& key, const std::string& member);
+    bool sismember(const std::string& key, const std::string& member);
+    int64_t scard(const std::string& key);
+    template <typename OutputIt>
+    void smembers(const std::string& key, OutputIt out);
+
+    void del(const std::string& key);
+    void expire(const std::string& key, int seconds);
+
+private:
+    using ReplyPtr = std::unique_ptr<redisReply, void (*)(void*)>;
+
+    ReplyPtr command(const char* format, ...);
+    void connect_locked();
+    static std::string reply_string(const redisReply* reply);
+
+    RedisConfig config_;
+    redisContext* context_ = nullptr;
+    mutable std::mutex context_mutex_;
+};
+
 class RedisManager : public im::utils::Singleton<RedisManager> {
 public:
-    using RedisPtr = std::shared_ptr<sw::redis::Redis>;
-    using RedisConnectionPool = im::utils::ConnectionPool<sw::redis::Redis>;
-    
-    /**
-     * 初始化Redis管理器
-     * @param config_path 配置文件路径
-     */
-    bool initialize(const std::string& config_path);
-    
-    /**
-     * 初始化Redis管理器
-     * @param config Redis配置
-     */
-    bool initialize(const RedisConfig& config);
-    
-    /**
-     * 获取Redis连接（自动归还连接池）
-     * @return RAII包装的Redis连接
-     */
+    using RedisPtr = std::shared_ptr<RedisClient>;
+
     class RedisConnection {
     public:
-        explicit RedisConnection(RedisConnectionPool& pool);
-        ~RedisConnection();
-        
-        // 禁止拷贝，允许移动
-        RedisConnection(const RedisConnection&) = delete;
-        RedisConnection& operator=(const RedisConnection&) = delete;
-        RedisConnection(RedisConnection&&) = default;
-        RedisConnection& operator=(RedisConnection&&) = default;
-        
-        // 获取原始Redis对象
-        sw::redis::Redis* operator->() { return redis_.get(); }
-        sw::redis::Redis& operator*() { return *redis_; }
-        
-        // 检查连接是否有效
-        bool is_valid() const { return redis_ != nullptr; }
-        
+        explicit RedisConnection(RedisPtr redis = nullptr) : redis_(std::move(redis)) {}
+
+        RedisClient* operator->() { return redis_.get(); }
+        RedisClient& operator*() { return *redis_; }
+        bool is_valid() const { return static_cast<bool>(redis_); }
+
     private:
-        RedisConnectionPool& pool_;
         RedisPtr redis_;
     };
-    
-    /**
-     * 获取Redis连接
-     */
+
+    bool initialize(const std::string& config_path);
+    bool initialize(const RedisConfig& config);
     RedisConnection get_connection();
-    
-    /**
-     * 便捷方法：执行Redis操作（自动管理连接）
-     * @param func 要执行的操作，参数为sw::redis::Redis&
-     * @return 操作结果
-     */
-    template<typename Func>
-    auto execute(Func&& func) -> decltype(func(std::declval<sw::redis::Redis&>())) {
+
+    template <typename Func>
+    auto execute(Func&& func) -> decltype(func(std::declval<RedisClient&>())) {
         auto conn = get_connection();
         if (!conn.is_valid()) {
-            throw std::runtime_error("Failed to get Redis connection");
+            throw std::runtime_error("Redis manager is not initialized");
         }
         return func(*conn);
     }
-    
-    /**
-     * 便捷方法：执行Redis操作（带异常处理）
-     * @param func 要执行的操作
-     * @param default_value 发生异常时的默认返回值
-     * @return 操作结果或默认值
-     */
-    template<typename Func, typename DefaultType>
-    auto safe_execute(Func&& func, DefaultType&& default_value) -> decltype(func(std::declval<sw::redis::Redis&>())) {
+
+    template <typename Func, typename DefaultType>
+    auto safe_execute(Func&& func, DefaultType&& default_value) -> decltype(func(std::declval<RedisClient&>())) {
         try {
             return execute(std::forward<Func>(func));
         } catch (const std::exception& e) {
             im::utils::LogManager::GetLogger("redis_manager")
-                ->error("Redis operation failed: {}", e.what());
+                    ->error("Redis operation failed: {}", e.what());
             return std::forward<DefaultType>(default_value);
         }
     }
-    
-    /**
-     * 获取连接池统计信息
-     */
+
     struct PoolStats {
-        size_t total_connections;
-        size_t available_connections;
-        size_t active_connections;
+        size_t total_connections = 0;
+        size_t available_connections = 0;
+        size_t active_connections = 0;
     };
+
     PoolStats get_pool_stats() const;
-    
-    /**
-     * 检查连接池健康状态
-     */
     bool is_healthy() const;
-    
-    /**
-     * 关闭管理器
-     */
     void shutdown();
 
 private:
     friend class im::utils::Singleton<RedisManager>;
     RedisManager() = default;
     ~RedisManager() = default;
-    
-    RedisConfig config_;
+
     mutable std::mutex mutex_;
     bool initialized_ = false;
-    
-    // 创建Redis连接的工厂函数
-    RedisPtr create_redis_connection();
+    RedisConfig config_;
+    RedisPtr redis_;
 };
 
-// 便捷的全局访问函数
 inline RedisManager& redis_manager() {
     return RedisManager::GetInstance();
 }
 
-} // namespace im::db
+template <typename OutputIt>
+void RedisClient::hgetall(const std::string& key, OutputIt out) {
+    auto reply = command("HGETALL %b", key.data(), key.size());
+    if (reply->type != REDIS_REPLY_ARRAY) {
+        return;
+    }
 
-#endif // REDIS_MGR_HPP
+    for (size_t i = 0; i + 1 < reply->elements; i += 2) {
+        *out++ = {reply_string(reply->element[i]), reply_string(reply->element[i + 1])};
+    }
+}
+
+template <typename OutputIt>
+void RedisClient::smembers(const std::string& key, OutputIt out) {
+    auto reply = command("SMEMBERS %b", key.data(), key.size());
+    if (reply->type != REDIS_REPLY_ARRAY) {
+        return;
+    }
+
+    for (size_t i = 0; i < reply->elements; ++i) {
+        *out++ = reply_string(reply->element[i]);
+    }
+}
+
+}  // namespace im::db
+
+#endif  // REDIS_MGR_HPP

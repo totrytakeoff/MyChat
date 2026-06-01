@@ -11,7 +11,7 @@
 
 #include "common/network/websocket_session.hpp"
 #include "common/network/websocket_server.hpp"
-#include "common/database/redis_mgr.hpp"
+#include "common/database/redis/redis_mgr.hpp"
 #include "gateway/auth/multi_platform_auth.hpp"
 #include "common/utils/global.hpp"
 

@@ -7,27 +7,41 @@ project(RedisManagerTests)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 创建测试可执行文件
-add_executable(test_redis
-    test_redis_mgr.cpp
+if(FALSE)
+    # TODO(Phase 1): Rewrite this test for the hiredis-backed RedisClient API.
+    # The existing test_redis_mgr.cpp still depends on redis-plus-plus types and
+    # high-level commands that were intentionally removed from the MVP wrapper.
+    add_executable(test_redis
+        test_redis_mgr.cpp
+    )
+
+    target_link_libraries(test_redis
+        PRIVATE
+            GTest::gtest
+            GTest::gtest_main
+            im::database
+            im::utils
+            nlohmann_json::nlohmann_json
+            spdlog::spdlog
+            Threads::Threads
+    )
+
+    target_compile_features(test_redis PRIVATE cxx_std_17)
+    add_test(NAME RedisManagerTests COMMAND test_redis)
+endif()
+
+add_executable(test_redis_hiredis
+    test_redis_hiredis.cpp
 )
 
-# 链接库（使用新的组件库）
-target_link_libraries(test_redis
+target_link_libraries(test_redis_hiredis
     PRIVATE
         GTest::gtest
         GTest::gtest_main
-        im::database  # 使用新的数据库库
-        im::utils     # 使用新的工具库
-        nlohmann_json::nlohmann_json
-        spdlog::spdlog
-        redis++::redis++_static
+        im::database
+        im::utils
         Threads::Threads
 )
 
-# 编译选项
-target_compile_features(test_redis PRIVATE cxx_std_17)
-
-# 添加测试
-enable_testing()
-add_test(NAME RedisManagerTests COMMAND test_redis)
+target_compile_features(test_redis_hiredis PRIVATE cxx_std_20)
+add_test(NAME RedisHiredisTest COMMAND test_redis_hiredis)

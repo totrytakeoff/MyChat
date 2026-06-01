@@ -4,7 +4,7 @@
 #include <chrono>
 #include <future>
 #include <fstream>
-#include "../../common/database/redis_mgr.hpp"
+#include "../../common/database/redis/redis_mgr.hpp"
 
 namespace im::db::test {
 

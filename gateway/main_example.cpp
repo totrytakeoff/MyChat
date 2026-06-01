@@ -8,7 +8,7 @@
 #include "../common/utils/config_mgr.hpp"
 #include "../common/utils/signal_handler.hpp"
 
-#include "../common/database/redis_mgr.hpp"
+#include "../common/database/redis/redis_mgr.hpp"
 #include "../common/utils/log_manager.hpp"
 #include "./gateway_server/gateway_server.hpp"
 

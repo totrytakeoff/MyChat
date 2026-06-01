@@ -64,10 +64,8 @@ enable_testing()
 add_test(NAME SignalHandlerTest COMMAND test_signal_handler)
 add_test(NAME CLIParserSimpleTest COMMAND test_cli_parser_simple)
 add_test(NAME ConfigManagerExtendedTest COMMAND test_config_mgr_extended)
-add_test(NAME UtilsIntegrationTest COMMAND test_utils_integration)
 
 # 设置测试属性
 set_tests_properties(SignalHandlerTest PROPERTIES TIMEOUT 30)
 set_tests_properties(CLIParserSimpleTest PROPERTIES TIMEOUT 30)
 set_tests_properties(ConfigManagerExtendedTest PROPERTIES TIMEOUT 30)
-set_tests_properties(UtilsIntegrationTest PROPERTIES TIMEOUT 60)

@@ -8,7 +8,7 @@ namespace network {
 using im::utils::LogManager;
 
 IOServicePool::IOServicePool(std::size_t pool_size)
-        : pool_size_(pool_size), next_io_service_(0) {
+        : next_io_service_(0), pool_size_(pool_size) {
     if (pool_size_ == 0) {
         pool_size_ = std::thread::hardware_concurrency();
         if (pool_size_ == 0) {
@@ -61,7 +61,8 @@ boost::asio::io_context& IOServicePool::GetIOService() {
 }
 
 void IOServicePool::Stop() {
-    if (pool_size_ == 0) return; // 防止重复停止
+    const auto current_pool_size = pool_size_.exchange(0);
+    if (current_pool_size == 0) return; // 防止重复停止
     
     // 因为仅仅执行work.reset并不能让iocontext从run的状态中退出
     // 当iocontext已经绑定了读或写的监听事件后，还需要手动stop该服务。
@@ -84,7 +85,6 @@ void IOServicePool::Stop() {
     threads_.clear(); // 清空线程容器
     io_services_.clear(); // 清空io_service容器
     
-    pool_size_ = 0; // 标记已停止
     LogManager::GetLogger("io_service_pool")->info("IOServicePool stopped");
 }
 

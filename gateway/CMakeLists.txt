@@ -1,7 +1,7 @@
 # gateway/CMakeLists.txt
 
 add_library(im_gateway_core STATIC
-    gateway_server/gateway_server-t1.cpp
+    gateway_server/gateway_server.cpp
     connection_manager/connection_manager.cpp
     router/router.mgr.cpp
     message_processor/message_parser.cpp

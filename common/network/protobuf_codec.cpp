@@ -86,7 +86,7 @@ bool ProtobufCodec::encode(const im::base::IMHeader& header,
         }
 
         // 3. 获取消息类型名称
-        std::string message_type = message.GetTypeName();
+        std::string message_type(message.GetTypeName());
 
         // 4. 计算消息头长度 (varint32格式)
         const uint32_t header_size = static_cast<uint32_t>(header_data.size());
@@ -264,7 +264,7 @@ bool ProtobufCodec::decode(const std::string& input,
             }
 
             // 验证消息类型是否匹配
-            std::string expected_type_name = message.GetTypeName();
+            std::string expected_type_name(message.GetTypeName());
             if (type_name_data != expected_type_name) {
                 LogManager::GetLogger("protobuf_codec")
                         ->error("Message type mismatch. Expected: {}, Received: {}",

@@ -24,7 +24,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "../../common/database/redis_mgr.hpp"
+#include "../../common/database/redis/redis_mgr.hpp"
 #include "../../common/utils/global.hpp"
 
 namespace im::gateway {
@@ -37,7 +37,7 @@ using im::db::RedisManager;
  * @param length 生成字符串的长度，默认为32位
  * @return 随机生成的字符串
  */
-static std::string rt_generate(size_t length = 32) {
+inline std::string rt_generate(size_t length = 32) {
     const std::string chars =
             "abcdefghijklmnopqrstuvwxyz"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -61,7 +61,7 @@ static std::string rt_generate(size_t length = 32) {
  * @param platform_str 平台字符串标识，如 "web", "android", "ios" 等
  * @return 对应的PlatformType枚举值
  */
-static PlatformType get_platform_type(const std::string& platform_str) {
+inline PlatformType get_platform_type(const std::string& platform_str) {
     if (platform_str == "web" || platform_str == "Web" || platform_str == "WEB") {
         return PlatformType::WEB;
     } else if (platform_str == "miniapp" || platform_str == "mini_app" ||

@@ -54,17 +54,21 @@ bool LogManager::IsLoggingEnabled(const std::string& logger_name) {
 }
 
 void LogManager::SetLogLevel(spdlog::level::level_enum level, const std::string& logger_name) {
+    std::lock_guard<std::mutex> lock(s_mutex_);
     if (logger_name.empty()) {
         for (auto& logger : s_loggers_) {
             logger.second->set_level(level);
         }
         return;
     }
-    auto logge = GetLogger(logger_name);
-    if (logge != nullptr) {
-        logge->set_level(level);
+    auto it = s_loggers_.find(logger_name);
+    if (it == s_loggers_.end()) {
+        auto logger = spdlog::stdout_color_mt(logger_name);
+        logger->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
+        s_loggingEnabled_[logger_name] = true;
+        it = s_loggers_.emplace(logger_name, std::move(logger)).first;
     }
-    return;
+    it->second->set_level(level);
 }
 
 void LogManager::SetLogLevel(std::string level, const std::string& logger_name) {

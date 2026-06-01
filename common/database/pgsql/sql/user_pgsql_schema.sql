@@ -1,5 +1,6 @@
 -- PostgreSQL 用户表初始化脚本
--- 基于 services/odb/user.hpp 实体类定义
+-- 开发环境脚本：容器首次初始化时自动执行。
+-- 注意：PostgreSQL 中 user 是保留关键字，业务用户表统一命名为 users。
 
 -- 设置时区（可选）
 SET timezone = 'Asia/Shanghai';
@@ -14,10 +15,10 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 删除已存在的表（用于开发环境，生产环境请谨慎使用）
 -- 注意：删除表会同时删除所有数据，请确保在执行前已备份
-DROP TABLE IF EXISTS user CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
 
 -- 创建用户表
-CREATE TABLE user (
+CREATE TABLE users (
     -- 主键字段
     uid VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT uuid_generate_v4(),
     
@@ -60,18 +61,18 @@ CREATE TABLE user (
 );
 
 -- 创建索引
-CREATE INDEX idx_user_account ON user(account);
-CREATE INDEX idx_user_nickname ON user(nickname);
-CREATE INDEX idx_user_gender ON user(gender);
-CREATE INDEX idx_user_create_time ON user(create_time);
-CREATE INDEX idx_user_last_login ON user(last_login);
-CREATE INDEX idx_user_online ON user(online);
-CREATE INDEX idx_user_phone_number ON user(phone_number);
-CREATE INDEX idx_user_email ON user(email);
+CREATE INDEX idx_user_account ON users(account);
+CREATE INDEX idx_user_nickname ON users(nickname);
+CREATE INDEX idx_user_gender ON users(gender);
+CREATE INDEX idx_user_create_time ON users(create_time);
+CREATE INDEX idx_user_last_login ON users(last_login);
+CREATE INDEX idx_user_online ON users(online);
+CREATE INDEX idx_user_phone_number ON users(phone_number);
+CREATE INDEX idx_user_email ON users(email);
 
 -- 创建复合索引
-CREATE INDEX idx_user_gender_create_time ON user(gender, create_time);
-CREATE INDEX idx_user_online_last_login ON user(online, last_login);
+CREATE INDEX idx_user_gender_create_time ON users(gender, create_time);
+CREATE INDEX idx_user_online_last_login ON users(online, last_login);
 
 -- 创建触发器函数：自动更新最后登录时间
 CREATE OR REPLACE FUNCTION update_last_login_time()
@@ -86,7 +87,7 @@ $$ LANGUAGE plpgsql;
 
 -- 创建触发器
 CREATE TRIGGER trg_user_last_login
-BEFORE UPDATE ON user
+BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_last_login_time();
 
@@ -104,7 +105,7 @@ SELECT
     online,
     phone_number,
     email
-FROM user;
+FROM users;
 
 -- 创建序列：用于可能的扩展需求
 CREATE SEQUENCE IF NOT EXISTS user_id_seq
@@ -115,7 +116,7 @@ MAXVALUE 9223372036854775807
 CACHE 1;
 
 -- 插入示例数据（可选）
-INSERT INTO user (
+INSERT INTO users (
     account, 
     nickname, 
     avatar, 
@@ -141,7 +142,7 @@ INSERT INTO user (
     '系统架构师'
 );
 
-INSERT INTO user (
+INSERT INTO users (
     account, 
     nickname, 
     avatar, 
@@ -169,7 +170,7 @@ INSERT INTO user (
     '高级工程师'
 );
 
-INSERT INTO user (
+INSERT INTO users (
     account, 
     nickname, 
     avatar, 
@@ -218,7 +219,7 @@ BEGIN
         COUNT(CASE WHEN gender = 2 THEN 1 END)::BIGINT,
         COUNT(CASE WHEN gender = 3 THEN 1 END)::BIGINT,
         COUNT(CASE WHEN create_time > extract(epoch from now()) - 86400 THEN 1 END)::BIGINT
-    FROM user;
+    FROM users;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -244,7 +245,7 @@ BEGIN
         v_phone := '1' || LPAD((p_start_index + i)::TEXT, 10, '0');
         v_create_time := extract(epoch from now()) - (RANDOM() * 86400)::INTEGER;
         
-        INSERT INTO user (
+        INSERT INTO users (
             account,
             nickname,
             email,
@@ -280,7 +281,7 @@ CREATE TABLE user_audit_log (
     ip_address INET,
     user_agent TEXT,
     
-    FOREIGN KEY (user_uid) REFERENCES user(uid) ON DELETE CASCADE
+    FOREIGN KEY (user_uid) REFERENCES users(uid) ON DELETE CASCADE
 );
 
 -- 创建审计日志索引
@@ -330,30 +331,41 @@ $$ LANGUAGE plpgsql;
 
 -- 为用户表创建审计触发器
 CREATE TRIGGER trg_user_audit_log
-AFTER INSERT OR UPDATE OR DELETE ON user
+AFTER INSERT OR UPDATE OR DELETE ON users
 FOR EACH ROW
 EXECUTE FUNCTION log_user_changes();
 
 -- 创建权限管理（可选）
--- 创建角色
-CREATE ROLE IF NOT EXISTS app_user WITH LOGIN PASSWORD 'secure_password_123';
-CREATE ROLE IF NOT EXISTS app_admin WITH LOGIN PASSWORD 'admin_password_123' INHERIT app_user;
+-- PostgreSQL 不支持 CREATE ROLE IF NOT EXISTS，用 DO 块保证初始化脚本可重复执行。
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
+        CREATE ROLE app_user WITH LOGIN PASSWORD 'secure_password_123';
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_admin') THEN
+        CREATE ROLE app_admin WITH LOGIN PASSWORD 'admin_password_123' INHERIT;
+    END IF;
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_readonly') THEN
+        CREATE ROLE app_readonly WITH LOGIN PASSWORD 'readonly_password_123';
+    END IF;
+END
+$$;
+
+GRANT app_user TO app_admin;
 
 -- 授予基本权限
 GRANT CONNECT ON DATABASE mychat TO app_user;
 GRANT USAGE ON SCHEMA public TO app_user;
-GRANT SELECT, INSERT, UPDATE, DELETE ON user TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON users TO app_user;
 GRANT SELECT ON user_audit_log TO app_user;
 
 -- 授予管理员权限
 GRANT SELECT, INSERT, UPDATE, DELETE ON user_audit_log TO app_admin;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_admin;
 
--- 创建只读用户角色
-CREATE ROLE IF NOT EXISTS app_readonly WITH LOGIN PASSWORD 'readonly_password_123';
 GRANT CONNECT ON DATABASE mychat TO app_readonly;
 GRANT USAGE ON SCHEMA public TO app_readonly;
-GRANT SELECT ON user TO app_readonly;
+GRANT SELECT ON users TO app_readonly;
 GRANT SELECT ON user_audit_log TO app_readonly;
 
 -- 输出创建完成信息

@@ -1,238 +1,216 @@
 #include "redis_mgr.hpp"
-#include <chrono>
+
+#include <cstdarg>
 
 namespace im::db {
 
-// ===== RedisConfig 实现 =====
 RedisConfig RedisConfig::from_file(const std::string& config_path) {
+    im::utils::ConfigManager cfg(config_path);
     RedisConfig config;
-    try {
-        auto cfg_mgr = im::utils::ConfigManager(config_path);
-        
-        config.host = cfg_mgr.get<std::string>("redis.host", "127.0.0.1");
-        config.port = cfg_mgr.get<int>("redis.port", 6379);
-        config.password = cfg_mgr.get<std::string>("redis.password", "");
-        config.db = cfg_mgr.get<int>("redis.db", 0);
-        config.pool_size = cfg_mgr.get<int>("redis.pool_size", 10);
-        config.connect_timeout = cfg_mgr.get<int>("redis.connect_timeout", 1000);
-        config.socket_timeout = cfg_mgr.get<int>("redis.socket_timeout", 1000);
-        
-    } catch (const std::exception& e) {
-        im::utils::LogManager::GetLogger("redis_manager")
-            ->error("Failed to load Redis config: {}", e.what());
-        throw;
-    }
+    config.host = cfg.get<std::string>("redis.host", "127.0.0.1");
+    config.port = cfg.get<int>("redis.port", 6379);
+    config.password = cfg.get<std::string>("redis.password", "");
+    config.db = cfg.get<int>("redis.db", 0);
+    config.pool_size = cfg.get<int>("redis.pool_size", 1);
+    config.connect_timeout = cfg.get<int>("redis.connect_timeout", 1000);
+    config.socket_timeout = cfg.get<int>("redis.socket_timeout", 1000);
     return config;
 }
 
-sw::redis::ConnectionOptions RedisConfig::to_connection_options() const {
-    sw::redis::ConnectionOptions opts;
-    opts.host = host;
-    opts.port = port;
-    opts.password = password;
-    opts.db = db;
-    opts.connect_timeout = std::chrono::milliseconds(connect_timeout);
-    opts.socket_timeout = std::chrono::milliseconds(socket_timeout);
-    return opts;
+RedisClient::RedisClient(RedisConfig config) : config_(std::move(config)) {
+    std::lock_guard<std::mutex> lock(context_mutex_);
+    connect_locked();
 }
 
-sw::redis::ConnectionPoolOptions RedisConfig::to_pool_options() const {
-    sw::redis::ConnectionPoolOptions opts;
-    opts.size = pool_size;
-    return opts;
-}
-
-// ===== RedisManager::RedisConnection 实现 =====
-RedisManager::RedisConnection::RedisConnection(RedisConnectionPool& pool) 
-    : pool_(pool), redis_(pool.GetConnection()) {
-    // 不在构造函数中抛出异常，而是让is_valid()方法检查连接状态
-}
-
-RedisManager::RedisConnection::~RedisConnection() {
-    // RAII：析构时自动归还连接
-    if (redis_) {
-        pool_.ReleaseConnection(redis_);
+RedisClient::~RedisClient() {
+    std::lock_guard<std::mutex> lock(context_mutex_);
+    if (context_) {
+        redisFree(context_);
+        context_ = nullptr;
     }
 }
 
-// ===== RedisManager 实现 =====
+void RedisClient::connect_locked() {
+    if (context_) {
+        redisFree(context_);
+        context_ = nullptr;
+    }
+
+    timeval timeout{};
+    timeout.tv_sec = config_.connect_timeout / 1000;
+    timeout.tv_usec = (config_.connect_timeout % 1000) * 1000;
+
+    context_ = redisConnectWithTimeout(config_.host.c_str(), config_.port, timeout);
+    if (!context_ || context_->err) {
+        std::string err = context_ ? context_->errstr : "allocation failed";
+        throw std::runtime_error("Failed to connect to Redis: " + err);
+    }
+
+    timeval socket_timeout{};
+    socket_timeout.tv_sec = config_.socket_timeout / 1000;
+    socket_timeout.tv_usec = (config_.socket_timeout % 1000) * 1000;
+    redisSetTimeout(context_, socket_timeout);
+
+    if (!config_.password.empty()) {
+        ReplyPtr reply(static_cast<redisReply*>(
+                               redisCommand(context_, "AUTH %b", config_.password.data(),
+                                            config_.password.size())),
+                       freeReplyObject);
+        if (!reply || reply->type == REDIS_REPLY_ERROR) {
+            throw std::runtime_error("Redis AUTH failed");
+        }
+    }
+
+    if (config_.db != 0) {
+        ReplyPtr reply(static_cast<redisReply*>(redisCommand(context_, "SELECT %d", config_.db)),
+                       freeReplyObject);
+        if (!reply || reply->type == REDIS_REPLY_ERROR) {
+            throw std::runtime_error("Redis SELECT failed");
+        }
+    }
+}
+
+RedisClient::ReplyPtr RedisClient::command(const char* format, ...) {
+    std::lock_guard<std::mutex> lock(context_mutex_);
+    if (!context_ || context_->err) {
+        connect_locked();
+    }
+
+    va_list args;
+    va_start(args, format);
+    auto* raw = static_cast<redisReply*>(redisvCommand(context_, format, args));
+    va_end(args);
+
+    if (!raw) {
+        std::string err = context_ ? context_->errstr : "unknown";
+        connect_locked();
+        throw std::runtime_error("Redis command failed: " + err);
+    }
+
+    ReplyPtr reply(raw, freeReplyObject);
+    if (reply->type == REDIS_REPLY_ERROR) {
+        throw std::runtime_error("Redis error: " + reply_string(reply.get()));
+    }
+    return reply;
+}
+
+std::string RedisClient::reply_string(const redisReply* reply) {
+    if (!reply || !reply->str) {
+        return {};
+    }
+    return std::string(reply->str, reply->len);
+}
+
+std::string RedisClient::ping() {
+    return reply_string(command("PING").get());
+}
+
+void RedisClient::hset(const std::string& key, const std::string& field, const std::string& value) {
+    command("HSET %b %b %b", key.data(), key.size(), field.data(), field.size(), value.data(),
+            value.size());
+}
+
+std::optional<std::string> RedisClient::hget(const std::string& key, const std::string& field) {
+    auto reply = command("HGET %b %b", key.data(), key.size(), field.data(), field.size());
+    if (reply->type == REDIS_REPLY_NIL) {
+        return std::nullopt;
+    }
+    return reply_string(reply.get());
+}
+
+void RedisClient::hdel(const std::string& key, const std::string& field) {
+    command("HDEL %b %b", key.data(), key.size(), field.data(), field.size());
+}
+
+void RedisClient::sadd(const std::string& key, const std::string& member) {
+    command("SADD %b %b", key.data(), key.size(), member.data(), member.size());
+}
+
+void RedisClient::srem(const std::string& key, const std::string& member) {
+    command("SREM %b %b", key.data(), key.size(), member.data(), member.size());
+}
+
+bool RedisClient::sismember(const std::string& key, const std::string& member) {
+    auto reply = command("SISMEMBER %b %b", key.data(), key.size(), member.data(),
+                         member.size());
+    return reply->type == REDIS_REPLY_INTEGER && reply->integer == 1;
+}
+
+int64_t RedisClient::scard(const std::string& key) {
+    auto reply = command("SCARD %b", key.data(), key.size());
+    return reply->type == REDIS_REPLY_INTEGER ? reply->integer : 0;
+}
+
+void RedisClient::del(const std::string& key) {
+    command("DEL %b", key.data(), key.size());
+}
+
+void RedisClient::expire(const std::string& key, int seconds) {
+    command("EXPIRE %b %d", key.data(), key.size(), seconds);
+}
+
 bool RedisManager::initialize(const std::string& config_path) {
     try {
-        auto config = RedisConfig::from_file(config_path);
-        return initialize(config);
+        return initialize(RedisConfig::from_file(config_path));
     } catch (const std::exception& e) {
         im::utils::LogManager::GetLogger("redis_manager")
-            ->error("Failed to initialize Redis manager with config file: {}", e.what());
+                ->error("Failed to load Redis config {}: {}", config_path, e.what());
         return false;
     }
 }
 
 bool RedisManager::initialize(const RedisConfig& config) {
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        
-        if (initialized_) {
-            im::utils::LogManager::GetLogger("redis_manager")
-                ->warn("Redis manager already initialized");
-            return true;
-        }
-        
-        config_ = config;
-    }
-    
+    std::lock_guard<std::mutex> lock(mutex_);
     try {
-        // 初始化连接池（使用单例）
-        auto& pool = RedisConnectionPool::GetInstance();
-        pool.Init(config.pool_size, [this]() { return create_redis_connection(); },"redis");
-        
-        // 在测试连接前设置初始化标志，否则get_connection会失败
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            initialized_ = true;
-        }
-        
-        // 测试连接
-        im::utils::LogManager::GetLogger("redis_manager")->info("Getting test connection...");
-        RedisConnection test_conn = [&]() {
-            try {
-                auto conn = get_connection();
-                im::utils::LogManager::GetLogger("redis_manager")->info("Got test connection, checking validity...");
-                return conn;
-            } catch (const std::exception& e) {
-                im::utils::LogManager::GetLogger("redis_manager")->error("Exception in get_connection: {}", e.what());
-                // 如果测试连接失败，重置初始化状态
-                {
-                    std::lock_guard<std::mutex> lock(mutex_);
-                    initialized_ = false;
-                }
-                throw;
-            }
-        }();
-        
-        if (!test_conn.is_valid()) {
-            std::lock_guard<std::mutex> lock(mutex_);
-            initialized_ = false;
-            throw std::runtime_error("Failed to create test connection");
-        }
-        
-        // 执行ping测试
-        im::utils::LogManager::GetLogger("redis_manager")->info("Executing ping test...");
-        test_conn->ping();
-        im::utils::LogManager::GetLogger("redis_manager")->info("Ping test successful");
-        
-        // 测试成功后再标记为已初始化
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            initialized_ = true;
-        }
-        
-        im::utils::LogManager::GetLogger("redis_manager")
-            ->info("Redis manager initialized successfully. Pool size: {}, Host: {}:{}", 
-                   config.pool_size, config.host, config.port);
-        
+        config_ = config;
+        redis_ = std::make_shared<RedisClient>(config_);
+        initialized_ = true;
         return true;
     } catch (const std::exception& e) {
-        // 确保在异常情况下清理资源
-        try {
-            auto& pool = RedisConnectionPool::GetInstance();
-            pool.Close();
-        } catch (...) {
-            // 忽略清理过程中的异常
-        }
-        
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            initialized_ = false;
-        }
+        initialized_ = false;
+        redis_.reset();
         im::utils::LogManager::GetLogger("redis_manager")
-            ->error("Failed to initialize Redis manager: {}", e.what());
+                ->error("Failed to initialize Redis manager: {}", e.what());
         return false;
     }
 }
 
 RedisManager::RedisConnection RedisManager::get_connection() {
     std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (!initialized_) {
-        throw std::runtime_error("Redis manager not initialized");
+    if (!initialized_ || !redis_) {
+        throw std::runtime_error("Redis manager is not initialized");
     }
-    
-    auto& pool = RedisConnectionPool::GetInstance();
-    return RedisConnection(pool);
+    return RedisConnection(redis_);
 }
 
 RedisManager::PoolStats RedisManager::get_pool_stats() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (!initialized_) {
-        return {0, 0, 0};
-    }
-    
-    auto& pool = RedisConnectionPool::GetInstance();
-    return {
-        pool.GetPoolSize(),
-        pool.GetAvailableCount(),
-        pool.GetInUsedCount()
-    };
+    return initialized_ ? PoolStats{1, 1, 0} : PoolStats{};
 }
 
 bool RedisManager::is_healthy() const {
+    std::shared_ptr<RedisClient> redis;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (!initialized_) {
-            return false;
-        }
+        redis = redis_;
     }
-    
+    if (!redis) {
+        return false;
+    }
+
     try {
-        // 获取连接（不持有锁）
-        RedisConnection conn = const_cast<RedisManager*>(this)->get_connection();
-        if (!conn.is_valid()) {
-            return false;
-        }
-        
-        conn->ping();
-        return true;
+        return redis->ping() == "PONG";
     } catch (const std::exception& e) {
         im::utils::LogManager::GetLogger("redis_manager")
-            ->error("Health check failed: {}", e.what());
+                ->error("Redis health check failed: {}", e.what());
         return false;
     }
 }
 
 void RedisManager::shutdown() {
     std::lock_guard<std::mutex> lock(mutex_);
-    
-    if (!initialized_) {
-        return;
-    }
-    
-    auto& pool = RedisConnectionPool::GetInstance();
-    pool.Close();
+    redis_.reset();
     initialized_ = false;
-    
-    im::utils::LogManager::GetLogger("redis_manager")
-        ->info("Redis manager shutdown");
 }
 
-RedisManager::RedisPtr RedisManager::create_redis_connection() {
-    try {
-        auto logger = im::utils::LogManager::GetLogger("redis_manager");
-        logger->info("Creating Redis connection to {}:{}", config_.host, config_.port);
-        
-        auto conn_opts = config_.to_connection_options();
-        
-        // 创建Redis连接（注意：不使用内部连接池，因为我们自己管理连接池）
-        logger->info("Attempting to connect to Redis...");
-        auto redis = std::make_shared<sw::redis::Redis>(conn_opts);
-        logger->info("Redis connection created successfully");
-        
-        return redis;
-    } catch (const std::exception& e) {
-        im::utils::LogManager::GetLogger("redis_manager")
-            ->error("Failed to create Redis connection: {}", e.what());
-        throw;
-    }
-}
-
-} // namespace im::db
+}  // namespace im::db

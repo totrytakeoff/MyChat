@@ -1,5 +1,5 @@
 #include <uuid/uuid.h>
-#include "../../common/database/redis_mgr.hpp"
+#include "../../common/database/redis/redis_mgr.hpp"
 #include "../../common/utils/config_mgr.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "multi_platform_auth.hpp"
@@ -71,7 +71,7 @@ MultiPlatformAuthManager::MultiPlatformAuthManager(std::string secret_key,
         }
         if (!RedisManager::GetInstance().is_healthy()) {
             LogManager::GetLogger("auth_mgr")->error("redis is not connected or not healthy!");
-            throw;
+            throw std::runtime_error("Redis is not connected or not healthy");
         }
 
     } catch (std::exception& e) {
@@ -91,7 +91,7 @@ MultiPlatformAuthManager::MultiPlatformAuthManager(const std::string& config_pat
         }
         if (!RedisManager::GetInstance().is_healthy()) {
             LogManager::GetLogger("auth_mgr")->error("redis is not connected or not healthy!");
-            throw;
+            throw std::runtime_error("Redis is not connected or not healthy");
         }
 
     } catch (std::exception& e) {
@@ -151,10 +151,12 @@ std::string MultiPlatformAuthManager::generate_refresh_token(const std::string& 
         auto now = std::chrono::system_clock::now();
 
 
-        auto times = platform_token_strategy_.get_platform_token_config(platform)
-                             .token_time_config.refresh_token_expire_seconds;
+        auto configured_expire_seconds = platform_token_strategy_.get_platform_token_config(platform)
+                                                 .token_time_config.refresh_token_expire_seconds;
+        const auto actual_expire_seconds =
+                expire_seconds > 0 ? expire_seconds : configured_expire_seconds;
 
-        auto expire_time = now + std::chrono::seconds(expire_seconds > 0 ? expire_seconds : times);
+        auto expire_time = now + std::chrono::seconds(actual_expire_seconds);
 
         auto rt = rt_generate();
 
@@ -171,9 +173,9 @@ std::string MultiPlatformAuthManager::generate_refresh_token(const std::string& 
 
         RedisManager::GetInstance().execute([&](auto& redis) {
             redis.hset("refresh_tokens", rt, rtMeta.dump());
-            redis.expire("refresh_tokens", times);
+            redis.expire("refresh_tokens", actual_expire_seconds);
             redis.sadd("user:" + user_id + ":rt", rt);
-            redis.expire("user:" + user_id + ":rt", times);
+            redis.expire("user:" + user_id + ":rt", actual_expire_seconds);
         });
 
         return rt;

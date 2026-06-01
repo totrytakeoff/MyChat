@@ -5,9 +5,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 设置 vcpkg 工具链
-set(CMAKE_TOOLCHAIN_FILE "/home/myself/vcpkg/scripts/buildsystems/vcpkg.cmake" 
-    CACHE STRING "Vcpkg toolchain file")
-
 # 查找依赖包
 find_package(GTest CONFIG REQUIRED)          # 查找 GTest
 find_package(nlohmann_json CONFIG REQUIRED)  # 查找 nlohmann-json

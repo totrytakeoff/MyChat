@@ -12,7 +12,7 @@
 #include <chrono>
 #include <thread>
 #include "multi_platform_auth.hpp"
-#include "../../common/database/redis_mgr.hpp"
+#include "../../common/database/redis/redis_mgr.hpp"
 #include "../../common/utils/log_manager.hpp"
 
 using namespace im::gateway;

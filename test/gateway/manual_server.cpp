@@ -17,7 +17,7 @@
 
 #include <google/protobuf/message.h>
 
-#include "../../common/database/redis_mgr.hpp"
+#include "../../common/database/redis/redis_mgr.hpp"
 #include "../../common/network/protobuf_codec.hpp"
 #include "../../common/proto/base.pb.h"
 #include "../../gateway/gateway_server/gateway_server.hpp"

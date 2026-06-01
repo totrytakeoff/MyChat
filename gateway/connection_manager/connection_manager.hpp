@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#include "../../common/database/redis_mgr.hpp"
+#include "../../common/database/redis/redis_mgr.hpp"
 #include "../../common/network/websocket_session.hpp"
 #include "../auth/multi_platform_auth.hpp"
 

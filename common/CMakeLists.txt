@@ -15,7 +15,7 @@ target_compile_options(im_network PRIVATE -fcoroutines)
 target_link_libraries(im_network
     PUBLIC
         Threads::Threads
-        Boost::system
+        Boost::boost
         OpenSSL::SSL
         OpenSSL::Crypto
         ${Protobuf_LIBRARIES}
@@ -63,23 +63,27 @@ target_include_directories(im_utils
 add_library(im::utils ALIAS im_utils)
 
 # 数据库库
-add_library(im_database STATIC
-    database/redis/redis_mgr.cpp
-)
+if(hiredis_FOUND)
+    add_library(im_database STATIC
+        database/redis/redis_mgr.cpp
+    )
 
-target_link_libraries(im_database
-    PUBLIC
-        redis++::redis++_static
-        nlohmann_json::nlohmann_json
-)
+    target_link_libraries(im_database
+        PUBLIC
+            hiredis::hiredis
+            nlohmann_json::nlohmann_json
+    )
 
-target_include_directories(im_database
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/database
-)
+    target_include_directories(im_database
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/database
+    )
 
-# 创建命名空间别名
-add_library(im::database ALIAS im_database)
+    # 创建命名空间别名
+    add_library(im::database ALIAS im_database)
+else()
+    message(STATUS "hiredis was not found; im::database target is not built.")
+endif()
 
 # Protobuf库
 add_library(im_proto STATIC

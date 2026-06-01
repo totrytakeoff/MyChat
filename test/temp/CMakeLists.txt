@@ -4,10 +4,6 @@ project(utils_test)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 设置 vcpkg 工具链（确保在所有 find_package 之前）
-set(CMAKE_TOOLCHAIN_FILE "/home/myself/vcpkg/scripts/buildsystems/vcpkg.cmake" 
-    CACHE STRING "Vcpkg toolchain file")
-
 # 分别查找包
 
 find_package(nlohmann_json CONFIG REQUIRED)  # 查找 nlohmann-json

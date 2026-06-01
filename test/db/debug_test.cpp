@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../../common/database/redis_mgr.hpp"
+#include "../../common/database/redis/redis_mgr.hpp"
 
 int main() {
     try {
