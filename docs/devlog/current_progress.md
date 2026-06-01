@@ -25,48 +25,51 @@ Known working:
 - Gateway health check works on `/api/v1/health`.
 - Redis hiredis wrapper has a focused test.
 - Auth token primitives have a focused test.
+- ODB 2.5.0 user persistence works (persist, load, erase against Docker PostgreSQL).
+- User Service Core MVP: register/login/profile workflows, password hashing.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 Most recently verified commands:
 
 ```bash
-cmake -S . -B /tmp/mychat-task2-revcheck-odb \
+cmake -S . -B /tmp/mychat-task4-build \
   -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
-  -DMYCHAT_BUILD_SERVICES=OFF \
+  -DMYCHAT_BUILD_SERVICES=ON \
   -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task2-revcheck-odb \
-  --target im_pgsql test_auth_tokens test_redis_hiredis -j2
-ctest --test-dir /tmp/mychat-task2-revcheck-odb \
-  -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
+cmake --build /tmp/mychat-task4-build \
+  --target im_user_service test_user_service test_auth_tokens \
+          test_redis_hiredis test_odb_user_persistence -j2
+ctest --test-dir /tmp/mychat-task4-build \
+  -R 'UserServiceCoreTest|ODBUserPersistenceTest|AuthTokenTest|RedisHiredisTest' \
+  --output-on-failure
 ```
 
 Result (ODB enabled):
 
 ```text
-Build: im_pgsql, test_auth_tokens, test_redis_hiredis
-Tests: 100% passed, 0 tests failed out of 2
+Tests: 100% passed, 0 tests failed out of 4
 ```
 
-ODB-off default baseline also verified:
+No-ODB baseline:
 
 ```bash
-cmake -S . -B /tmp/mychat-task2-revcheck-no-odb \
+cmake -S . -B /tmp/mychat-task4-no-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=OFF \
   -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task2-revcheck-no-odb \
+cmake --build /tmp/mychat-task4-no-odb \
   --target test_auth_tokens test_redis_hiredis gateway_server -j2
-ctest --test-dir /tmp/mychat-task2-revcheck-no-odb \
+ctest --test-dir /tmp/mychat-task4-no-odb \
   -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
 ```
 
-Result: Baseline green, PgSQL targets skipped gracefully.
+Result: Baseline green, 100% passed out of 2.
 
 ## Completed Work
 
@@ -104,6 +107,20 @@ Result: Baseline green, PgSQL targets skipped gracefully.
   - ODB generated files produced by `odb 2.5.0` compiler.
   - `im_user_odb` static library target builds behind ODB gate.
   - `ODBUserPersistenceTest` passes against Docker PostgreSQL.
+- User Service Core MVP complete:
+  - `im_user_service` static library target with deterministic CMakeLists.txt
+    (not GLOB-based), gated on `MYCHAT_BUILD_PGSQL_ODB=ON` and `TARGET im::user_odb`.
+  - `PasswordHasher` — PBKDF2-HMAC-SHA256 via OpenSSL, configurable iterations,
+    constant-time verification.
+  - `UserRepository` — ODB-backed CRUD for `im::service::user::User`.
+  - `UserService` — register/login/profile with DTO structs (no password_hash
+    in profile responses).
+  - UUID v4 UID generation via `RAND_bytes` (no libuuid dependency).
+  - `UserServiceCoreTest` — 5 test cases, all passing.
+  - No `DROP TABLE` — cleanup by `DELETE WHERE account LIKE 'task4-test-%'`.
+  - Duplicate accounts rejected explicitly (`DUPLICATE_ACCOUNT`).
+  - `pgsql_conn.hpp` template issues remain unfixed; User Service bypasses
+    by using `odb::pgsql::database` directly.
 
 ## In Progress
 
@@ -122,16 +139,14 @@ PostgreSQL/ODB foundation:
 - ODB user persistence baseline is **reproducible**. Run `scripts/build_odb_runtime_2_5.sh`
   then `cmake ... -DMYCHAT_BUILD_PGSQL_ODB=ON`. User entity persists/loads from
   Docker PostgreSQL.
-- `pgsql_conn.hpp` RAII wrapper has pre-existing issues (string ID
-  `std::to_string`, raw-pointer vs shared_ptr) — not blocking baseline but
-  needs fixing before User Service implementation.
 
 ## Next Immediate Tasks
 
-1. Start User Service MVP: register/login/profile workflows with ODB
-   persistence and password hashing.
-2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling).
-3. Gateway-to-User service integration after User Service MVP is complete.
+1. Gateway-to-User Service integration (Phase E) — wire Gateway auth HTTP routes
+   to User Service for register/login/profile endpoints.
+2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
+   it becomes a blocker.
+3. Message Service MVP (Phase F) after Gateway integration stabilizes.
 
 ## Risks
 
@@ -156,3 +171,4 @@ PostgreSQL/ODB foundation:
 - Current progress: `docs/devlog/current_progress.md`
 - ODB toolchain status: `docs/devlog/phase2_odb_toolchain.md`
 - ODB user persistence: `docs/devlog/phase3_odb_user_persistence.md`
+- User Service core: `docs/devlog/phase4_user_service_core.md`

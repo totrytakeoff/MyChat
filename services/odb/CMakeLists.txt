@@ -24,7 +24,7 @@ foreach(_f ${ODB_USER_GENERATED_SOURCES} ${ODB_USER_GENERATED_HEADERS})
         message(FATAL_ERROR
             "Generated ODB file '${_f}' not found.\n"
             "Run the ODB compiler from the project root:\n"
-            "  odb -I\$(scripts/find_vcpkg_include.sh) \\\n"
+            "  odb -I<VCPKG_INCLUDE_DIR> \\\n"
             "      --database pgsql --std c++20 --generate-query\n"
             "      --generate-schema --schema-format sql\n"
             "      --output-dir services/odb/generated\n"

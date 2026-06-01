@@ -85,27 +85,33 @@ Exit criteria (all met):
 
 ## Phase D: User Service MVP
 
-Status: not started.
+Status: complete.
 
 Scope:
 
-- Create a real `services/user` build target.
-- Use ODB-backed user entity and repository.
-- Support:
-  - register by account/password;
-  - login credential check;
-  - get user profile by uid/account;
-  - update last login time.
-- Add password hashing. Do not store plaintext passwords.
-- Define service request/response contract through protobuf/gRPC or the
-  project-approved service interface.
+- `services/user/` CMake target (`im_user_service`), deterministic sources,
+  gated on `MYCHAT_BUILD_PGSQL_ODB=ON` + `TARGET im::user_odb`.
+- `PasswordHasher` — PBKDF2-HMAC-SHA256 via OpenSSL, configurable iterations,
+  constant-time comparison, self-describing format `pbkdf2_sha256$iter$salt$hash`.
+- `UserRepository` — ODB-backed CRUD for `im::service::user::User`.
+- `UserService` — register/login/profile with C++ DTO structs (no
+  password_hash in profile responses).
+- UUID v4 UID generation via OpenSSL `RAND_bytes` (no libuuid dependency).
+- Register rejects empty account/password, duplicate accounts.
+- Login validates credentials, updates `last_login`.
+- Profile lookup by UID or account.
+- `UserServiceCoreTest` — 5 focused test cases, deterministic cleanup by
+  `DELETE WHERE account LIKE 'task4-test-%'`, no `DROP TABLE`.
+- Bypasses `PgSqlConnection` by using `odb::pgsql::database` directly.
 
-Exit criteria:
+Exit criteria (all met):
 
-- User Service builds as its own target.
-- User Service tests pass against Docker PostgreSQL.
+- `im_user_service` builds with `MYCHAT_BUILD_SERVICES=ON MYCHAT_BUILD_PGSQL_ODB=ON`.
+- User Service tests pass against Docker PostgreSQL (100% of 4 ODB-enabled tests).
 - Register/login/profile workflows pass at service level.
-- User Service API contract is documented.
+- Password hashing is tested (hash differs from plaintext, format verified).
+- Default no-ODB config still clean (2/2 tests pass).
+- Service API contract documented in `docs/devlog/phase4_user_service_core.md`.
 
 ## Phase E: Gateway + User Service Integration
 

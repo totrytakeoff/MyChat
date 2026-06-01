@@ -22,25 +22,13 @@ target_include_directories(im_codec_service
 # 创建命名空间别名
 add_library(im::codec_service ALIAS im_codec_service)
 
-# 用户服务库
-file(GLOB_RECURSE USER_SOURCES "user/*.cpp")
-if(USER_SOURCES)
-    add_library(im_user_service STATIC ${USER_SOURCES})
-    
-    target_link_libraries(im_user_service
-        PUBLIC
-            im::proto
-            im::database
-            im::utils
-    )
-    
-    target_include_directories(im_user_service
-        PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/user
-    )
-    
-    # 创建命名空间别名
-    add_library(im::user_service ALIAS im_user_service)
+# 用户服务库 — gated on ODB persistence layer availability
+if(TARGET im::user_odb)
+    add_subdirectory(user)
+    message(STATUS "User service (im_user_service) is enabled.")
+else()
+    message(STATUS "User service is disabled (requires im::user_odb). "
+        "Enable MYCHAT_BUILD_PGSQL_ODB=ON and ensure ODB 2.5.0 runtime is available.")
 endif()
 
 # 好友服务库
