@@ -16,5 +16,14 @@
     "protobuf",
     "spdlog",
     "utf8-range"
-  ]
+  ],
+  "features": {
+    "pgsql-odb": {
+      "description": "PostgreSQL/ODB runtime library dependencies.",
+      "dependencies": [
+        "libodb",
+        "libodb-pgsql"
+      ]
+    }
+  }
 }

@@ -85,6 +85,35 @@ else()
     message(STATUS "hiredis was not found; im::database target is not built.")
 endif()
 
+# PostgreSQL/ODB 数据库库
+if(MYCHAT_BUILD_PGSQL_ODB AND MYCHAT_HAS_ODB_RUNTIME)
+    add_library(im_pgsql STATIC
+        database/pgsql/pgsql_conn.cpp
+    )
+
+    target_include_directories(im_pgsql
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/database
+    )
+
+    target_link_libraries(im_pgsql
+        PUBLIC
+            odb::libodb
+            odb::libodb-pgsql
+            spdlog::spdlog
+            nlohmann_json::nlohmann_json
+    )
+
+    add_library(im::pgsql ALIAS im_pgsql)
+    message(STATUS "PostgreSQL/ODB library (im_pgsql) is enabled.")
+elseif(MYCHAT_BUILD_PGSQL_ODB)
+    message(WARNING "MYCHAT_BUILD_PGSQL_ODB=ON but ODB runtime libraries not found. "
+        "Install ODB runtime libraries by passing -DVCPKG_MANIFEST_FEATURES=pgsql-odb. "
+        "The ODB compiler (odb) is a separate tool from the runtime libraries.")
+else()
+    message(STATUS "PostgreSQL/ODB targets are disabled. Set MYCHAT_BUILD_PGSQL_ODB=ON to enable.")
+endif()
+
 # Protobuf库
 add_library(im_proto STATIC
     proto/base.pb.cc

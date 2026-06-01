@@ -30,30 +30,43 @@ Known working:
 Most recently verified commands:
 
 ```bash
-cmake -S . -B /tmp/mychat-task1 \
+cmake -S . -B /tmp/mychat-task2-revcheck-odb \
+  -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
+  -DMYCHAT_BUILD_TESTS=ON \
+  -DMYCHAT_BUILD_GATEWAY=ON \
+  -DMYCHAT_BUILD_SERVICES=OFF \
+  -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
+  -DMYCHAT_BUILD_PGSQL_ODB=ON \
+  -DCMAKE_BUILD_TYPE=Debug
+cmake --build /tmp/mychat-task2-revcheck-odb \
+  --target im_pgsql test_auth_tokens test_redis_hiredis -j2
+ctest --test-dir /tmp/mychat-task2-revcheck-odb \
+  -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
+```
+
+Result (ODB enabled):
+
+```text
+Build: im_pgsql, test_auth_tokens, test_redis_hiredis
+Tests: 100% passed, 0 tests failed out of 2
+```
+
+ODB-off default baseline also verified:
+
+```bash
+cmake -S . -B /tmp/mychat-task2-revcheck-no-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=OFF \
   -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task1 --target test_auth_tokens test_redis_hiredis gateway_server -j2
-ctest --test-dir /tmp/mychat-task1 -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
+cmake --build /tmp/mychat-task2-revcheck-no-odb \
+  --target test_auth_tokens test_redis_hiredis gateway_server -j2
+ctest --test-dir /tmp/mychat-task2-revcheck-no-odb \
+  -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
 ```
 
-Result:
-
-```text
-100% tests passed, 0 tests failed out of 2
-```
-
-Gateway smoke result:
-
-```text
-/tmp/mychat-task1/gateway/gateway_server --config config/dev.json
-curl http://127.0.0.1:8102/api/v1/health
-{"status": "ok"}
-SIGINT shutdown -> exit code 0
-```
+Result: Baseline green, PgSQL targets skipped gracefully.
 
 ## Completed Work
 
@@ -62,7 +75,9 @@ SIGINT shutdown -> exit code 0
   - `MYCHAT_BUILD_GATEWAY`
   - `MYCHAT_BUILD_SERVICES`
   - `MYCHAT_BUILD_LEGACY_GATEWAY_TESTS`
-- vcpkg manifest was added.
+  - `MYCHAT_BUILD_PGSQL_ODB`
+- vcpkg manifest was added. ODB runtime dependencies are isolated behind the
+  optional `pgsql-odb` manifest feature.
 - Docker Compose Redis/PostgreSQL configuration was added.
 - Redis moved from stale `redis-plus-plus` usage to a hiredis-backed wrapper.
 - Redis focused test was added under `test/db`.
@@ -78,6 +93,11 @@ SIGINT shutdown -> exit code 0
   - `user:<user_id>:refresh_tokens` user index set.
   - Added `set`, `get`, `exists`, `ttl`, `keys` primitives to RedisClient.
   - Updated `AuthTokenTest` with 8 focused tests covering the new model.
+- PostgreSQL/ODB toolchain baseline established:
+  - Added `libodb` and `libodb-pgsql` behind a vcpkg feature (`pgsql-odb`).
+  - Added `MYCHAT_BUILD_PGSQL_ODB` CMake option (default OFF).
+  - `im_pgsql` library target compiles from `pgsql_conn.cpp`.
+  - Fixed `auto`/`extern` logger conflict in `pgsql_conn.cpp`.
 
 ## In Progress
 
@@ -89,25 +109,30 @@ Gateway Service MVP hardening:
 
 PostgreSQL/ODB foundation:
 
-- ODB design documents and source wrappers exist.
-- ODB is not yet validated in the current build/test baseline.
-- `odb` compiler was not found in the current shell during this review.
+- ODB runtime libraries (libodb, libodb-pgsql) are available behind vcpkg
+  feature `pgsql-odb`. To enable:
+  ```bash
+  cmake ... -DVCPKG_MANIFEST_FEATURES=pgsql-odb -DMYCHAT_BUILD_PGSQL_ODB=ON
+  ```
+- `im_pgsql` library builds with `MYCHAT_BUILD_PGSQL_ODB=ON`.
+- ODB compiler (`odb`) is NOT available — blocks ODB entity compilation and
+  persistence tests.
+- `services/odb/user.hpp` has known issues (string `id auto`, missing
+  password_hash, no namespace).
 
 ## Next Immediate Tasks
 
-1. Verify and install/document ODB toolchain:
-   - confirm package source;
-   - add CMake detection;
-   - document generation command.
-3. Bring PgSQL/ODB infrastructure into the staged build.
-4. Add a minimal ODB persistence integration test against Docker PostgreSQL.
-5. Start User Service MVP only after ODB persistence baseline passes.
+1. Install ODB compiler (`odb`) from https://www.codesynthesis.com/odb/.
+2. Fix `services/odb/user.hpp` model issues.
+3. Generate ODB mapping files and add minimal ODB persistence test.
+4. Start User Service MVP only after ODB persistence baseline passes.
 
 ## Risks
 
-- ODB may not be available through the current vcpkg manifest. If it must be
-  installed through the system package manager, that dependency needs explicit
-  documentation and a configure-time check.
+- ODB compiler (`odb`) not installed. ODB entity build and persistence tests
+  blocked until compiler is installed separately.
+- `services/odb/user.hpp` has known defects (string `id auto`, missing
+  password_hash, no namespace) that must be fixed before User Service MVP.
 - Existing `services/codec` generated files are stale. Regenerating gRPC/proto
   artifacts should be a deliberate phase, not an accidental side effect.
 - Old tests still contain references to removed dependencies and may fail if
@@ -122,3 +147,4 @@ PostgreSQL/ODB foundation:
 - Build cleanup log: `docs/devlog/phase0_build_cleanup.md`
 - Gateway/Auth baseline log: `docs/devlog/phase1_gateway_auth_baseline.md`
 - Current progress: `docs/devlog/current_progress.md`
+- ODB toolchain status: `docs/devlog/phase2_odb_toolchain.md`

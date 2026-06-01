@@ -38,7 +38,7 @@ using json = nlohmann::json;
  * 3. 避免ODR（One Definition Rule）违规
  * 4. 使用"pgsql"作为logger名称，便于日志过滤
  */
-auto logger = LogManager::GetLogger("pgsql");
+std::shared_ptr<spdlog::logger> logger = LogManager::GetLogger("pgsql");
 
 
 // ==================== PgSqlConfig 实现 ====================

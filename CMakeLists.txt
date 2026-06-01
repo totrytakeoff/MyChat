@@ -25,6 +25,7 @@ option(MYCHAT_BUILD_TESTS "Build MyChat tests" ON)
 option(MYCHAT_BUILD_GATEWAY "Build gateway targets that require Redis/JWT/httplib dependencies" ON)
 option(MYCHAT_BUILD_SERVICES "Build service targets" OFF)
 option(MYCHAT_BUILD_LEGACY_GATEWAY_TESTS "Build older gateway integration tests that still need cleanup" OFF)
+option(MYCHAT_BUILD_PGSQL_ODB "Enable im_pgsql library target (requires ODB runtime libraries; pass -DVCPKG_MANIFEST_FEATURES=pgsql-odb)" OFF)
 
 # C++标准设置
 set(CMAKE_CXX_STANDARD 20)
@@ -66,6 +67,36 @@ find_package(hiredis CONFIG QUIET)
 find_package(jwt-cpp CONFIG QUIET)
 find_package(httplib CONFIG QUIET)
 find_package(unofficial-libuuid CONFIG QUIET)
+
+# ODB runtime libraries (used when MYCHAT_BUILD_PGSQL_ODB is ON).
+# ODB runtime packages are behind a vcpkg feature to keep the default
+# dependency set free of PostgreSQL/ODB. Pass
+#   -DVCPKG_MANIFEST_FEATURES=pgsql-odb
+# to install them.
+if(MYCHAT_BUILD_PGSQL_ODB)
+    find_package(odb CONFIG COMPONENTS libodb pgsql QUIET)
+    if(odb_FOUND)
+        if(NOT TARGET odb::libodb)
+            message(WARNING "MYCHAT_BUILD_PGSQL_ODB=ON but odb::libodb target not found. "
+                "Install libodb via vcpkg (pass -DVCPKG_MANIFEST_FEATURES=pgsql-odb).")
+            set(MYCHAT_HAS_ODB_RUNTIME FALSE)
+        elseif(NOT TARGET odb::libodb-pgsql)
+            message(WARNING "MYCHAT_BUILD_PGSQL_ODB=ON but odb::libodb-pgsql target not found. "
+                "Install libodb-pgsql via vcpkg (pass -DVCPKG_MANIFEST_FEATURES=pgsql-odb).")
+            set(MYCHAT_HAS_ODB_RUNTIME FALSE)
+        else()
+            set(MYCHAT_HAS_ODB_RUNTIME TRUE)
+            message(STATUS "ODB runtime libraries found. PostgreSQL/ODB support enabled.")
+        endif()
+    else()
+        message(WARNING "MYCHAT_BUILD_PGSQL_ODB=ON but ODB CMake package not found. "
+            "Install ODB runtime libraries via vcpkg: add -DVCPKG_MANIFEST_FEATURES=pgsql-odb "
+            "to your CMake configure command.")
+        set(MYCHAT_HAS_ODB_RUNTIME FALSE)
+    endif()
+else()
+    set(MYCHAT_HAS_ODB_RUNTIME FALSE)
+endif()
 
 file(GLOB MYCHAT_COMMON_PROTO_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/common/proto/*.proto")

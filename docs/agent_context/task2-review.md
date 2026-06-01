@@ -158,3 +158,81 @@ Please revise Task 2 before we move to Task 3:
    exact changes and verification results.
 
 Do not add User Service business logic in this revision.
+
+---
+
+## Revision 1 Review
+
+### Decision
+
+`APPROVED`
+
+The requested vcpkg feature isolation has been implemented. ODB runtime
+dependencies are no longer part of the default manifest dependency set; they are
+enabled only through the `pgsql-odb` feature. Documentation now distinguishes
+ODB runtime libraries from the separate `odb` compiler binary.
+
+### Reviewer Verification
+
+Docker dependencies:
+
+```bash
+docker compose up -d redis postgres
+```
+
+Default no-ODB configure/build/test:
+
+```bash
+cmake -S . -B /tmp/mychat-task2-revcheck-no-odb \
+  -DMYCHAT_BUILD_TESTS=ON \
+  -DMYCHAT_BUILD_GATEWAY=ON \
+  -DMYCHAT_BUILD_SERVICES=OFF \
+  -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
+  -DCMAKE_BUILD_TYPE=Debug
+cmake --build /tmp/mychat-task2-revcheck-no-odb \
+  --target test_auth_tokens test_redis_hiredis gateway_server -j2
+ctest --test-dir /tmp/mychat-task2-revcheck-no-odb \
+  -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
+```
+
+Result:
+
+- vcpkg install list did **not** include `libodb` or `libodb-pgsql`.
+- Build passed.
+- Tests passed: 2/2.
+
+ODB runtime feature configure/build/test:
+
+```bash
+cmake -S . -B /tmp/mychat-task2-revcheck-odb \
+  -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
+  -DMYCHAT_BUILD_TESTS=ON \
+  -DMYCHAT_BUILD_GATEWAY=ON \
+  -DMYCHAT_BUILD_SERVICES=OFF \
+  -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
+  -DMYCHAT_BUILD_PGSQL_ODB=ON \
+  -DCMAKE_BUILD_TYPE=Debug
+cmake --build /tmp/mychat-task2-revcheck-odb \
+  --target im_pgsql test_auth_tokens test_redis_hiredis -j2
+ctest --test-dir /tmp/mychat-task2-revcheck-odb \
+  -R 'AuthTokenTest|RedisHiredisTest' --output-on-failure
+```
+
+Result:
+
+- vcpkg install list included `libodb` and `libodb-pgsql`.
+- `im_pgsql` built successfully.
+- Tests passed: 2/2.
+
+Note: A full all-target ODB build was attempted first and failed with
+`Disk quota exceeded` while writing compiler temporary files under `/tmp`. After
+cleaning stale `/tmp/mychat-*` build directories, the targeted acceptance build
+above passed. This is an environment storage issue, not a code failure.
+
+### Remaining Follow-Up
+
+- ODB compiler (`odb`) is still not installed; ODB entity generation and
+  persistence tests remain blocked by toolchain.
+- Redis/Auth tests still share Redis DB 15 and fixed key prefixes; avoid running
+  the same integration tests concurrently across build directories until test
+  isolation is improved.
