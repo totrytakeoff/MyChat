@@ -241,6 +241,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/services/odb)
 # 添加子目录
 add_subdirectory(common)
 
+if(MYCHAT_BUILD_SERVICES)
+    add_subdirectory(services)
+endif()
+
 if(MYCHAT_BUILD_GATEWAY AND MYCHAT_HAS_GATEWAY_DEPS)
     add_subdirectory(gateway)
 elseif(MYCHAT_BUILD_GATEWAY)
@@ -248,10 +252,6 @@ elseif(MYCHAT_BUILD_GATEWAY)
         "Gateway targets are disabled because hiredis, jwt-cpp, httplib, or libuuid CMake packages "
         "were not found. Install dependencies with vcpkg manifest mode or configure with "
         "-DMYCHAT_BUILD_GATEWAY=OFF while working on common libraries.")
-endif()
-
-if(MYCHAT_BUILD_SERVICES)
-    add_subdirectory(services)
 endif()
 
 # 启用测试

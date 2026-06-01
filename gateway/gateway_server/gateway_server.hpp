@@ -37,6 +37,12 @@
 #include <unordered_set>
 #include <thread>
 
+namespace odb { namespace pgsql { class database; } }
+
+#ifdef IM_ENABLE_USER_HTTP
+namespace im::gateway { class UserHttpController; }
+#endif
+
 
 namespace im {
 namespace gateway {
@@ -104,6 +110,10 @@ private:
 
     void register_message_handlers();
 
+#ifdef IM_ENABLE_USER_HTTP
+    void register_user_http_routes();
+#endif
+
     // WebSocket连接事件处理
     void on_websocket_connect(SessionPtr session);
     void on_websocket_disconnect(SessionPtr session);
@@ -138,6 +148,12 @@ private:
     std::atomic<bool> is_running_;
     std::string psc_path_;     // platform_strategy_config_path_
     std::string config_path_;  // gateway/router/auth shared config path for the MVP
+
+#ifdef IM_ENABLE_USER_HTTP
+    // ODB database instance for User Service integration
+    std::shared_ptr<odb::pgsql::database> odb_db_;
+    std::unique_ptr<UserHttpController> user_http_controller_;
+#endif
 };
 
 

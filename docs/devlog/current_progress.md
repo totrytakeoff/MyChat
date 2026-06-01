@@ -32,7 +32,7 @@ Known working:
 Most recently verified commands:
 
 ```bash
-cmake -S . -B /tmp/mychat-task5-odb \
+cmake -S . -B /tmp/mychat-task6-review-odb \
   -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
@@ -40,24 +40,24 @@ cmake -S . -B /tmp/mychat-task5-odb \
   -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task5-odb -j2
-ctest --test-dir /tmp/mychat-task5-odb --output-on-failure
+cmake --build /tmp/mychat-task6-review-odb -j2
+ctest --test-dir /tmp/mychat-task6-review-odb --output-on-failure
 ```
 
-Result (ODB enabled): 100% passed, 0 failed out of 4.
+Result (ODB enabled): 100% passed, 0 failed out of 5.
 
 No-ODB baseline:
 
 ```bash
-cmake -S . -B /tmp/mychat-task5-no-odb \
+cmake -S . -B /tmp/mychat-task6-review-no-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=ON \
   -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
   -DMYCHAT_BUILD_PGSQL_ODB=OFF \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task5-no-odb -j2
-ctest --test-dir /tmp/mychat-task5-no-odb --output-on-failure
+cmake --build /tmp/mychat-task6-review-no-odb -j2
+ctest --test-dir /tmp/mychat-task6-review-no-odb --output-on-failure
 ```
 
 Result: Baseline green, 100% passed out of 2.
@@ -120,19 +120,26 @@ Result: Baseline green, 100% passed out of 2.
   - User service gated on `MYCHAT_BUILD_USER_SERVICE AND TARGET im::user_odb`.
   - Legacy tests (router, utils, network) gated behind `MYCHAT_BUILD_LEGACY_UNIT_TESTS`.
   - Full `cmake --build ... -j2` now succeeds without stale codec failures.
-  - Fresh `ctest` only registers buildable active baseline tests (4 with ODB,
+  - Fresh `ctest` only registers buildable active baseline tests (5 with ODB,
     2 without).
+- Gateway-to-User Service HTTP Integration (Phase 6):
+  - `UserHttpController` with handle_register, handle_login, handle_profile.
+  - Route paths: POST `/api/v1/auth/register`, POST `/api/v1/auth/login`,
+    GET `/api/v1/auth/info`.
+  - Route registration extracted to a free function `register_user_http_routes_on_server`,
+    called after controller creation and before legacy catch-all handlers.
+  - CMake target order fixed: `services` before `gateway` in root CMakeLists.txt.
+  - 10 tests: 9 controller-layer + 1 HTTP route-layer integration test.
+  - Full baseline: 5/5 ODB-enabled, 2/2 no-ODB.
 
 ## In Progress
 
-- (none — gating complete, ready for Phase E)
+- (none — Phase 6 complete)
 
 ## Next Immediate Tasks
 
-1. **Phase E: Gateway-to-User Service Integration** — wire Gateway auth HTTP
-   routes to User Service for register/login/profile endpoints.
-2. Message Service MVP (Phase F) after Gateway integration stabilizes.
-3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
+1. Message Service MVP (Phase F) after Gateway integration stabilizes.
+2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
 ## Risks
@@ -160,3 +167,4 @@ Result: Baseline green, 100% passed out of 2.
 - ODB user persistence: `docs/devlog/phase3_odb_user_persistence.md`
 - User Service core: `docs/devlog/phase4_user_service_core.md`
 - Build gating and test hygiene: `docs/devlog/phase5_build_gating.md`
+- Gateway-user HTTP integration: `docs/devlog/phase6_gateway_user_integration.md`

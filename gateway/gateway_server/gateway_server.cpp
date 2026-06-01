@@ -61,6 +61,32 @@
 #include "httplib.h"
 #include <nlohmann/json.hpp>
 
+#ifdef IM_ENABLE_USER_HTTP
+#include <odb/pgsql/database.hxx>
+#include "../user_http_controller.hpp"
+#include "../auth/multi_platform_auth.hpp"
+#include "../../services/user/password_hasher.hpp"
+#include "../../services/user/user_service.hpp"
+
+// Free function: registers user HTTP routes on an httplib server.
+// Exposed as a unit seam for testing (see test/gateway_user/).
+void register_user_http_routes_on_server(httplib::Server& server,
+                                         im::gateway::UserHttpController& controller) {
+    server.Post("/api/v1/auth/register",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_register(req, res);
+        });
+    server.Post("/api/v1/auth/login",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_login(req, res);
+        });
+    server.Get("/api/v1/auth/info",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_profile(req, res);
+        });
+}
+#endif
+
 
 namespace im {
 namespace gateway {
@@ -311,14 +337,38 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         init_msg_parser();
         init_msg_processor();
 
-        // 步骤4: 初始化网络服务器
+#ifdef IM_ENABLE_USER_HTTP
+        // 步骤4: 初始化User HTTP Controller。必须早于 init_http_server()，
+        // 否则用户路由会晚于 HTTP catch-all 注册并被截获。
+        try {
+            if (!odb_db_) {
+                ConfigManager cfg(config_path_);
+                std::string pg_host = cfg.get<std::string>("postgres.host", "127.0.0.1");
+                int pg_port = cfg.get<int>("postgres.port", 5432);
+                std::string pg_dbname = cfg.get<std::string>("postgres.database", "mychat");
+                std::string pg_user = cfg.get<std::string>("postgres.username", "mychat");
+                std::string pg_pass = cfg.get<std::string>("postgres.password", "mychat-dev-pass");
+                odb_db_ = std::make_shared<odb::pgsql::database>(
+                    pg_user, pg_pass, pg_dbname, pg_host, pg_port);
+            }
+            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
+            user_http_controller_ = std::make_unique<UserHttpController>(user_svc, auth_mgr_);
+            server_logger->info("User HTTP controller initialized");
+        } catch (const std::exception& e) {
+            server_logger->error("Failed to initialize User HTTP controller: {}", e.what());
+            throw;
+        }
+#endif
+
+        // 步骤5: 初始化网络服务器。HTTP初始化阶段会先注册专用路由，再注册 catch-all。
         init_ws_server(ws_port);
         init_http_server(http_port);
 
-        // 步骤5: 初始化连接管理器 (依赖websocket_server)
+        // 步骤6: 初始化连接管理器 (依赖websocket_server)
         init_conn_mgr();
 
-        // 步骤6: 注册消息处理器
+        // 步骤7: 注册消息处理器
         register_message_handlers();
 
         server_logger->info("GatewayServer initialized successfully");
@@ -704,6 +754,12 @@ void GatewayServer::init_http_server(uint16_t port) {
             res.set_content("{\"status\": \"ok\"}", "application/json");
             res.status = 200;
         });
+
+#ifdef IM_ENABLE_USER_HTTP
+        // 用户路由必须早于 catch-all 注册，否则 httplib 会先命中 ".*"。
+        register_user_http_routes();
+#endif
+
         http_server_->Get(".*", http_callback);
         http_server_->Post(".*", http_callback);
         http_server_->bind_to_port("0.0.0.0", port);
@@ -746,6 +802,18 @@ void GatewayServer::init_msg_processor() {
     coro_msg_processor_ = std::make_unique<CoroMessageProcessor>(router_mgr_, auth_mgr_);
     msg_processor_ = std::make_unique<MessageProcessor>(router_mgr_, auth_mgr_);
 }
+
+#ifdef IM_ENABLE_USER_HTTP
+void GatewayServer::register_user_http_routes() {
+    if (!user_http_controller_) {
+        server_logger->warn("User HTTP controller not available — skipping route registration");
+        return;
+    }
+    register_user_http_routes_on_server(*http_server_, *user_http_controller_);
+    server_logger->info("User HTTP endpoints registered "
+        "(/api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/info)");
+}
+#endif
 
 // ==================== 消息处理器注册 ====================
 

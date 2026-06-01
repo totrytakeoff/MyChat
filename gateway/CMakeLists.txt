@@ -23,6 +23,7 @@ target_link_libraries(im_gateway_core
 
 target_include_directories(im_gateway_core
     PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/gateway_server
         ${CMAKE_CURRENT_SOURCE_DIR}/connection_manager
         ${CMAKE_CURRENT_SOURCE_DIR}/router
@@ -31,6 +32,16 @@ target_include_directories(im_gateway_core
 
 # 创建命名空间别名
 add_library(im::gateway_core ALIAS im_gateway_core)
+
+# User HTTP Controller — 仅当 User Service 可用时编译和链接
+if(TARGET im::user_service)
+    target_sources(im_gateway_core PRIVATE user_http_controller.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::user_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_USER_HTTP)
+    message(STATUS "User HTTP controller enabled (im::user_service available)")
+else()
+    message(STATUS "User HTTP controller disabled (im::user_service not available)")
+endif()
 
 add_library(im_gateway_auth STATIC
     auth/multi_platform_auth.cpp
