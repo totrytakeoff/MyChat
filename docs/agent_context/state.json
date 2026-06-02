@@ -2,7 +2,7 @@
   "workflow_id": "MyChat-2026-06-01-001",
   "project": "MyChat",
   "context_dir": "docs/agent_context",
-  "current_task": "task005",
+  "current_task": "task006",
   "current_stage": "planning",
   "status": "running",
   "iteration": 0,
@@ -40,29 +40,33 @@
       "status": "active"
     }
   },
-  "updated_at": "2026-06-02T06:36:00.976914+00:00",
+  "updated_at": "2026-06-02T07:35:12.422198+00:00",
   "workflow_run": {
     "active": false,
     "stage": "context_sync",
     "role": "documenter",
-    "agent": "codex-app",
-    "task_id": "task004",
-    "started_at": "2026-06-02T06:33:27.288933+00:00",
-    "completed_at": "2026-06-02T06:33:38+00:00",
-    "decision": "APPROVED",
+    "agent": "stub",
+    "model": null,
+    "task_id": "task005",
+    "run_id": "run-0061-documenter",
+    "run_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0061-documenter.json",
+    "events_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0061-documenter.events.jsonl",
+    "output_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0061-documenter.output.txt",
+    "started_at": "2026-06-02T07:35:12.420899+00:00",
     "result": "completed",
-    "finished_at": "2026-06-02T06:36:00.970561+00:00"
+    "finished_at": "2026-06-02T07:35:12.421910+00:00"
   },
   "last_run_config": {
     "requirement": "\u4f9d\u636e docs/agent_context/roadmap.md\u3001todo.md\u3001current_progress.md \u89c4\u5212\u5e76\u63a8\u8fdb\u4e0b\u4e00\u4e2a\u6700\u5c0f\u771f\u5b9e\u5f00\u53d1\u4efb\u52a1",
-    "planner": "codex-app",
-    "coder": "opencode-session",
-    "reviewer": "codex-app",
-    "documenter": "codex-app",
+    "planner": "stub",
+    "coder": "stub",
+    "reviewer": "stub",
+    "documenter": "stub",
     "model": null,
+    "role_models": {},
     "timeout_seconds": 300,
     "max_steps": 3
   },
-  "last_approved_task": "task004",
-  "task_dirty_baseline_checked": "task004"
+  "last_approved_task": "task005",
+  "task_dirty_baseline_checked": "task005"
 }
