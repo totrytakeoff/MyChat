@@ -1,0 +1,90 @@
+---
+
+task_id: task007
+type: context_sync
+status: approved
+from: document_writer
+to: project
+revision: 1
+
+# Task 007 Context Sync Report
+
+## Task Overview
+
+Task 007 (Gateway Online Message Delivery) is complete and approved. After
+`MessageWsHandler::handle_send` persists a message successfully, the handler
+now pushes a `CMD_PUSH_MESSAGE` + `im.push.PushRequest` protobuf to the
+recipient's active WebSocket sessions via `ConnectionManager` and
+`WebSocketServer`, and marks the message delivered after at least one
+successful push. Push is best-effort: offline recipients stay undelivered
+for later offline-pull.
+
+## Changes to Durable Context Files
+
+The following files were updated by the implementation agent and require no
+further changes:
+
+- **docs/agent_context/roadmap.md** — Phase F now shows WebSocket online
+  delivery via ConnectionManager as [x] (complete). Push Service fanout
+  remains [ ].
+- **docs/agent_context/todo.md** — Task 007 added to completed section.
+  Current section updated: "Push Service fanout and service-call strategy"
+  is the remaining Phase F work.
+- **docs/devlog/current_progress.md** — Baseline section updated to include
+  online delivery. In Progress section updated. Documentation index updated
+  with `phase9_gateway_online_delivery.md`.
+- **docs/devlog/phase9_gateway_online_delivery.md** — Created, covering push
+  contract, handler behavior, best-effort semantics, test coverage, and
+  remaining Phase F work.
+
+## Stale Artifacts Removed
+
+- `docs/agent_context/tasks/task007/plan.md.invalid` — Removed.
+- `docs/agent_context/tasks/task007/review.md.invalid` — Removed.
+- Task 007 directory now contains `plan.md`, `review.md`, `summary.md`, and
+  `context_sync.md` only.
+
+## Files Requiring Update
+
+Two durable context files contain stale information from before Task 006/007
+that should be updated by the next context sync pass:
+
+### docs/agent_context/project_context.md
+
+| Issue | Current | Expected |
+|-------|---------|----------|
+| Active test count | 7 with ODB (line lists only 7 suites) | 8 — add `GatewayMessageWsTest` |
+| Architecture Facts | Missing Tasks 006 and 007 | Add WebSocket send/ack (cmd_id validation, protobuf error responses, token-derived identity) and online delivery (push to recipient sessions via ConnectionManager, best-effort, mark delivered on push success) |
+| Known Risks "Full Phase F" | Says WebSocket send/ack, online delivery, Push fanout remain | Update: send/ack and online delivery are done; Push fanout and service-call strategy remain |
+| Build constraint about `odb_db_` guard | Only mentions `IM_ENABLE_USER_HTTP` / `IM_ENABLE_MESSAGE_HTTP` combined guard as a detail in Message HTTP section | Consider adding note that `MessageWsHandler` gating follows the same `IM_ENABLE_MESSAGE_HTTP` pattern |
+
+### docs/agent_context/architecture_analysis.md
+
+| Issue | Current | Expected |
+|-------|---------|----------|
+| Current Shape diagram | Shows only HTTP routes (/api/v1/auth/*, /api/v1/messages/*) no WebSocket handler | Add note that Gateway also registers `CMD_SEND_MESSAGE` handler in `register_message_handlers()` and performs online push through ConnectionManager |
+| Risk "Full Message Service MVP is still incomplete" | Mitigation lists "WebSocket send/ack, online delivery through ConnectionManager, and Push fanout remain" | Update: send/ack and online delivery are done; Push fanout and service-call strategy remain |
+| Review Question 2 | "Should remaining Gateway-to-Message WebSocket/online delivery work continue direct in-process pattern first, or should codec/gRPC regeneration happen first?" | Now moot — online delivery is done via direct in-process pattern. Question should be updated to ask about Push fanout strategy |
+
+### No changes needed
+
+- **docs/devlog/current_progress.md** — Already up to date with Task 007.
+- **docs/devlog/phase9_gateway_online_delivery.md** — Created and correct.
+- **docs/agent_context/roadmap.md** — Already up to date.
+- **docs/agent_context/todo.md** — Already up to date.
+
+## Remaining Phase F Work
+
+- Push Service fanout policy and multi-recipient delivery.
+- Service-call strategy decision (direct integration vs codec/gRPC regeneration
+  for inter-service calls).
+
+## Related Task Records
+
+- `docs/agent_context/tasks/task007/plan.md`
+- `docs/agent_context/tasks/task007/summary.md`
+- `docs/agent_context/tasks/task007/review.md`
+- `docs/agent_context/tasks/task001/final.md`
+- `docs/agent_context/tasks/task003/final.md`
+- `docs/agent_context/tasks/task004/final.md`
+- `docs/agent_context/tasks/task006/final.md`

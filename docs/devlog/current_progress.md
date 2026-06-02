@@ -38,6 +38,12 @@ Known working:
   `SendMessageResponse` protobuf. Token-derived sender identity, protobuf type
   validation, cmd_id validation, and protobuf error responses for all expected
   failure paths.
+- Gateway WebSocket online message delivery works: after successful persistence,
+  `MessageWsHandler::try_push_to_recipient` pushes a `CMD_PUSH_MESSAGE` +
+  `im.push.PushRequest` to the recipient's active WebSocket sessions via
+  `ConnectionManager` and `WebSocketServer`, and marks the message delivered
+  after at least one successful push. Best-effort: messages to offline users
+  stay undelivered and are pullable via the offline-pull API.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -142,13 +148,14 @@ Known working:
 ## In Progress
 
 - Message Service MVP (Phase F) is in progress. Persistence core, Gateway HTTP
-  integration, and Gateway WebSocket send/ack are complete; online delivery
-  through `ConnectionManager` and Push fanout remain.
+  integration, Gateway WebSocket send/ack, and online delivery through
+  `ConnectionManager` are complete; Push Service fanout and service-call
+  strategy remain.
 
 ## Next Immediate Tasks
 
-1. Online delivery of persisted messages to recipient's active WebSocket
-   sessions through `ConnectionManager`.
+1. Push Service implementation and fanout policy for multi-recipient and
+   deferred delivery.
 2. Decide whether remaining Gateway-to-Message delivery should use the direct
    integration pattern first or require codec/gRPC regeneration.
 3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
@@ -168,9 +175,9 @@ Known working:
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: WebSocket online delivery through
-  `ConnectionManager`, Push fanout, codec/gRPC decisions, and schema migration
-  remain future work.
+- Full Phase F is not complete: Push Service fanout, codec/gRPC decisions,
+  and schema migration remain future work. WebSocket online delivery through
+  `ConnectionManager` is complete.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive
@@ -192,6 +199,7 @@ Known working:
 - Message Service persistence core: `docs/devlog/phase6_message_service_core.md`
 - Gateway Message HTTP integration: `docs/devlog/phase7_gateway_message_http.md`
 - Gateway WebSocket send/ack: `docs/devlog/phase8_gateway_message_ws_ack.md`
+- Gateway online message delivery: `docs/devlog/phase9_gateway_online_delivery.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
 - Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`

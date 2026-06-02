@@ -52,8 +52,8 @@ Status: complete.
 
 ## Phase F: Message Service MVP
 
-Status: in progress (persistence core + HTTP integration + WebSocket send/ack
-         complete; Gateway online delivery pending).
+Status: in progress (persistence core + HTTP integration + WebSocket send/ack + online
+         delivery complete; Push Service fanout pending).
 
 - ✅ Persistence core (task003): `services/message` target, ODB-backed message
   persistence, send one-to-one text, offline message pull, conversation history
@@ -64,7 +64,11 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack
 - ✅ Gateway WebSocket send/ack (task006): CMD_SEND_MESSAGE handler, protobuf
   SendMessageRequest/SendMessageResponse, token-derived sender identity,
   protobuf type validation, cmd_id validation, protobuf error responses.
-- [ ] WebSocket online delivery via ConnectionManager/Push path.
+- [x] WebSocket online delivery via ConnectionManager (task007): after successful
+  persistence, pushes CMD_PUSH_MESSAGE + PushRequest to recipient's active
+  sessions; marks message delivered after at least one successful push.
+  Best-effort: offline recipients stay undelivered for later offline-pull.
+- [ ] Push Service fanout policy and multi-recipient delivery.
 - Exit criteria: Message Service persistence tests pass; Gateway HTTP message
   API passes; Gateway can deliver message to online user; offline message is
   persisted and pullable.

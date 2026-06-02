@@ -402,8 +402,7 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
             message_http_controller_ = std::make_unique<MessageHttpController>(msg_svc, auth_mgr_);
             server_logger->info("Message HTTP controller initialized");
 
-            message_ws_handler_ = std::make_unique<MessageWsHandler>(msg_svc, auth_mgr_);
-            server_logger->info("Message WS handler initialized");
+
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Message HTTP controller: {}", e.what());
             throw;
@@ -416,6 +415,19 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
         // 步骤6: 初始化连接管理器 (依赖websocket_server)
         init_conn_mgr();
+
+        // Initialize WS message handler after ConnectionManager and WebSocketServer are ready.
+#ifdef IM_ENABLE_MESSAGE_HTTP
+        try {
+            auto msg_svc_for_ws = std::make_shared<im::service::message::MessageService>(odb_db_);
+            message_ws_handler_ = std::make_unique<MessageWsHandler>(
+                msg_svc_for_ws, auth_mgr_, conn_mgr_.get(), websocket_server_.get());
+            server_logger->info("Message WS handler initialized with ConnectionManager and WebSocketServer");
+        } catch (const std::exception& e) {
+            server_logger->error("Failed to initialize Message WS handler: {}", e.what());
+            throw;
+        }
+#endif
 
         // 步骤7: 注册消息处理器
         register_message_handlers();
