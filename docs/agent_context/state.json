@@ -2,13 +2,58 @@
   "workflow_id": "MyChat-2026-06-01-001",
   "project": "MyChat",
   "context_dir": "docs/agent_context",
-  "current_task": "task001",
-  "current_stage": "init",
+  "current_task": "task002",
+  "current_stage": "planning",
   "status": "running",
   "iteration": 0,
-  "last_decision": null,
+  "last_decision": "APPROVED",
   "next_agent": "planner",
   "max_revisions_per_task": 3,
-  "agent_sessions": {},
-  "updated_at": "2026-06-01T14:34:01.680265+00:00"
+  "agent_sessions": {
+    "coder": {
+      "provider": "opencode-session",
+      "mode": "cli-session",
+      "session_id": "ses_17c6220edffeyE5gbsdiuK7lEn",
+      "thread_id": null,
+      "status": "active"
+    },
+    "reviewer": {
+      "provider": "codex-app",
+      "mode": "app-server",
+      "session_id": "019e862c-aee0-7f42-b312-1341a5d5bd0e",
+      "thread_id": "019e862c-aee0-7f42-b312-1341a5d5bd0e",
+      "status": "active"
+    },
+    "documenter": {
+      "provider": "codex-app",
+      "mode": "app-server",
+      "session_id": "019e863d-450d-77c0-a140-6482876e91a2",
+      "thread_id": "019e863d-450d-77c0-a140-6482876e91a2",
+      "status": "active"
+    }
+  },
+  "updated_at": "2026-06-02T02:52:11.821973+00:00",
+  "workflow_run": {
+    "active": false,
+    "stage": "context_sync",
+    "role": "documenter",
+    "agent": "codex-app",
+    "task_id": "task001",
+    "started_at": "2026-06-02T02:50:22.641365+00:00",
+    "completed_at": "2026-06-02T03:05:00+00:00",
+    "decision": "APPROVED",
+    "result": "completed",
+    "finished_at": "2026-06-02T02:52:11.820223+00:00"
+  },
+  "last_run_config": {
+    "requirement": "\u590d\u5ba1\u5f53\u524d task001 \u9879\u76ee\u4e0a\u4e0b\u6587\u540c\u6b65\u4efb\u52a1\uff1bplan \u548c summary \u5df2\u6309\u4e0a\u4e00\u8f6e review \u4fee\u6b63\uff0c\u672c\u8f6e\u53ea\u8fdb\u884c review\uff0c\u4e0d\n  \u4fee\u6539\u4e1a\u52a1\u4ee3\u7801",
+    "planner": "codex-app",
+    "coder": "opencode-session",
+    "reviewer": "codex-app",
+    "documenter": "codex-app",
+    "model": null,
+    "timeout_seconds": 300,
+    "max_steps": 1
+  },
+  "last_approved_task": "task001"
 }

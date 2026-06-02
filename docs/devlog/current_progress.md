@@ -147,8 +147,9 @@ Result: Baseline green, 100% passed out of 2.
 - ODB 2.5.0 runtime must be built from source (until vcpkg packages are
   updated). Developers must run `scripts/build_odb_runtime_2_5.sh` before
   enabling ODB builds. CMake fails at configure time if runtime is missing.
-- `pgsql_conn.hpp` RAII wrapper has pre-existing issues that will surface
-  during User Service implementation.
+- `pgsql_conn.hpp` RAII wrapper has pre-existing issues (string-ID handling,
+  raw-pointer return). User Service bypasses it by using `odb::pgsql::database`
+  directly; issues will surface during Friend/Group service development.
 - Existing `services/codec` generated files are stale. Regenerating gRPC/proto
   artifacts should be a deliberate phase, not an accidental side effect.
 - Old tests still contain references to removed dependencies and may fail if
@@ -168,3 +169,5 @@ Result: Baseline green, 100% passed out of 2.
 - User Service core: `docs/devlog/phase4_user_service_core.md`
 - Build gating and test hygiene: `docs/devlog/phase5_build_gating.md`
 - Gateway-user HTTP integration: `docs/devlog/phase6_gateway_user_integration.md`
+- Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
+- Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
