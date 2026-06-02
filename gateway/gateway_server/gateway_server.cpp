@@ -92,6 +92,7 @@ void register_user_http_routes_on_server(httplib::Server& server,
 
 #ifdef IM_ENABLE_MESSAGE_HTTP
 #include "../message_http_controller.hpp"
+#include "../message_ws_handler.hpp"
 #include "../../services/message/message_service.hpp"
 
 // Free function: registers message HTTP routes on an httplib server.
@@ -400,6 +401,9 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
             auto msg_svc = std::make_shared<im::service::message::MessageService>(odb_db_);
             message_http_controller_ = std::make_unique<MessageHttpController>(msg_svc, auth_mgr_);
             server_logger->info("Message HTTP controller initialized");
+
+            message_ws_handler_ = std::make_unique<MessageWsHandler>(msg_svc, auth_mgr_);
+            server_logger->info("Message WS handler initialized");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Message HTTP controller: {}", e.what());
             throw;
@@ -960,55 +964,25 @@ bool GatewayServer::force_register_handler(uint32_t cmd_id, std::function<Proces
 }
 void GatewayServer::register_message_handlers() {
     try {
-        // 注意：登录(CMD 1001)和Token验证(CMD 1002)应该通过HTTP接口处理，不通过WebSocket
-        // WebSocket主要用于实时消息传递
+        server_logger->info("Registering message handlers...");
 
-        // Skip default handler registration in test version - handlers will be registered manually
-        server_logger->info("Skipping default message handler registration (test mode)");
-        return;
+#ifdef IM_ENABLE_MESSAGE_HTTP
+        if (message_ws_handler_) {
+            server_logger->info("Registering WebSocket message handler for CMD_SEND_MESSAGE");
 
-        // 发送消息处理器示例 (CMD 2001) - 使用protobuf响应
-        coro_msg_processor_->register_coro_processor(
-                2001, [this](const UnifiedMessage& msg) -> Task<CoroProcessorResult> {
-                    server_logger->info("Processing send message from user: {} to user: {}",
-                                        msg.get_from_uid(), msg.get_to_uid());
-
-                    // 推送消息给目标用户
-                    if (!msg.get_to_uid().empty()) {
-                        // 构建protobuf格式的推送消息
-                        base::IMHeader push_header = ProtobufCodec::returnHeaderBuilder(
-                                msg.get_header(),
-                                im::utils::ServiceId::getDeviceId(),
-                                im::utils::ServiceId::getPlatformInfo());
-
-                        base::BaseResponse push_response;
-                        push_response.set_error_code(base::ErrorCode::SUCCESS);
-                        push_response.set_error_message("");
-
-                        std::string protobuf_push_msg;
-                        if (ProtobufCodec::encode(push_header, push_response, protobuf_push_msg)) {
-                            push_message_to_user(msg.get_to_uid(), protobuf_push_msg);
-                        }
-                    }
-
-                    // 构建成功响应的protobuf数据
-                    base::IMHeader response_header = ProtobufCodec::returnHeaderBuilder(
-                            msg.get_header(),
-                            im::utils::ServiceId::getDeviceId(),
-                            im::utils::ServiceId::getPlatformInfo());
-
-                    base::BaseResponse response;
-                    response.set_error_code(base::ErrorCode::SUCCESS);
-                    response.set_error_message("Message sent successfully");
-
-                    std::string protobuf_response;
-                    if (ProtobufCodec::encode(response_header, response, protobuf_response)) {
-                        co_return CoroProcessorResult(0, "", protobuf_response, "");
-                    } else {
-                        co_return CoroProcessorResult(base::ErrorCode::SERVER_ERROR,
-                                                      "Failed to encode response");
-                    }
+            register_message_handlers(im::command::CMD_SEND_MESSAGE,
+                [this](const UnifiedMessage& msg) -> ProcessorResult {
+                    return message_ws_handler_->handle_send(msg);
                 });
+
+            server_logger->info("WebSocket message handler registered");
+        } else {
+            server_logger->warn("MessageWsHandler not available — skipping WS handler registration");
+        }
+#else
+        // Skip when message service is not available
+        server_logger->info("Message service not available — skipping WS message handler registration");
+#endif
 
         server_logger->info("Message handlers registered successfully");
     } catch (const std::exception& e) {

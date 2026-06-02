@@ -53,6 +53,15 @@ else()
     message(STATUS "Message HTTP controller disabled (im::message_service not available)")
 endif()
 
+# Message WS Handler — 仅当 Message Service 可用时编译和链接
+if(TARGET im::message_service)
+    target_sources(im_gateway_core PRIVATE message_ws_handler.cpp)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_MESSAGE_HTTP)
+    message(STATUS "Message WS handler enabled (im::message_service available)")
+else()
+    message(STATUS "Message WS handler disabled (im::message_service not available)")
+endif()
+
 add_library(im_gateway_auth STATIC
     auth/multi_platform_auth.cpp
 )

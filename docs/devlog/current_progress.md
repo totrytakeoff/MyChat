@@ -33,38 +33,12 @@ Known working:
 - Gateway Message HTTP integration works: authenticated send, conversation
   history, and offline pull routes backed by Message Service. The token UID is
   the trusted sender/actor, and offline pull marks returned messages delivered.
+- Gateway WebSocket message send/ack works: `CMD_SEND_MESSAGE` handler parses
+  `SendMessageRequest`, persists through `MessageService`, returns encoded
+  `SendMessageResponse` protobuf. Token-derived sender identity, protobuf type
+  validation, cmd_id validation, and protobuf error responses for all expected
+  failure paths.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
-
-Most recently verified commands:
-
-```bash
-docker compose up -d redis postgres
-cmake -S . -B /tmp/mychat-build-task004 \
-  -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
-  -DMYCHAT_BUILD_TESTS=ON \
-  -DMYCHAT_BUILD_GATEWAY=ON \
-  -DMYCHAT_BUILD_SERVICES=ON \
-  -DMYCHAT_BUILD_PGSQL_ODB=ON \
-  -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-build-task004 -j2
-ctest --test-dir /tmp/mychat-build-task004 --output-on-failure
-```
-
-Result (ODB enabled): 100% passed, 0 failed out of 7.
-
-No-ODB baseline:
-
-```bash
-cmake -S . -B /tmp/mychat-build-task004-noodb \
-  -DMYCHAT_BUILD_TESTS=ON \
-  -DMYCHAT_BUILD_GATEWAY=ON \
-  -DMYCHAT_BUILD_SERVICES=ON \
-  -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-build-task004-noodb -j2
-```
-
-Result: Build succeeded; Message Service and Message HTTP targets were skipped
-because ODB was not enabled.
 
 ## Completed Work
 
@@ -167,14 +141,14 @@ because ODB was not enabled.
 
 ## In Progress
 
-- Message Service MVP (Phase F) is in progress. Persistence core and Gateway
-  HTTP integration are complete; WebSocket online delivery and Push fanout
-  remain.
+- Message Service MVP (Phase F) is in progress. Persistence core, Gateway HTTP
+  integration, and Gateway WebSocket send/ack are complete; online delivery
+  through `ConnectionManager` and Push fanout remain.
 
 ## Next Immediate Tasks
 
-1. WebSocket message send/ack path and online delivery through
-   `ConnectionManager`/Push path.
+1. Online delivery of persisted messages to recipient's active WebSocket
+   sessions through `ConnectionManager`.
 2. Decide whether remaining Gateway-to-Message delivery should use the direct
    integration pattern first or require codec/gRPC regeneration.
 3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
@@ -194,8 +168,9 @@ because ODB was not enabled.
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: WebSocket online delivery, Push fanout,
-  codec/gRPC decisions, and schema migration remain future work.
+- Full Phase F is not complete: WebSocket online delivery through
+  `ConnectionManager`, Push fanout, codec/gRPC decisions, and schema migration
+  remain future work.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive
@@ -216,6 +191,7 @@ because ODB was not enabled.
 - Gateway-user HTTP integration: `docs/devlog/phase6_gateway_user_integration.md`
 - Message Service persistence core: `docs/devlog/phase6_message_service_core.md`
 - Gateway Message HTTP integration: `docs/devlog/phase7_gateway_message_http.md`
+- Gateway WebSocket send/ack: `docs/devlog/phase8_gateway_message_ws_ack.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
 - Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`

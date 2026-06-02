@@ -14,15 +14,20 @@ updated_by: coder
 - [x] Gateway Message HTTP integration (Task 004) - authenticated send,
   conversation history, and offline pull routes; token UID is sender/actor;
   offline pull marks returned messages delivered.
+- [x] Gateway WebSocket send/ack (Task 006) - CMD_SEND_MESSAGE handler,
+  protobuf SendMessageRequest/SendMessageResponse, token-derived sender
+  identity, protobuf type validation, cmd_id validation, protobuf error
+  responses.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) - WebSocket message send/ack, online
-  delivery through `ConnectionManager`, and Push fanout. Persistence core
-  (Task 003) and Gateway HTTP integration (Task 004) are complete.
+- [ ] Message Service MVP (Phase F) - Online delivery through
+  `ConnectionManager`, and Push fanout. Persistence core (Task 003), Gateway
+  HTTP integration (Task 004), and WebSocket send/ack (Task 006) are complete.
 
 ## Next
 
+- [ ] Online delivery of persisted messages to recipient's active WebSocket sessions through `ConnectionManager`.
 - [ ] Regenerate codec/gRPC artifacts (prerequisite for Message Service inter-service calls, or decide to follow same direct-integration pattern).
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.

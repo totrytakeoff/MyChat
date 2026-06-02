@@ -2,7 +2,7 @@
   "workflow_id": "MyChat-2026-06-01-001",
   "project": "MyChat",
   "context_dir": "docs/agent_context",
-  "current_task": "task006",
+  "current_task": "task007",
   "current_stage": "planning",
   "status": "running",
   "iteration": 0,
@@ -12,25 +12,52 @@
   "max_revisions_per_task": 3,
   "agent_sessions": {
     "coder": {
-      "provider": "opencode-session",
-      "mode": "cli-session",
-      "session_id": "ses_17c6220edffeyE5gbsdiuK7lEn",
-      "thread_id": null,
-      "status": "active"
+      "provider": "codex-app",
+      "mode": "app-server",
+      "session_id": "019e87b8-e6fd-7302-89e6-d93b8d9fddb0",
+      "thread_id": "019e87b8-e6fd-7302-89e6-d93b8d9fddb0",
+      "status": "active",
+      "configured_model": "gpt-5.3-codex",
+      "effective_model": "gpt-5.3-codex",
+      "model_info": {
+        "provider": null,
+        "id": "gpt-5.3-codex",
+        "variant": null,
+        "name": "gpt-5.3-codex",
+        "agent": null
+      }
     },
     "reviewer": {
       "provider": "codex-app",
       "mode": "app-server",
       "session_id": "019e862c-aee0-7f42-b312-1341a5d5bd0e",
       "thread_id": "019e862c-aee0-7f42-b312-1341a5d5bd0e",
-      "status": "active"
+      "status": "active",
+      "configured_model": "gpt-5.4",
+      "effective_model": "gpt-5.4",
+      "model_info": {
+        "provider": null,
+        "id": "gpt-5.4",
+        "variant": null,
+        "name": "gpt-5.4",
+        "agent": null
+      }
     },
     "documenter": {
       "provider": "codex-app",
       "mode": "app-server",
       "session_id": "019e863d-450d-77c0-a140-6482876e91a2",
       "thread_id": "019e863d-450d-77c0-a140-6482876e91a2",
-      "status": "active"
+      "status": "active",
+      "configured_model": "gpt-5.4-mini",
+      "effective_model": "gpt-5.4-mini",
+      "model_info": {
+        "provider": null,
+        "id": "gpt-5.4-mini",
+        "variant": null,
+        "name": "gpt-5.4-mini",
+        "agent": null
+      }
     },
     "planner": {
       "provider": "codex-app",
@@ -40,33 +67,46 @@
       "status": "active"
     }
   },
-  "updated_at": "2026-06-02T07:35:12.422198+00:00",
+  "updated_at": "2026-06-02T09:48:34.120072+00:00",
   "workflow_run": {
     "active": false,
     "stage": "context_sync",
     "role": "documenter",
-    "agent": "stub",
-    "model": null,
-    "task_id": "task005",
-    "run_id": "run-0061-documenter",
-    "run_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0061-documenter.json",
-    "events_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0061-documenter.events.jsonl",
-    "output_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0061-documenter.output.txt",
-    "started_at": "2026-06-02T07:35:12.420899+00:00",
+    "agent": "codex-app",
+    "model": "gpt-5.4-mini",
+    "task_id": "task006",
+    "run_id": "run-0077-documenter",
+    "run_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0077-documenter.json",
+    "events_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0077-documenter.events.jsonl",
+    "output_path": "/home/myself/workspace/MyChat/docs/agent_context/runs/run-0077-documenter.output.txt",
+    "started_at": "2026-06-02T09:48:12.982898+00:00",
+    "configured_model": "gpt-5.4-mini",
+    "effective_model": "gpt-5.4-mini",
     "result": "completed",
-    "finished_at": "2026-06-02T07:35:12.421910+00:00"
+    "finished_at": "2026-06-02T09:48:34.119386+00:00"
   },
   "last_run_config": {
     "requirement": "\u4f9d\u636e docs/agent_context/roadmap.md\u3001todo.md\u3001current_progress.md \u89c4\u5212\u5e76\u63a8\u8fdb\u4e0b\u4e00\u4e2a\u6700\u5c0f\u771f\u5b9e\u5f00\u53d1\u4efb\u52a1",
-    "planner": "stub",
-    "coder": "stub",
-    "reviewer": "stub",
-    "documenter": "stub",
+    "planner": "codex-app",
+    "coder": "opencode-session",
+    "reviewer": "codex-app",
+    "documenter": "codex-app",
     "model": null,
-    "role_models": {},
-    "timeout_seconds": 300,
-    "max_steps": 3
+    "role_models": {
+      "planner": "gpt-5.5",
+      "reviewer": "gpt-5.4",
+      "documenter": "gpt-5.4-mini"
+    },
+    "timeout_seconds": 900,
+    "max_steps": 1
   },
-  "last_approved_task": "task005",
-  "task_dirty_baseline_checked": "task005"
+  "last_approved_task": "task006",
+  "task_dirty_baseline_checked": "task006",
+  "manual_handoff_repair": {
+    "task_id": "task006",
+    "stage": "coding",
+    "artifact": "docs/agent_context/tasks/task006/summary.md",
+    "source_invalid_output": "docs/agent_context/tasks/task006/summary.md.invalid",
+    "repaired_at": "2026-06-02T09:26:47+00:00"
+  }
 }
