@@ -12,20 +12,11 @@
 #include "auth/multi_platform_auth.hpp"
 #include "message_processor/unified_message.hpp"
 #include "message_processor/message_processor.hpp"
+#include "push_service.hpp"
 
 namespace im::service::message {
 class MessageService;
 }
-
-namespace im::gateway {
-
-class ConnectionManager;
-
-} // namespace im::gateway
-
-namespace im::network {
-class WebSocketServer;
-} // namespace im::network
 
 namespace im::gateway {
 
@@ -34,20 +25,14 @@ public:
     MessageWsHandler(
         std::shared_ptr<im::service::message::MessageService> msg_service,
         std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
-        ConnectionManager* conn_mgr = nullptr,
-        im::network::WebSocketServer* ws_server = nullptr);
+        PushService* push_service = nullptr);
 
     ProcessorResult handle_send(const UnifiedMessage& msg);
 
 private:
-    void try_push_to_recipient(const std::string& receiver_uid,
-                               uint64_t msg_id,
-                               const std::string& content);
-
     std::shared_ptr<im::service::message::MessageService> msg_service_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
-    ConnectionManager* conn_mgr_;
-    im::network::WebSocketServer* ws_server_;
+    PushService* push_service_;
     std::shared_ptr<spdlog::logger> logger_;
 };
 

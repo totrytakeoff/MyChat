@@ -1,0 +1,65 @@
+---
+
+task_id: task008
+type: context_sync
+status: approved
+from: document_writer
+to: project
+revision: 0
+
+# Task 008 Context Sync Report
+
+## Task Overview
+
+Task 008 is complete and approved. The push logic was extracted from `MessageWsHandler::try_push_to_recipient` into a dedicated `PushService` class with a pluggable `FanoutPolicy` abstraction. `MessageWsHandler` now delegates to `PushService::push_to_user` instead of owning the push loop. The default `AllSessionsFanoutPolicy` preserves the existing behavior. `PushService` is independently testable via `PushServiceTest` (4 test cases).
+
+## Files Updated
+
+### New Files
+- `gateway/push_service.hpp` — `FanoutPolicy` abstract interface, `AllSessionsFanoutPolicy` concrete impl, `PushService` class
+- `gateway/push_service.cpp` — `PushService::push_to_user` implementation
+- `test/gateway_message/test_push_service.cpp` — 4 test cases
+- `docs/devlog/phase10_push_service_fanout.md`
+
+### Modified Files
+- `gateway/message_ws_handler.hpp` — Constructor takes `PushService*` instead of `ConnectionManager*` + `WebSocketServer*`
+- `gateway/message_ws_handler.cpp` — Delegates push to `PushService::push_to_user`; removed direct push loop
+- `gateway/gateway_server/gateway_server.hpp` — Added `PushService` forward decl and unique_ptr member
+- `gateway/gateway_server/gateway_server.cpp` — Creates `PushService` after `init_conn_mgr()`, injects into `MessageWsHandler`
+- `gateway/CMakeLists.txt` — Added `push_service.cpp` to gateway library
+- `test/gateway_message/CMakeLists.txt` — Added `test_push_service` target
+- `test/gateway_message/test_gateway_message_ws.cpp` — Updated constructor call
+- `docs/devlog/current_progress.md` — Updated
+- `docs/agent_context/roadmap.md` — Phase F updated
+- `docs/agent_context/todo.md` — Task 008 added to completed
+
+## Key Architecture Facts Added
+
+- `PushService` with `FanoutPolicy` abstraction now lives in `gateway/` (future: extract to `services/push/`).
+- `AllSessionsFanoutPolicy` is the default; custom policies can be injected via `set_fanout_policy`.
+- `MessageWsHandler` no longer owns push logic; it delegates to `PushService*`.
+
+## Remaining Phase F Work
+
+- Multi-recipient fanout for group messages.
+- Device-preference fanout policies.
+- Push Service as standalone microservice.
+- Client-ACK-based delivery marking.
+- Service-call strategy decision (direct integration vs codec/gRPC regeneration).
+
+## Stale Artifacts Removed (Prior Tasks)
+
+- `docs/agent_context/tasks/task007/plan.md.invalid`
+- `docs/agent_context/tasks/task007/review.md.invalid`
+
+## Files Requiring Update (Next Context Sync Pass)
+
+- `docs/agent_context/project_context.md` — Active test count still reads 7; should be 9 (add `GatewayMessageWsTest`, `PushServiceTest`). Architecture facts missing Phase F online delivery and PushService extraction.
+- `docs/agent_context/architecture_analysis.md` — Risks section still lists WebSocket send/ack and online delivery as incomplete; should be updated to list only Push fanout and service-call strategy as remaining.
+
+## No Changes Needed
+
+- `docs/agent_context/roadmap.md` — Already updated.
+- `docs/agent_context/todo.md` — Already updated.
+- `docs/devlog/current_progress.md` — Already updated.
+- `docs/devlog/phase10_push_service_fanout.md` — Created and correct.

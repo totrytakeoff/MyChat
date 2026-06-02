@@ -93,6 +93,7 @@ void register_user_http_routes_on_server(httplib::Server& server,
 #ifdef IM_ENABLE_MESSAGE_HTTP
 #include "../message_http_controller.hpp"
 #include "../message_ws_handler.hpp"
+#include "../push_service.hpp"
 #include "../../services/message/message_service.hpp"
 
 // Free function: registers message HTTP routes on an httplib server.
@@ -416,13 +417,18 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         // 步骤6: 初始化连接管理器 (依赖websocket_server)
         init_conn_mgr();
 
-        // Initialize WS message handler after ConnectionManager and WebSocketServer are ready.
+        // Initialize PushService and WS message handler after ConnectionManager and WebSocketServer are ready.
 #ifdef IM_ENABLE_MESSAGE_HTTP
         try {
+            auto msg_svc_for_push = std::make_shared<im::service::message::MessageService>(odb_db_);
+            push_service_ = std::make_unique<PushService>(
+                conn_mgr_.get(), websocket_server_.get(), msg_svc_for_push);
+            server_logger->info("PushService initialized");
+
             auto msg_svc_for_ws = std::make_shared<im::service::message::MessageService>(odb_db_);
             message_ws_handler_ = std::make_unique<MessageWsHandler>(
-                msg_svc_for_ws, auth_mgr_, conn_mgr_.get(), websocket_server_.get());
-            server_logger->info("Message WS handler initialized with ConnectionManager and WebSocketServer");
+                msg_svc_for_ws, auth_mgr_, push_service_.get());
+            server_logger->info("Message WS handler initialized with PushService");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Message WS handler: {}", e.what());
             throw;

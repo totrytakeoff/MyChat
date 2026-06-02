@@ -53,6 +53,14 @@ else()
     message(STATUS "Message HTTP controller disabled (im::message_service not available)")
 endif()
 
+# PushService — only when Message Service is available
+if(TARGET im::message_service)
+    target_sources(im_gateway_core PRIVATE push_service.cpp)
+    message(STATUS "PushService enabled (im::message_service available)")
+else()
+    message(STATUS "PushService disabled (im::message_service not available)")
+endif()
+
 # Message WS Handler — 仅当 Message Service 可用时编译和链接
 if(TARGET im::message_service)
     target_sources(im_gateway_core PRIVATE message_ws_handler.cpp)

@@ -20,6 +20,7 @@
 #include <gateway/message_ws_handler.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
+#include <gateway/push_service.hpp>
 #include <message_service.hpp>
 #include <message_repository.hpp>
 #include <utils/log_manager.hpp>
@@ -28,7 +29,6 @@
 #include "../../common/proto/base.pb.h"
 #include "../../common/proto/command.pb.h"
 #include "../../common/proto/message.pb.h"
-#include "../../common/proto/push.pb.h"
 
 namespace {
 
@@ -37,7 +37,7 @@ using im::base::ErrorCode;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::ConnectionManager;
-using im::gateway::MessageWsHandler;
+using im::gateway::PushService;using im::gateway::MessageWsHandler;
 using im::gateway::MultiPlatformAuthManager;
 using im::gateway::ProcessorResult;
 using im::gateway::UnifiedMessage;
@@ -87,7 +87,7 @@ protected:
             "test_secret_key_for_gateway_message_ws_tests", config_path());
         msg_service_ = std::make_shared<MessageService>(db_);
         // Default: construct without push infrastructure (null conn_mgr, null ws_server)
-        ws_handler_ = std::make_unique<MessageWsHandler>(msg_service_, auth_mgr_);
+        ws_handler_ = std::make_unique<MessageWsHandler>(msg_service_, auth_mgr_, nullptr);
     }
 
     void TearDown() override {
@@ -121,20 +121,21 @@ protected:
     void CleanupTestData() {
         odb::transaction t(db_->begin());
         db_->execute(R"(DELETE FROM "im_messages"
-            WHERE "sender_uid" LIKE 'task7-test-%'
-               OR "receiver_uid" LIKE 'task7-test-%')");
+            WHERE "sender_uid" LIKE 'task8-test-%'
+               OR "receiver_uid" LIKE 'task8-test-%')");
         t.commit();
     }
 
-    // Create a ConnectionManager with null WebSocketServer for push-path tests.
-    void SetUpConnectionManager() {
+    // Create a PushService with a real ConnectionManager (no live sessions) for push-path tests.
+    void SetUpPushService() {
         conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
+        push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_service_);
         ws_handler_ = std::make_unique<MessageWsHandler>(
-            msg_service_, auth_mgr_, conn_mgr_.get(), nullptr);
+            msg_service_, auth_mgr_, push_service_.get());
     }
 
     std::string make_token(const std::string& uid,
-                           const std::string& device_id = "task7-device")
+                           const std::string& device_id = "task8-device")
     {
         return auth_mgr_->generate_access_token(uid, uid + "-account", device_id, "web", 3600);
     }
@@ -145,7 +146,7 @@ protected:
         const std::string& header_from_uid,
         const std::string& header_to_uid,
         const std::string& content,
-        const std::string& header_device_id = "task7-device",
+        const std::string& header_device_id = "task8-device",
         uint32_t cmd_id = im::command::CMD_SEND_MESSAGE,
         const std::string& protobuf_type = "im.message.SendMessageRequest")
     {
@@ -187,14 +188,15 @@ protected:
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<MessageService> msg_service_;
     std::unique_ptr<ConnectionManager> conn_mgr_;
+    std::unique_ptr<PushService> push_service_;
     std::unique_ptr<MessageWsHandler> ws_handler_;
 };
 
 // --- Existing Task 006 tests (constructor defaults nullptr for push params) ---
 
 TEST_F(GatewayMessageWsTest, SendWithValidTokenPersistsAndReturnsResponse) {
-    std::string token_user = "task7-test-valid-token-user";
-    std::string receiver = "task7-test-valid-rec";
+    std::string token_user = "task8-test-valid-token-user";
+    std::string receiver = "task8-test-valid-rec";
     std::string token = make_token(token_user);
 
     auto msg = make_send_message(token, token_user, receiver, "Hello WS!");
@@ -231,12 +233,12 @@ TEST_F(GatewayMessageWsTest, SendWithValidTokenPersistsAndReturnsResponse) {
 }
 
 TEST_F(GatewayMessageWsTest, SenderIdentityFromTokenNotHeader) {
-    std::string token_user = "task7-test-sender-from-token";
-    std::string receiver = "task7-test-sender-rec";
+    std::string token_user = "task8-test-sender-from-token";
+    std::string receiver = "task8-test-sender-rec";
 
     std::string real_token = make_token(token_user);
 
-    std::string spoofed_sender = "task7-test-spoofed-sender";
+    std::string spoofed_sender = "task8-test-spoofed-sender";
     auto msg = make_send_message(real_token, spoofed_sender, receiver, "Spoofed sender test");
     ProcessorResult result = ws_handler_->handle_send(*msg);
 
@@ -261,7 +263,7 @@ TEST_F(GatewayMessageWsTest, SenderIdentityFromTokenNotHeader) {
 }
 
 TEST_F(GatewayMessageWsTest, InvalidTokenReturnsAuthFailed) {
-    std::string test_rec = "task7-test-invalid-token-rec";
+    std::string test_rec = "task8-test-invalid-token-rec";
 
     auto msg = make_send_message("invalid-token", "any-user", test_rec, "Bad token");
     ProcessorResult result = ws_handler_->handle_send(*msg);
@@ -276,7 +278,7 @@ TEST_F(GatewayMessageWsTest, InvalidTokenReturnsAuthFailed) {
 }
 
 TEST_F(GatewayMessageWsTest, DeviceIdMismatchReturnsAuthFailed) {
-    std::string token_user = "task7-test-device-mismatch";
+    std::string token_user = "task8-test-device-mismatch";
     std::string token = make_token(token_user, "token-device");
 
     auto msg = make_send_message(token, token_user, "rec", "Device mismatch",
@@ -293,7 +295,7 @@ TEST_F(GatewayMessageWsTest, DeviceIdMismatchReturnsAuthFailed) {
 }
 
 TEST_F(GatewayMessageWsTest, MissingReceiverReturnsError) {
-    std::string token_user = "task7-test-missing-rec";
+    std::string token_user = "task8-test-missing-rec";
     std::string token = make_token(token_user);
 
     auto msg = make_send_message(token, token_user, "", "No receiver");
@@ -309,7 +311,7 @@ TEST_F(GatewayMessageWsTest, MissingReceiverReturnsError) {
 }
 
 TEST_F(GatewayMessageWsTest, MissingContentReturnsError) {
-    std::string token_user = "task7-test-missing-content";
+    std::string token_user = "task8-test-missing-content";
     std::string token = make_token(token_user);
 
     auto msg = make_send_message(token, token_user, "rec", "");
@@ -325,7 +327,7 @@ TEST_F(GatewayMessageWsTest, MissingContentReturnsError) {
 }
 
 TEST_F(GatewayMessageWsTest, MalformedPayloadReturnsError) {
-    std::string token_user = "task7-test-malformed";
+    std::string token_user = "task8-test-malformed";
     std::string token = make_token(token_user);
 
     auto msg = std::make_unique<UnifiedMessage>();
@@ -337,7 +339,7 @@ TEST_F(GatewayMessageWsTest, MalformedPayloadReturnsError) {
     header.set_from_uid(token_user);
     header.set_to_uid("rec");
     header.set_token(token);
-    header.set_device_id("task7-device");
+    header.set_device_id("task8-device");
     header.set_platform("web");
     header.set_timestamp(static_cast<uint64_t>(now_ms()));
     msg->set_header(std::move(header));
@@ -362,7 +364,7 @@ TEST_F(GatewayMessageWsTest, MalformedPayloadReturnsError) {
 }
 
 TEST_F(GatewayMessageWsTest, NonWebSocketMessageReturnsError) {
-    std::string token_user = "task7-test-non-ws";
+    std::string token_user = "task8-test-non-ws";
     std::string token = make_token(token_user);
 
     auto msg = std::make_unique<UnifiedMessage>();
@@ -372,7 +374,7 @@ TEST_F(GatewayMessageWsTest, NonWebSocketMessageReturnsError) {
     header.set_from_uid(token_user);
     header.set_to_uid("rec");
     header.set_token(token);
-    header.set_device_id("task7-device");
+    header.set_device_id("task8-device");
     msg->set_header(std::move(header));
 
     UnifiedMessage::SessionContext ctx;
@@ -394,11 +396,11 @@ TEST_F(GatewayMessageWsTest, NonWebSocketMessageReturnsError) {
 }
 
 TEST_F(GatewayMessageWsTest, WrongProtobufTypeRejected) {
-    std::string token_user = "task7-test-wrong-type";
+    std::string token_user = "task8-test-wrong-type";
     std::string token = make_token(token_user);
 
     auto msg = make_send_message(token, token_user, "rec", "Wrong type test",
-                                  "task7-device",
+                                  "task8-device",
                                   im::command::CMD_SEND_MESSAGE,
                                   "im.message.SomeOtherType");
     ProcessorResult result = ws_handler_->handle_send(*msg);
@@ -419,11 +421,11 @@ TEST_F(GatewayMessageWsTest, WrongProtobufTypeRejected) {
 }
 
 TEST_F(GatewayMessageWsTest, WrongCmdIdRejected) {
-    std::string token_user = "task7-test-wrong-cmd";
+    std::string token_user = "task8-test-wrong-cmd";
     std::string token = make_token(token_user);
 
     auto msg = make_send_message(token, token_user, "rec", "Wrong cmd",
-                                  "task7-device",
+                                  "task8-device",
                                   im::command::CMD_HEARTBEAT,
                                   "im.message.SendMessageRequest");
     ProcessorResult result = ws_handler_->handle_send(*msg);
@@ -448,8 +450,8 @@ TEST_F(GatewayMessageWsTest, WrongCmdIdRejected) {
 TEST_F(GatewayMessageWsTest, NullConnMgrSkipsPushGracefully) {
     // Default fixture: conn_mgr_ is nullptr, ws_server_ is nullptr.
     // Sending a message should succeed; push is silently skipped.
-    std::string sender = "task7-test-null-push-sender";
-    std::string receiver = "task7-test-null-push-rec";
+    std::string sender = "task8-test-null-push-sender";
+    std::string receiver = "task8-test-null-push-rec";
     std::string token = make_token(sender);
 
     auto msg = make_send_message(token, sender, receiver, "No push infra");
@@ -474,10 +476,10 @@ TEST_F(GatewayMessageWsTest, NullConnMgrSkipsPushGracefully) {
 
 TEST_F(GatewayMessageWsTest, ConnMgrWithNoSessionsStaysUndelivered) {
     // Create handler with a real ConnectionManager but no live sessions.
-    SetUpConnectionManager();
+    SetUpPushService();
 
-    std::string sender = "task7-test-connmgr-sender";
-    std::string receiver = "task7-test-connmgr-rec";
+    std::string sender = "task8-test-connmgr-sender";
+    std::string receiver = "task8-test-connmgr-rec";
     std::string token = make_token(sender);
 
     auto msg = make_send_message(token, sender, receiver, "Push with no sessions");

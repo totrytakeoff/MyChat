@@ -23,16 +23,22 @@ updated_by: coder
   sessions via ConnectionManager and WebSocketServer; marks message delivered
   after at least one successful push. Best-effort: offline recipients stay
   undelivered.
+- [x] PushService with FanoutPolicy (Task 008) - extracted push logic from
+  MessageWsHandler into dedicated PushService class with pluggable FanoutPolicy.
+  Default AllSessionsFanoutPolicy preserves existing behavior. MessageWsHandler
+  delegates to PushService::push_to_user. Independently testable PushService.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) - Push Service fanout and service-call
-  strategy. Persistence core (Task 003), Gateway HTTP integration (Task 004),
-  WebSocket send/ack (Task 006), and online delivery (Task 007) are complete.
+- [ ] Message Service MVP (Phase F) - Multi-recipient fanout, Push Service
+  as standalone microservice, and service-call strategy. Persistence core
+  (Task 003), Gateway HTTP integration (Task 004), WebSocket send/ack
+  (Task 006), online delivery (Task 007), and PushService with FanoutPolicy
+  (Task 008) are complete.
 
 ## Next
 
-- [ ] Push Service fanout policy and multi-recipient delivery.
+- [ ] Multi-recipient fanout for group messages and device-preference policies.
 - [ ] Regenerate codec/gRPC artifacts (prerequisite for Message Service inter-service calls, or decide to follow same direct-integration pattern).
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.

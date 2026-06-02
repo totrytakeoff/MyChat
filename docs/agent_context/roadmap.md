@@ -68,7 +68,11 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   persistence, pushes CMD_PUSH_MESSAGE + PushRequest to recipient's active
   sessions; marks message delivered after at least one successful push.
   Best-effort: offline recipients stay undelivered for later offline-pull.
-- [ ] Push Service fanout policy and multi-recipient delivery.
+- [x] PushService with FanoutPolicy (task008): extracted push logic from
+  MessageWsHandler into dedicated PushService class with pluggable
+  FanoutPolicy. Default AllSessionsFanoutPolicy preserves existing behavior.
+  MessageWsHandler delegates to PushService::push_to_user.
+- [ ] Multi-recipient fanout for group messages and device-preference policies.
 - Exit criteria: Message Service persistence tests pass; Gateway HTTP message
   API passes; Gateway can deliver message to online user; offline message is
   persisted and pullable.

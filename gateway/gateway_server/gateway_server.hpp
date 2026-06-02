@@ -47,6 +47,7 @@ namespace im::gateway { class UserHttpController; }
 namespace im::service::message { class MessageService; }
 namespace im::gateway { class MessageHttpController; }
 namespace im::gateway { class MessageWsHandler; }
+namespace im::gateway { class PushService; }
 #endif
 
 
@@ -171,6 +172,7 @@ private:
 #ifdef IM_ENABLE_MESSAGE_HTTP
     std::unique_ptr<MessageHttpController> message_http_controller_;
     std::unique_ptr<MessageWsHandler> message_ws_handler_;
+    std::unique_ptr<PushService> push_service_;
 #endif
 };
 

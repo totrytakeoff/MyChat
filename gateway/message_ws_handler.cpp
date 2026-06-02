@@ -4,19 +4,15 @@
 #include <string>
 
 #include "../common/network/protobuf_codec.hpp"
-#include "../common/proto/push.pb.h"
 #include "../common/utils/log_manager.hpp"
 #include "../common/utils/service_identity.hpp"
 #include "../services/message/message_service.hpp"
 #include "../services/odb/message.hpp"
-#include "connection_manager/connection_manager.hpp"
-#include "../common/network/websocket_server.hpp"
 
 namespace im::gateway {
 
 using im::base::ErrorCode;
 using im::network::ProtobufCodec;
-using im::network::WebSocketServer;
 using im::service::message::MessageService;
 using im::service::message::SendRequest;
 using im::utils::LogManager;
@@ -59,12 +55,10 @@ std::string encode_error_response(const im::base::IMHeader& request_header,
 MessageWsHandler::MessageWsHandler(
     std::shared_ptr<MessageService> msg_service,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
-    ConnectionManager* conn_mgr,
-    WebSocketServer* ws_server)
+    PushService* push_service)
     : msg_service_(std::move(msg_service))
     , auth_mgr_(std::move(auth_mgr))
-    , conn_mgr_(conn_mgr)
-    , ws_server_(ws_server)
+    , push_service_(push_service)
 {
     LogManager::SetLogToFile("message_ws_handler", "logs/message_ws_handler.log");
     logger_ = LogManager::GetLogger("message_ws_handler");
@@ -199,77 +193,16 @@ ProcessorResult MessageWsHandler::handle_send(const UnifiedMessage& msg) {
         logger_->info("WS send: token_user={} -> {} (msg_id={}, client_from_uid={})",
                       token_user.user_id, receiver_uid, result.data.msg_id, header.from_uid());
 
-        // 10. Try pushing to online recipient sessions (best-effort, does not affect ack).
-        try_push_to_recipient(receiver_uid, result.data.msg_id, content);
+        // 10. Delegate push to PushService (best-effort, does not affect ack).
+        if (push_service_) {
+            push_service_->push_to_user(receiver_uid, result.data.msg_id, content);
+        }
 
         return ProcessorResult(0, "", protobuf_response, "");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_send: {}", e.what());
         return ProcessorResult(ErrorCode::SERVER_ERROR,
                                std::string("Exception: ") + e.what(), "", "");
-    }
-}
-
-void MessageWsHandler::try_push_to_recipient(const std::string& receiver_uid,
-                                             uint64_t msg_id,
-                                             const std::string& content) {
-    if (!conn_mgr_ || !ws_server_) {
-        logger_->debug("Push skipped: conn_mgr or ws_server not available");
-        return;
-    }
-
-    try {
-        auto sessions = conn_mgr_->get_user_sessions(receiver_uid);
-        if (sessions.empty()) {
-            logger_->debug("No online sessions for receiver {}, message stays undelivered",
-                           receiver_uid);
-            return;
-        }
-
-        // Build the push envelope: IMHeader + PushRequest
-        im::base::IMHeader push_header;
-        push_header.set_version("1.0");
-        push_header.set_cmd_id(im::command::CMD_PUSH_MESSAGE);
-        push_header.set_from_uid(ServiceIdentityManager::getInstance().getDeviceId());
-        push_header.set_to_uid(receiver_uid);
-        push_header.set_timestamp(static_cast<uint64_t>(now_ms()));
-
-        im::push::PushRequest push_req;
-        auto* push_body = push_req.mutable_body();
-        push_body->set_type(im::push::PUSH_MESSAGE);
-        push_body->set_content(content);
-        push_body->set_related_message_id(std::to_string(msg_id));
-
-        std::string encoded;
-        if (!ProtobufCodec::encode(push_header, push_req, encoded)) {
-            logger_->warn("Failed to encode push message for receiver {}", receiver_uid);
-            return;
-        }
-
-        int success_count = 0;
-        for (const auto& device_session : sessions) {
-            try {
-                auto session = ws_server_->get_session(device_session.session_id);
-                if (session) {
-                    session->send(encoded);
-                    ++success_count;
-                }
-            } catch (const std::exception& e) {
-                logger_->warn("Push to session {} failed: {}",
-                              device_session.session_id, e.what());
-            }
-        }
-
-        if (success_count > 0) {
-            msg_service_->mark_delivered(msg_id, now_ms());
-            logger_->info("Pushed message {} to {}/{} sessions of user {}, marked delivered",
-                          msg_id, success_count, sessions.size(), receiver_uid);
-        } else {
-            logger_->info("No session accepted push for message {} to user {}, stays undelivered",
-                          msg_id, receiver_uid);
-        }
-    } catch (const std::exception& e) {
-        logger_->error("Exception in try_push_to_recipient: {}", e.what());
     }
 }
 
