@@ -2,12 +2,13 @@
   "workflow_id": "MyChat-2026-06-01-001",
   "project": "MyChat",
   "context_dir": "docs/agent_context",
-  "current_task": "task003",
+  "current_task": "task004",
   "current_stage": "planning",
   "status": "running",
   "iteration": 0,
   "last_decision": "APPROVED",
   "next_agent": "planner",
+  "revision": 1,
   "max_revisions_per_task": 3,
   "agent_sessions": {
     "coder": {
@@ -30,29 +31,38 @@
       "session_id": "019e863d-450d-77c0-a140-6482876e91a2",
       "thread_id": "019e863d-450d-77c0-a140-6482876e91a2",
       "status": "active"
+    },
+    "planner": {
+      "provider": "codex-app",
+      "mode": "app-server",
+      "session_id": "019e8680-6cd4-7321-ad5a-d62ed82eac64",
+      "thread_id": "019e8680-6cd4-7321-ad5a-d62ed82eac64",
+      "status": "active"
     }
   },
-  "updated_at": "2026-06-02T04:03:23.287278+00:00",
+  "updated_at": "2026-06-02T05:02:59.987830+00:00",
   "workflow_run": {
     "active": false,
     "stage": "context_sync",
     "role": "documenter",
-    "agent": "stub",
-    "task_id": "task002",
-    "started_at": "2026-06-02T04:03:23.286528+00:00",
+    "agent": "codex-app",
+    "task_id": "task003",
+    "started_at": "2026-06-02T04:59:30.036954+00:00",
+    "completed_at": "2026-06-02T05:00:23+00:00",
+    "decision": "APPROVED",
     "result": "completed",
-    "finished_at": "2026-06-02T04:03:23.287097+00:00"
+    "finished_at": "2026-06-02T05:02:59.986119+00:00"
   },
   "last_run_config": {
     "requirement": "\u4f9d\u636e docs/agent_context/roadmap.md\u3001todo.md\u3001current_progress.md \u89c4\u5212\u5e76\u63a8\u8fdb\u4e0b\u4e00\u4e2a\u6700\u5c0f\u771f\u5b9e\u5f00\u53d1\u4efb\u52a1",
-    "planner": "stub",
-    "coder": "stub",
-    "reviewer": "stub",
-    "documenter": "stub",
+    "planner": "codex-app",
+    "coder": "opencode-session",
+    "reviewer": "codex-app",
+    "documenter": "codex-app",
     "model": null,
     "timeout_seconds": 300,
     "max_steps": 3
   },
-  "last_approved_task": "task002",
-  "task_dirty_baseline_checked": "task002"
+  "last_approved_task": "task003",
+  "task_dirty_baseline_checked": "task003"
 }

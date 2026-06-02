@@ -91,25 +91,16 @@ endif()
 # # 创建命名空间别名
 # add_library(im::group_service ALIAS im_group_service)
 
-# 消息服务库
-# add_library(im_message_service STATIC
-#    services/message/*.cpp
-# )
-#
-# target_link_libraries(im_message_service
-#    PUBLIC
-#        im::proto
-#        im::database
-#        im::utils
-# )
-#
-# target_include_directories(im_message_service
-#    PUBLIC
-#        ${CMAKE_CURRENT_SOURCE_DIR}/message
-# )
-#
-# # 创建命名空间别名
-# add_library(im::message_service ALIAS im_message_service)
+# 消息服务库 — gated on MYCHAT_BUILD_MESSAGE_SERVICE and ODB persistence layer.
+if(MYCHAT_BUILD_MESSAGE_SERVICE AND TARGET im::message_odb)
+    add_subdirectory(message)
+    message(STATUS "Message service (im_message_service) is enabled.")
+elseif(MYCHAT_BUILD_MESSAGE_SERVICE)
+    message(STATUS "Message service is disabled (MYCHAT_BUILD_MESSAGE_SERVICE=ON but im::message_odb not available). "
+        "Enable MYCHAT_BUILD_PGSQL_ODB=ON and ensure ODB 2.5.0 runtime is available.")
+else()
+    message(STATUS "Message service is disabled (MYCHAT_BUILD_MESSAGE_SERVICE=OFF).")
+endif()
 
 # 推送服务库
 # add_library(im_push_service STATIC

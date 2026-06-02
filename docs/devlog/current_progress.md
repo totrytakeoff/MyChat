@@ -27,40 +27,41 @@ Known working:
 - Auth token primitives have a focused test.
 - ODB 2.5.0 user persistence works (persist, load, erase against Docker PostgreSQL).
 - User Service Core MVP: register/login/profile workflows, password hashing.
+- Message Service persistence core works: validated one-to-one text send,
+  chronological conversation history, offline pull, and delivered/read marking
+  against ODB/PostgreSQL.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 Most recently verified commands:
 
 ```bash
-cmake -S . -B /tmp/mychat-task6-review-odb \
+docker compose up -d redis postgres
+cmake -S . -B /tmp/mychat-build-task003 \
   -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=ON \
-  -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task6-review-odb -j2
-ctest --test-dir /tmp/mychat-task6-review-odb --output-on-failure
+cmake --build /tmp/mychat-build-task003 -j2
+ctest --test-dir /tmp/mychat-build-task003 --output-on-failure
 ```
 
-Result (ODB enabled): 100% passed, 0 failed out of 5.
+Result (ODB enabled): 100% passed, 0 failed out of 6.
 
 No-ODB baseline:
 
 ```bash
-cmake -S . -B /tmp/mychat-task6-review-no-odb \
+cmake -S . -B /tmp/mychat-build-task003-noodb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=ON \
-  -DMYCHAT_BUILD_LEGACY_GATEWAY_TESTS=OFF \
-  -DMYCHAT_BUILD_PGSQL_ODB=OFF \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-task6-review-no-odb -j2
-ctest --test-dir /tmp/mychat-task6-review-no-odb --output-on-failure
+cmake --build /tmp/mychat-build-task003-noodb -j2
 ```
 
-Result: Baseline green, 100% passed out of 2.
+Result: Build succeeded; Message Service targets were skipped because ODB was
+not enabled.
 
 ## Completed Work
 
@@ -131,15 +132,32 @@ Result: Baseline green, 100% passed out of 2.
   - CMake target order fixed: `services` before `gateway` in root CMakeLists.txt.
   - 10 tests: 9 controller-layer + 1 HTTP route-layer integration test.
   - Full baseline: 5/5 ODB-enabled, 2/2 no-ODB.
+- Message Service persistence core (Task 003):
+  - Added `MYCHAT_BUILD_MESSAGE_SERVICE` option and staged Message Service
+    targets gated on `im::message_odb`.
+  - Added `services/odb/message.hpp`, ODB-generated message mapping files, and
+    `im_message_odb` for the `im_messages` table.
+  - Added `im_message_service` with `MessageRepository` and `MessageService`.
+  - Supports validated direct text send, conversation history,
+    pending-offline pull, delivered marking, and read marking.
+  - Conversation and offline queries use explicit `ORDER BY create_time`.
+  - `MessageServiceCoreTest` covers send, validation, ordering, offline pull,
+    delivered/read marking, and nonexistent-message rejection.
+  - Full ODB-enabled baseline: 6/6 suites passed. No-ODB build skips Message
+    Service targets cleanly.
 
 ## In Progress
 
-- (none — Phase 6 complete)
+- Message Service MVP (Phase F) is in progress. Persistence core is complete;
+  Gateway online delivery and Push fanout remain.
 
 ## Next Immediate Tasks
 
-1. Message Service MVP (Phase F) after Gateway integration stabilizes.
-2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
+1. Gateway online delivery for Message Service via HTTP/WebSocket and
+   `ConnectionManager`/Push path.
+2. Decide whether Gateway-to-Message should use the same direct integration
+   pattern first or require codec/gRPC regeneration.
+3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
 ## Risks
@@ -156,6 +174,10 @@ Result: Baseline green, 100% passed out of 2.
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
+- Full Phase F is not complete: Gateway online delivery, Push fanout,
+  codec/gRPC decisions, and schema migration remain future work.
+- `SendRequest::msg_type` is caller-supplied even though the method is named
+  `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 
 ## Documentation Index
 
@@ -169,5 +191,7 @@ Result: Baseline green, 100% passed out of 2.
 - User Service core: `docs/devlog/phase4_user_service_core.md`
 - Build gating and test hygiene: `docs/devlog/phase5_build_gating.md`
 - Gateway-user HTTP integration: `docs/devlog/phase6_gateway_user_integration.md`
+- Message Service persistence core: `docs/devlog/phase6_message_service_core.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
+- Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`

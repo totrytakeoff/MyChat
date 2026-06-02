@@ -52,12 +52,14 @@ Status: complete.
 
 ## Phase F: Message Service MVP
 
-Status: next (not started).
+Status: in progress (persistence core complete; Gateway delivery pending).
 
-- Create `services/message` target with ODB-backed message persistence.
-- Support send one-to-one text, save offline message, query history.
-- Integrate Gateway online delivery via ConnectionManager/Push path.
-- Exit criteria: Message Service tests pass; Gateway can send message to online user; offline message persisted and pullable.
+- ✅ Persistence core (task003): `services/message` target, ODB-backed message
+  persistence, send one-to-one text, offline message pull, conversation history
+  with `ORDER BY create_time`.
+- [ ] Gateway online delivery via ConnectionManager/Push path.
+- Exit criteria: Message Service persistence tests pass; Gateway can send
+  message to online user; offline message persisted and pullable.
 
 ## Phase G: Friend/Group/Push MVPs
 

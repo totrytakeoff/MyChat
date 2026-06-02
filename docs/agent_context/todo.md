@@ -6,9 +6,15 @@ updated_by: coder
 
 # Todo
 
+## Completed
+
+- [x] Message Service persistence core (Task 003) - ODB-backed `im_messages`,
+  validated direct text send, chronological conversation history, offline pull,
+  and delivered/read marking.
+
 ## Current
 
-- [ ] Message Service MVP (Phase F) — create `services/message`, ODB schema, send/offline/history workflows, Gateway integration.
+- [ ] Message Service MVP (Phase F) — Gateway online delivery, Push fanout. Persistence core (task003) is complete.
 
 ## Next
 

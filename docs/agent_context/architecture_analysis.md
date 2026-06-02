@@ -9,8 +9,8 @@ review_required: true
 
 ## Current Shape
 
-Phase 6 (Gateway-to-User HTTP Integration) is complete. The current runtime
-topology is:
+Phase E (Gateway-to-User HTTP Integration) is complete, and Task 003 has added
+the Message Service persistence core. The current runtime topology is:
 
 ```
 Client
@@ -28,6 +28,11 @@ User Service Core (ODB/PostgreSQL)
   |-- PasswordHasher (PBKDF2-HMAC-SHA256)
   |-- UserRepository (ODB CRUD)
   |-- UserService (register/login/profile DTOs)
+
+Message Service Core (ODB/PostgreSQL; not yet Gateway-wired)
+  |-- MessageRepository (ODB CRUD)
+  |-- MessageService (validated direct text send/history/offline pull)
+  |-- im_messages table and ODB-generated mapping files
 ```
 
 Shared dependencies: Docker Redis (port 6379), Docker PostgreSQL (port 5432).
@@ -77,6 +82,9 @@ codec/gRPC artifacts are regenerated.
 - Decision: Gateway-only route registration, no codec gating on auth endpoints.
   Rationale: Auth endpoints were wired directly in Gateway HTTP handlers (Phase 6) rather than waiting for gRPC codec regeneration, keeping the integration MVP simple.
 
+- Decision: Build Message Service persistence before Gateway delivery.
+  Rationale: Phase F is split so ODB-backed message storage, validation, chronological history, offline pull, and delivered/read marking are independently tested before HTTP/WebSocket delivery and Push fanout are added.
+
 ## Risks And Tradeoffs
 
 - Risk: ODB 2.5.0 runtime build is manual and not CI-tracked.
@@ -94,10 +102,16 @@ codec/gRPC artifacts are regenerated.
 - Risk: No schema migration framework for PostgreSQL.
   Mitigation: Currently handled by `CREATE TABLE IF NOT EXISTS` + test-prefixed `DELETE`. Acceptable during MVP.
 
+- Risk: Full Message Service MVP is still incomplete.
+  Mitigation: Roadmap and todo keep Phase F in progress; Gateway HTTP/WebSocket routes, online delivery through `ConnectionManager`, and Push fanout remain explicit next work.
+
+- Risk: `SendRequest::msg_type` is caller-supplied while the service method is named `send_text_message`.
+  Mitigation: Leave behavior as reviewed for Task 003; consider defaulting to `MessageType::TEXT` in a later API cleanup.
+
 ## Review Questions
 
 1. Is the in-process Gateway-to-User shortcut acceptable until codec/gRPC is regenerated, or should service boundaries be enforced earlier?
-2. Should the codec/gRPC regeneration be planned as a prerequisite for Message Service, or can Message Service follow the same direct-integration pattern?
+2. Should Gateway-to-Message integration follow the direct in-process pattern used for Gateway-to-User first, or should codec/gRPC regeneration happen before delivery work?
 3. Is the ODB-only persistence decision still correct, or should a lighter SQL option be available for developers who cannot build ODB 2.5.0?
 4. Should `pgsql_conn.hpp` be fixed or deprecated before Friend/Group services start?
 5. Is the single-connection Redis wrapper acceptable for the full MVP, or should a pool be added before Message/Push work begins?

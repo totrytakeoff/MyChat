@@ -57,3 +57,49 @@ target_link_libraries(im_user_odb
 add_library(im::user_odb ALIAS im_user_odb)
 
 message(STATUS "ODB user persistence model (im_user_odb) is enabled.")
+
+# --- Message ODB entity ---
+
+set(ODB_MSG_GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/generated")
+set(ODB_MSG_GENERATED_SOURCES
+    "${ODB_MSG_GENERATED_DIR}/message-odb.cxx"
+)
+set(ODB_MSG_GENERATED_HEADERS
+    "${ODB_MSG_GENERATED_DIR}/message-odb.hxx"
+    "${ODB_MSG_GENERATED_DIR}/message-odb.ixx"
+)
+
+foreach(_f ${ODB_MSG_GENERATED_SOURCES} ${ODB_MSG_GENERATED_HEADERS})
+    if(NOT EXISTS "${_f}")
+        message(FATAL_ERROR
+            "Generated ODB file '${_f}' not found.\n"
+            "Run the ODB compiler from the project root:\n"
+            "  odb -I<VCPKG_INCLUDE_DIR> \\\n"
+            "      --database pgsql --std c++20 --generate-query\n"
+            "      --generate-schema --schema-format sql\n"
+            "      --output-dir services/odb/generated\n"
+            "      --hxx-suffix .hxx --ixx-suffix .ixx\n"
+            "      --cxx-suffix .cxx --sql-suffix .sql\n"
+            "      services/odb/message.hpp")
+    endif()
+endforeach()
+
+add_library(im_message_odb STATIC
+    ${ODB_MSG_GENERATED_SOURCES}
+)
+
+target_include_directories(im_message_odb
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${ODB_MSG_GENERATED_DIR}
+)
+
+target_link_libraries(im_message_odb
+    PUBLIC
+        odb::libodb
+        odb::libodb-pgsql
+)
+
+add_library(im::message_odb ALIAS im_message_odb)
+
+message(STATUS "ODB message persistence model (im_message_odb) is enabled.")
