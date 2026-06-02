@@ -43,6 +43,16 @@ else()
     message(STATUS "User HTTP controller disabled (im::user_service not available)")
 endif()
 
+# Message HTTP Controller — 仅当 Message Service 可用时编译和链接
+if(TARGET im::message_service)
+    target_sources(im_gateway_core PRIVATE message_http_controller.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::message_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_MESSAGE_HTTP)
+    message(STATUS "Message HTTP controller enabled (im::message_service available)")
+else()
+    message(STATUS "Message HTTP controller disabled (im::message_service not available)")
+endif()
+
 add_library(im_gateway_auth STATIC
     auth/multi_platform_auth.cpp
 )

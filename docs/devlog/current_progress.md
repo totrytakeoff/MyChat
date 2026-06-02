@@ -30,38 +30,41 @@ Known working:
 - Message Service persistence core works: validated one-to-one text send,
   chronological conversation history, offline pull, and delivered/read marking
   against ODB/PostgreSQL.
+- Gateway Message HTTP integration works: authenticated send, conversation
+  history, and offline pull routes backed by Message Service. The token UID is
+  the trusted sender/actor, and offline pull marks returned messages delivered.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 Most recently verified commands:
 
 ```bash
 docker compose up -d redis postgres
-cmake -S . -B /tmp/mychat-build-task003 \
+cmake -S . -B /tmp/mychat-build-task004 \
   -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=ON \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-build-task003 -j2
-ctest --test-dir /tmp/mychat-build-task003 --output-on-failure
+cmake --build /tmp/mychat-build-task004 -j2
+ctest --test-dir /tmp/mychat-build-task004 --output-on-failure
 ```
 
-Result (ODB enabled): 100% passed, 0 failed out of 6.
+Result (ODB enabled): 100% passed, 0 failed out of 7.
 
 No-ODB baseline:
 
 ```bash
-cmake -S . -B /tmp/mychat-build-task003-noodb \
+cmake -S . -B /tmp/mychat-build-task004-noodb \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=ON \
   -DCMAKE_BUILD_TYPE=Debug
-cmake --build /tmp/mychat-build-task003-noodb -j2
+cmake --build /tmp/mychat-build-task004-noodb -j2
 ```
 
-Result: Build succeeded; Message Service targets were skipped because ODB was
-not enabled.
+Result: Build succeeded; Message Service and Message HTTP targets were skipped
+because ODB was not enabled.
 
 ## Completed Work
 
@@ -145,18 +148,35 @@ not enabled.
     delivered/read marking, and nonexistent-message rejection.
   - Full ODB-enabled baseline: 6/6 suites passed. No-ODB build skips Message
     Service targets cleanly.
+- Gateway Message HTTP integration (Task 004):
+  - Added `MessageHttpController` with `handle_send`, `handle_history`, and
+    `handle_offline`.
+  - Routes: POST `/api/v1/messages/send`, GET `/api/v1/messages/history`, GET
+    `/api/v1/messages/offline`.
+  - All Message HTTP routes require a valid Bearer access token; token UID is
+    used as sender/actor and client-supplied sender identity is ignored.
+  - Offline pull marks returned messages delivered and returns updated status.
+  - Message HTTP route registration occurs before legacy catch-all handlers.
+  - `odb_db_` and ODB initialization are guarded for either User HTTP or
+    Message HTTP so message-only staged builds are structurally safe.
+  - `GatewayMessageHttpTest` covers authenticated send, missing/invalid token,
+    invalid body, token UID trust, history, missing `peer_uid`, offline pull
+    auto-delivery, and route-layer registration.
+  - Full ODB-enabled baseline: 7/7 suites passed. No-ODB build skips Message
+    HTTP targets cleanly.
 
 ## In Progress
 
-- Message Service MVP (Phase F) is in progress. Persistence core is complete;
-  Gateway online delivery and Push fanout remain.
+- Message Service MVP (Phase F) is in progress. Persistence core and Gateway
+  HTTP integration are complete; WebSocket online delivery and Push fanout
+  remain.
 
 ## Next Immediate Tasks
 
-1. Gateway online delivery for Message Service via HTTP/WebSocket and
+1. WebSocket message send/ack path and online delivery through
    `ConnectionManager`/Push path.
-2. Decide whether Gateway-to-Message should use the same direct integration
-   pattern first or require codec/gRPC regeneration.
+2. Decide whether remaining Gateway-to-Message delivery should use the direct
+   integration pattern first or require codec/gRPC regeneration.
 3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
@@ -174,10 +194,13 @@ not enabled.
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: Gateway online delivery, Push fanout,
+- Full Phase F is not complete: WebSocket online delivery, Push fanout,
   codec/gRPC decisions, and schema migration remain future work.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
+- `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive
+  transient failure on one run and passed on retry; this appears pre-existing
+  and unrelated to Task 004.
 
 ## Documentation Index
 
@@ -192,6 +215,8 @@ not enabled.
 - Build gating and test hygiene: `docs/devlog/phase5_build_gating.md`
 - Gateway-user HTTP integration: `docs/devlog/phase6_gateway_user_integration.md`
 - Message Service persistence core: `docs/devlog/phase6_message_service_core.md`
+- Gateway Message HTTP integration: `docs/devlog/phase7_gateway_message_http.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
 - Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`
+- Codgent task004 final record: `docs/agent_context/tasks/task004/final.md`

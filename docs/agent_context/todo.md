@@ -11,10 +11,15 @@ updated_by: coder
 - [x] Message Service persistence core (Task 003) - ODB-backed `im_messages`,
   validated direct text send, chronological conversation history, offline pull,
   and delivered/read marking.
+- [x] Gateway Message HTTP integration (Task 004) - authenticated send,
+  conversation history, and offline pull routes; token UID is sender/actor;
+  offline pull marks returned messages delivered.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) — Gateway online delivery, Push fanout. Persistence core (task003) is complete.
+- [ ] Message Service MVP (Phase F) - WebSocket message send/ack, online
+  delivery through `ConnectionManager`, and Push fanout. Persistence core
+  (Task 003) and Gateway HTTP integration (Task 004) are complete.
 
 ## Next
 

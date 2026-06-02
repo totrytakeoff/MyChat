@@ -43,6 +43,11 @@ namespace odb { namespace pgsql { class database; } }
 namespace im::gateway { class UserHttpController; }
 #endif
 
+#ifdef IM_ENABLE_MESSAGE_HTTP
+namespace im::service::message { class MessageService; }
+namespace im::gateway { class MessageHttpController; }
+#endif
+
 
 namespace im {
 namespace gateway {
@@ -114,6 +119,10 @@ private:
     void register_user_http_routes();
 #endif
 
+#ifdef IM_ENABLE_MESSAGE_HTTP
+    void register_message_http_routes();
+#endif
+
     // WebSocket连接事件处理
     void on_websocket_connect(SessionPtr session);
     void on_websocket_disconnect(SessionPtr session);
@@ -149,10 +158,17 @@ private:
     std::string psc_path_;     // platform_strategy_config_path_
     std::string config_path_;  // gateway/router/auth shared config path for the MVP
 
-#ifdef IM_ENABLE_USER_HTTP
-    // ODB database instance for User Service integration
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP)
+    // ODB database instance for service integration
     std::shared_ptr<odb::pgsql::database> odb_db_;
+#endif
+
+#ifdef IM_ENABLE_USER_HTTP
     std::unique_ptr<UserHttpController> user_http_controller_;
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_HTTP
+    std::unique_ptr<MessageHttpController> message_http_controller_;
 #endif
 };
 

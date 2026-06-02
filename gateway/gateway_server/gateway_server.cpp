@@ -61,8 +61,11 @@
 #include "httplib.h"
 #include <nlohmann/json.hpp>
 
-#ifdef IM_ENABLE_USER_HTTP
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP)
 #include <odb/pgsql/database.hxx>
+#endif
+
+#ifdef IM_ENABLE_USER_HTTP
 #include "../user_http_controller.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "../../services/user/password_hasher.hpp"
@@ -83,6 +86,29 @@ void register_user_http_routes_on_server(httplib::Server& server,
     server.Get("/api/v1/auth/info",
         [&](const httplib::Request& req, httplib::Response& res) {
             controller.handle_profile(req, res);
+        });
+}
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_HTTP
+#include "../message_http_controller.hpp"
+#include "../../services/message/message_service.hpp"
+
+// Free function: registers message HTTP routes on an httplib server.
+// Exposed as a unit seam for testing (see test/gateway_message/).
+void register_message_http_routes_on_server(httplib::Server& server,
+                                            im::gateway::MessageHttpController& controller) {
+    server.Post("/api/v1/messages/send",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_send(req, res);
+        });
+    server.Get("/api/v1/messages/history",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_history(req, res);
+        });
+    server.Get("/api/v1/messages/offline",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_offline(req, res);
         });
 }
 #endif
@@ -337,9 +363,9 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         init_msg_parser();
         init_msg_processor();
 
-#ifdef IM_ENABLE_USER_HTTP
-        // 步骤4: 初始化User HTTP Controller。必须早于 init_http_server()，
-        // 否则用户路由会晚于 HTTP catch-all 注册并被截获。
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP)
+        // 步骤4: 初始化ODB数据库连接 (shared between User and Message HTTP controllers)。
+        // 必须早于 init_http_server()，否则专用路由会晚于 HTTP catch-all 注册。
         try {
             if (!odb_db_) {
                 ConfigManager cfg(config_path_);
@@ -351,12 +377,31 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
                 odb_db_ = std::make_shared<odb::pgsql::database>(
                     pg_user, pg_pass, pg_dbname, pg_host, pg_port);
             }
+        } catch (const std::exception& e) {
+            server_logger->error("Failed to initialize ODB database: {}", e.what());
+            throw;
+        }
+#endif
+
+#ifdef IM_ENABLE_USER_HTTP
+        try {
             auto hasher = std::make_unique<im::service::user::PasswordHasher>();
             auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
             user_http_controller_ = std::make_unique<UserHttpController>(user_svc, auth_mgr_);
             server_logger->info("User HTTP controller initialized");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize User HTTP controller: {}", e.what());
+            throw;
+        }
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_HTTP
+        try {
+            auto msg_svc = std::make_shared<im::service::message::MessageService>(odb_db_);
+            message_http_controller_ = std::make_unique<MessageHttpController>(msg_svc, auth_mgr_);
+            server_logger->info("Message HTTP controller initialized");
+        } catch (const std::exception& e) {
+            server_logger->error("Failed to initialize Message HTTP controller: {}", e.what());
             throw;
         }
 #endif
@@ -760,6 +805,11 @@ void GatewayServer::init_http_server(uint16_t port) {
         register_user_http_routes();
 #endif
 
+#ifdef IM_ENABLE_MESSAGE_HTTP
+        // 消息路由同样必须早于 catch-all 注册。
+        register_message_http_routes();
+#endif
+
         http_server_->Get(".*", http_callback);
         http_server_->Post(".*", http_callback);
         http_server_->bind_to_port("0.0.0.0", port);
@@ -812,6 +862,18 @@ void GatewayServer::register_user_http_routes() {
     register_user_http_routes_on_server(*http_server_, *user_http_controller_);
     server_logger->info("User HTTP endpoints registered "
         "(/api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/info)");
+}
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_HTTP
+void GatewayServer::register_message_http_routes() {
+    if (!message_http_controller_) {
+        server_logger->warn("Message HTTP controller not available — skipping route registration");
+        return;
+    }
+    register_message_http_routes_on_server(*http_server_, *message_http_controller_);
+    server_logger->info("Message HTTP endpoints registered "
+        "(/api/v1/messages/send, /api/v1/messages/history, /api/v1/messages/offline)");
 }
 #endif
 
