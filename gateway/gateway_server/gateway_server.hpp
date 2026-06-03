@@ -50,6 +50,20 @@ namespace im::gateway { class MessageWsHandler; }
 namespace im::gateway { class PushService; }
 #endif
 
+#ifdef IM_ENABLE_FRIEND_HTTP
+namespace im::service::friend_ { class FriendService; }
+namespace im::gateway { class FriendHttpController; }
+#endif
+
+#ifdef IM_ENABLE_GROUP_HTTP
+namespace im::service::group { class GroupService; }
+namespace im::gateway { class GroupHttpController; }
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+namespace im::service::group { class GroupMessageService; }
+namespace im::gateway { class GroupMessageHttpController; }
+#endif
 
 namespace im {
 namespace gateway {
@@ -125,6 +139,18 @@ private:
     void register_message_http_routes();
 #endif
 
+#ifdef IM_ENABLE_FRIEND_HTTP
+    void register_friend_http_routes();
+#endif
+
+#ifdef IM_ENABLE_GROUP_HTTP
+    void register_group_http_routes();
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+    void register_group_message_http_routes();
+#endif
+
     // WebSocket连接事件处理
     void on_websocket_connect(SessionPtr session);
     void on_websocket_disconnect(SessionPtr session);
@@ -160,7 +186,7 @@ private:
     std::string psc_path_;     // platform_strategy_config_path_
     std::string config_path_;  // gateway/router/auth shared config path for the MVP
 
-#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP)
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
     // ODB database instance for service integration
     std::shared_ptr<odb::pgsql::database> odb_db_;
 #endif
@@ -173,6 +199,18 @@ private:
     std::unique_ptr<MessageHttpController> message_http_controller_;
     std::unique_ptr<MessageWsHandler> message_ws_handler_;
     std::unique_ptr<PushService> push_service_;
+#endif
+
+#ifdef IM_ENABLE_FRIEND_HTTP
+    std::unique_ptr<FriendHttpController> friend_http_controller_;
+#endif
+
+#ifdef IM_ENABLE_GROUP_HTTP
+    std::unique_ptr<GroupHttpController> group_http_controller_;
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+    std::unique_ptr<GroupMessageHttpController> group_message_http_controller_;
 #endif
 };
 

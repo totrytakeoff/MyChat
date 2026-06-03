@@ -61,7 +61,7 @@
 #include "httplib.h"
 #include <nlohmann/json.hpp>
 
-#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP)
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
 #include <odb/pgsql/database.hxx>
 #endif
 
@@ -115,6 +115,85 @@ void register_message_http_routes_on_server(httplib::Server& server,
 }
 #endif
 
+#ifdef IM_ENABLE_FRIEND_HTTP
+#include "../friend_http_controller.hpp"
+#include "../../services/friend/friend_service.hpp"
+#include "../../services/user/password_hasher.hpp"
+#include "../../services/user/user_service.hpp"
+
+void register_friend_http_routes_on_server(httplib::Server& server,
+                                           im::gateway::FriendHttpController& controller) {
+    server.Post("/api/v1/friends/request",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_send_request(req, res);
+        });
+    server.Post("/api/v1/friends/respond",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_respond_request(req, res);
+        });
+    server.Get("/api/v1/friends",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_list_friends(req, res);
+        });
+    server.Get("/api/v1/friends/pending",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_pending_requests(req, res);
+        });
+}
+#endif
+
+#ifdef IM_ENABLE_GROUP_HTTP
+#include "../group_http_controller.hpp"
+#include "../../services/group/group_service.hpp"
+#include "../../services/user/password_hasher.hpp"
+#include "../../services/user/user_service.hpp"
+
+void register_group_http_routes_on_server(httplib::Server& server,
+                                          im::gateway::GroupHttpController& controller) {
+    server.Post("/api/v1/groups",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_create_group(req, res);
+        });
+    server.Post("/api/v1/groups/join",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_join_group(req, res);
+        });
+    server.Post("/api/v1/groups/leave",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_leave_group(req, res);
+        });
+    server.Get("/api/v1/groups",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_list_groups(req, res);
+        });
+    server.Get("/api/v1/groups/members",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_list_members(req, res);
+        });
+}
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+#include "../group_message_http_controller.hpp"
+#include "../push_service.hpp"
+#include "../../services/group/group_message_service.hpp"
+#include "../../services/group/group_service.hpp"
+#include "../../services/user/password_hasher.hpp"
+#include "../../services/user/user_service.hpp"
+
+void register_group_message_http_routes_on_server(
+    httplib::Server& server,
+    im::gateway::GroupMessageHttpController& controller) {
+    server.Post("/api/v1/groups/messages/send",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_send_message(req, res);
+        });
+    server.Get("/api/v1/groups/messages/history",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_get_history(req, res);
+        });
+}
+#endif
 
 namespace im {
 namespace gateway {
@@ -365,7 +444,7 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         init_msg_parser();
         init_msg_processor();
 
-#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP)
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
         // 步骤4: 初始化ODB数据库连接 (shared between User and Message HTTP controllers)。
         // 必须早于 init_http_server()，否则专用路由会晚于 HTTP catch-all 注册。
         try {
@@ -410,6 +489,47 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         }
 #endif
 
+#ifdef IM_ENABLE_FRIEND_HTTP
+        try {
+            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
+            auto friend_svc = std::make_shared<im::service::friend_::FriendService>(odb_db_, user_svc);
+            friend_http_controller_ = std::make_unique<FriendHttpController>(friend_svc, auth_mgr_);
+            server_logger->info("Friend HTTP controller initialized");
+        } catch (const std::exception& e) {
+            server_logger->error("Failed to initialize Friend HTTP controller: {}", e.what());
+            throw;
+        }
+#endif
+
+#ifdef IM_ENABLE_GROUP_HTTP
+        try {
+            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
+            auto group_svc = std::make_shared<im::service::group::GroupService>(odb_db_, user_svc);
+            group_http_controller_ = std::make_unique<GroupHttpController>(group_svc, auth_mgr_);
+            server_logger->info("Group HTTP controller initialized");
+        } catch (const std::exception& e) {
+            server_logger->error("Failed to initialize Group HTTP controller: {}", e.what());
+            throw;
+        }
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+        try {
+            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
+            auto group_svc = std::make_shared<im::service::group::GroupService>(odb_db_, user_svc);
+            auto group_msg_svc = std::make_shared<im::service::group::GroupMessageService>(odb_db_, user_svc, group_svc);
+            group_message_http_controller_ = std::make_unique<GroupMessageHttpController>(
+                group_svc, group_msg_svc, auth_mgr_);
+            server_logger->info("Group Message HTTP controller initialized");
+        } catch (const std::exception& e) {
+            server_logger->error("Failed to initialize Group Message HTTP controller: {}", e.what());
+            throw;
+        }
+#endif
+
         // 步骤5: 初始化网络服务器。HTTP初始化阶段会先注册专用路由，再注册 catch-all。
         init_ws_server(ws_port);
         init_http_server(http_port);
@@ -432,6 +552,12 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Message WS handler: {}", e.what());
             throw;
+        }
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+        if (group_message_http_controller_) {
+            group_message_http_controller_->set_push_service(push_service_.get());
         }
 #endif
 
@@ -832,6 +958,21 @@ void GatewayServer::init_http_server(uint16_t port) {
         register_message_http_routes();
 #endif
 
+#ifdef IM_ENABLE_FRIEND_HTTP
+        // 好友路由同样必须早于 catch-all 注册。
+        register_friend_http_routes();
+#endif
+
+#ifdef IM_ENABLE_GROUP_HTTP
+        // 群组路由同样必须早于 catch-all 注册。
+        register_group_http_routes();
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+        // 群组消息路由同样必须早于 catch-all 注册。
+        register_group_message_http_routes();
+#endif
+
         http_server_->Get(".*", http_callback);
         http_server_->Post(".*", http_callback);
         http_server_->bind_to_port("0.0.0.0", port);
@@ -896,6 +1037,44 @@ void GatewayServer::register_message_http_routes() {
     register_message_http_routes_on_server(*http_server_, *message_http_controller_);
     server_logger->info("Message HTTP endpoints registered "
         "(/api/v1/messages/send, /api/v1/messages/history, /api/v1/messages/offline)");
+}
+#endif
+
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+void GatewayServer::register_group_message_http_routes() {
+    if (!group_message_http_controller_) {
+        server_logger->warn("Group Message HTTP controller not available — skipping route registration");
+        return;
+    }
+    register_group_message_http_routes_on_server(*http_server_, *group_message_http_controller_);
+    server_logger->info("Group Message HTTP endpoints registered "
+        "(/api/v1/groups/messages/send, /api/v1/groups/messages/history)");
+}
+#endif
+
+#ifdef IM_ENABLE_GROUP_HTTP
+void GatewayServer::register_group_http_routes() {
+    if (!group_http_controller_) {
+        server_logger->warn("Group HTTP controller not available — skipping route registration");
+        return;
+    }
+    register_group_http_routes_on_server(*http_server_, *group_http_controller_);
+    server_logger->info("Group HTTP endpoints registered "
+        "(/api/v1/groups, /api/v1/groups/join, /api/v1/groups/leave, "
+        "/api/v1/groups, /api/v1/groups/members)");
+}
+#endif
+
+#ifdef IM_ENABLE_FRIEND_HTTP
+void GatewayServer::register_friend_http_routes() {
+    if (!friend_http_controller_) {
+        server_logger->warn("Friend HTTP controller not available — skipping route registration");
+        return;
+    }
+    register_friend_http_routes_on_server(*http_server_, *friend_http_controller_);
+    server_logger->info("Friend HTTP endpoints registered "
+        "(/api/v1/friends/request, /api/v1/friends/respond, "
+        "/api/v1/friends, /api/v1/friends/pending)");
 }
 #endif
 

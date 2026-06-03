@@ -18,6 +18,7 @@
 #include <database/redis/redis_mgr.hpp>
 
 #include <gateway/push_service.hpp>
+#include <gateway/fanout_policies.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
 #include <message_service.hpp>
 #include <utils/log_manager.hpp>
@@ -28,6 +29,8 @@ using im::gateway::AllSessionsFanoutPolicy;
 using im::gateway::ConnectionManager;
 using im::gateway::DeviceSessionInfo;
 using im::gateway::FanoutPolicy;
+using im::gateway::NewestSessionFanoutPolicy;
+using im::gateway::PlatformFilterFanoutPolicy;
 using im::gateway::PushService;
 using im::db::RedisConfig;
 using im::db::redis_manager;
@@ -50,6 +53,18 @@ std::string config_path() {
 }
 
 const char* kConnStr = "host=127.0.0.1 port=5432 dbname=mychat user=mychat password=mychat-dev-pass";
+
+DeviceSessionInfo make_session(const std::string& sid,
+                                const std::string& device,
+                                const std::string& platform,
+                                std::chrono::system_clock::time_point connect_time) {
+    DeviceSessionInfo info;
+    info.session_id = sid;
+    info.device_id = device;
+    info.platform = platform;
+    info.connect_time = connect_time;
+    return info;
+}
 
 class PushServiceTest : public ::testing::Test {
 protected:
@@ -109,25 +124,21 @@ protected:
     std::unique_ptr<PushService> push_service_;
 };
 
-TEST_F(PushServiceTest, NullDepsReturnsSilently) {
-    // All deps are nullptr.
-    push_service_ = std::make_unique<PushService>(nullptr, nullptr, nullptr);
+// --- PushService integration tests ---
 
-    // Should not crash or throw.
+TEST_F(PushServiceTest, NullDepsReturnsSilently) {
+    push_service_ = std::make_unique<PushService>(nullptr, nullptr, nullptr);
     push_service_->push_to_user("task8-test-user", 1, "hello");
 
-    // Also test with msg_service present but conn_mgr/ws_server null.
     push_service_.reset();
     push_service_ = std::make_unique<PushService>(nullptr, nullptr, msg_service_);
     push_service_->push_to_user("task8-test-user", 1, "hello");
 }
 
 TEST_F(PushServiceTest, NoActiveSessions) {
-    // ConnectionManager with no sessions, WebSocketServer is nullptr.
     conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
     push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_service_);
 
-    // Should not crash; message stays undelivered.
     auto result = msg_service_->send_text_message({
         .sender_uid = "task8-test-push-sender",
         .receiver_uid = "task8-test-push-rec",
@@ -140,7 +151,6 @@ TEST_F(PushServiceTest, NoActiveSessions) {
 
     push_service_->push_to_user("task8-test-push-rec", result.data.msg_id, "test push");
 
-    // Verify message is NOT delivered (no sessions to push to).
     auto msgs = msg_service_->pull_offline("task8-test-push-rec", INT64_MAX, 10);
     bool found = false;
     for (const auto& m : msgs) {
@@ -152,20 +162,15 @@ TEST_F(PushServiceTest, NoActiveSessions) {
     EXPECT_TRUE(found);
 }
 
+// --- FanoutPolicy unit tests ---
+
 TEST_F(PushServiceTest, AllSessionsFanoutSelectsAll) {
     AllSessionsFanoutPolicy policy;
-    std::vector<DeviceSessionInfo> sessions;
-    DeviceSessionInfo s1;
-    s1.session_id = "sess-1";
-    s1.device_id = "dev-1";
-    s1.platform = "web";
-    sessions.push_back(s1);
-
-    DeviceSessionInfo s2;
-    s2.session_id = "sess-2";
-    s2.device_id = "dev-2";
-    s2.platform = "mobile";
-    sessions.push_back(s2);
+    auto now = std::chrono::system_clock::now();
+    std::vector<DeviceSessionInfo> sessions = {
+        make_session("sess-1", "dev-1", "web", now),
+        make_session("sess-2", "dev-2", "mobile", now),
+    };
 
     auto selected = policy.select_sessions(sessions);
     ASSERT_EQ(selected.size(), 2u);
@@ -173,39 +178,101 @@ TEST_F(PushServiceTest, AllSessionsFanoutSelectsAll) {
     EXPECT_EQ(selected[1], "sess-2");
 }
 
-// Custom fanout policy that only selects sessions matching a given platform.
-class PlatformFilterFanoutPolicy : public FanoutPolicy {
-public:
-    explicit PlatformFilterFanoutPolicy(const std::string& platform)
-        : target_platform_(platform) {}
+TEST_F(PushServiceTest, PlatformFilterSingleMatch) {
+    PlatformFilterFanoutPolicy policy({"web"});
+    auto now = std::chrono::system_clock::now();
+    std::vector<DeviceSessionInfo> sessions = {
+        make_session("web-sess", "dev-1", "web", now),
+        make_session("mobile-sess", "dev-2", "mobile", now),
+    };
 
-    std::vector<std::string> select_sessions(
-        const std::vector<DeviceSessionInfo>& sessions) override
-    {
-        std::vector<std::string> ids;
-        for (const auto& s : sessions) {
-            if (s.platform == target_platform_) {
-                ids.push_back(s.session_id);
-            }
-        }
-        return ids;
-    }
+    auto selected = policy.select_sessions(sessions);
+    ASSERT_EQ(selected.size(), 1u);
+    EXPECT_EQ(selected[0], "web-sess");
+}
 
-private:
-    std::string target_platform_;
-};
+TEST_F(PushServiceTest, PlatformFilterMultiplePlatforms) {
+    PlatformFilterFanoutPolicy policy({"web", "desktop"});
+    auto now = std::chrono::system_clock::now();
+    std::vector<DeviceSessionInfo> sessions = {
+        make_session("web-sess", "dev-1", "web", now),
+        make_session("mobile-sess", "dev-2", "mobile", now),
+        make_session("desktop-sess", "dev-3", "desktop", now),
+    };
+
+    auto selected = policy.select_sessions(sessions);
+    ASSERT_EQ(selected.size(), 2u);
+    EXPECT_EQ(selected[0], "web-sess");
+    EXPECT_EQ(selected[1], "desktop-sess");
+}
+
+TEST_F(PushServiceTest, PlatformFilterNoMatch) {
+    PlatformFilterFanoutPolicy policy({"tablet"});
+    auto now = std::chrono::system_clock::now();
+    std::vector<DeviceSessionInfo> sessions = {
+        make_session("web-sess", "dev-1", "web", now),
+        make_session("mobile-sess", "dev-2", "mobile", now),
+    };
+
+    auto selected = policy.select_sessions(sessions);
+    EXPECT_TRUE(selected.empty());
+}
+
+TEST_F(PushServiceTest, PlatformFilterEmptyAllowedList) {
+    PlatformFilterFanoutPolicy policy(std::vector<std::string>{});
+    auto now = std::chrono::system_clock::now();
+    std::vector<DeviceSessionInfo> sessions = {
+        make_session("web-sess", "dev-1", "web", now),
+    };
+
+    auto selected = policy.select_sessions(sessions);
+    EXPECT_TRUE(selected.empty());
+}
+
+TEST_F(PushServiceTest, NewestSessionSelectsLatest) {
+    NewestSessionFanoutPolicy policy;
+    auto t1 = std::chrono::system_clock::now();
+    auto t2 = t1 + std::chrono::seconds(10);
+    auto t3 = t1 + std::chrono::seconds(20);
+    std::vector<DeviceSessionInfo> sessions = {
+        make_session("old-sess", "dev-1", "web", t1),
+        make_session("mid-sess", "dev-2", "mobile", t2),
+        make_session("new-sess", "dev-3", "desktop", t3),
+    };
+
+    auto selected = policy.select_sessions(sessions);
+    ASSERT_EQ(selected.size(), 1u);
+    EXPECT_EQ(selected[0], "new-sess");
+}
+
+TEST_F(PushServiceTest, NewestSessionSingleSession) {
+    NewestSessionFanoutPolicy policy;
+    auto now = std::chrono::system_clock::now();
+    std::vector<DeviceSessionInfo> sessions = {
+        make_session("only-sess", "dev-1", "web", now),
+    };
+
+    auto selected = policy.select_sessions(sessions);
+    ASSERT_EQ(selected.size(), 1u);
+    EXPECT_EQ(selected[0], "only-sess");
+}
+
+TEST_F(PushServiceTest, NewestSessionNoSessions) {
+    NewestSessionFanoutPolicy policy;
+    std::vector<DeviceSessionInfo> sessions;
+
+    auto selected = policy.select_sessions(sessions);
+    EXPECT_TRUE(selected.empty());
+}
 
 TEST_F(PushServiceTest, CustomFanoutPolicyInjection) {
-    // Create a PushService with a custom fanout policy.
     conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
     push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_service_);
 
-    auto custom_policy = std::make_unique<PlatformFilterFanoutPolicy>("web");
-    FanoutPolicy* raw_policy = custom_policy.get();
+    auto custom_policy = std::make_unique<PlatformFilterFanoutPolicy>(
+        std::vector<std::string>{"web"});
     push_service_->set_fanout_policy(std::move(custom_policy));
 
-    // Verify the policy was set (the PushService won't crash with it).
-    // Can't actually push without live sessions, so just verify no crash.
     auto result = msg_service_->send_text_message({
         .sender_uid = "task8-test-custom-sender",
         .receiver_uid = "task8-test-custom-rec",
@@ -217,22 +284,6 @@ TEST_F(PushServiceTest, CustomFanoutPolicyInjection) {
     ASSERT_TRUE(result.ok);
 
     push_service_->push_to_user("task8-test-custom-rec", result.data.msg_id, "custom policy test");
-
-    // Verify independent test of the custom policy itself.
-    std::vector<DeviceSessionInfo> sessions;
-    DeviceSessionInfo web_sess;
-    web_sess.session_id = "web-sess";
-    web_sess.platform = "web";
-    sessions.push_back(web_sess);
-
-    DeviceSessionInfo mobile_sess;
-    mobile_sess.session_id = "mobile-sess";
-    mobile_sess.platform = "mobile";
-    sessions.push_back(mobile_sess);
-
-    auto selected = raw_policy->select_sessions(sessions);
-    ASSERT_EQ(selected.size(), 1u);
-    EXPECT_EQ(selected[0], "web-sess");
 }
 
 } // anonymous namespace

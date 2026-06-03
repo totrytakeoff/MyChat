@@ -26,6 +26,8 @@ option(MYCHAT_BUILD_GATEWAY "Build gateway targets that require Redis/JWT/httpli
 option(MYCHAT_BUILD_SERVICES "Build service targets" OFF)
 option(MYCHAT_BUILD_USER_SERVICE "Build User Service target (requires ODB)" ON)
 option(MYCHAT_BUILD_MESSAGE_SERVICE "Build Message Service target (requires ODB)" ON)
+option(MYCHAT_BUILD_FRIEND_SERVICE "Build Friend Service target (requires ODB and User Service)" ON)
+option(MYCHAT_BUILD_GROUP_SERVICE "Build Group Service target (requires ODB and User Service)" ON)
 option(MYCHAT_BUILD_CODEC_SERVICE "Build legacy codec gRPC service target (requires gRPC)" OFF)
 option(MYCHAT_BUILD_LEGACY_GATEWAY_TESTS "Build older gateway integration tests that still need cleanup" OFF)
 option(MYCHAT_BUILD_LEGACY_UNIT_TESTS "Build older unit tests pending cleanup" OFF)

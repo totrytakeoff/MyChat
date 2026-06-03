@@ -50,46 +50,35 @@ else()
     message(STATUS "User service is disabled (MYCHAT_BUILD_USER_SERVICE=OFF).")
 endif()
 
-# 好友服务库
-file(GLOB_RECURSE FRIEND_SOURCES "friend/*.cpp")
-if(FRIEND_SOURCES)
-    add_library(im_friend_service STATIC ${FRIEND_SOURCES})
-    
-    target_link_libraries(im_friend_service
-        PUBLIC
-            im::proto
-            im::database
-            im::utils
-    )
-    
-    target_include_directories(im_friend_service
-        PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/friend
-    )
-    
-    # 创建命名空间别名
-    add_library(im::friend_service ALIAS im_friend_service)
+# 好友服务 -- gated on MYCHAT_BUILD_FRIEND_SERVICE and ODB persistence layer.
+if(MYCHAT_BUILD_FRIEND_SERVICE AND TARGET im::friend_odb AND TARGET im::user_service)
+    add_subdirectory(friend)
+    message(STATUS "Friend service (im_friend_service) is enabled.")
+elseif(MYCHAT_BUILD_FRIEND_SERVICE)
+    if(NOT TARGET im::friend_odb)
+        message(STATUS "Friend service is disabled (MYCHAT_BUILD_FRIEND_SERVICE=ON but im::friend_odb not available).")
+    endif()
+    if(NOT TARGET im::user_service)
+        message(STATUS "Friend service is disabled (MYCHAT_BUILD_FRIEND_SERVICE=ON but im::user_service not available).")
+    endif()
+else()
+    message(STATUS "Friend service is disabled (MYCHAT_BUILD_FRIEND_SERVICE=OFF).")
 endif()
 
-# 群组服务库
-# add_library(im_group_service STATIC
-#    services/group/*.cpp
-# )
-#
-# target_link_libraries(im_group_service
-#    PUBLIC
-#        im::proto
-#        im::database
-#        im::utils
-# )
-#
-# target_include_directories(im_group_service
-#    PUBLIC
-#        ${CMAKE_CURRENT_SOURCE_DIR}/group
-# )
-#
-# # 创建命名空间别名
-# add_library(im::group_service ALIAS im_group_service)
+# 群组服务库 — gated on MYCHAT_BUILD_GROUP_SERVICE and ODB persistence layer.
+if(MYCHAT_BUILD_GROUP_SERVICE AND TARGET im::group_odb AND TARGET im::user_service)
+    add_subdirectory(group)
+    message(STATUS "Group service (im_group_service) is enabled.")
+elseif(MYCHAT_BUILD_GROUP_SERVICE)
+    if(NOT TARGET im::group_odb)
+        message(STATUS "Group service is disabled (MYCHAT_BUILD_GROUP_SERVICE=ON but im::group_odb not available).")
+    endif()
+    if(NOT TARGET im::user_service)
+        message(STATUS "Group service is disabled (MYCHAT_BUILD_GROUP_SERVICE=ON but im::user_service not available).")
+    endif()
+else()
+    message(STATUS "Group service is disabled (MYCHAT_BUILD_GROUP_SERVICE=OFF).")
+endif()
 
 # 消息服务库 — gated on MYCHAT_BUILD_MESSAGE_SERVICE and ODB persistence layer.
 if(MYCHAT_BUILD_MESSAGE_SERVICE AND TARGET im::message_odb)

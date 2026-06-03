@@ -61,6 +61,11 @@ else()
     message(STATUS "PushService disabled (im::message_service not available)")
 endif()
 
+if(TARGET im::message_service)
+    target_sources(im_gateway_core PRIVATE fanout_policies.cpp)
+    message(STATUS "Fanout policies enabled (im::message_service available)")
+endif()
+
 # Message WS Handler — 仅当 Message Service 可用时编译和链接
 if(TARGET im::message_service)
     target_sources(im_gateway_core PRIVATE message_ws_handler.cpp)
@@ -68,6 +73,34 @@ if(TARGET im::message_service)
     message(STATUS "Message WS handler enabled (im::message_service available)")
 else()
     message(STATUS "Message WS handler disabled (im::message_service not available)")
+endif()
+# Friend HTTP Controller — 仅当 Friend Service 可用时编译和链接
+if(TARGET im::friend_service)
+    target_sources(im_gateway_core PRIVATE friend_http_controller.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::friend_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_FRIEND_HTTP)
+    message(STATUS "Friend HTTP controller enabled (im::friend_service available)")
+else()
+    message(STATUS "Friend HTTP controller disabled (im::friend_service not available)")
+endif()
+
+# Group HTTP Controller — 仅当 Group Service 可用时编译和链接
+if(TARGET im::group_service)
+    target_sources(im_gateway_core PRIVATE group_http_controller.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::group_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_GROUP_HTTP)
+    message(STATUS "Group HTTP controller enabled (im::group_service available)")
+else()
+    message(STATUS "Group HTTP controller disabled (im::group_service not available)")
+endif()
+
+# Group Message HTTP Controller — 仅当 Group Service 和 PushService 可用时编译和链接
+if(TARGET im::group_service AND TARGET im::message_service)
+    target_sources(im_gateway_core PRIVATE group_message_http_controller.cpp)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_GROUP_MESSAGE_HTTP)
+    message(STATUS "Group Message HTTP controller enabled (im::group_service + im::message_service available)")
+else()
+    message(STATUS "Group Message HTTP controller disabled")
 endif()
 
 add_library(im_gateway_auth STATIC

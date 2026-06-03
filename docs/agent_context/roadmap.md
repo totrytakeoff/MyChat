@@ -53,7 +53,8 @@ Status: complete.
 ## Phase F: Message Service MVP
 
 Status: in progress (persistence core + HTTP integration + WebSocket send/ack + online
-         delivery complete; Push Service fanout pending).
+         delivery + fanout policies + group multi-recipient fanout complete;
+         standalone Push microservice and service-call strategy pending).
 
 - ✅ Persistence core (task003): `services/message` target, ODB-backed message
   persistence, send one-to-one text, offline message pull, conversation history
@@ -72,15 +73,41 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   MessageWsHandler into dedicated PushService class with pluggable
   FanoutPolicy. Default AllSessionsFanoutPolicy preserves existing behavior.
   MessageWsHandler delegates to PushService::push_to_user.
-- [ ] Multi-recipient fanout for group messages and device-preference policies.
-- Exit criteria: Message Service persistence tests pass; Gateway HTTP message
+- [x] Production fanout policies: PlatformFilterFanoutPolicy (platform-based
+  session filtering) and NewestSessionFanoutPolicy (select single newest
+  session). PushServiceTest expanded from 4 to 11 test cases.
+- [x] Multi-recipient fanout for group messages via `PushService::push_to_user`
+  per group member.
+- Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP message
   API passes; Gateway can deliver message to online user; offline message is
-  persisted and pullable.
+  persisted and pullable. Standalone Push service boundary and service-call
+  strategy are still open.
 
-## Phase G: Friend/Group/Push MVPs
+## Phase G: Friend Service MVP
 
-Status: future work.
+Status: complete.
 
-- Friend Service: friend requests, accept/reject, contact list.
-- Group Service: group create/join/member list.
-- Push Service: online fanout and deferred delivery.
+- ✅ Friend Service: friend requests, accept/reject, contact list, pending list.
+- ✅ Persistence model (im_friend_odb), repository, FriendService, Gateway HTTP
+  controller compiled and tested.
+- ✅ API contract: send_request rejects EMPTY_UID, SELF_REQUEST,
+  TARGET_NOT_FOUND (404), ALREADY_EXISTS (409). respond_to_request validates
+  FORBIDDEN (403), NOT_PENDING (400), NOT_FOUND (404).
+- ✅ FriendServiceCoreTest: 14 test cases.
+- ✅ GatewayFriendHttpTest: 16 test cases (including route-layer integration).
+- ✅ Deterministic cleanup with test-prefixed UIDs; no DROP TABLE.
+
+## Phase H: Group Service MVP
+
+Status: complete.
+
+- ✅ ODB schema for group metadata and group membership (`services/odb/group.hpp`).
+- ✅ GroupRepository — ODB-backed CRUD for groups and members.
+- ✅ GroupService — create group, join/leave, list members.
+- ✅ Service-level tests (GroupServiceCoreTest + GroupMessageServiceTest: 17 test cases).
+- ✅ Gateway HTTP controller (create group, join, leave, list groups, list members).
+- ✅ Gateway HTTP integration tests (GatewayGroupHttpTest: 23 test cases).
+- ✅ GroupMessage ODB model, GroupMessageService for group message persistence.
+- ✅ GroupMessage HTTP controller (send, history) with tests (15 test cases).
+- ✅ Multi-recipient group message fanout via PushService::push_to_user per member.
+- ✅ Full ODB-enabled baseline: 14/14 test suites passing.

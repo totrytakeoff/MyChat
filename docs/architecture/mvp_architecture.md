@@ -66,7 +66,7 @@ Gateway Service
   |-- Message parser / protobuf codec
   |-- Router manager
   |
-  | service calls
+  | service calls (in-process for MVP)
   v
 +----------------+     +------------------+
 | User Service   |     | Message Service  |
@@ -84,6 +84,8 @@ Shared dependencies:
   PostgreSQL
   Protobuf/gRPC contracts
 ```
+
+> **MVP Decision (2026-06-03):** All backend services are linked as static libraries directly into the gateway binary. Inter-service calls are in-process function calls, not network RPC. This was chosen deliberately to ship working MVP features without blocking on gRPC/codec regeneration. Extraction into separate processes with gRPC boundaries is deferred until a concrete scalability need arises. The codec gRPC target (`MYCHAT_BUILD_CODEC_SERVICE`) remains OFF by default; stale generated codec files are not regenerated until service-split work begins.
 
 ## Service MVP Boundaries
 

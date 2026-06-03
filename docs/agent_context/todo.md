@@ -8,6 +8,15 @@ updated_by: coder
 
 ## Completed
 
+- [x] Group Service MVP - ODB schema (group + group_member), GroupRepository,
+  GroupService + GroupMessageService, 17 service-level tests (14 GroupServiceTest
+  cases + 3 GroupMessageServiceTest cases), Gateway HTTP controller + 23
+  integration tests (GatewayGroupHttpTest), GroupMessage ODB model + HTTP
+  controller (send/history) + 15 tests (GatewayGroupMessageHttpTest),
+  multi-recipient group message fanout via PushService. Full baseline: 14/14 suites.
+
+## Completed (Previous)
+
 - [x] Message Service persistence core (Task 003) - ODB-backed `im_messages`,
   validated direct text send, chronological conversation history, offline pull,
   and delivered/read marking.
@@ -27,19 +36,30 @@ updated_by: coder
   MessageWsHandler into dedicated PushService class with pluggable FanoutPolicy.
   Default AllSessionsFanoutPolicy preserves existing behavior. MessageWsHandler
   delegates to PushService::push_to_user. Independently testable PushService.
+- [x] Production fanout policies - PlatformFilterFanoutPolicy (select sessions
+  matching a set of allowed platforms) and NewestSessionFanoutPolicy (select
+  the single most recently connected session). PushServiceTest expanded from
+  4 to 11 test cases. ODB 9/9, no-ODB 2/2.
+- [x] Friend Service MVP - Friend persistence model, repository, service,
+  Gateway HTTP controller with focused tests (FriendServiceCoreTest 14 cases,
+  GatewayFriendHttpTest 16 cases). API contract documented: send_request
+  rejects EMPTY_UID, SELF_REQUEST, TARGET_NOT_FOUND, ALREADY_EXISTS;
+  respond_to_request validates FORBIDDEN/NOT_PENDING/NOT_FOUND. All Friend
+  HTTP routes registered before legacy catch-all.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) - Multi-recipient fanout, Push Service
-  as standalone microservice, and service-call strategy. Persistence core
-  (Task 003), Gateway HTTP integration (Task 004), WebSocket send/ack
-  (Task 006), online delivery (Task 007), and PushService with FanoutPolicy
-  (Task 008) are complete.
+- [ ] Message Service MVP (Phase F) - Push Service as standalone microservice
+  and service-call strategy. Persistence core (Task 003), Gateway HTTP
+  integration (Task 004), WebSocket send/ack (Task 006), online delivery
+  (Task 007), PushService with FanoutPolicy (Task 008), production fanout
+  policies, and multi-recipient fanout are complete.
 
 ## Next
 
-- [ ] Multi-recipient fanout for group messages and device-preference policies.
-- [ ] Regenerate codec/gRPC artifacts (prerequisite for Message Service inter-service calls, or decide to follow same direct-integration pattern).
+- [ ] Decide direct in-process integration vs regenerated codec/gRPC artifacts
+  for the remaining service-to-service boundary work.
+- [ ] Define the standalone Push Service contract and migration sequence.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.
 

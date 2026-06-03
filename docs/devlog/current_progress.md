@@ -47,6 +47,12 @@ Known working:
   `PushService` has a pluggable `FanoutPolicy` abstraction; the default
   `AllSessionsFanoutPolicy` pushes to all active sessions. `MessageWsHandler`
   delegates to `PushService` instead of owning the push loop directly.
+- FanoutPolicy production implementations added: `PlatformFilterFanoutPolicy`
+  selects sessions matching a set of allowed platforms (e.g., mobile-only);
+  `NewestSessionFanoutPolicy` selects the single most recently connected
+  session. Both live in `gateway/fanout_policies.hpp` and are gated behind
+  `im::message_service` availability. `PushServiceTest` expanded from 4 to 11
+  test cases covering all policies.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -129,8 +135,8 @@ Known working:
   - Conversation and offline queries use explicit `ORDER BY create_time`.
   - `MessageServiceCoreTest` covers send, validation, ordering, offline pull,
     delivered/read marking, and nonexistent-message rejection.
-  - Full ODB-enabled baseline: 6/6 suites passed. No-ODB build skips Message
-    Service targets cleanly.
+- Full ODB-enabled baseline: 9/9 suites passed. No-ODB build skips Message
+  Service and Friend Service targets cleanly.
 - Gateway Message HTTP integration (Task 004):
   - Added `MessageHttpController` with `handle_send`, `handle_history`, and
     `handle_offline`.
@@ -147,20 +153,45 @@ Known working:
     auto-delivery, and route-layer registration.
   - Full ODB-enabled baseline: 7/7 suites passed. No-ODB build skips Message
     HTTP targets cleanly.
+- Friend Service MVP stabilized with focused tests:
+  - `FriendServiceCoreTest` — 14 service-level tests covering send request,
+    empty/self reject, duplicate (pair + reverse) reject, target-only
+    accept/reject, non-pending reject, not-found, accepted friends list,
+    pending requests list, reject status, and empty list edge cases.
+  - `GatewayFriendHttpTest` — 16 Gateway HTTP tests covering missing/invalid
+    token, invalid JSON, missing fields, self-request, duplicate, forbidden,
+    not-found, pending list, friends list, route registration, and happy-path
+    send/respond/list flows.
+  - All four Friend HTTP routes (`/api/v1/friends/request`,
+    `/api/v1/friends/respond`, `/api/v1/friends`, `/api/v1/friends/pending`)
+    registered before legacy catch-all with route-layer integration test.
+  - Deterministic cleanup via test-prefixed UIDs; no DROP TABLE.
+  - ODB-enabled baseline when Friend MVP landed: 11/11 suites passed. No-ODB:
+    2/2 passed.
 
 ## In Progress
 
-- Message Service MVP (Phase F) is in progress. Persistence core, Gateway HTTP
-  integration, Gateway WebSocket send/ack, online delivery, and PushService
-  with FanoutPolicy extraction are complete; Push Service as standalone
-  microservice, multi-recipient fanout, and service-call strategy remain.
+- Message Service MVP (Phase F) is nearly complete. Persistence core, Gateway
+  HTTP integration, Gateway WebSocket send/ack, online delivery, PushService
+  with FanoutPolicy, production fanout policies (PlatformFilter,
+  NewestSession), and group multi-recipient fanout are complete. Push Service
+  as a standalone microservice and service-call strategy remain.
+- Friend Service MVP (Phase G) is complete. Persistence model, repository,
+  service, and Gateway HTTP controller have focused tests passing, API contract
+  documented with TARGET_NOT_FOUND validation and HTTP status mapping.
+- Group Service MVP (Phase H) is complete. ODB schema (group + group_member),
+  GroupRepository, GroupService, GroupMessageService service-level validation
+  tests (17 total cases in the group test binary), Gateway HTTP controller and
+  tests (23 cases), GroupMessage ODB model, message send/history HTTP
+  controller and tests (15 cases), and multi-recipient group message fanout via
+  PushService are all passing.
 
 ## Next Immediate Tasks
 
-1. Multi-recipient fanout for group messages and device-preference fanout
-   policies.
-2. Decide whether remaining Gateway-to-Message delivery should use the direct
-   integration pattern first or require codec/gRPC regeneration.
+1. Decide whether remaining service-to-service work should continue with the
+   direct in-process integration pattern first or require codec/gRPC
+   regeneration.
+2. Define the Push Service standalone boundary and implementation sequence.
 3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
@@ -171,21 +202,42 @@ Known working:
   enabling ODB builds. CMake fails at configure time if runtime is missing.
 - `pgsql_conn.hpp` RAII wrapper has pre-existing issues (string-ID handling,
   raw-pointer return). User Service bypasses it by using `odb::pgsql::database`
-  directly; issues will surface during Friend/Group service development.
+  directly; Friend and Group services follow the same direct database pattern.
+  Fix this wrapper only when a future task chooses to use it.
 - Existing `services/codec` generated files are stale. Regenerating gRPC/proto
   artifacts should be a deliberate phase, not an accidental side effect.
 - Old tests still contain references to removed dependencies and may fail if
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: multi-recipient fanout, Push Service as
-  standalone microservice, codec/gRPC decisions, and schema migration remain
-  future work. PushService with pluggable FanoutPolicy is complete.
+- Full Phase F is not complete: Push Service as standalone microservice,
+  codec/gRPC decisions, and schema migration remain future work. PushService
+  with pluggable FanoutPolicy, production fanout policies, and group
+  multi-recipient fanout are complete.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive
   transient failure on one run and passed on retry; this appears pre-existing
   and unrelated to Task 004.
+- Friend Service MVP tests are written and passing:
+  - FriendServiceCoreTest: 14 test cases covering send request, empty/self
+    reject, duplicate pair and reverse reject, target-only accept/reject,
+    non-pending reject, not-found reject, friends list, pending list, reject
+    status, empty list edge cases.
+  - GatewayFriendHttpTest: 16 test cases covering missing/invalid token,
+    invalid JSON, missing fields, self-request, duplicate, forbidden,
+    not-found, pending list, friends list, route registration, and happy-path
+    send/respond/list flows.
+  - Friend HTTP routes (POST /api/v1/friends/request, POST
+    /api/v1/friends/respond, GET /api/v1/friends, GET /api/v1/friends/pending)
+    are registered before legacy catch-all and covered by route-layer
+    integration test.
+  - Friend Service API contract documented: send_request rejects nonexistent
+    target_uid with `TARGET_NOT_FOUND` (HTTP 404). All error codes and
+    success responses documented in phase12 devlog.
+  - Both tests use test-prefixed UIDs for deterministic cleanup, no DROP TABLE.
+  - Full ODB-enabled baseline after Group MVP: 14/14 suites passed. No-ODB
+    build skips ODB-backed service targets cleanly (2/2).
 
 ## Documentation Index
 
@@ -204,6 +256,9 @@ Known working:
 - Gateway WebSocket send/ack: `docs/devlog/phase8_gateway_message_ws_ack.md`
 - Gateway online message delivery: `docs/devlog/phase9_gateway_online_delivery.md`
 - PushService with FanoutPolicy: `docs/devlog/phase10_push_service_fanout.md`
+- Fanout policies: `docs/devlog/phase11_fanout_policies.md`
+- Friend Service MVP: `docs/devlog/phase12_friend_service_mvp.md`
+- Group Service MVP: `docs/devlog/phase13_group_service_mvp.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
 - Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`
