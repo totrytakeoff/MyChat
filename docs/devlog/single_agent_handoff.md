@@ -169,9 +169,9 @@ Recently reconciled:
   insertion, GroupMessageService validates group/sender membership before
   persisting, and Friend/Group/GroupMessage tests clean generated UID/group
   rows without leaving orphan test data.
-- The remaining large architectural decision is not Friend/Group. It is the
-  standalone Push Service boundary and whether service calls should continue
-  direct in-process first or require codec/gRPC regeneration.
+- The selected next step is not Friend/Group. It is Task 009:
+  clean the codec/gRPC generation chain from canonical `common/proto` inputs
+  before standalone Push Service work.
 
 ## Verification Commands And Results
 
@@ -285,11 +285,10 @@ Useful latest task records:
 
 ## Recommended Next Work
 
-Recommended next task:
+Selected next task:
 
 ```text
-Plan the remaining Push/service-call architecture before coding the standalone
-Push Service.
+Clean the codec/gRPC generation chain before coding the standalone Push Service.
 ```
 
 Why this is the right next task:
@@ -298,32 +297,30 @@ Why this is the right next task:
 - Group message fanout currently calls `PushService::push_to_user` in-process
   per member, which is correct for the staged MVP but not yet a standalone Push
   microservice boundary.
-- `services/codec` generated gRPC/protobuf artifacts are stale and gated OFF;
-  regenerating them should be a deliberate architectural task, not accidental
-  churn.
+- `services/codec` generated gRPC/protobuf artifacts are split from the root
+  `generate_proto` target. They currently build when gRPC is available, but
+  they are not regenerated deterministically.
+- CMake selects vcpkg `protoc-29.3.0`; shell `protoc` is 34.1. Mixing those
+  would create incompatible checked-in generated files.
 - The next implementation choice affects service boundaries, build gating, and
   test strategy more than it affects a single controller.
 
 Suggested scope:
 
-- Audit current push paths: direct message WebSocket push, HTTP group-message
-  fanout, `PushService`, and `FanoutPolicy` implementations.
-- Decide and document the next boundary:
-  - continue direct in-process integration for one more small stage; or
-  - regenerate codec/gRPC artifacts and introduce explicit service-to-service
-    calls before standalone Push work.
-- If choosing direct in-process first, define the smallest standalone Push
-  Service skeleton that preserves current behavior and keeps tests focused.
-- If choosing codec/gRPC first, scope proto regeneration, CMake gating, and a
-  narrow compatibility test before any feature work.
+- Use `common/proto` as the only proto source tree.
+- Add deterministic gRPC plugin discovery and generation targets.
+- Make `generate_proto` cover both active protobuf and codec gRPC outputs.
+- Remove duplicated `services/codec/base.pb.*` from the active build path.
+- Keep `MYCHAT_BUILD_CODEC_SERVICE=OFF` default behavior unchanged.
+- Verify `MYCHAT_BUILD_CODEC_SERVICE=ON` still builds `im_codec_service`.
 
 Out of scope for the next task:
 
 - Do not redo Friend or Group MVP work.
 - Do not change Friend/Group public API contracts unless a failing test proves
   they are wrong.
-- Do not regenerate codec/gRPC artifacts unless that is the explicit chosen
-  next task.
+- Regenerate codec/gRPC artifacts only through the documented CMake target and
+  only with the CMake-selected vcpkg `protoc`.
 - Do not introduce a broad Push microservice rewrite without a written boundary
   and focused test plan.
 - Do not change `MessageWsHandler` ack behavior.
@@ -336,13 +333,13 @@ Out of scope for the next task:
 
 Recommended sequence:
 
-1. Push/service-call architecture decision.
-2. Smallest standalone Push Service skeleton or codec/gRPC regeneration slice,
-   depending on the decision.
-3. Focused tests proving direct-message push and group-message fanout preserve
+1. Codec/gRPC generation chain cleanup from canonical `common/proto` inputs.
+2. Focused codec explicit-enable build verification.
+3. Standalone Push Service boundary and migration plan.
+4. Focused tests proving direct-message push and group-message fanout preserve
    current behavior.
-4. Redis connection pool before performance/load work.
-5. Schema migration framework before broad persistence evolution.
+5. Redis connection pool before performance/load work.
+6. Schema migration framework before broad persistence evolution.
 
 ## Known Risks
 
@@ -389,17 +386,17 @@ Current reliable state:
 - Friend Service/Gateway Friend HTTP compile, link, and pass focused tests.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
-- Working tree is dirty with previous agent changes. Do not revert unrelated
-  files. Do not delete any nested fanout_policies.cpp.cpp... souvenir file if
-  one appears.
+- Current feature snapshot is committed at `e076fe6`. Do not delete any nested
+  fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Plan the remaining Push/service-call architecture before coding standalone Push.
+Clean the codec/gRPC generation chain before coding standalone Push.
 
 Constraints:
 - Do not redo Friend or Group MVP work.
-- Do not regenerate codec/gRPC artifacts unless the architecture decision
-  explicitly chooses that path.
+- Use `common/proto` as the canonical proto source tree.
+- Do not use shell `protoc` 34.1 for checked-in generated files; use the
+  CMake-selected vcpkg `protoc-29.3.0`.
 - Do not introduce a broad standalone Push microservice rewrite without a
   written boundary and focused test plan.
 - Do not change MessageWsHandler ack behavior.
@@ -410,6 +407,16 @@ Constraints:
 
 Useful commands:
 docker compose up -d redis postgres
+
+cmake -S . -B /tmp/mychat-build-codec \
+  -DMYCHAT_BUILD_SERVICES=ON \
+  -DMYCHAT_BUILD_CODEC_SERVICE=ON \
+  -DMYCHAT_BUILD_GATEWAY=OFF \
+  -DMYCHAT_BUILD_TESTS=OFF \
+  -DMYCHAT_BUILD_PGSQL_ODB=OFF \
+  -DCMAKE_BUILD_TYPE=Debug
+cmake --build /tmp/mychat-build-codec --target generate_proto -j2
+cmake --build /tmp/mychat-build-codec --target im_codec_service -j2
 
 cmake -S . -B /tmp/mychat-build-review \
   -DVCPKG_MANIFEST_FEATURES=pgsql-odb \
@@ -434,6 +441,6 @@ When done:
 - Summarize changed files and behavior.
 - Record exact verification commands and pass/fail results.
 - Update docs/devlog/current_progress.md.
-- Add or update a focused devlog for Push/service-call work if behavior is
-  changed.
+- Update docs/devlog/phase14_codec_grpc_generation_chain.md with the final
+  generation-chain behavior.
 ```

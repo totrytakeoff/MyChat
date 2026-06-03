@@ -49,6 +49,9 @@ updated_by: coder
 
 ## Current
 
+- [ ] Codec/gRPC generation chain cleanup (Task 009) - make protobuf and codec
+  gRPC generation deterministic from canonical `common/proto` inputs before
+  standalone Push Service work.
 - [ ] Message Service MVP (Phase F) - Push Service as standalone microservice
   and service-call strategy. Persistence core (Task 003), Gateway HTTP
   integration (Task 004), WebSocket send/ack (Task 006), online delivery
@@ -57,9 +60,8 @@ updated_by: coder
 
 ## Next
 
-- [ ] Decide direct in-process integration vs regenerated codec/gRPC artifacts
-  for the remaining service-to-service boundary work.
-- [ ] Define the standalone Push Service contract and migration sequence.
+- [ ] Define the standalone Push Service contract and migration sequence after
+  Task 009 is complete.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.
 

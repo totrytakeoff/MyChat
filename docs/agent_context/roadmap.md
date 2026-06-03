@@ -78,6 +78,8 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   session). PushServiceTest expanded from 4 to 11 test cases.
 - [x] Multi-recipient fanout for group messages via `PushService::push_to_user`
   per group member.
+- [ ] Codec/gRPC generation chain cleanup from canonical `common/proto` inputs
+  before standalone Push service work.
 - Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP message
   API passes; Gateway can deliver message to online user; offline message is
   persisted and pullable. Standalone Push service boundary and service-call
