@@ -76,7 +76,7 @@
       }
     }
   },
-  "updated_at": "2026-06-03T15:12:00+00:00",
+  "updated_at": "2026-06-05T02:20:00+08:00",
   "workflow_run": {
     "active": false,
     "stage": "planning",
@@ -125,7 +125,7 @@
     "mode": "single_agent",
     "status": "ready",
     "handoff_doc": "docs/devlog/single_agent_handoff.md",
-    "recorded_at": "2026-06-03T15:12:00+00:00",
-    "notes": "Single-agent handoff is ready. Gateway layout cleanup and codec/gRPC generation chain cleanup are committed in latest HEAD. Next selected task is standalone Push Service boundary and incremental migration planning with focused characterization tests for existing push/fanout behavior. Latest baseline: ODB 14/14, no-ODB 2/2; codec explicit-enable smoke build passed."
+    "recorded_at": "2026-06-05T02:20:00+08:00",
+    "notes": "Single-agent handoff is ready. Gateway layout, codec/gRPC generation, PushNotifier boundary, service-owned fanout policy cleanup, PushRuntime core extraction, Gateway Push/WS build gating cleanup, Push gRPC contract/adapter, Gateway remote PushNotifier wiring, and the standalone push_server process target are complete. Current push_server adapters are explicit no-session/no-op transitional adapters because Gateway still owns WebSocket sessions. Next selected task is real remote Push delivery plumbing between Gateway and push_server, followed by an end-to-end Gateway push.mode=remote smoke. Latest baseline: full ODB + Gateway + Push gRPC build/test passed 17/17 in build/remote-push-odb on 2026-06-05; no-ODB 3/3 passed on 2026-06-05 after Redis start; Push gRPC explicit-enable build/tests passed; codec explicit-enable smoke build passed."
   }
 }

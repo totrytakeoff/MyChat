@@ -11,22 +11,26 @@ Added two production FanoutPolicy implementations to PushService:
   session. Useful for notification-type pushes that only need to reach one
   device.
 
-Both policies now live in `gateway/push/fanout_policies.hpp` and
-`gateway/push/fanout_policies.cpp`, gated behind `im::message_service`
-availability (same as PushService itself).
+Both policies originally lived in `gateway/push/fanout_policies.*`. They were
+later migrated into `services/push/fanout_policy.hpp` and
+`services/push/fanout_policy.cpp` so service-owned fanout selection is no
+longer tied to Gateway runtime code.
 
 The default AllSessionsFanoutPolicy behavior is unchanged.
 
 ## New Files
 
-- gateway/push/fanout_policies.hpp - declarations for PlatformFilterFanoutPolicy
-  and NewestSessionFanoutPolicy.
-- gateway/push/fanout_policies.cpp - implementations.
+- services/push/fanout_policy.hpp - declarations for `PushSessionInfo`,
+  `FanoutPolicy`, `AllSessionsFanoutPolicy`, `PlatformFilterFanoutPolicy`, and
+  `NewestSessionFanoutPolicy`.
+- services/push/fanout_policy.cpp - implementations.
 
 ## Modified Files
 
-- gateway/CMakeLists.txt - added `push/fanout_policies.cpp` to im_gateway_core
-  sources when im::message_service is available.
+- services/push/CMakeLists.txt - builds `im_push_service` with fanout policy
+  implementation.
+- gateway/CMakeLists.txt - links `im_gateway_core` against `im::push_service`
+  when available; Gateway no longer compiles fanout policy sources directly.
 - test/gateway_message/test_push_service.cpp - removed the test-local
   PlatformFilterFanoutPolicy class, replaced with the production import.
   Added a make_session helper. Expanded from 4 to 11 test cases.

@@ -1,5 +1,14 @@
 # services/CMakeLists.txt
 
+# 推送服务模块 — 当前提供 PushNotifier 边界和服务层 fanout policy；
+# WebSocket 发送 runtime adapter 暂在 gateway/push。
+if(MYCHAT_BUILD_PUSH_SERVICE OR MYCHAT_BUILD_PUSH_GRPC_SERVICE)
+    add_subdirectory(push)
+    message(STATUS "Push service module (im_push_service) is enabled.")
+else()
+    message(STATUS "Push service module is disabled (MYCHAT_BUILD_PUSH_SERVICE=OFF).")
+endif()
+
 # Codec服务库 — 仅在 MYCHAT_BUILD_CODEC_SERVICE=ON 时构建。
 if(MYCHAT_BUILD_CODEC_SERVICE)
     if(gRPC_FOUND AND TARGET gRPC::grpc++ AND MYCHAT_GRPC_CPP_PLUGIN)
@@ -91,23 +100,3 @@ elseif(MYCHAT_BUILD_MESSAGE_SERVICE)
 else()
     message(STATUS "Message service is disabled (MYCHAT_BUILD_MESSAGE_SERVICE=OFF).")
 endif()
-
-# 推送服务库
-# add_library(im_push_service STATIC
-#    services/push/*.cpp
-# )
-#
-# target_link_libraries(im_push_service
-#    PUBLIC
-#        im::proto
-#        im::database
-#        im::utils
-# )
-#
-# target_include_directories(im_push_service
-#    PUBLIC
-#        ${CMAKE_CURRENT_SOURCE_DIR}/push
-# )
-#
-# # 创建命名空间别名
-# add_library(im::push_service ALIAS im_push_service)

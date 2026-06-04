@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
@@ -20,6 +22,7 @@
 
 #include <gateway/http/group_message_http_controller.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
+#include <push_notifier.hpp>
 #include <group_message_service.hpp>
 #include <group_service.hpp>
 #include <user_service.hpp>
@@ -65,6 +68,23 @@ RedisConfig test_redis_config() {
 std::string config_path() {
     return (std::filesystem::path(MYCHAT_SOURCE_DIR) / "config/dev.json").string();
 }
+
+struct PushCall {
+    std::string receiver_uid;
+    uint64_t msg_id;
+    std::string content;
+};
+
+class RecordingPushNotifier : public im::service::push::PushNotifier {
+public:
+    void notify_user(const std::string& receiver_uid,
+                     uint64_t msg_id,
+                     const std::string& content) override {
+        calls.push_back({receiver_uid, msg_id, content});
+    }
+
+    std::vector<PushCall> calls;
+};
 
 class GatewayGroupMessageHttpTest : public ::testing::Test {
 protected:
@@ -211,6 +231,7 @@ protected:
     std::shared_ptr<GroupService> group_svc_;
     std::shared_ptr<GroupMessageService> group_msg_svc_;
     std::unique_ptr<GroupMessageHttpController> controller_;
+    RecordingPushNotifier recording_notifier_;
 };
 
 json parse_body(const httplib::Response& res) {
@@ -250,6 +271,44 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageHappyPath) {
     auto body = parse_body(res);
     EXPECT_EQ(body["message"], "Message sent");
     EXPECT_GT(body["msg_id"].get<uint64_t>(), 0);
+}
+
+TEST_F(GatewayGroupMessageHttpTest, SendMessageFansOutToOtherMembersOnly) {
+    std::string owner = create_user("group-msg-http-test-fanout-owner");
+    std::string member1 = create_user("group-msg-http-test-fanout-member1");
+    std::string member2 = create_user("group-msg-http-test-fanout-member2");
+    std::string token = make_token(owner);
+
+    uint64_t gid = create_group("group-msg-http-test-fanout-group", owner);
+    ASSERT_TRUE(group_svc_->join_group(gid, member1, kNowMs).ok);
+    ASSERT_TRUE(group_svc_->join_group(gid, member2, kNowMs).ok);
+    controller_->set_push_notifier(&recording_notifier_);
+
+    httplib::Request req;
+    req.method = "POST";
+    req.headers.emplace("Authorization", "Bearer " + token);
+    req.body = json{{"group_id", gid}, {"content", "Fanout group!"}}.dump();
+
+    httplib::Response res;
+    controller_->handle_send_message(req, res);
+
+    EXPECT_EQ(res.status, 201);
+    auto body = parse_body(res);
+    uint64_t msg_id = body["msg_id"].get<uint64_t>();
+
+    ASSERT_EQ(recording_notifier_.calls.size(), 2u);
+    std::vector<std::string> receivers = {
+        recording_notifier_.calls[0].receiver_uid,
+        recording_notifier_.calls[1].receiver_uid,
+    };
+    EXPECT_NE(std::find(receivers.begin(), receivers.end(), member1), receivers.end());
+    EXPECT_NE(std::find(receivers.begin(), receivers.end(), member2), receivers.end());
+    EXPECT_EQ(std::find(receivers.begin(), receivers.end(), owner), receivers.end());
+
+    for (const auto& call : recording_notifier_.calls) {
+        EXPECT_EQ(call.msg_id, msg_id);
+        EXPECT_EQ(call.content, "Fanout group!");
+    }
 }
 
 TEST_F(GatewayGroupMessageHttpTest, SendMessageMissingGroupId) {

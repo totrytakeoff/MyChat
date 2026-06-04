@@ -2,16 +2,16 @@
 #define GATEWAY_PUSH_SERVICE_HPP
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include <spdlog/logger.h>
-
-#include "../../common/proto/base.pb.h"
-#include "../../common/proto/command.pb.h"
 #include "connection_manager/connection_manager.hpp"
 #include "../../common/network/websocket_server.hpp"
+#include "../../services/push/fanout_policy.hpp"
+#include "../../services/push/push_notifier.hpp"
+#include "../../services/push/push_runtime.hpp"
 
 namespace im::service::message {
 class MessageService;
@@ -19,32 +19,16 @@ class MessageService;
 
 namespace im::gateway {
 
-// Abstract fanout policy.
-//
-// Input is every active session currently known for a user. Output is the
-// session-id subset that should receive this push. Policies must not mutate
-// ConnectionManager state.
-class FanoutPolicy {
-public:
-    virtual ~FanoutPolicy() = default;
-    virtual std::vector<std::string> select_sessions(
-        const std::vector<DeviceSessionInfo>& sessions) = 0;
-};
-
-// Default policy: push to all active sessions.
-class AllSessionsFanoutPolicy : public FanoutPolicy {
-public:
-    std::vector<std::string> select_sessions(
-        const std::vector<DeviceSessionInfo>& sessions) override;
-};
-
-class PushService {
+class PushService : public im::service::push::PushNotifier,
+                    public im::service::push::PushSessionProvider,
+                    public im::service::push::PushPayloadSender,
+                    public im::service::push::PushDeliveryMarker {
 public:
     PushService(ConnectionManager* conn_mgr,
                 im::network::WebSocketServer* ws_server,
                 std::shared_ptr<im::service::message::MessageService> msg_service);
 
-    void set_fanout_policy(std::unique_ptr<FanoutPolicy> policy);
+    void set_fanout_policy(std::unique_ptr<im::service::push::FanoutPolicy> policy);
 
     // Push a CMD_PUSH_MESSAGE to the recipient's selected sessions.
     //
@@ -57,12 +41,23 @@ public:
                       uint64_t msg_id,
                       const std::string& content);
 
+    void notify_user(const std::string& receiver_uid,
+                     uint64_t msg_id,
+                     const std::string& content) override;
+
+    std::vector<im::service::push::PushSessionInfo> get_sessions(
+        const std::string& receiver_uid) override;
+
+    bool send_payload(const std::string& session_id,
+                      const std::string& payload) override;
+
+    bool mark_delivered(uint64_t msg_id, int64_t delivered_time) override;
+
 private:
     ConnectionManager* conn_mgr_;
     im::network::WebSocketServer* ws_server_;
     std::shared_ptr<im::service::message::MessageService> msg_service_;
-    std::unique_ptr<FanoutPolicy> fanout_policy_;
-    std::shared_ptr<spdlog::logger> logger_;
+    im::service::push::PushRuntime runtime_;
 };
 
 } // namespace im::gateway

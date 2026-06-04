@@ -4,7 +4,7 @@ Date: 2026-06-04
 
 The Gateway is the client-facing process. It owns HTTP route registration,
 WebSocket message handling, online connection state, authentication integration,
-and the in-process push adapter used by the staged MVP.
+and PushNotifier composition for local in-process or explicit remote push.
 
 ## Directory Map
 
@@ -15,8 +15,10 @@ and the in-process push adapter used by the staged MVP.
   DTO calls, enforce Bearer access-token identity, and format HTTP responses.
 - `ws/` - WebSocket command handlers. These consume `UnifiedMessage` values
   parsed from protobuf envelopes and return `ProcessorResult` responses.
-- `push/` - in-process online push delivery. `PushService` sends
-  `CMD_PUSH_MESSAGE` payloads to sessions selected by a `FanoutPolicy`.
+- `push/` - push notifier implementations. `PushService` is the local
+  in-process adapter that sends `CMD_PUSH_MESSAGE` payloads to sessions
+  selected by service-owned fanout policies from `services/push`;
+  `RemotePushNotifier` is the explicit gRPC client path.
 - `auth/` - multi-platform access/refresh token manager and auth helpers.
 - `connection_manager/` - online device/session registry used by push delivery.
 - `message_processor/` - protocol normalization and command dispatch helpers.
@@ -32,8 +34,10 @@ not part of the current focused Gateway cleanup.
 features are added only when their service targets exist:
 
 - `IM_ENABLE_USER_HTTP` - user REST routes.
-- `IM_ENABLE_MESSAGE_HTTP` - message REST routes, WebSocket send handler,
-  `PushService`, and fanout policies.
+- `IM_ENABLE_MESSAGE_HTTP` - message REST routes.
+- `IM_ENABLE_PUSH_SERVICE` - local Gateway `PushService` runtime adapter.
+- `IM_ENABLE_REMOTE_PUSH_NOTIFIER` - remote Gateway `PushNotifier` gRPC client.
+- `IM_ENABLE_MESSAGE_WS` - WebSocket send handler.
 - `IM_ENABLE_FRIEND_HTTP` - friend REST routes.
 - `IM_ENABLE_GROUP_HTTP` - group REST routes.
 - `IM_ENABLE_GROUP_MESSAGE_HTTP` - group-message REST routes and push fanout.
@@ -46,9 +50,12 @@ features are added only when their service targets exist:
 - `common/proto` remains the canonical protobuf source tree.
 - HTTP controllers do not trust client-supplied sender UID; the access token is
   the actor identity.
-- `MessageWsHandler` owns send/ack validation and delegates online delivery to
-  `PushService`.
+- `MessageWsHandler` owns send/ack validation and delegates online delivery via
+  `im::service::push::PushNotifier`.
+- `GatewayServer` defaults to local push via `push.mode = "local"` and only
+  selects `RemotePushNotifier` when an explicit gRPC build provides it and
+  `push.mode = "remote"` is configured.
 - `PushService` is best-effort: offline or unselected sessions leave messages
   pullable through offline APIs.
-- The default `AllSessionsFanoutPolicy` behavior must remain "push to every
-  active session" unless a task explicitly changes that contract.
+- The default `AllSessionsFanoutPolicy` in `services/push` must remain "push to
+  every active session" unless a task explicitly changes that contract.

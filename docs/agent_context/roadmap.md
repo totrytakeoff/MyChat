@@ -53,9 +53,11 @@ Status: complete.
 ## Phase F: Message Service MVP
 
 Status: in progress (persistence core + HTTP integration + WebSocket send/ack + online
-         delivery + fanout policies + group multi-recipient fanout + codec/gRPC
-         generation cleanup complete; standalone Push microservice and
-         service-call strategy pending).
+         delivery + fanout policies + group multi-recipient fanout + PushNotifier
+         boundary/tests + PushRuntime core extraction + codec/gRPC generation
+         cleanup + Push gRPC contract/adapter + Gateway remote-client wiring
+         + standalone Push server process complete; real remote delivery
+         plumbing pending).
 
 - ✅ Persistence core (task003): `services/message` target, ODB-backed message
   persistence, send one-to-one text, offline message pull, conversation history
@@ -76,17 +78,46 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   MessageWsHandler delegates to PushService::push_to_user.
 - [x] Production fanout policies: PlatformFilterFanoutPolicy (platform-based
   session filtering) and NewestSessionFanoutPolicy (select single newest
-  session). PushServiceTest expanded from 4 to 11 test cases.
+  session). These now live in `services/push/fanout_policy.*`.
 - [x] Multi-recipient fanout for group messages via `PushService::push_to_user`
   per group member.
+- [x] Push Service boundary: `services/push` provides
+  `im::service::push::PushNotifier`, service-owned fanout policies, and
+  `im::push_service`; Gateway direct and group message call sites now depend on
+  the boundary instead of concrete `PushService`.
+- [x] PushRuntime core extraction: `services/push/PushRuntime` owns fanout,
+  payload encoding, send orchestration, and delivered marking decisions;
+  Gateway `PushService` is now an adapter for session lookup, payload send, and
+  delivered marking.
+- [x] Gateway Push/WS build gating cleanup: Message HTTP remains independently
+  gated on Message Service; `PushService`, `MessageWsHandler`, and Group
+  Message HTTP fanout now require `im::push_service` so disabled service
+  modules do not leave Gateway half-enabled.
+- [x] Push behavior characterization tests: WebSocket direct-message send
+  notifies the receiver through `PushNotifier`; group-message send notifies
+  other members only and excludes the sender.
 - [x] Codec/gRPC generation chain cleanup from canonical `common/proto` inputs:
   `generate_common_proto`, `generate_codec_grpc`, and aggregate
   `generate_proto` now regenerate active protobuf/gRPC files; `im_codec_service`
   consumes canonical generated files from `common/proto`.
+- [x] Push gRPC remote boundary: `common/proto/push.proto` defines
+  `im.push.PushService.NotifyUser`; `generate_push_grpc` and aggregate
+  `generate_proto` produce `common/proto/push.grpc.pb.*`; `im::push_grpc_service`
+  adapts the generated service to `PushNotifier` behind
+  `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
+- [x] Gateway remote PushNotifier wiring: `gateway/push/RemotePushNotifier`
+  wraps the generated `im.push.PushService::Stub`; `GatewayServer` selects the
+  local in-process adapter vs. remote gRPC client through `push.mode`; default
+  config remains `local`.
+- [x] Standalone Push server process: `services/push/push_server` hosts
+  `PushGrpcService + PushRuntime` and reads `push.listen_address` from config.
+  Its current no-session/no-op adapters are an explicit transitional state
+  until Gateway-owned WebSocket sessions are reachable across process
+  boundaries.
 - Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP message
   API passes; Gateway can deliver message to online user; offline message is
-  persisted and pullable. Standalone Push service boundary and service-call
-  strategy are still open.
+  persisted and pullable. Remote `push.mode=remote` still needs real delivery
+  plumbing and an end-to-end smoke beyond accepting the RPC.
 
 ## Phase G: Friend Service MVP
 

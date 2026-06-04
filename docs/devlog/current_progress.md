@@ -50,21 +50,61 @@ Known working:
 - FanoutPolicy production implementations added: `PlatformFilterFanoutPolicy`
   selects sessions matching a set of allowed platforms (e.g., mobile-only);
   `NewestSessionFanoutPolicy` selects the single most recently connected
-  session. Both live in `gateway/push/fanout_policies.hpp` and are gated
-  behind `im::message_service` availability. `PushServiceTest` expanded from
-  4 to 11 test cases covering all policies.
+  session. Fanout policy logic now lives in `services/push/fanout_policy.*`
+  and is linked through `im::push_service`. `PushServiceTest` covers all
+  policies.
 - Gateway source layout cleanup completed: REST controllers now live under
   `gateway/http`, push/fanout components under `gateway/push`, and WebSocket
   message handling under `gateway/ws`. Tracked clangd cache artifacts were
   removed and local IDE/index cache patterns were added to `.gitignore`.
+- Push Service boundary work completed: `services/push` now provides the
+  `im::service::push::PushNotifier` interface, service-owned fanout policies,
+  and `im::push_service` CMake target. Gateway WS and Group Message HTTP call
+  sites depend on `PushNotifier*`; the current in-process
+  `gateway/push/PushService` implements that boundary and adapts Gateway
+  session data into service-owned `PushSessionInfo` values.
+- Push runtime core extraction completed: `services/push/PushRuntime` owns
+  fanout selection, protobuf push payload construction, best-effort send
+  orchestration, and delivered marking after at least one successful send.
+  Gateway `PushService` is now a thin adapter for `ConnectionManager`,
+  `WebSocketServer`, and Message Service delivered marking.
+- Gateway Push/WS build gating was tightened after the boundary move:
+  `PushService`, `MessageWsHandler`, and Group Message HTTP fanout now require
+  both the relevant service targets and `im::push_service`. Message HTTP stays
+  independently gated on Message Service. A `MYCHAT_BUILD_SERVICES=OFF`
+  Gateway-only configure/build was added to the verification set.
+- Push behavior characterization tests were added for the migration boundary:
+  successful WebSocket direct-message sends notify the receiver through
+  `PushNotifier`, and group-message sends fan out to other members only, not
+  the sender.
 - Codec/gRPC generation chain cleanup completed after the Gateway layout
   cleanup: `common/proto` is the canonical proto source tree,
   `generate_common_proto` regenerates protobuf outputs, `generate_codec_grpc`
-  regenerates `common/proto/codec_service.grpc.pb.*` when the gRPC plugin is
-  available, and aggregate `generate_proto` covers both paths in codec-enabled
-  builds. `im::proto` now includes `codec_service.pb.cc`; `im_codec_service`
-  consumes canonical generated files from `common/proto` and no longer compiles
+  remains as the legacy-compatible codec target, `generate_push_grpc`
+  regenerates `common/proto/push.grpc.pb.*`, and aggregate `generate_proto`
+  covers active protobuf/gRPC generation when the gRPC plugin is available.
+  `im::proto` now includes `codec_service.pb.cc`; `im_codec_service` consumes
+  canonical generated files from `common/proto` and no longer compiles
   duplicated `services/codec/base.pb.cc`.
+- Push gRPC remote boundary introduced: `common/proto/push.proto` now defines
+  `im.push.PushService.NotifyUser`, `NotifyUserRequest`, and
+  `NotifyUserResponse`; `common/proto/push.pb.*` and
+  `common/proto/push.grpc.pb.*` were regenerated through CMake
+  `generate_proto`. `services/push/PushGrpcService` adapts the generated gRPC
+  service to the existing `PushNotifier` boundary. `im::push_grpc_service` is
+  gated by `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`, so default builds still do not
+  require gRPC.
+- Gateway remote PushNotifier wiring is now available behind explicit gRPC
+  builds: `gateway/push/RemotePushNotifier` uses the generated
+  `im.push.PushService::Stub`, `GatewayServer` selects local vs. remote through
+  `push.mode`, and `config/dev.json` defaults to `push.mode = "local"` so
+  existing in-process behavior remains the default.
+- Standalone Push server process slice is now available behind explicit gRPC
+  builds: `services/push/push_server` hosts `PushGrpcService + PushRuntime`
+  and listens on `push.listen_address` (default `0.0.0.0:9101`). Its current
+  adapters are intentionally transitional (`EmptyPushSessionProvider`,
+  `NoopPushPayloadSender`, `NoopPushDeliveryMarker`) because Gateway still owns
+  live WebSocket sessions and payload delivery.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -76,7 +116,8 @@ Known working:
   - `MYCHAT_BUILD_LEGACY_GATEWAY_TESTS`
   - `MYCHAT_BUILD_PGSQL_ODB`
 - Optional `codec-grpc` vcpkg feature was added for the gRPC runtime/plugin
-  used by `MYCHAT_BUILD_CODEC_SERVICE=ON`.
+  used by `MYCHAT_BUILD_CODEC_SERVICE=ON` and
+  `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
 - vcpkg manifest was added. ODB runtime dependencies are isolated behind the
   optional `pgsql-odb` manifest feature.
 - Docker Compose Redis/PostgreSQL configuration was added.
@@ -188,8 +229,14 @@ Known working:
 - Message Service MVP (Phase F) is nearly complete. Persistence core, Gateway
   HTTP integration, Gateway WebSocket send/ack, online delivery, PushService
   with FanoutPolicy, production fanout policies (PlatformFilter,
-  NewestSession), and group multi-recipient fanout are complete. Push Service
-  as a standalone microservice and service-call strategy remain.
+  NewestSession), group multi-recipient fanout, PushNotifier boundary, and
+  behavior-preserving push/fanout characterization tests are complete. Fanout
+  policy logic and PushRuntime live in `services/push`; the Push gRPC contract
+  server-side adapter, Gateway remote PushNotifier client, and standalone
+  `push_server` process target are in place. The remaining service-call work is
+  a real cross-process session/payload/delivery-marker channel so remote mode
+  can deliver to Gateway-owned WebSocket sessions instead of accepting RPCs as
+  no-session best-effort no-ops.
 - Friend Service MVP (Phase G) is complete. Persistence model, repository,
   service, and Gateway HTTP controller have focused tests passing, API contract
   documented with TARGET_NOT_FOUND validation and HTTP status mapping.
@@ -202,12 +249,13 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Define the standalone Push Service boundary and incremental migration
-   sequence now that the Gateway layout and codec/gRPC generation chain are
-   clean.
-2. Add focused characterization tests that preserve current direct-message
-   online push and group-message fanout behavior before moving push out of the
-   Gateway process.
+1. Design and implement the real remote Push delivery channel between Gateway
+   and `push_server`: session lookup, payload send, and delivered marking must
+   cross the process boundary without pretending the Push server owns Gateway
+   WebSocket sessions.
+2. Add an end-to-end local/remote Push smoke: run `push_server`, set Gateway
+   `push.mode=remote`, and verify direct/group fanout still preserves
+   best-effort semantics.
 3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
@@ -227,10 +275,13 @@ Known working:
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: Push Service as a standalone microservice,
-  service-call strategy, and schema migration remain future work. PushService
-  with pluggable FanoutPolicy, production fanout policies, group
-  multi-recipient fanout, and codec/gRPC generation cleanup are complete.
+- Full Phase F is not complete: real remote Push delivery plumbing and schema
+  migration remain future work. PushService with pluggable FanoutPolicy,
+  service-owned production fanout policies, group multi-recipient fanout,
+  PushNotifier boundary/tests, PushRuntime core extraction, codec/gRPC
+  generation cleanup, the Push gRPC contract/adapter, Gateway remote
+  PushNotifier client wiring, and the standalone `push_server` process target
+  are complete.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive

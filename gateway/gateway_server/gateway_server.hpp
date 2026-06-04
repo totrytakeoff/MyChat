@@ -43,11 +43,28 @@ namespace odb { namespace pgsql { class database; } }
 namespace im::gateway { class UserHttpController; }
 #endif
 
-#ifdef IM_ENABLE_MESSAGE_HTTP
+#if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS)
 namespace im::service::message { class MessageService; }
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_HTTP
 namespace im::gateway { class MessageHttpController; }
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_WS
 namespace im::gateway { class MessageWsHandler; }
+#endif
+
+#ifdef IM_ENABLE_PUSH_SERVICE
 namespace im::gateway { class PushService; }
+#endif
+
+#if defined(IM_ENABLE_MESSAGE_WS) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
+namespace im::service::push { class PushNotifier; }
+#endif
+
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+namespace im::gateway { class RemotePushNotifier; }
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
@@ -197,8 +214,22 @@ private:
 
 #ifdef IM_ENABLE_MESSAGE_HTTP
     std::unique_ptr<MessageHttpController> message_http_controller_;
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_WS
     std::unique_ptr<MessageWsHandler> message_ws_handler_;
+#endif
+
+#if defined(IM_ENABLE_MESSAGE_WS) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
+    im::service::push::PushNotifier* push_notifier_ = nullptr;
+#endif
+
+#ifdef IM_ENABLE_PUSH_SERVICE
     std::unique_ptr<PushService> push_service_;
+#endif
+
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+    std::unique_ptr<RemotePushNotifier> remote_push_notifier_;
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP

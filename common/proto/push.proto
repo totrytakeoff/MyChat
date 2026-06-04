@@ -4,6 +4,12 @@ package im.push;
 
 import "base.proto";
 
+// PushService is the service-to-service boundary used by Gateway and other
+// message entry points to request best-effort online delivery.
+service PushService {
+    rpc NotifyUser(NotifyUserRequest) returns (NotifyUserResponse) {}
+}
+
 // 推送类型枚举
 enum PushType {
     PUSH_MESSAGE = 0;      // 普通消息推送
@@ -29,5 +35,17 @@ message PushRequest {
 
 // 推送响应
 message PushResponse {
+    im.base.BaseResponse base = 1; // 通用响应头
+}
+
+// 服务间推送通知请求。调用方应在消息持久化成功后传入接收者、消息ID和内容。
+message NotifyUserRequest {
+    string receiver_uid = 1; // 接收者用户ID
+    uint64 msg_id = 2;       // 已持久化的消息ID
+    string content = 3;      // 推送内容
+}
+
+// 服务间推送通知响应。当前 PushRuntime 是 best-effort 语义，成功仅表示请求已被接收。
+message NotifyUserResponse {
     im.base.BaseResponse base = 1; // 通用响应头
 }

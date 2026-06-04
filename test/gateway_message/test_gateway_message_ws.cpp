@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -21,6 +22,7 @@
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
 #include <gateway/push/push_service.hpp>
+#include <push_notifier.hpp>
 #include <message_service.hpp>
 #include <message_repository.hpp>
 #include <utils/log_manager.hpp>
@@ -37,9 +39,10 @@ using im::base::ErrorCode;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::ConnectionManager;
-using im::gateway::PushService;using im::gateway::MessageWsHandler;
+using im::gateway::MessageWsHandler;
 using im::gateway::MultiPlatformAuthManager;
 using im::gateway::ProcessorResult;
+using im::gateway::PushService;
 using im::gateway::UnifiedMessage;
 using im::network::ProtobufCodec;
 using im::service::message::MessageService;
@@ -67,6 +70,23 @@ int64_t now_ms() {
         std::chrono::system_clock::now().time_since_epoch()
     ).count();
 }
+
+struct PushCall {
+    std::string receiver_uid;
+    uint64_t msg_id;
+    std::string content;
+};
+
+class RecordingPushNotifier : public im::service::push::PushNotifier {
+public:
+    void notify_user(const std::string& receiver_uid,
+                     uint64_t msg_id,
+                     const std::string& content) override {
+        calls.push_back({receiver_uid, msg_id, content});
+    }
+
+    std::vector<PushCall> calls;
+};
 
 class GatewayMessageWsTest : public ::testing::Test {
 protected:
@@ -190,6 +210,7 @@ protected:
     std::unique_ptr<ConnectionManager> conn_mgr_;
     std::unique_ptr<PushService> push_service_;
     std::unique_ptr<MessageWsHandler> ws_handler_;
+    RecordingPushNotifier recording_notifier_;
 };
 
 // --- Existing Task 006 tests (constructor defaults nullptr for push params) ---
@@ -230,6 +251,28 @@ TEST_F(GatewayMessageWsTest, SendWithValidTokenPersistsAndReturnsResponse) {
         }
     }
     EXPECT_TRUE(found) << "Persisted message not found in DB";
+}
+
+TEST_F(GatewayMessageWsTest, SuccessfulSendNotifiesReceiverThroughBoundary) {
+    std::string sender = "task8-test-notify-sender";
+    std::string receiver = "task8-test-notify-rec";
+    std::string token = make_token(sender);
+    ws_handler_ = std::make_unique<MessageWsHandler>(
+        msg_service_, auth_mgr_, &recording_notifier_);
+
+    auto msg = make_send_message(token, sender, receiver, "Notify receiver");
+    ProcessorResult result = ws_handler_->handle_send(*msg);
+
+    EXPECT_EQ(result.status_code, 0) << "Error: " << result.error_message;
+
+    im::base::IMHeader resp_header;
+    im::message::SendMessageResponse resp;
+    ASSERT_TRUE(ProtobufCodec::decode(result.protobuf_message, resp_header, resp));
+    ASSERT_EQ(recording_notifier_.calls.size(), 1u);
+    EXPECT_EQ(recording_notifier_.calls[0].receiver_uid, receiver);
+    EXPECT_EQ(recording_notifier_.calls[0].msg_id,
+              std::stoull(resp.message().message_id()));
+    EXPECT_EQ(recording_notifier_.calls[0].content, "Notify receiver");
 }
 
 TEST_F(GatewayMessageWsTest, SenderIdentityFromTokenNotHeader) {

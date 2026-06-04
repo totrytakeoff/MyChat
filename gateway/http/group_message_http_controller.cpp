@@ -9,7 +9,7 @@
 #include "../../common/utils/http_utils.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
-#include "../push/push_service.hpp"
+#include "../../services/push/push_notifier.hpp"
 #include "../../services/group/group_message_service.hpp"
 #include "../../services/group/group_service.hpp"
 
@@ -37,11 +37,11 @@ GroupMessageHttpController::GroupMessageHttpController(
     std::shared_ptr<GroupService> group_service,
     std::shared_ptr<GroupMessageService> group_msg_service,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
-    PushService* push_service)
+    im::service::push::PushNotifier* push_notifier)
     : group_service_(std::move(group_service))
     , group_msg_service_(std::move(group_msg_service))
     , auth_mgr_(std::move(auth_mgr))
-    , push_service_(push_service)
+    , push_notifier_(push_notifier)
 {
     LogManager::SetLogToFile("group_message_http_controller",
                              "logs/group_message_http_controller.log");
@@ -108,10 +108,10 @@ void GroupMessageHttpController::handle_send_message(
         }
 
         // Fanout to all group members
-        if (push_service_) {
+        if (push_notifier_) {
             for (const auto& member : members) {
                 if (member.user_uid != user_info.user_id) {
-                    push_service_->push_to_user(member.user_uid,
+                    push_notifier_->notify_user(member.user_uid,
                                                 store_result.msg_id, content);
                 }
             }

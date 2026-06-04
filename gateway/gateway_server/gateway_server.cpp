@@ -90,14 +90,22 @@ void register_user_http_routes_on_server(httplib::Server& server,
 }
 #endif
 
-#ifdef IM_ENABLE_MESSAGE_HTTP
+#if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS)
 #include "../http/message_http_controller.hpp"
-#include "../ws/message_ws_handler.hpp"
-#include "../push/push_service.hpp"
 #include "../../services/message/message_service.hpp"
+#endif
+
+#ifdef IM_ENABLE_PUSH_SERVICE
+#include "../push/push_service.hpp"
+#endif
+
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+#include "../push/remote_push_notifier.hpp"
+#endif
 
 // Free function: registers message HTTP routes on an httplib server.
 // Exposed as a unit seam for testing (see test/gateway_message/).
+#ifdef IM_ENABLE_MESSAGE_HTTP
 void register_message_http_routes_on_server(httplib::Server& server,
                                             im::gateway::MessageHttpController& controller) {
     server.Post("/api/v1/messages/send",
@@ -113,6 +121,10 @@ void register_message_http_routes_on_server(httplib::Server& server,
             controller.handle_offline(req, res);
         });
 }
+#endif
+
+#ifdef IM_ENABLE_MESSAGE_WS
+#include "../ws/message_ws_handler.hpp"
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
@@ -538,17 +550,54 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         init_conn_mgr();
 
         // Initialize PushService and WS message handler after ConnectionManager and WebSocketServer are ready.
-#ifdef IM_ENABLE_MESSAGE_HTTP
+#ifdef IM_ENABLE_MESSAGE_WS
         try {
-            auto msg_svc_for_push = std::make_shared<im::service::message::MessageService>(odb_db_);
-            push_service_ = std::make_unique<PushService>(
-                conn_mgr_.get(), websocket_server_.get(), msg_svc_for_push);
-            server_logger->info("PushService initialized");
+            ConfigManager push_cfg(config_path_);
+            const std::string push_mode =
+                push_cfg.get<std::string>("push.mode", "local");
+            const int push_timeout_ms =
+                push_cfg.get<int>("push.timeout_ms", 200);
+            bool use_remote_push = false;
+
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+            if (push_mode == "remote") {
+                use_remote_push = true;
+            }
+#else
+            if (push_mode == "remote") {
+                server_logger->warn(
+                    "push.mode=remote requested but remote PushNotifier is not compiled; "
+                    "falling back to local PushService");
+            }
+#endif
+
+            if (push_mode != "local" && push_mode != "remote") {
+                server_logger->warn("Unknown push.mode='{}'; falling back to local PushService",
+                                    push_mode);
+            }
+
+            if (use_remote_push) {
+                const std::string endpoint =
+                    push_cfg.get<std::string>("push.remote_endpoint", "127.0.0.1:9101");
+                remote_push_notifier_ = std::make_unique<RemotePushNotifier>(
+                    endpoint, std::chrono::milliseconds(push_timeout_ms));
+                push_notifier_ = remote_push_notifier_.get();
+                server_logger->info(
+                    "Remote PushNotifier initialized for endpoint {} with timeout {} ms",
+                    endpoint, push_timeout_ms);
+            } else {
+                auto msg_svc_for_push =
+                    std::make_shared<im::service::message::MessageService>(odb_db_);
+                push_service_ = std::make_unique<PushService>(
+                    conn_mgr_.get(), websocket_server_.get(), msg_svc_for_push);
+                push_notifier_ = push_service_.get();
+                server_logger->info("Local PushService initialized");
+            }
 
             auto msg_svc_for_ws = std::make_shared<im::service::message::MessageService>(odb_db_);
             message_ws_handler_ = std::make_unique<MessageWsHandler>(
-                msg_svc_for_ws, auth_mgr_, push_service_.get());
-            server_logger->info("Message WS handler initialized with PushService");
+                msg_svc_for_ws, auth_mgr_, push_notifier_);
+            server_logger->info("Message WS handler initialized with PushNotifier");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Message WS handler: {}", e.what());
             throw;
@@ -557,7 +606,7 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
 #ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
         if (group_message_http_controller_) {
-            group_message_http_controller_->set_push_service(push_service_.get());
+            group_message_http_controller_->set_push_notifier(push_notifier_);
         }
 #endif
 
@@ -1163,7 +1212,7 @@ void GatewayServer::register_message_handlers() {
     try {
         server_logger->info("Registering message handlers...");
 
-#ifdef IM_ENABLE_MESSAGE_HTTP
+#ifdef IM_ENABLE_MESSAGE_WS
         if (message_ws_handler_) {
             server_logger->info("Registering WebSocket message handler for CMD_SEND_MESSAGE");
 

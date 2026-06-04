@@ -25,6 +25,12 @@
   "auth": {
     "secret_key": "replace-this-dev-secret-before-production"
   },
+  "push": {
+    "mode": "local",
+    "listen_address": "0.0.0.0:9101",
+    "remote_endpoint": "127.0.0.1:9101",
+    "timeout_ms": 200
+  },
   "secret_key": "replace-this-dev-secret-before-production",
   "PlatformTokenStrategy": {
     "web": {

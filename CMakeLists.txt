@@ -28,6 +28,8 @@ option(MYCHAT_BUILD_USER_SERVICE "Build User Service target (requires ODB)" ON)
 option(MYCHAT_BUILD_MESSAGE_SERVICE "Build Message Service target (requires ODB)" ON)
 option(MYCHAT_BUILD_FRIEND_SERVICE "Build Friend Service target (requires ODB and User Service)" ON)
 option(MYCHAT_BUILD_GROUP_SERVICE "Build Group Service target (requires ODB and User Service)" ON)
+option(MYCHAT_BUILD_PUSH_SERVICE "Build Push Service boundary target" ON)
+option(MYCHAT_BUILD_PUSH_GRPC_SERVICE "Build Push gRPC boundary target (requires gRPC)" OFF)
 option(MYCHAT_BUILD_CODEC_SERVICE "Build legacy codec gRPC service target (requires gRPC)" OFF)
 option(MYCHAT_BUILD_LEGACY_GATEWAY_TESTS "Build older gateway integration tests that still need cleanup" OFF)
 option(MYCHAT_BUILD_LEGACY_UNIT_TESTS "Build older unit tests pending cleanup" OFF)
@@ -73,7 +75,7 @@ find_package(hiredis CONFIG QUIET)
 find_package(jwt-cpp CONFIG QUIET)
 find_package(httplib CONFIG QUIET)
 find_package(unofficial-libuuid CONFIG QUIET)
-if(MYCHAT_BUILD_CODEC_SERVICE)
+if(MYCHAT_BUILD_CODEC_SERVICE OR MYCHAT_BUILD_PUSH_GRPC_SERVICE)
     find_package(gRPC CONFIG QUIET)
 endif()
 
@@ -258,31 +260,62 @@ if(NOT MYCHAT_GRPC_CPP_PLUGIN AND DEFINED VCPKG_ROOT)
     endif()
 endif()
 
-set(MYCHAT_CODEC_GRPC_PROTO "${MYCHAT_PROTO_DIR}/codec_service.proto")
-set(MYCHAT_CODEC_GRPC_GENERATED_CC "${MYCHAT_PROTO_DIR}/codec_service.grpc.pb.cc")
-set(MYCHAT_CODEC_GRPC_GENERATED_H "${MYCHAT_PROTO_DIR}/codec_service.grpc.pb.h")
+set(MYCHAT_GRPC_PROTO_NAMES
+    codec_service
+    push
+)
+set(MYCHAT_GRPC_GENERATED_TARGETS "")
+set(MYCHAT_GRPC_GENERATED_CC "")
+set(MYCHAT_GRPC_GENERATED_H "")
 if(MYCHAT_GRPC_CPP_PLUGIN)
-    add_custom_command(
-        OUTPUT "${MYCHAT_CODEC_GRPC_GENERATED_CC}" "${MYCHAT_CODEC_GRPC_GENERATED_H}"
-        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-                -I "${MYCHAT_PROTO_DIR}"
-                --grpc_out=${MYCHAT_PROTO_DIR}
-                --plugin=protoc-gen-grpc=${MYCHAT_GRPC_CPP_PLUGIN}
-                "${MYCHAT_CODEC_GRPC_PROTO}"
-        DEPENDS
-                "${MYCHAT_CODEC_GRPC_PROTO}"
-                "${MYCHAT_PROTO_DIR}/codec_service.pb.h"
-                generate_common_proto
-        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-        COMMENT "Generating gRPC C++ sources for codec_service.proto"
-        VERBATIM)
+    foreach(_grpc_proto_name IN LISTS MYCHAT_GRPC_PROTO_NAMES)
+        set(_grpc_proto "${MYCHAT_PROTO_DIR}/${_grpc_proto_name}.proto")
+        set(_grpc_cc "${MYCHAT_PROTO_DIR}/${_grpc_proto_name}.grpc.pb.cc")
+        set(_grpc_h "${MYCHAT_PROTO_DIR}/${_grpc_proto_name}.grpc.pb.h")
+        add_custom_command(
+            OUTPUT "${_grpc_cc}" "${_grpc_h}"
+            COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+                    -I "${MYCHAT_PROTO_DIR}"
+                    --grpc_out=${MYCHAT_PROTO_DIR}
+                    --plugin=protoc-gen-grpc=${MYCHAT_GRPC_CPP_PLUGIN}
+                    "${_grpc_proto}"
+            DEPENDS
+                    "${_grpc_proto}"
+                    "${MYCHAT_PROTO_DIR}/${_grpc_proto_name}.pb.h"
+                    generate_common_proto
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            COMMENT "Generating gRPC C++ sources for ${_grpc_proto_name}.proto"
+            VERBATIM)
+        add_custom_target(generate_${_grpc_proto_name}_grpc
+            DEPENDS "${_grpc_cc}" "${_grpc_h}")
+        list(APPEND MYCHAT_GRPC_GENERATED_TARGETS generate_${_grpc_proto_name}_grpc)
+        list(APPEND MYCHAT_GRPC_GENERATED_CC "${_grpc_cc}")
+        list(APPEND MYCHAT_GRPC_GENERATED_H "${_grpc_h}")
+        string(TOUPPER "${_grpc_proto_name}" _grpc_proto_name_upper)
+        set(MYCHAT_${_grpc_proto_name_upper}_GRPC_GENERATED_CC "${_grpc_cc}")
+        set(MYCHAT_${_grpc_proto_name_upper}_GRPC_GENERATED_H "${_grpc_h}")
+        if(_grpc_proto_name STREQUAL "codec_service")
+            set(MYCHAT_CODEC_GRPC_GENERATED_CC "${_grpc_cc}")
+            set(MYCHAT_CODEC_GRPC_GENERATED_H "${_grpc_h}")
+        endif()
+    endforeach()
+    unset(_grpc_proto_name)
+    unset(_grpc_proto_name_upper)
+    unset(_grpc_proto)
+    unset(_grpc_cc)
+    unset(_grpc_h)
     add_custom_target(generate_codec_grpc
-        DEPENDS "${MYCHAT_CODEC_GRPC_GENERATED_CC}" "${MYCHAT_CODEC_GRPC_GENERATED_H}")
-    set(MYCHAT_GENERATE_PROTO_DEPS generate_common_proto generate_codec_grpc)
+        DEPENDS generate_codec_service_grpc)
+    set(MYCHAT_GENERATE_PROTO_DEPS generate_common_proto ${MYCHAT_GRPC_GENERATED_TARGETS})
 else()
+    foreach(_grpc_proto_name IN LISTS MYCHAT_GRPC_PROTO_NAMES)
+        add_custom_target(generate_${_grpc_proto_name}_grpc
+            COMMAND ${CMAKE_COMMAND} -E false
+            COMMENT "gRPC C++ plugin was not found; enable vcpkg feature codec-grpc")
+    endforeach()
+    unset(_grpc_proto_name)
     add_custom_target(generate_codec_grpc
-        COMMAND ${CMAKE_COMMAND} -E false
-        COMMENT "gRPC C++ plugin was not found; enable vcpkg feature codec-grpc")
+        DEPENDS generate_codec_service_grpc)
     set(MYCHAT_GENERATE_PROTO_DEPS generate_common_proto)
 endif()
 

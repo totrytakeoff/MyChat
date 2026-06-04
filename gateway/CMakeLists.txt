@@ -18,7 +18,6 @@ target_link_libraries(im_gateway_core
         jwt-cpp::jwt-cpp
         httplib::httplib
         unofficial::UUID::uuid
-        ${ABSL_LIBRARIES}
 )
 
 target_include_directories(im_gateway_core
@@ -56,26 +55,34 @@ else()
     message(STATUS "Message HTTP controller disabled (im::message_service not available)")
 endif()
 
-# PushService — only when Message Service is available
-if(TARGET im::message_service)
+# PushService — requires Message Service plus the service-owned Push boundary.
+if(TARGET im::message_service AND TARGET im::push_service)
     target_sources(im_gateway_core PRIVATE push/push_service.cpp)
-    message(STATUS "PushService enabled (im::message_service available)")
+    target_link_libraries(im_gateway_core PUBLIC im::push_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_PUSH_SERVICE)
+    message(STATUS "PushService enabled (im::message_service + im::push_service available)")
 else()
-    message(STATUS "PushService disabled (im::message_service not available)")
+    message(STATUS "PushService disabled (requires im::message_service + im::push_service)")
 endif()
 
-if(TARGET im::message_service)
-    target_sources(im_gateway_core PRIVATE push/fanout_policies.cpp)
-    message(STATUS "Fanout policies enabled (im::message_service available)")
+# Remote PushNotifier client — explicit gRPC path only.
+if(TARGET im::push_grpc_service)
+    target_sources(im_gateway_core PRIVATE push/remote_push_notifier.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::push_grpc_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_REMOTE_PUSH_NOTIFIER)
+    message(STATUS "Remote PushNotifier enabled (im::push_grpc_service available)")
+else()
+    message(STATUS "Remote PushNotifier disabled (im::push_grpc_service not available)")
 endif()
 
-# Message WS Handler — 仅当 Message Service 可用时编译和链接
-if(TARGET im::message_service)
+# Message WS Handler — requires Message Service plus PushNotifier boundary.
+if(TARGET im::message_service AND TARGET im::push_service)
     target_sources(im_gateway_core PRIVATE ws/message_ws_handler.cpp)
-    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_MESSAGE_HTTP)
-    message(STATUS "Message WS handler enabled (im::message_service available)")
+    target_link_libraries(im_gateway_core PUBLIC im::push_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_MESSAGE_WS)
+    message(STATUS "Message WS handler enabled (im::message_service + im::push_service available)")
 else()
-    message(STATUS "Message WS handler disabled (im::message_service not available)")
+    message(STATUS "Message WS handler disabled (requires im::message_service + im::push_service)")
 endif()
 # Friend HTTP Controller — 仅当 Friend Service 可用时编译和链接
 if(TARGET im::friend_service)
@@ -97,13 +104,14 @@ else()
     message(STATUS "Group HTTP controller disabled (im::group_service not available)")
 endif()
 
-# Group Message HTTP Controller — 仅当 Group Service 和 PushService 可用时编译和链接
-if(TARGET im::group_service AND TARGET im::message_service)
+# Group Message HTTP Controller — requires Group/Message services plus PushNotifier boundary.
+if(TARGET im::group_service AND TARGET im::message_service AND TARGET im::push_service)
     target_sources(im_gateway_core PRIVATE http/group_message_http_controller.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::push_service)
     target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_GROUP_MESSAGE_HTTP)
-    message(STATUS "Group Message HTTP controller enabled (im::group_service + im::message_service available)")
+    message(STATUS "Group Message HTTP controller enabled (im::group_service + im::message_service + im::push_service available)")
 else()
-    message(STATUS "Group Message HTTP controller disabled")
+    message(STATUS "Group Message HTTP controller disabled (requires im::group_service + im::message_service + im::push_service)")
 endif()
 
 add_library(im_gateway_auth STATIC

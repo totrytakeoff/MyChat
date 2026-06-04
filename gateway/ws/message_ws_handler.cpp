@@ -6,6 +6,7 @@
 #include "../../common/network/protobuf_codec.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../../common/utils/service_identity.hpp"
+#include "../../services/push/push_notifier.hpp"
 #include "../../services/message/message_service.hpp"
 #include "../../services/odb/message.hpp"
 
@@ -55,10 +56,10 @@ std::string encode_error_response(const im::base::IMHeader& request_header,
 MessageWsHandler::MessageWsHandler(
     std::shared_ptr<MessageService> msg_service,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
-    PushService* push_service)
+    im::service::push::PushNotifier* push_notifier)
     : msg_service_(std::move(msg_service))
     , auth_mgr_(std::move(auth_mgr))
-    , push_service_(push_service)
+    , push_notifier_(push_notifier)
 {
     LogManager::SetLogToFile("message_ws_handler", "logs/message_ws_handler.log");
     logger_ = LogManager::GetLogger("message_ws_handler");
@@ -193,9 +194,9 @@ ProcessorResult MessageWsHandler::handle_send(const UnifiedMessage& msg) {
         logger_->info("WS send: token_user={} -> {} (msg_id={}, client_from_uid={})",
                       token_user.user_id, receiver_uid, result.data.msg_id, header.from_uid());
 
-        // 10. Delegate push to PushService (best-effort, does not affect ack).
-        if (push_service_) {
-            push_service_->push_to_user(receiver_uid, result.data.msg_id, content);
+        // 10. Delegate push through the boundary (best-effort, does not affect ack).
+        if (push_notifier_) {
+            push_notifier_->notify_user(receiver_uid, result.data.msg_id, content);
         }
 
         return ProcessorResult(0, "", protobuf_response, "");

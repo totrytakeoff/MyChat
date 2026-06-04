@@ -26,9 +26,9 @@ verify.
 ## Repository Map
 
 - `common/` - Shared components: network primitives (WebSocket server/session, protobuf codec), database wrappers (Redis hiredis, PostgreSQL ODB), proto definitions, utilities (logging, config, signal handling)
-- `services/` - Microservice implementations: user (ODB-backed MVP with register/login/profile), message (ODB-backed persistence core with direct text send/history/offline pull), friend (ODB-backed MVP with request/respond/list/pending, tested), group (ODB-backed group + group-message MVP, tested), codec (stale, gated OFF by default)
-- `gateway/` - Client-facing service: HTTP/WebSocket entry, auth token management, authenticated User, Message, Friend, Group, and Group Message HTTP controllers, connection management, message routing, route registration
-- `test/` - Focused test modules: auth, db, odb, user, gateway_user, friend, gateway_friend, group, gateway_group, gateway_group_message, message, gateway_message, legacy (gated)
+- `services/` - Microservice implementations: user (ODB-backed MVP with register/login/profile), message (ODB-backed persistence core with direct text send/history/offline pull), friend (ODB-backed MVP with request/respond/list/pending, tested), group (ODB-backed group + group-message MVP, tested), push (PushNotifier boundary, fanout policies, runtime, gRPC adapter, standalone server slice), codec (stale, gated OFF by default)
+- `gateway/` - Client-facing service: HTTP/WebSocket entry, auth token management, authenticated User, Message, Friend, Group, and Group Message HTTP controllers, connection management, message routing, route registration, local/remote PushNotifier composition
+- `test/` - Focused test modules: auth, db, odb, user, gateway_user, friend, gateway_friend, group, gateway_group, gateway_group_message, message, gateway_message, push, legacy (gated)
 - `scripts/` - Build helper scripts (e.g., `build_odb_runtime_2_5.sh`)
 - `config/` - Development configuration seed (`dev.json`)
 - `docs/` - Architecture docs, devlog per phase, agent context
@@ -36,7 +36,7 @@ verify.
 ## Build And Test Commands
 
 - Install deps: `vcpkg install` (or rely on CMake manifest mode with `-DVCPKG_MANIFEST_FEATURES=pgsql-odb` for ODB)
-- Configure (ODB): `cmake -S . -B /tmp/mychat-build -DVCPKG_MANIFEST_FEATURES=pgsql-odb -DMYCHAT_BUILD_TESTS=ON -DMYCHAT_BUILD_GATEWAY=ON -DMYCHAT_BUILD_SERVICES=ON -DMYCHAT_BUILD_PGSQL_ODB=ON -DCMAKE_BUILD_TYPE=Debug`
+- Configure (ODB + Push gRPC): `cmake -S . -B build/remote-push-odb -DVCPKG_MANIFEST_FEATURES="pgsql-odb;codec-grpc" -DMYCHAT_BUILD_TESTS=ON -DMYCHAT_BUILD_GATEWAY=ON -DMYCHAT_BUILD_SERVICES=ON -DMYCHAT_BUILD_PUSH_GRPC_SERVICE=ON -DMYCHAT_BUILD_PGSQL_ODB=ON -DCMAKE_BUILD_TYPE=Debug`
 - Configure (no-ODB): same without `PGSQL_ODB` and `VCPKG_MANIFEST_FEATURES`
 - Build: `cmake --build /tmp/mychat-build -j2`
 - Test: `ctest --test-dir /tmp/mychat-build --output-on-failure`
@@ -55,7 +55,8 @@ verify.
 - CMake staged build options: `MYCHAT_BUILD_TESTS`, `MYCHAT_BUILD_GATEWAY`, `MYCHAT_BUILD_SERVICES`, `MYCHAT_BUILD_USER_SERVICE`, `MYCHAT_BUILD_MESSAGE_SERVICE`, `MYCHAT_BUILD_CODEC_SERVICE`, `MYCHAT_BUILD_PGSQL_ODB`, `MYCHAT_BUILD_LEGACY_GATEWAY_TESTS`, `MYCHAT_BUILD_LEGACY_UNIT_TESTS`.
 - Friend Service MVP provides friend request/respond/list/pending flows with ODB persistence and Gateway HTTP routes.
 - Group Service MVP provides group create/join/leave/list/member flows, group message persistence/history, and multi-recipient fanout through `PushService::push_to_user`.
-- Active test count: 14 with ODB enabled (RedisHiredisTest, ODBUserPersistenceTest, UserServiceCoreTest, GatewayUserHttpTest, MessageServiceCoreTest, GatewayMessageHttpTest, GatewayMessageWsTest, PushServiceTest, FriendServiceCoreTest, GatewayFriendHttpTest, GroupServiceCoreTest, GatewayGroupHttpTest, GatewayGroupMessageHttpTest, AuthTokenTest); no-ODB builds skip ODB-backed Message, Friend, Group, and related Gateway targets cleanly (2/2).
+- Push Service boundary/gRPC work provides `services/push/PushNotifier`, service-owned fanout policies, `PushRuntime`, `PushGrpcService`, Gateway `RemotePushNotifier`, and a standalone `push_server` target. Gateway defaults to local in-process push via `push.mode = "local"` and can use the remote gRPC client when explicit gRPC targets are built. The current standalone server uses no-session/no-op adapters because Gateway still owns live WebSocket sessions.
+- Active full ODB + Gateway + Push gRPC test count: 17/17 on 2026-06-05 (RedisHiredisTest, ODBUserPersistenceTest, UserServiceCoreTest, GatewayUserHttpTest, MessageServiceCoreTest, PushRuntimeTest, PushGrpcServiceTest, RemotePushNotifierTest, GatewayMessageHttpTest, GatewayMessageWsTest, PushServiceTest, FriendServiceCoreTest, GatewayFriendHttpTest, GroupServiceCoreTest, GatewayGroupHttpTest, GatewayGroupMessageHttpTest, AuthTokenTest); no-ODB builds skip ODB-backed Message, Friend, Group, and related Gateway targets cleanly (3/3).
 
 ## Constraints
 
@@ -74,7 +75,7 @@ verify.
 - Stale codec/gRPC generated files may cause confusion if accidentally regenerated with mismatched protoc versions.
 - Legacy tests (SignalHandlerTest, RouterManagerTests) have pre-existing failures if re-enabled.
 - No schema migration framework for PostgreSQL yet.
-- Full Phase F is not complete: standalone Push Service, codec/gRPC or direct service-call strategy, and schema migration remain future work. WebSocket send/ack, online delivery through `ConnectionManager`, pluggable Push fanout, production FanoutPolicy implementations, and group multi-recipient fanout are complete.
+- Full Phase F is not complete: real remote Push delivery plumbing and schema migration remain future work. WebSocket send/ack, online delivery through `ConnectionManager`, pluggable Push fanout, production FanoutPolicy implementations, group multi-recipient fanout, Push gRPC contract/adapter, Gateway remote PushNotifier wiring, and the standalone `push_server` process target are complete.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` has shown a timing-sensitive transient failure on one run and passed on retry; this appears pre-existing and unrelated to Task 004.
 - `SendRequest::msg_type` is caller-supplied even though the current API method is named `send_text_message`; defaulting to `MessageType::TEXT` is a small future cleanup.
 - TLS certificate paths are development defaults; production certificate/secret handling is still open.

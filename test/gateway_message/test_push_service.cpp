@@ -18,23 +18,22 @@
 #include <database/redis/redis_mgr.hpp>
 
 #include <gateway/push/push_service.hpp>
-#include <gateway/push/fanout_policies.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
+#include <fanout_policy.hpp>
 #include <message_service.hpp>
 #include <utils/log_manager.hpp>
 
 namespace {
 
-using im::gateway::AllSessionsFanoutPolicy;
 using im::gateway::ConnectionManager;
-using im::gateway::DeviceSessionInfo;
-using im::gateway::FanoutPolicy;
-using im::gateway::NewestSessionFanoutPolicy;
-using im::gateway::PlatformFilterFanoutPolicy;
 using im::gateway::PushService;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::service::message::MessageService;
+using im::service::push::AllSessionsFanoutPolicy;
+using im::service::push::NewestSessionFanoutPolicy;
+using im::service::push::PlatformFilterFanoutPolicy;
+using im::service::push::PushSessionInfo;
 using im::utils::LogManager;
 
 RedisConfig test_redis_config() {
@@ -54,13 +53,11 @@ std::string config_path() {
 
 const char* kConnStr = "host=127.0.0.1 port=5432 dbname=mychat user=mychat password=mychat-dev-pass";
 
-DeviceSessionInfo make_session(const std::string& sid,
-                                const std::string& device,
-                                const std::string& platform,
-                                std::chrono::system_clock::time_point connect_time) {
-    DeviceSessionInfo info;
+PushSessionInfo make_session(const std::string& sid,
+                              const std::string& platform,
+                              std::chrono::system_clock::time_point connect_time) {
+    PushSessionInfo info;
     info.session_id = sid;
-    info.device_id = device;
     info.platform = platform;
     info.connect_time = connect_time;
     return info;
@@ -167,9 +164,9 @@ TEST_F(PushServiceTest, NoActiveSessions) {
 TEST_F(PushServiceTest, AllSessionsFanoutSelectsAll) {
     AllSessionsFanoutPolicy policy;
     auto now = std::chrono::system_clock::now();
-    std::vector<DeviceSessionInfo> sessions = {
-        make_session("sess-1", "dev-1", "web", now),
-        make_session("sess-2", "dev-2", "mobile", now),
+    std::vector<PushSessionInfo> sessions = {
+        make_session("sess-1", "web", now),
+        make_session("sess-2", "mobile", now),
     };
 
     auto selected = policy.select_sessions(sessions);
@@ -181,9 +178,9 @@ TEST_F(PushServiceTest, AllSessionsFanoutSelectsAll) {
 TEST_F(PushServiceTest, PlatformFilterSingleMatch) {
     PlatformFilterFanoutPolicy policy({"web"});
     auto now = std::chrono::system_clock::now();
-    std::vector<DeviceSessionInfo> sessions = {
-        make_session("web-sess", "dev-1", "web", now),
-        make_session("mobile-sess", "dev-2", "mobile", now),
+    std::vector<PushSessionInfo> sessions = {
+        make_session("web-sess", "web", now),
+        make_session("mobile-sess", "mobile", now),
     };
 
     auto selected = policy.select_sessions(sessions);
@@ -194,10 +191,10 @@ TEST_F(PushServiceTest, PlatformFilterSingleMatch) {
 TEST_F(PushServiceTest, PlatformFilterMultiplePlatforms) {
     PlatformFilterFanoutPolicy policy({"web", "desktop"});
     auto now = std::chrono::system_clock::now();
-    std::vector<DeviceSessionInfo> sessions = {
-        make_session("web-sess", "dev-1", "web", now),
-        make_session("mobile-sess", "dev-2", "mobile", now),
-        make_session("desktop-sess", "dev-3", "desktop", now),
+    std::vector<PushSessionInfo> sessions = {
+        make_session("web-sess", "web", now),
+        make_session("mobile-sess", "mobile", now),
+        make_session("desktop-sess", "desktop", now),
     };
 
     auto selected = policy.select_sessions(sessions);
@@ -209,9 +206,9 @@ TEST_F(PushServiceTest, PlatformFilterMultiplePlatforms) {
 TEST_F(PushServiceTest, PlatformFilterNoMatch) {
     PlatformFilterFanoutPolicy policy({"tablet"});
     auto now = std::chrono::system_clock::now();
-    std::vector<DeviceSessionInfo> sessions = {
-        make_session("web-sess", "dev-1", "web", now),
-        make_session("mobile-sess", "dev-2", "mobile", now),
+    std::vector<PushSessionInfo> sessions = {
+        make_session("web-sess", "web", now),
+        make_session("mobile-sess", "mobile", now),
     };
 
     auto selected = policy.select_sessions(sessions);
@@ -221,8 +218,8 @@ TEST_F(PushServiceTest, PlatformFilterNoMatch) {
 TEST_F(PushServiceTest, PlatformFilterEmptyAllowedList) {
     PlatformFilterFanoutPolicy policy(std::vector<std::string>{});
     auto now = std::chrono::system_clock::now();
-    std::vector<DeviceSessionInfo> sessions = {
-        make_session("web-sess", "dev-1", "web", now),
+    std::vector<PushSessionInfo> sessions = {
+        make_session("web-sess", "web", now),
     };
 
     auto selected = policy.select_sessions(sessions);
@@ -234,10 +231,10 @@ TEST_F(PushServiceTest, NewestSessionSelectsLatest) {
     auto t1 = std::chrono::system_clock::now();
     auto t2 = t1 + std::chrono::seconds(10);
     auto t3 = t1 + std::chrono::seconds(20);
-    std::vector<DeviceSessionInfo> sessions = {
-        make_session("old-sess", "dev-1", "web", t1),
-        make_session("mid-sess", "dev-2", "mobile", t2),
-        make_session("new-sess", "dev-3", "desktop", t3),
+    std::vector<PushSessionInfo> sessions = {
+        make_session("old-sess", "web", t1),
+        make_session("mid-sess", "mobile", t2),
+        make_session("new-sess", "desktop", t3),
     };
 
     auto selected = policy.select_sessions(sessions);
@@ -248,8 +245,8 @@ TEST_F(PushServiceTest, NewestSessionSelectsLatest) {
 TEST_F(PushServiceTest, NewestSessionSingleSession) {
     NewestSessionFanoutPolicy policy;
     auto now = std::chrono::system_clock::now();
-    std::vector<DeviceSessionInfo> sessions = {
-        make_session("only-sess", "dev-1", "web", now),
+    std::vector<PushSessionInfo> sessions = {
+        make_session("only-sess", "web", now),
     };
 
     auto selected = policy.select_sessions(sessions);
@@ -259,7 +256,7 @@ TEST_F(PushServiceTest, NewestSessionSingleSession) {
 
 TEST_F(PushServiceTest, NewestSessionNoSessions) {
     NewestSessionFanoutPolicy policy;
-    std::vector<DeviceSessionInfo> sessions;
+    std::vector<PushSessionInfo> sessions;
 
     auto selected = policy.select_sessions(sessions);
     EXPECT_TRUE(selected.empty());
