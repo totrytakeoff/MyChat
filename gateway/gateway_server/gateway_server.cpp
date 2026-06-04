@@ -41,6 +41,7 @@
 #include <memory>
 #include <filesystem>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 
 // Protocol Buffers相关
@@ -100,6 +101,10 @@ void register_user_http_routes_on_server(httplib::Server& server,
 #endif
 
 #ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/server_builder.h>
+
+#include "../push/gateway_push_delivery_service.hpp"
 #include "../push/remote_push_notifier.hpp"
 #endif
 
@@ -337,12 +342,19 @@ void GatewayServer::start() {
 void GatewayServer::stop() {
     if (!is_running_) {
         server_logger->warn("GatewayServer is not running.");
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+        stop_gateway_push_delivery_server();
+#endif
         return;
     }
     
     // 首先设置停止标志，防止新的请求被处理
     is_running_ = false;
     server_logger->info("Stopping GatewayServer...");
+
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+    stop_gateway_push_delivery_server();
+#endif
 
     // 停止WebSocket服务器
     try {
@@ -385,6 +397,55 @@ void GatewayServer::stop() {
 
     server_logger->info("GatewayServer stopped");
 }
+
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+void GatewayServer::start_gateway_push_delivery_server(const std::string& listen_address) {
+    if (listen_address.empty()) {
+        server_logger->info("Gateway Push delivery gRPC endpoint is not configured");
+        return;
+    }
+    if (gateway_push_delivery_server_) {
+        server_logger->warn("Gateway Push delivery gRPC server is already running");
+        return;
+    }
+    if (!push_service_) {
+        server_logger->warn("Gateway Push delivery gRPC server skipped: PushService is absent");
+        return;
+    }
+
+    gateway_push_delivery_service_ = std::make_unique<GatewayPushDeliveryService>(
+        push_service_.get(), push_service_.get(), push_service_.get());
+
+    ::grpc::ServerBuilder builder;
+    int selected_port = 0;
+    builder.AddListeningPort(listen_address,
+                             ::grpc::InsecureServerCredentials(),
+                             &selected_port);
+    builder.RegisterService(gateway_push_delivery_service_.get());
+
+    gateway_push_delivery_server_ = builder.BuildAndStart();
+    if (!gateway_push_delivery_server_) {
+        gateway_push_delivery_service_.reset();
+        gateway_push_delivery_selected_port_ = 0;
+        throw std::runtime_error(
+            "Failed to start Gateway Push delivery gRPC server on " + listen_address);
+    }
+
+    gateway_push_delivery_selected_port_ = selected_port;
+    server_logger->info("Gateway Push delivery gRPC server listening on {} (selected port {})",
+                        listen_address, selected_port);
+}
+
+void GatewayServer::stop_gateway_push_delivery_server() {
+    if (gateway_push_delivery_server_) {
+        server_logger->info("Stopping Gateway Push delivery gRPC server");
+        gateway_push_delivery_server_->Shutdown();
+        gateway_push_delivery_server_.reset();
+        gateway_push_delivery_service_.reset();
+        gateway_push_delivery_selected_port_ = 0;
+    }
+}
+#endif
 
 
 // ==================== 状态查询和统计 ====================
@@ -579,12 +640,21 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
             if (use_remote_push) {
                 const std::string endpoint =
                     push_cfg.get<std::string>("push.remote_endpoint", "127.0.0.1:9101");
+                const std::string delivery_listen_address =
+                    push_cfg.get<std::string>("push.gateway_delivery_listen_address",
+                                              "127.0.0.1:9102");
+                auto msg_svc_for_push =
+                    std::make_shared<im::service::message::MessageService>(odb_db_);
+                push_service_ = std::make_unique<PushService>(
+                    conn_mgr_.get(), websocket_server_.get(), msg_svc_for_push);
+                start_gateway_push_delivery_server(delivery_listen_address);
                 remote_push_notifier_ = std::make_unique<RemotePushNotifier>(
                     endpoint, std::chrono::milliseconds(push_timeout_ms));
                 push_notifier_ = remote_push_notifier_.get();
                 server_logger->info(
-                    "Remote PushNotifier initialized for endpoint {} with timeout {} ms",
-                    endpoint, push_timeout_ms);
+                    "Remote PushNotifier initialized for endpoint {} with timeout {} ms; "
+                    "Gateway delivery endpoint {} is available for push_server",
+                    endpoint, push_timeout_ms, delivery_listen_address);
             } else {
                 auto msg_svc_for_push =
                     std::make_shared<im::service::message::MessageService>(odb_db_);

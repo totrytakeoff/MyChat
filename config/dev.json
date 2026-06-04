@@ -29,6 +29,8 @@
     "mode": "local",
     "listen_address": "0.0.0.0:9101",
     "remote_endpoint": "127.0.0.1:9101",
+    "gateway_delivery_listen_address": "127.0.0.1:9102",
+    "gateway_delivery_endpoint": "127.0.0.1:9102",
     "timeout_ms": 200
   },
   "secret_key": "replace-this-dev-secret-before-production",

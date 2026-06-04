@@ -18,13 +18,14 @@ that work has now been completed and verified.
 Latest reliable baseline after this handoff update:
 
 - Full ODB + Gateway + Push gRPC configure/build/test passed on 2026-06-05:
-  17/17 tests in `build/remote-push-odb`.
+  20/20 tests in `build/remote-push-odb`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
 - Codec explicit-enable configure/generate/build passed:
   `generate_proto` and `im_codec_service`.
 - Push gRPC explicit-enable configure/generate/build/test passed:
   `generate_proto`, `im_push_grpc_service`, `push_server`, `gateway_server`,
-  `PushRuntimeTest`, `PushGrpcServiceTest`, `PushServerAppTest`, and
+  `PushRuntimeTest`, `PushGrpcServiceTest`, `PushServerAppTest`,
+  `PushServerRemoteAdaptersTest`, `GatewayPushDeliveryServiceTest`, and
   `RemotePushNotifierTest`.
 - Redis/PostgreSQL Docker containers were restarted and are healthy.
 - FanoutPolicy production implementations are complete.
@@ -70,9 +71,15 @@ Latest reliable baseline after this handoff update:
   in-process delivery remains the default.
 - Standalone Push server process slice is present in the working tree:
   `services/push/push_server` hosts `PushGrpcService + PushRuntime` and reads
-  `push.listen_address` from config. Its current session/payload/delivery
-  adapters are explicit no-op/no-session transitional adapters because Gateway
-  still owns live WebSocket sessions.
+  `push.listen_address` from config. It uses remote-aware Gateway delivery
+  adapters when `push.gateway_delivery_endpoint` is configured and no-op
+  adapters otherwise.
+- Remote Push delivery callback channel first slice is present in the working
+  tree: `GatewayPushDeliveryService` exposes Gateway-owned session lookup,
+  payload send, and delivered marking on
+  `push.gateway_delivery_listen_address`; `push_server` can call it through
+  `push.gateway_delivery_endpoint` while Gateway keeps WebSocket session
+  ownership.
 
 ## Important Repository Context
 
@@ -226,12 +233,15 @@ Latest Push boundary cleanup details:
     `push.listen_address` (`0.0.0.0:9101` in `config/dev.json`).
   - `services/push/push_server_main.cpp` provides config, log-level, service
     identity, and signal-handler wiring.
-  - `services/push/push_server_adapters.*` provides explicit transitional
-    no-session/no-op adapters. This is intentional: Gateway still owns
-    WebSocket sessions, so the standalone server can accept `NotifyUser` RPCs
-    but cannot yet deliver payloads to online clients.
+  - `services/push/push_server_adapters.*` keeps explicit no-session/no-op
+    adapters when no Gateway delivery endpoint is configured, and uses
+    remote-aware Gateway delivery adapters when
+    `push.gateway_delivery_endpoint` is configured.
   - `PushServerAppTest` covers binding an ephemeral port and calling
     `NotifyUser` through the generated gRPC stub.
+  - `GatewayPushDeliveryServiceTest` and `PushServerRemoteAdaptersTest` cover
+    the first Gateway callback channel for session lookup, payload send, and
+    delivered marking.
 
 ## Recent Cleanup And Audit
 
@@ -265,7 +275,7 @@ Friend HTTP routes now registered when the target is enabled:
 
 This handoff audit then re-read current project state, verified that Friend and
 Group work had advanced beyond the older handoff, and reconciled durable docs
-to the current 17/17 full ODB + Push gRPC and 3/3 no-ODB baseline.
+to the current 20/20 full ODB + Gateway + Push gRPC and 3/3 no-ODB baseline.
 
 ## Current Product State
 
@@ -329,7 +339,7 @@ Recently reconciled:
 
 - `current_progress.md`, `roadmap.md`, `todo.md`, and `project_context.md`
   now match the verified Group-complete state.
-- `single_agent_handoff.md` now records the 17/17 full ODB + Push gRPC and 3/3
+- `single_agent_handoff.md` now records the 20/20 full ODB + Push gRPC and 3/3
   no-ODB baselines.
 - `phase14_codec_grpc_generation_chain.md` records the completed codec/gRPC
   generation-chain cleanup.
@@ -337,12 +347,12 @@ Recently reconciled:
   insertion, GroupMessageService validates group/sender membership before
   persisting, and Friend/Group/GroupMessage tests clean generated UID/group
   rows without leaving orphan test data.
-- The selected next step is not another boundary-definition task and not
-  another standalone-binary task. The `PushNotifier` boundary, service-owned
-  fanout policies, `PushRuntime`, gRPC adapter, Gateway remote client, and
-  `push_server` target are in place; continue by designing and implementing the
-  real cross-process delivery channel between Gateway-owned WebSocket sessions
-  and the standalone Push server.
+- The selected next step is not another boundary-definition task, not another
+  standalone-binary task, and not another first-slice callback task. The
+  `PushNotifier` boundary, service-owned fanout policies, `PushRuntime`, gRPC
+  adapter, Gateway remote client, `push_server` target, and Gateway callback
+  delivery channel are in place. Continue by adding an end-to-end remote Push
+  smoke and hardening endpoint startup/config behavior.
 
 ## Verification Commands And Results
 
@@ -377,7 +387,7 @@ ctest --test-dir build/remote-push-odb --output-on-failure
 Result:
 
 ```text
-100% tests passed, 0 tests failed out of 17
+100% tests passed, 0 tests failed out of 20
 ```
 
 Latest no-ODB/no-gRPC default baseline, verified passing:
@@ -412,9 +422,11 @@ Result:
 
 ```text
 git diff --check passed.
-push_server and test_push_server_app built.
+push_server, test_push_server_app, test_gateway_push_delivery_service, and
+test_push_server_remote_adapters built.
 PushRuntimeTest, PushGrpcServiceTest, PushServerAppTest,
-RemotePushNotifierTest, and PushServiceTest passed, 5/5.
+PushServerRemoteAdaptersTest, GatewayPushDeliveryServiceTest,
+RemotePushNotifierTest, and PushServiceTest passed, 7/7.
 ```
 
 Observed warnings during builds were existing unused-parameter warnings in
@@ -456,9 +468,8 @@ Useful latest task records:
 Selected next task:
 
 ```text
-Implement the real remote Push delivery plumbing between Gateway and the
-standalone push_server, then add an end-to-end remote Push smoke with Gateway
-push.mode=remote.
+Add a remote Push end-to-end smoke across Gateway and standalone push_server,
+then harden remote endpoint startup/config behavior.
 ```
 
 Why this is the right next task:
@@ -474,28 +485,26 @@ Why this is the right next task:
 - Direct-message and group-message push/fanout behaviors plus service-side
   `PushRuntime` behavior are now pinned by focused tests, so the next boundary
   decision has a safer regression surface.
-- The gRPC server adapter, `push_server` binary, and Gateway
-  `RemotePushNotifier` are already present. What is missing is a real channel
-  for the Push server to reach Gateway-owned WebSocket sessions and to mark
-  delivery after remote sends.
+- The gRPC server adapter, `push_server` binary, Gateway
+  `RemotePushNotifier`, and `GatewayPushDeliveryService` callback channel are
+  present. What is missing is an end-to-end smoke that proves the two-process
+  path preserves direct/group fanout behavior, plus startup/config hardening
+  for common remote-mode mistakes.
 
 Suggested scope:
 
-- Add a narrow remote-delivery design before coding: define how Gateway exposes
-  online session lookup, payload send, and delivered marking to `push_server`.
-- Keep the first implementation minimal and explicit. A reasonable next slice
-  is a Gateway-hosted internal gRPC callback service or equivalent local
-  adapter boundary that lets `push_server` ask Gateway to send payloads to
-  selected sessions.
-- Replace or extend the current `EmptyPushSessionProvider`,
-  `NoopPushPayloadSender`, and `NoopPushDeliveryMarker` only after the remote
-  Gateway-side channel has tests.
+- Audit the remote-mode boot path and identify the smallest existing test
+  harness that can start `push_server` plus Gateway remote push wiring.
 - Add an end-to-end local smoke that starts `push_server`, configures Gateway
   `push.mode=remote`, and verifies direct/group fanout still flows through the
   `PushNotifier` boundary.
+- Add config/startup tests for missing `push.remote_endpoint`, missing
+  `push.gateway_delivery_listen_address`, bind failure, and unavailable
+  `push_server` where feasible without broad process orchestration.
 - Keep current direct-message, group-message, `PushRuntimeTest`, and
-  `PushGrpcServiceTest`/`PushServerAppTest`/`RemotePushNotifierTest`
-  characterization tests passing through each move.
+  `PushGrpcServiceTest`/`PushServerAppTest`/`PushServerRemoteAdaptersTest`/
+  `GatewayPushDeliveryServiceTest`/`RemotePushNotifierTest` characterization
+  tests passing through each move.
 - Preserve Gateway HTTP/WS wire contracts and sender ack behavior.
 - Keep `MYCHAT_BUILD_CODEC_SERVICE=OFF` and `MYCHAT_BUILD_PUSH_GRPC_SERVICE=OFF`
   default behavior unchanged; explicit gRPC builds should require the
@@ -524,14 +533,15 @@ Out of scope for the next task:
 
 Recommended sequence:
 
-1. Audit current `push_server`/`RemotePushNotifier` flow and write a small
-   design note for the remote delivery channel.
-2. Add Gateway-side internal delivery surface for session lookup, payload send,
-   and delivered marking, keeping HTTP/WS public contracts unchanged.
-3. Replace the standalone server's no-op adapters with remote-aware adapters.
-4. Add an end-to-end remote Push smoke with `push.mode=remote`.
-5. Keep direct-message, group-message, PushRuntime, PushGrpcService,
-   PushServerApp, and RemotePushNotifier tests green.
+1. Audit current `push_server`/`RemotePushNotifier`/`GatewayPushDeliveryService`
+   flow and pick a minimal end-to-end smoke shape.
+2. Add a remote Push E2E smoke with `push.mode=remote` and standalone
+   `push_server`.
+3. Harden endpoint config/startup behavior and document the expected local
+   topology.
+4. Keep direct-message, group-message, PushRuntime, PushGrpcService,
+   PushServerApp, PushServerRemoteAdapters, GatewayPushDeliveryService, and
+   RemotePushNotifier tests green.
 6. Redis connection pool before performance/load work.
 7. Schema migration framework before broad persistence evolution.
 
@@ -547,7 +557,7 @@ Recommended sequence:
 - `pgsql_conn.hpp` has pre-existing string-ID/template/raw-pointer issues.
   Current services bypass it with direct `odb::pgsql::database` usage.
 - Friend and Group MVP docs were reconciled in this handoff. If future edits
-  touch these areas, preserve the verified 17/17 full ODB + Push gRPC and 3/3
+  touch these areas, preserve the verified 20/20 full ODB + Push gRPC and 3/3
   no-ODB baselines.
 
 ## Prompt For Next Agent
@@ -578,7 +588,7 @@ Before coding, read:
 Current reliable state:
 - FanoutPolicy production work is complete and service-owned under
   `services/push`.
-- Full ODB + Gateway + Push gRPC baseline passed 17/17 on 2026-06-05 in
+- Full ODB + Gateway + Push gRPC baseline passed 20/20 on 2026-06-05 in
   `build/remote-push-odb`.
 - No-ODB default baseline passed 3/3 on 2026-06-05 after Redis was started.
 - Gateway layout cleanup is complete: HTTP controllers are under
@@ -601,9 +611,13 @@ Current reliable state:
   notifier through config push.mode; config/dev.json defaults to local.
 - Standalone Push server process slice is complete: services/push/push_server
   hosts PushGrpcService + PushRuntime, reads push.listen_address, and has a
-  PushServerAppTest. Its current EmptyPushSessionProvider,
-  NoopPushPayloadSender, and NoopPushDeliveryMarker are intentional
-  transitional adapters because Gateway still owns live WebSocket sessions.
+  PushServerAppTest. When push.gateway_delivery_endpoint is configured it uses
+  remote-aware Gateway adapters; otherwise it keeps explicit no-session/no-op
+  adapters for local transitional startup.
+- Remote Push delivery callback channel first slice is complete:
+  GatewayPushDeliveryService exposes Gateway-owned session lookup, payload
+  send, and delivered marking on push.gateway_delivery_listen_address;
+  push_server calls it through push.gateway_delivery_endpoint.
 - Friend Service/Gateway Friend HTTP compile, link, and pass focused tests.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
@@ -611,9 +625,8 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Implement the real remote Push delivery plumbing between Gateway and the
-standalone push_server, then add an end-to-end remote Push smoke with Gateway
-push.mode=remote.
+Add a remote Push end-to-end smoke across Gateway and standalone push_server,
+then harden remote endpoint startup/config behavior.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

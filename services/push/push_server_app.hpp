@@ -15,6 +15,8 @@ namespace im::service::push {
 
 struct PushServerConfig {
     std::string listen_address = "0.0.0.0:9101";
+    std::string gateway_delivery_endpoint;
+    int timeout_ms = 200;
 };
 
 class PushServerApp {
@@ -35,11 +37,11 @@ public:
 
 private:
     PushServerConfig config_;
-    EmptyPushSessionProvider session_provider_;
-    NoopPushPayloadSender payload_sender_;
-    NoopPushDeliveryMarker delivery_marker_;
-    PushRuntime runtime_;
-    PushGrpcService grpc_service_;
+    std::unique_ptr<PushSessionProvider> session_provider_;
+    std::unique_ptr<PushPayloadSender> payload_sender_;
+    std::unique_ptr<PushDeliveryMarker> delivery_marker_;
+    std::unique_ptr<PushRuntime> runtime_;
+    std::unique_ptr<PushGrpcService> grpc_service_;
     std::unique_ptr<::grpc::Server> server_;
     std::shared_ptr<spdlog::logger> logger_;
     int selected_port_ = 0;

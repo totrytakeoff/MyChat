@@ -13,7 +13,8 @@ updated_by: coder
   cases + 3 GroupMessageServiceTest cases), Gateway HTTP controller + 23
   integration tests (GatewayGroupHttpTest), GroupMessage ODB model + HTTP
   controller (send/history) + 15 tests (GatewayGroupMessageHttpTest),
-  multi-recipient group message fanout via PushService. Full baseline: 14/14 suites.
+  multi-recipient group message fanout via PushService. Latest full ODB +
+  Gateway + Push gRPC baseline: 20/20 suites.
 
 ## Completed (Previous)
 
@@ -76,26 +77,30 @@ updated_by: coder
   `push.mode = "local"` so the existing in-process adapter remains the default.
 - [x] Standalone Push server process slice - `services/push/push_server` hosts
   `PushGrpcService + PushRuntime` behind `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
-  Current adapters are explicit no-op/no-session transitional adapters because
-  Gateway still owns live WebSocket sessions.
+  It keeps no-op adapters only when no Gateway delivery endpoint is configured.
+- [x] Remote Push delivery callback channel first slice - `push.proto` now
+  defines `GatewayPushDeliveryService`; Gateway remote mode exposes session
+  lookup, payload send, and delivered marking on
+  `push.gateway_delivery_listen_address`; `push_server` can call back through
+  `push.gateway_delivery_endpoint` via remote-aware adapters.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) - real remote Push delivery plumbing.
+- [ ] Message Service MVP (Phase F) - remote Push E2E smoke and startup hardening.
   Persistence core (Task 003), Gateway HTTP
   integration (Task 004), WebSocket send/ack (Task 006), online delivery
   (Task 007), PushService with FanoutPolicy (Task 008), production fanout
   policies, multi-recipient fanout, PushNotifier boundary/tests, PushRuntime
   core extraction, Push gRPC contract/adapter, Gateway remote-client strategy,
-  and standalone `push_server` target are complete.
+  standalone `push_server` target, and first Gateway delivery callback channel
+  are complete.
 
 ## Next
 
-- [ ] Design and implement the remote Push delivery channel between Gateway and
-  `push_server` for session lookup, payload send, and delivered marking.
 - [ ] Add an end-to-end remote Push smoke: run standalone Push server, set
   Gateway `push.mode=remote`, and verify direct/group fanout still use
   `PushNotifier` best-effort semantics.
+- [ ] Harden remote Push endpoint config and startup behavior.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.
 

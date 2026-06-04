@@ -16,6 +16,8 @@ namespace {
 struct PushServerRuntimeConfig {
     std::string config_file = "config/dev.json";
     std::string listen_address = "0.0.0.0:9101";
+    std::string gateway_delivery_endpoint;
+    int timeout_ms = 200;
     std::string log_level = "info";
 };
 
@@ -33,6 +35,20 @@ void configure_cli(im::utils::CLIParser& parser) {
                        "gRPC listen address, e.g. 0.0.0.0:9101", "", "Network",
                        [](const std::string& value) {
                            g_config.listen_address = value;
+                           return true;
+                       });
+    parser.addArgument("gateway-delivery", 'g', im::utils::ArgumentType::STRING, false,
+                       "Gateway delivery gRPC endpoint, e.g. 127.0.0.1:9102",
+                       g_config.gateway_delivery_endpoint, "Network",
+                       [](const std::string& value) {
+                           g_config.gateway_delivery_endpoint = value;
+                           return true;
+                       });
+    parser.addArgument("timeout-ms", 't', im::utils::ArgumentType::INTEGER, false,
+                       "Gateway delivery RPC timeout in milliseconds",
+                       std::to_string(g_config.timeout_ms), "Network",
+                       [](const std::string& value) {
+                           g_config.timeout_ms = std::stoi(value);
                            return true;
                        });
     parser.addArgument("log-level", 'l', im::utils::ArgumentType::STRING, false,
@@ -70,6 +86,12 @@ int main(int argc, char** argv) {
         im::utils::ConfigManager config(g_config.config_file);
         g_config.listen_address = config.getWithEnv<std::string>(
             "push.listen_address", "MYCHAT_PUSH_LISTEN_ADDRESS", g_config.listen_address);
+        g_config.gateway_delivery_endpoint = config.getWithEnv<std::string>(
+            "push.gateway_delivery_endpoint",
+            "MYCHAT_PUSH_GATEWAY_DELIVERY_ENDPOINT",
+            g_config.gateway_delivery_endpoint);
+        g_config.timeout_ms = config.getWithEnv<int>(
+            "push.timeout_ms", "MYCHAT_PUSH_TIMEOUT_MS", g_config.timeout_ms);
         g_config.log_level = config.getWithEnv<std::string>(
             "push.log_level", "MYCHAT_LOG_LEVEL", g_config.log_level);
 
@@ -81,6 +103,8 @@ int main(int argc, char** argv) {
 
         im::service::push::PushServerConfig server_config;
         server_config.listen_address = g_config.listen_address;
+        server_config.gateway_delivery_endpoint = g_config.gateway_delivery_endpoint;
+        server_config.timeout_ms = g_config.timeout_ms;
 
         im::service::push::PushServerApp server(server_config);
         g_server = &server;

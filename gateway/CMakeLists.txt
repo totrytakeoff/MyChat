@@ -67,7 +67,10 @@ endif()
 
 # Remote PushNotifier client — explicit gRPC path only.
 if(TARGET im::push_grpc_service)
-    target_sources(im_gateway_core PRIVATE push/remote_push_notifier.cpp)
+    target_sources(im_gateway_core PRIVATE
+        push/remote_push_notifier.cpp
+        push/gateway_push_delivery_service.cpp
+    )
     target_link_libraries(im_gateway_core PUBLIC im::push_grpc_service)
     target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_REMOTE_PUSH_NOTIFIER)
     message(STATUS "Remote PushNotifier enabled (im::push_grpc_service available)")

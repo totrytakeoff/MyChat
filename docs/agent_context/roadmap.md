@@ -56,8 +56,8 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
          delivery + fanout policies + group multi-recipient fanout + PushNotifier
          boundary/tests + PushRuntime core extraction + codec/gRPC generation
          cleanup + Push gRPC contract/adapter + Gateway remote-client wiring
-         + standalone Push server process complete; real remote delivery
-         plumbing pending).
+         + standalone Push server process + first Gateway delivery callback
+         channel complete; remote E2E smoke and startup hardening pending).
 
 - ✅ Persistence core (task003): `services/message` target, ODB-backed message
   persistence, send one-to-one text, offline message pull, conversation history
@@ -111,13 +111,18 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   config remains `local`.
 - [x] Standalone Push server process: `services/push/push_server` hosts
   `PushGrpcService + PushRuntime` and reads `push.listen_address` from config.
-  Its current no-session/no-op adapters are an explicit transitional state
-  until Gateway-owned WebSocket sessions are reachable across process
-  boundaries.
-- Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP message
-  API passes; Gateway can deliver message to online user; offline message is
-  persisted and pullable. Remote `push.mode=remote` still needs real delivery
-  plumbing and an end-to-end smoke beyond accepting the RPC.
+  It keeps no-session/no-op adapters only when no Gateway delivery endpoint is
+  configured.
+- [x] Remote Push delivery callback channel first slice:
+  `GatewayPushDeliveryService` exposes Gateway-owned session lookup, payload
+  send, and delivered marking; Gateway remote mode starts it on
+  `push.gateway_delivery_listen_address`; `push_server` can call it through
+  `push.gateway_delivery_endpoint` with remote-aware adapters.
+- Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP
+  message API passes; Gateway can deliver messages to online users; offline
+  messages are persisted and pullable. Remote `push.mode=remote` now has a
+  callback channel for Gateway-owned sessions, but still needs an end-to-end
+  smoke across two processes and startup/config hardening.
 
 ## Phase G: Friend Service MVP
 
@@ -146,4 +151,4 @@ Status: complete.
 - ✅ GroupMessage ODB model, GroupMessageService for group message persistence.
 - ✅ GroupMessage HTTP controller (send, history) with tests (15 test cases).
 - ✅ Multi-recipient group message fanout via PushService::push_to_user per member.
-- ✅ Full ODB-enabled baseline: 14/14 test suites passing.
+- ✅ Full ODB + Gateway + Push gRPC baseline: 20/20 test suites passing.

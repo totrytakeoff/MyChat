@@ -83,6 +83,151 @@ PushService::Service::~Service() {
 }
 
 
+static const char* GatewayPushDeliveryService_method_names[] = {
+  "/im.push.GatewayPushDeliveryService/ListUserSessions",
+  "/im.push.GatewayPushDeliveryService/SendSessionPayload",
+  "/im.push.GatewayPushDeliveryService/MarkMessageDelivered",
+};
+
+std::unique_ptr< GatewayPushDeliveryService::Stub> GatewayPushDeliveryService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
+  (void)options;
+  std::unique_ptr< GatewayPushDeliveryService::Stub> stub(new GatewayPushDeliveryService::Stub(channel, options));
+  return stub;
+}
+
+GatewayPushDeliveryService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
+  : channel_(channel), rpcmethod_ListUserSessions_(GatewayPushDeliveryService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendSessionPayload_(GatewayPushDeliveryService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_MarkMessageDelivered_(GatewayPushDeliveryService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  {}
+
+::grpc::Status GatewayPushDeliveryService::Stub::ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::im::push::ListUserSessionsResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ListUserSessions_, context, request, response);
+}
+
+void GatewayPushDeliveryService::Stub::async::ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListUserSessions_, context, request, response, std::move(f));
+}
+
+void GatewayPushDeliveryService::Stub::async::ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ListUserSessions_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>* GatewayPushDeliveryService::Stub::PrepareAsyncListUserSessionsRaw(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::push::ListUserSessionsResponse, ::im::push::ListUserSessionsRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ListUserSessions_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>* GatewayPushDeliveryService::Stub::AsyncListUserSessionsRaw(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncListUserSessionsRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status GatewayPushDeliveryService::Stub::SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::im::push::SendSessionPayloadResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SendSessionPayload_, context, request, response);
+}
+
+void GatewayPushDeliveryService::Stub::async::SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SendSessionPayload_, context, request, response, std::move(f));
+}
+
+void GatewayPushDeliveryService::Stub::async::SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SendSessionPayload_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>* GatewayPushDeliveryService::Stub::PrepareAsyncSendSessionPayloadRaw(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::push::SendSessionPayloadResponse, ::im::push::SendSessionPayloadRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_SendSessionPayload_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>* GatewayPushDeliveryService::Stub::AsyncSendSessionPayloadRaw(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncSendSessionPayloadRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status GatewayPushDeliveryService::Stub::MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::im::push::MarkMessageDeliveredResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_MarkMessageDelivered_, context, request, response);
+}
+
+void GatewayPushDeliveryService::Stub::async::MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MarkMessageDelivered_, context, request, response, std::move(f));
+}
+
+void GatewayPushDeliveryService::Stub::async::MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_MarkMessageDelivered_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>* GatewayPushDeliveryService::Stub::PrepareAsyncMarkMessageDeliveredRaw(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::push::MarkMessageDeliveredResponse, ::im::push::MarkMessageDeliveredRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_MarkMessageDelivered_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>* GatewayPushDeliveryService::Stub::AsyncMarkMessageDeliveredRaw(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncMarkMessageDeliveredRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+GatewayPushDeliveryService::Service::Service() {
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      GatewayPushDeliveryService_method_names[0],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< GatewayPushDeliveryService::Service, ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](GatewayPushDeliveryService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::push::ListUserSessionsRequest* req,
+             ::im::push::ListUserSessionsResponse* resp) {
+               return service->ListUserSessions(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      GatewayPushDeliveryService_method_names[1],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< GatewayPushDeliveryService::Service, ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](GatewayPushDeliveryService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::push::SendSessionPayloadRequest* req,
+             ::im::push::SendSessionPayloadResponse* resp) {
+               return service->SendSessionPayload(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      GatewayPushDeliveryService_method_names[2],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< GatewayPushDeliveryService::Service, ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](GatewayPushDeliveryService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::push::MarkMessageDeliveredRequest* req,
+             ::im::push::MarkMessageDeliveredResponse* resp) {
+               return service->MarkMessageDelivered(ctx, req, resp);
+             }, this)));
+}
+
+GatewayPushDeliveryService::Service::~Service() {
+}
+
+::grpc::Status GatewayPushDeliveryService::Service::ListUserSessions(::grpc::ServerContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status GatewayPushDeliveryService::Service::SendSessionPayload(::grpc::ServerContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status GatewayPushDeliveryService::Service::MarkMessageDelivered(::grpc::ServerContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+
 }  // namespace im
 }  // namespace push
 

@@ -92,10 +92,14 @@ Current runtime adapter:
   for the explicit remote path. Default builds still do not require gRPC.
 - `push_server` is now a standalone process target that hosts
   `PushGrpcService + PushRuntime` and reads `push.listen_address`.
-- The standalone server intentionally uses transitional adapters:
-  `EmptyPushSessionProvider`, `NoopPushPayloadSender`, and
-  `NoopPushDeliveryMarker`. These make the RPC boundary live without falsely
-  claiming the Push server can access Gateway-owned WebSocket sessions.
+- The standalone server uses no-session/no-op adapters when no Gateway
+  delivery endpoint is configured. When `push.gateway_delivery_endpoint` is set,
+  it uses remote Gateway adapters for session lookup, session payload send, and
+  delivered marking.
+- Gateway remote mode starts an internal `GatewayPushDeliveryService` endpoint
+  on `push.gateway_delivery_listen_address`, keeping WebSocket session
+  ownership inside Gateway while allowing `push_server` to call back for
+  delivery primitives.
 
 Gateway build gating:
 
@@ -147,6 +151,13 @@ Behavior preserved:
   - a missing injected RPC client is handled as best-effort no-op.
 - `PushServerAppTest` verifies the standalone server app can bind an ephemeral
   local port and serve `NotifyUser` successfully through a generated gRPC stub.
+- `GatewayPushDeliveryServiceTest` verifies Gateway's internal delivery gRPC
+  adapter delegates to session lookup, payload send, and delivered marking
+  dependencies while converting validation/exception failures to `BaseResponse`
+  errors.
+- `PushServerRemoteAdaptersTest` verifies the standalone server's remote
+  Gateway adapters call `GatewayPushDeliveryService` and preserve best-effort
+  empty/false behavior on transport or `BaseResponse` failures.
 
 Existing tests continue to cover:
 
@@ -352,7 +363,7 @@ Result:
 
 ```text
 Configure enabled Message WS, Group Message HTTP, local PushService, and
-Remote PushNotifier. Build passed. Full CTest passed, 17/17.
+Remote PushNotifier. Build passed. Full CTest passed, 20/20.
 ```
 
 Note: a first attempt under `/tmp/mychat-build-remote-push-odb` failed because
@@ -383,20 +394,53 @@ Result:
 git diff --check passed.
 Default no-ODB/no-gRPC build passed.
 Default no-ODB/no-gRPC CTest passed, 3/3.
-push_server and test_push_server_app built.
+push_server, test_push_server_app, test_gateway_push_delivery_service, and
+test_push_server_remote_adapters built.
 PushRuntimeTest, PushGrpcServiceTest, PushServerAppTest,
-RemotePushNotifierTest, and PushServiceTest passed, 5/5.
+PushServerRemoteAdaptersTest, GatewayPushDeliveryServiceTest,
+RemotePushNotifierTest, and PushServiceTest passed, 7/7.
+```
+
+Remote delivery plumbing first-slice verification:
+
+```bash
+cmake --build build/remote-push-odb --target generate_proto -j2
+TMPDIR=/home/myself/workspace/MyChat/build/tmp \
+  cmake --build build/remote-push-odb \
+    --target gateway_server push_server \
+             test_gateway_push_delivery_service test_push_server_remote_adapters -j2
+ctest --test-dir build/remote-push-odb -R "Push" --output-on-failure
+cmake -S . -B build/default-regression \
+  -DMYCHAT_BUILD_TESTS=ON \
+  -DMYCHAT_BUILD_GATEWAY=ON \
+  -DMYCHAT_BUILD_SERVICES=ON \
+  -DMYCHAT_BUILD_PGSQL_ODB=OFF \
+  -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/default-regression -j2
+ctest --test-dir build/default-regression --output-on-failure
+```
+
+Result:
+
+```text
+generate_proto passed.
+gateway_server, push_server, test_gateway_push_delivery_service, and
+test_push_server_remote_adapters built.
+PushRuntimeTest, PushGrpcServiceTest, PushServerAppTest,
+PushServerRemoteAdaptersTest, GatewayPushDeliveryServiceTest,
+RemotePushNotifierTest, and PushServiceTest passed, 7/7.
+Default no-ODB/no-gRPC configure/build/test passed, 3/3.
 ```
 
 ## Remaining Work
 
-- Design and implement the real remote delivery channel between Gateway and
-  `push_server`: session lookup, payload send, and delivered marking must cross
-  the process boundary while Gateway still owns WebSocket sessions.
-- Harden the Gateway remote mode operationally: document the expected Push
-  server endpoint, decide startup failure vs. degraded best-effort behavior,
-  and add an end-to-end smoke that exercises `push.mode=remote` beyond merely
-  accepting the `NotifyUser` RPC.
+- Add an end-to-end smoke that starts Gateway in `push.mode=remote`, starts
+  `push_server` with `push.gateway_delivery_endpoint`, and verifies direct/group
+  fanout reaches Gateway-owned WebSocket sessions with preserved best-effort
+  semantics.
+- Harden the Gateway remote mode operationally: document expected endpoints,
+  validate misconfiguration, and decide startup failure vs degraded best-effort
+  behavior for unavailable Push/Gateway delivery endpoints.
 - Keep Gateway adapter responsibilities narrow: session lookup, payload send,
   and delivered marking.
 - Keep direct-message and group-message characterization tests passing during

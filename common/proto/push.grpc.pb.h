@@ -238,6 +238,529 @@ class PushService final {
   typedef WithStreamedUnaryMethod_NotifyUser<Service > StreamedService;
 };
 
+// Gateway-owned delivery surface used by a standalone Push server to reach
+// live WebSocket sessions without taking session ownership away from Gateway.
+class GatewayPushDeliveryService final {
+ public:
+  static constexpr char const* service_full_name() {
+    return "im.push.GatewayPushDeliveryService";
+  }
+  class StubInterface {
+   public:
+    virtual ~StubInterface() {}
+    virtual ::grpc::Status ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::im::push::ListUserSessionsResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::ListUserSessionsResponse>> AsyncListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::ListUserSessionsResponse>>(AsyncListUserSessionsRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::ListUserSessionsResponse>> PrepareAsyncListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::ListUserSessionsResponse>>(PrepareAsyncListUserSessionsRaw(context, request, cq));
+    }
+    virtual ::grpc::Status SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::im::push::SendSessionPayloadResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::SendSessionPayloadResponse>> AsyncSendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::SendSessionPayloadResponse>>(AsyncSendSessionPayloadRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::SendSessionPayloadResponse>> PrepareAsyncSendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::SendSessionPayloadResponse>>(PrepareAsyncSendSessionPayloadRaw(context, request, cq));
+    }
+    virtual ::grpc::Status MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::im::push::MarkMessageDeliveredResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::MarkMessageDeliveredResponse>> AsyncMarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::MarkMessageDeliveredResponse>>(AsyncMarkMessageDeliveredRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::MarkMessageDeliveredResponse>> PrepareAsyncMarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::push::MarkMessageDeliveredResponse>>(PrepareAsyncMarkMessageDeliveredRaw(context, request, cq));
+    }
+    class async_interface {
+     public:
+      virtual ~async_interface() {}
+      virtual void ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+    };
+    typedef class async_interface experimental_async_interface;
+    virtual class async_interface* async() { return nullptr; }
+    class async_interface* experimental_async() { return async(); }
+   private:
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::push::ListUserSessionsResponse>* AsyncListUserSessionsRaw(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::push::ListUserSessionsResponse>* PrepareAsyncListUserSessionsRaw(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::push::SendSessionPayloadResponse>* AsyncSendSessionPayloadRaw(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::push::SendSessionPayloadResponse>* PrepareAsyncSendSessionPayloadRaw(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::push::MarkMessageDeliveredResponse>* AsyncMarkMessageDeliveredRaw(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::push::MarkMessageDeliveredResponse>* PrepareAsyncMarkMessageDeliveredRaw(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) = 0;
+  };
+  class Stub final : public StubInterface {
+   public:
+    Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+    ::grpc::Status ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::im::push::ListUserSessionsResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>> AsyncListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>>(AsyncListUserSessionsRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>> PrepareAsyncListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>>(PrepareAsyncListUserSessionsRaw(context, request, cq));
+    }
+    ::grpc::Status SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::im::push::SendSessionPayloadResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>> AsyncSendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>>(AsyncSendSessionPayloadRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>> PrepareAsyncSendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>>(PrepareAsyncSendSessionPayloadRaw(context, request, cq));
+    }
+    ::grpc::Status MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::im::push::MarkMessageDeliveredResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>> AsyncMarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>>(AsyncMarkMessageDeliveredRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>> PrepareAsyncMarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>>(PrepareAsyncMarkMessageDeliveredRaw(context, request, cq));
+    }
+    class async final :
+      public StubInterface::async_interface {
+     public:
+      void ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response, std::function<void(::grpc::Status)>) override;
+      void ListUserSessions(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response, std::function<void(::grpc::Status)>) override;
+      void SendSessionPayload(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response, std::function<void(::grpc::Status)>) override;
+      void MarkMessageDelivered(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+     private:
+      friend class Stub;
+      explicit async(Stub* stub): stub_(stub) { }
+      Stub* stub() { return stub_; }
+      Stub* stub_;
+    };
+    class async* async() override { return &async_stub_; }
+
+   private:
+    std::shared_ptr< ::grpc::ChannelInterface> channel_;
+    class async async_stub_{this};
+    ::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>* AsyncListUserSessionsRaw(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::push::ListUserSessionsResponse>* PrepareAsyncListUserSessionsRaw(::grpc::ClientContext* context, const ::im::push::ListUserSessionsRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>* AsyncSendSessionPayloadRaw(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::push::SendSessionPayloadResponse>* PrepareAsyncSendSessionPayloadRaw(::grpc::ClientContext* context, const ::im::push::SendSessionPayloadRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>* AsyncMarkMessageDeliveredRaw(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::push::MarkMessageDeliveredResponse>* PrepareAsyncMarkMessageDeliveredRaw(::grpc::ClientContext* context, const ::im::push::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_ListUserSessions_;
+    const ::grpc::internal::RpcMethod rpcmethod_SendSessionPayload_;
+    const ::grpc::internal::RpcMethod rpcmethod_MarkMessageDelivered_;
+  };
+  static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+
+  class Service : public ::grpc::Service {
+   public:
+    Service();
+    virtual ~Service();
+    virtual ::grpc::Status ListUserSessions(::grpc::ServerContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response);
+    virtual ::grpc::Status SendSessionPayload(::grpc::ServerContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response);
+    virtual ::grpc::Status MarkMessageDelivered(::grpc::ServerContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response);
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_ListUserSessions : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_ListUserSessions() {
+      ::grpc::Service::MarkMethodAsync(0);
+    }
+    ~WithAsyncMethod_ListUserSessions() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListUserSessions(::grpc::ServerContext* /*context*/, const ::im::push::ListUserSessionsRequest* /*request*/, ::im::push::ListUserSessionsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestListUserSessions(::grpc::ServerContext* context, ::im::push::ListUserSessionsRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::push::ListUserSessionsResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_SendSessionPayload : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_SendSessionPayload() {
+      ::grpc::Service::MarkMethodAsync(1);
+    }
+    ~WithAsyncMethod_SendSessionPayload() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SendSessionPayload(::grpc::ServerContext* /*context*/, const ::im::push::SendSessionPayloadRequest* /*request*/, ::im::push::SendSessionPayloadResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestSendSessionPayload(::grpc::ServerContext* context, ::im::push::SendSessionPayloadRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::push::SendSessionPayloadResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_MarkMessageDelivered : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_MarkMessageDelivered() {
+      ::grpc::Service::MarkMethodAsync(2);
+    }
+    ~WithAsyncMethod_MarkMessageDelivered() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MarkMessageDelivered(::grpc::ServerContext* /*context*/, const ::im::push::MarkMessageDeliveredRequest* /*request*/, ::im::push::MarkMessageDeliveredResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestMarkMessageDelivered(::grpc::ServerContext* context, ::im::push::MarkMessageDeliveredRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::push::MarkMessageDeliveredResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_ListUserSessions<WithAsyncMethod_SendSessionPayload<WithAsyncMethod_MarkMessageDelivered<Service > > > AsyncService;
+  template <class BaseClass>
+  class WithCallbackMethod_ListUserSessions : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ListUserSessions() {
+      ::grpc::Service::MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::push::ListUserSessionsRequest* request, ::im::push::ListUserSessionsResponse* response) { return this->ListUserSessions(context, request, response); }));}
+    void SetMessageAllocatorFor_ListUserSessions(
+        ::grpc::MessageAllocator< ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ListUserSessions() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListUserSessions(::grpc::ServerContext* /*context*/, const ::im::push::ListUserSessionsRequest* /*request*/, ::im::push::ListUserSessionsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListUserSessions(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::push::ListUserSessionsRequest* /*request*/, ::im::push::ListUserSessionsResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_SendSessionPayload : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_SendSessionPayload() {
+      ::grpc::Service::MarkMethodCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::push::SendSessionPayloadRequest* request, ::im::push::SendSessionPayloadResponse* response) { return this->SendSessionPayload(context, request, response); }));}
+    void SetMessageAllocatorFor_SendSessionPayload(
+        ::grpc::MessageAllocator< ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_SendSessionPayload() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SendSessionPayload(::grpc::ServerContext* /*context*/, const ::im::push::SendSessionPayloadRequest* /*request*/, ::im::push::SendSessionPayloadResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* SendSessionPayload(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::push::SendSessionPayloadRequest* /*request*/, ::im::push::SendSessionPayloadResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_MarkMessageDelivered : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_MarkMessageDelivered() {
+      ::grpc::Service::MarkMethodCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::push::MarkMessageDeliveredRequest* request, ::im::push::MarkMessageDeliveredResponse* response) { return this->MarkMessageDelivered(context, request, response); }));}
+    void SetMessageAllocatorFor_MarkMessageDelivered(
+        ::grpc::MessageAllocator< ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_MarkMessageDelivered() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MarkMessageDelivered(::grpc::ServerContext* /*context*/, const ::im::push::MarkMessageDeliveredRequest* /*request*/, ::im::push::MarkMessageDeliveredResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* MarkMessageDelivered(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::push::MarkMessageDeliveredRequest* /*request*/, ::im::push::MarkMessageDeliveredResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_ListUserSessions<WithCallbackMethod_SendSessionPayload<WithCallbackMethod_MarkMessageDelivered<Service > > > CallbackService;
+  typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
+  class WithGenericMethod_ListUserSessions : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_ListUserSessions() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
+    ~WithGenericMethod_ListUserSessions() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListUserSessions(::grpc::ServerContext* /*context*/, const ::im::push::ListUserSessionsRequest* /*request*/, ::im::push::ListUserSessionsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_SendSessionPayload : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_SendSessionPayload() {
+      ::grpc::Service::MarkMethodGeneric(1);
+    }
+    ~WithGenericMethod_SendSessionPayload() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SendSessionPayload(::grpc::ServerContext* /*context*/, const ::im::push::SendSessionPayloadRequest* /*request*/, ::im::push::SendSessionPayloadResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_MarkMessageDelivered : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_MarkMessageDelivered() {
+      ::grpc::Service::MarkMethodGeneric(2);
+    }
+    ~WithGenericMethod_MarkMessageDelivered() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MarkMessageDelivered(::grpc::ServerContext* /*context*/, const ::im::push::MarkMessageDeliveredRequest* /*request*/, ::im::push::MarkMessageDeliveredResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_ListUserSessions : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_ListUserSessions() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
+    ~WithRawMethod_ListUserSessions() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListUserSessions(::grpc::ServerContext* /*context*/, const ::im::push::ListUserSessionsRequest* /*request*/, ::im::push::ListUserSessionsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestListUserSessions(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_SendSessionPayload : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_SendSessionPayload() {
+      ::grpc::Service::MarkMethodRaw(1);
+    }
+    ~WithRawMethod_SendSessionPayload() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SendSessionPayload(::grpc::ServerContext* /*context*/, const ::im::push::SendSessionPayloadRequest* /*request*/, ::im::push::SendSessionPayloadResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestSendSessionPayload(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_MarkMessageDelivered : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_MarkMessageDelivered() {
+      ::grpc::Service::MarkMethodRaw(2);
+    }
+    ~WithRawMethod_MarkMessageDelivered() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MarkMessageDelivered(::grpc::ServerContext* /*context*/, const ::im::push::MarkMessageDeliveredRequest* /*request*/, ::im::push::MarkMessageDeliveredResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestMarkMessageDelivered(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ListUserSessions : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ListUserSessions() {
+      ::grpc::Service::MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ListUserSessions(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ListUserSessions() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ListUserSessions(::grpc::ServerContext* /*context*/, const ::im::push::ListUserSessionsRequest* /*request*/, ::im::push::ListUserSessionsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ListUserSessions(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_SendSessionPayload : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_SendSessionPayload() {
+      ::grpc::Service::MarkMethodRawCallback(1,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendSessionPayload(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_SendSessionPayload() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SendSessionPayload(::grpc::ServerContext* /*context*/, const ::im::push::SendSessionPayloadRequest* /*request*/, ::im::push::SendSessionPayloadResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* SendSessionPayload(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_MarkMessageDelivered : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_MarkMessageDelivered() {
+      ::grpc::Service::MarkMethodRawCallback(2,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->MarkMessageDelivered(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_MarkMessageDelivered() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status MarkMessageDelivered(::grpc::ServerContext* /*context*/, const ::im::push::MarkMessageDeliveredRequest* /*request*/, ::im::push::MarkMessageDeliveredResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* MarkMessageDelivered(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_ListUserSessions : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_ListUserSessions() {
+      ::grpc::Service::MarkMethodStreamed(0,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::push::ListUserSessionsRequest, ::im::push::ListUserSessionsResponse>* streamer) {
+                       return this->StreamedListUserSessions(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_ListUserSessions() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status ListUserSessions(::grpc::ServerContext* /*context*/, const ::im::push::ListUserSessionsRequest* /*request*/, ::im::push::ListUserSessionsResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedListUserSessions(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::push::ListUserSessionsRequest,::im::push::ListUserSessionsResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_SendSessionPayload : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_SendSessionPayload() {
+      ::grpc::Service::MarkMethodStreamed(1,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::push::SendSessionPayloadRequest, ::im::push::SendSessionPayloadResponse>* streamer) {
+                       return this->StreamedSendSessionPayload(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_SendSessionPayload() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status SendSessionPayload(::grpc::ServerContext* /*context*/, const ::im::push::SendSessionPayloadRequest* /*request*/, ::im::push::SendSessionPayloadResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedSendSessionPayload(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::push::SendSessionPayloadRequest,::im::push::SendSessionPayloadResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_MarkMessageDelivered : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_MarkMessageDelivered() {
+      ::grpc::Service::MarkMethodStreamed(2,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::push::MarkMessageDeliveredRequest, ::im::push::MarkMessageDeliveredResponse>* streamer) {
+                       return this->StreamedMarkMessageDelivered(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_MarkMessageDelivered() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status MarkMessageDelivered(::grpc::ServerContext* /*context*/, const ::im::push::MarkMessageDeliveredRequest* /*request*/, ::im::push::MarkMessageDeliveredResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedMarkMessageDelivered(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::push::MarkMessageDeliveredRequest,::im::push::MarkMessageDeliveredResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_ListUserSessions<WithStreamedUnaryMethod_SendSessionPayload<WithStreamedUnaryMethod_MarkMessageDelivered<Service > > > StreamedUnaryService;
+  typedef Service SplitStreamedService;
+  typedef WithStreamedUnaryMethod_ListUserSessions<WithStreamedUnaryMethod_SendSessionPayload<WithStreamedUnaryMethod_MarkMessageDelivered<Service > > > StreamedService;
+};
+
 }  // namespace push
 }  // namespace im
 

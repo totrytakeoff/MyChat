@@ -10,6 +10,14 @@ service PushService {
     rpc NotifyUser(NotifyUserRequest) returns (NotifyUserResponse) {}
 }
 
+// Gateway-owned delivery surface used by a standalone Push server to reach
+// live WebSocket sessions without taking session ownership away from Gateway.
+service GatewayPushDeliveryService {
+    rpc ListUserSessions(ListUserSessionsRequest) returns (ListUserSessionsResponse) {}
+    rpc SendSessionPayload(SendSessionPayloadRequest) returns (SendSessionPayloadResponse) {}
+    rpc MarkMessageDelivered(MarkMessageDeliveredRequest) returns (MarkMessageDeliveredResponse) {}
+}
+
 // 推送类型枚举
 enum PushType {
     PUSH_MESSAGE = 0;      // 普通消息推送
@@ -48,4 +56,39 @@ message NotifyUserRequest {
 // 服务间推送通知响应。当前 PushRuntime 是 best-effort 语义，成功仅表示请求已被接收。
 message NotifyUserResponse {
     im.base.BaseResponse base = 1; // 通用响应头
+}
+
+message PushSession {
+    string session_id = 1;      // Gateway WebSocket session ID
+    string platform = 2;        // device platform, e.g. web/android/ios
+    int64 connect_time_ms = 3;  // connection time since Unix epoch in milliseconds
+}
+
+message ListUserSessionsRequest {
+    string receiver_uid = 1;
+}
+
+message ListUserSessionsResponse {
+    im.base.BaseResponse base = 1;
+    repeated PushSession sessions = 2;
+}
+
+message SendSessionPayloadRequest {
+    string session_id = 1;
+    bytes payload = 2;
+}
+
+message SendSessionPayloadResponse {
+    im.base.BaseResponse base = 1;
+    bool accepted = 2;
+}
+
+message MarkMessageDeliveredRequest {
+    uint64 msg_id = 1;
+    int64 delivered_time = 2;
+}
+
+message MarkMessageDeliveredResponse {
+    im.base.BaseResponse base = 1;
+    bool marked = 2;
 }

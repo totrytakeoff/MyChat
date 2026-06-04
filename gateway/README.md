@@ -55,6 +55,10 @@ features are added only when their service targets exist:
 - `GatewayServer` defaults to local push via `push.mode = "local"` and only
   selects `RemotePushNotifier` when an explicit gRPC build provides it and
   `push.mode = "remote"` is configured.
+- In `push.mode = "remote"`, Gateway still owns WebSocket sessions. It exposes
+  `GatewayPushDeliveryService` on `push.gateway_delivery_listen_address` so
+  `push_server` can call back for session lookup, payload send, and delivered
+  marking through `push.gateway_delivery_endpoint`.
 - `PushService` is best-effort: offline or unselected sessions leave messages
   pullable through offline APIs.
 - The default `AllSessionsFanoutPolicy` in `services/push` must remain "push to

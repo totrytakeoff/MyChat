@@ -102,9 +102,15 @@ Known working:
 - Standalone Push server process slice is now available behind explicit gRPC
   builds: `services/push/push_server` hosts `PushGrpcService + PushRuntime`
   and listens on `push.listen_address` (default `0.0.0.0:9101`). Its current
-  adapters are intentionally transitional (`EmptyPushSessionProvider`,
-  `NoopPushPayloadSender`, `NoopPushDeliveryMarker`) because Gateway still owns
-  live WebSocket sessions and payload delivery.
+  default adapters remain transitional no-ops when no Gateway delivery endpoint
+  is configured.
+- Remote Push delivery plumbing first slice is implemented behind explicit
+  gRPC builds: `im.push.GatewayPushDeliveryService` exposes Gateway-owned
+  session lookup, session payload send, and delivered marking; Gateway remote
+  mode starts this internal delivery endpoint through
+  `push.gateway_delivery_listen_address`; `push_server` can use
+  `push.gateway_delivery_endpoint` to replace its no-op adapters with
+  remote-aware Gateway adapters.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -232,11 +238,10 @@ Known working:
   NewestSession), group multi-recipient fanout, PushNotifier boundary, and
   behavior-preserving push/fanout characterization tests are complete. Fanout
   policy logic and PushRuntime live in `services/push`; the Push gRPC contract
-  server-side adapter, Gateway remote PushNotifier client, and standalone
-  `push_server` process target are in place. The remaining service-call work is
-  a real cross-process session/payload/delivery-marker channel so remote mode
-  can deliver to Gateway-owned WebSocket sessions instead of accepting RPCs as
-  no-session best-effort no-ops.
+  server-side adapter, Gateway remote PushNotifier client, standalone
+  `push_server` process target, and first Gateway delivery callback channel are
+  in place. The remaining service-call work is an end-to-end remote-mode smoke
+  and operational hardening of the two-process startup/config path.
 - Friend Service MVP (Phase G) is complete. Persistence model, repository,
   service, and Gateway HTTP controller have focused tests passing, API contract
   documented with TARGET_NOT_FOUND validation and HTTP status mapping.
@@ -249,13 +254,13 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Design and implement the real remote Push delivery channel between Gateway
-   and `push_server`: session lookup, payload send, and delivered marking must
-   cross the process boundary without pretending the Push server owns Gateway
-   WebSocket sessions.
-2. Add an end-to-end local/remote Push smoke: run `push_server`, set Gateway
+1. Add an end-to-end local/remote Push smoke: run `push_server`, set Gateway
    `push.mode=remote`, and verify direct/group fanout still preserves
    best-effort semantics.
+2. Harden remote Push startup/config behavior: document/validate
+   `push.remote_endpoint`, `push.gateway_delivery_listen_address`, and
+   `push.gateway_delivery_endpoint`; decide failure vs degraded local fallback
+   policy for unavailable internal delivery endpoints.
 3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
@@ -275,13 +280,13 @@ Known working:
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: real remote Push delivery plumbing and schema
-  migration remain future work. PushService with pluggable FanoutPolicy,
-  service-owned production fanout policies, group multi-recipient fanout,
-  PushNotifier boundary/tests, PushRuntime core extraction, codec/gRPC
-  generation cleanup, the Push gRPC contract/adapter, Gateway remote
-  PushNotifier client wiring, and the standalone `push_server` process target
-  are complete.
+- Full Phase F is not complete: remote Push end-to-end smoke, remote startup
+  hardening, and schema migration remain future work. PushService with
+  pluggable FanoutPolicy, service-owned production fanout policies, group
+  multi-recipient fanout, PushNotifier boundary/tests, PushRuntime core
+  extraction, codec/gRPC generation cleanup, the Push gRPC contract/adapter,
+  Gateway remote PushNotifier client wiring, the standalone `push_server`
+  process target, and the first Gateway delivery callback channel are complete.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive

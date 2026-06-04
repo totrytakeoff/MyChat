@@ -38,6 +38,7 @@
 #include <thread>
 
 namespace odb { namespace pgsql { class database; } }
+namespace grpc { class Server; }
 
 #ifdef IM_ENABLE_USER_HTTP
 namespace im::gateway { class UserHttpController; }
@@ -65,6 +66,7 @@ namespace im::service::push { class PushNotifier; }
 
 #ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
 namespace im::gateway { class RemotePushNotifier; }
+namespace im::gateway { class GatewayPushDeliveryService; }
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
@@ -168,6 +170,11 @@ private:
     void register_group_message_http_routes();
 #endif
 
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+    void start_gateway_push_delivery_server(const std::string& listen_address);
+    void stop_gateway_push_delivery_server();
+#endif
+
     // WebSocket连接事件处理
     void on_websocket_connect(SessionPtr session);
     void on_websocket_disconnect(SessionPtr session);
@@ -230,6 +237,9 @@ private:
 
 #ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
     std::unique_ptr<RemotePushNotifier> remote_push_notifier_;
+    std::unique_ptr<GatewayPushDeliveryService> gateway_push_delivery_service_;
+    std::unique_ptr<::grpc::Server> gateway_push_delivery_server_;
+    int gateway_push_delivery_selected_port_ = 0;
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
