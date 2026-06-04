@@ -18,7 +18,7 @@ that work has now been completed and verified.
 Latest reliable baseline after this handoff update:
 
 - Full ODB + Gateway + Push gRPC configure/build/test passed on 2026-06-05:
-  21/21 tests in `build/remote-push-odb`.
+  22/22 tests in `build/remote-push-odb`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
 - Codec explicit-enable configure/generate/build passed:
   `generate_proto` and `im_codec_service`.
@@ -26,7 +26,8 @@ Latest reliable baseline after this handoff update:
   `generate_proto`, `im_push_grpc_service`, `push_server`, `gateway_server`,
   `PushRuntimeTest`, `PushGrpcServiceTest`, `PushServerAppTest`,
   `PushServerRemoteAdaptersTest`, `GatewayPushDeliveryServiceTest`, and
-  `RemotePushEndToEndSmokeTest`, and `RemotePushNotifierTest`.
+  `RemotePushEndToEndSmokeTest`, `RemotePushGatewayEntrypointsTest`, and
+  `RemotePushNotifierTest`.
 - Redis/PostgreSQL Docker containers were restarted and are healthy.
 - FanoutPolicy production implementations are complete.
 - Friend Service and Friend HTTP controller compile, link, and have focused
@@ -85,6 +86,12 @@ Latest reliable baseline after this handoff update:
   and a real `PushServerApp`, calls `PushService.NotifyUser`, and verifies
   session lookup, payload send, protobuf payload contents, delivered marking,
   and offline/no-session best-effort behavior.
+- Remote Push Gateway entrypoint smoke is present in the working tree:
+  `RemotePushGatewayEntrypointsTest` injects a real `RemotePushNotifier` into
+  `MessageWsHandler` and `GroupMessageHttpController`, then verifies direct WS
+  send and group HTTP send reach `push_server` and Gateway delivery callbacks
+  with preserved direct-message delivery and group fanout-to-members-only
+  semantics.
 
 ## Important Repository Context
 
@@ -280,7 +287,7 @@ Friend HTTP routes now registered when the target is enabled:
 
 This handoff audit then re-read current project state, verified that Friend and
 Group work had advanced beyond the older handoff, and reconciled durable docs
-to the current 21/21 full ODB + Gateway + Push gRPC and 3/3 no-ODB baseline.
+to the current 22/22 full ODB + Gateway + Push gRPC and 3/3 no-ODB baseline.
 
 ## Current Product State
 
@@ -344,7 +351,7 @@ Recently reconciled:
 
 - `current_progress.md`, `roadmap.md`, `todo.md`, and `project_context.md`
   now match the verified Group-complete state.
-- `single_agent_handoff.md` now records the 21/21 full ODB + Push gRPC and 3/3
+- `single_agent_handoff.md` now records the 22/22 full ODB + Push gRPC and 3/3
   no-ODB baselines.
 - `phase14_codec_grpc_generation_chain.md` records the completed codec/gRPC
   generation-chain cleanup.
@@ -428,11 +435,12 @@ Result:
 ```text
 git diff --check passed.
 push_server, test_push_server_app, test_gateway_push_delivery_service,
-test_push_server_remote_adapters, and test_remote_push_e2e_smoke built.
+test_push_server_remote_adapters, test_remote_push_e2e_smoke, and
+test_remote_push_gateway_entrypoints built.
 PushRuntimeTest, PushGrpcServiceTest, PushServerAppTest,
 PushServerRemoteAdaptersTest, GatewayPushDeliveryServiceTest,
-RemotePushEndToEndSmokeTest, RemotePushNotifierTest, and PushServiceTest
-passed, 8/8.
+RemotePushEndToEndSmokeTest, RemotePushGatewayEntrypointsTest,
+RemotePushNotifierTest, and PushServiceTest passed, 9/9.
 ```
 
 Observed warnings during builds were existing unused-parameter warnings in
@@ -474,8 +482,8 @@ Useful latest task records:
 Selected next task:
 
 ```text
-Add a full Gateway HTTP/WS process-level remote Push smoke, then deepen remote
-endpoint startup/config hardening.
+Add a full `gateway_server` process-level HTTP/WS remote Push smoke, then
+deepen remote endpoint startup/config hardening.
 ```
 
 Why this is the right next task:
@@ -492,19 +500,19 @@ Why this is the right next task:
   `PushRuntime` behavior are now pinned by focused tests, so the next boundary
   decision has a safer regression surface.
 - The gRPC server adapter, `push_server` binary, Gateway
-  `RemotePushNotifier`, `GatewayPushDeliveryService` callback channel, and a
-  real gRPC-link smoke are present. What is still missing is a full Gateway
-  HTTP/WS process-level smoke that proves direct/group fanout through Gateway
-  entry points, plus deeper startup/config hardening for common remote-mode
-  mistakes.
+  `RemotePushNotifier`, `GatewayPushDeliveryService` callback channel, a real
+  gRPC-link smoke, and a Gateway handler/controller entrypoint smoke are
+  present. What is still missing is a full `gateway_server` process-level
+  HTTP/WS smoke through real server ports, plus deeper startup/config
+  hardening for common remote-mode mistakes.
 
 Suggested scope:
 
-- Audit Gateway HTTP/WS test harnesses and pick the smallest full-process or
-  near-full-process remote-mode smoke shape.
-- Add a smoke that starts `push_server`, configures Gateway `push.mode=remote`,
-  and verifies direct/group fanout still flows through the `PushNotifier`
-  boundary from Gateway entry points.
+- Audit Gateway HTTP/WS server startup harnesses and pick the smallest
+  full-process remote-mode smoke shape.
+- Add a smoke that starts `push_server`, starts `gateway_server` with
+  `push.mode=remote`, and verifies direct/group fanout through real HTTP/WS
+  server ports.
 - Add config/startup tests for missing `push.remote_endpoint`, missing
   `push.gateway_delivery_listen_address`, bind failure, and unavailable
   `push_server` where feasible without broad process orchestration. Invalid
@@ -512,7 +520,8 @@ Suggested scope:
 - Keep current direct-message, group-message, `PushRuntimeTest`, and
   `PushGrpcServiceTest`/`PushServerAppTest`/`PushServerRemoteAdaptersTest`/
   `GatewayPushDeliveryServiceTest`/`RemotePushEndToEndSmokeTest`/
-  `RemotePushNotifierTest` characterization tests passing through each move.
+  `RemotePushGatewayEntrypointsTest`/`RemotePushNotifierTest`
+  characterization tests passing through each move.
 - Preserve Gateway HTTP/WS wire contracts and sender ack behavior.
 - Keep `MYCHAT_BUILD_CODEC_SERVICE=OFF` and `MYCHAT_BUILD_PUSH_GRPC_SERVICE=OFF`
   default behavior unchanged; explicit gRPC builds should require the
@@ -541,15 +550,16 @@ Out of scope for the next task:
 
 Recommended sequence:
 
-1. Audit current Gateway HTTP/WS integration test harnesses and pick a minimal
-   Gateway-process remote Push smoke shape.
-2. Add a Gateway entry-point remote Push smoke with `push.mode=remote` and
-   standalone `push_server`.
+1. Audit current Gateway HTTP/WS server startup harnesses and pick a minimal
+   full `gateway_server` remote Push smoke shape.
+2. Add a real-server remote Push smoke with `push.mode=remote` and standalone
+   `push_server`.
 3. Harden endpoint config/startup behavior beyond the current invalid-listen
    guard and document the expected local topology.
 4. Keep direct-message, group-message, PushRuntime, PushGrpcService,
    PushServerApp, PushServerRemoteAdapters, GatewayPushDeliveryService,
-   RemotePushEndToEndSmoke, and RemotePushNotifier tests green.
+   RemotePushEndToEndSmoke, RemotePushGatewayEntrypoints, and RemotePushNotifier
+   tests green.
 6. Redis connection pool before performance/load work.
 7. Schema migration framework before broad persistence evolution.
 
@@ -565,7 +575,7 @@ Recommended sequence:
 - `pgsql_conn.hpp` has pre-existing string-ID/template/raw-pointer issues.
   Current services bypass it with direct `odb::pgsql::database` usage.
 - Friend and Group MVP docs were reconciled in this handoff. If future edits
-  touch these areas, preserve the verified 21/21 full ODB + Push gRPC and 3/3
+  touch these areas, preserve the verified 22/22 full ODB + Push gRPC and 3/3
   no-ODB baselines.
 
 ## Prompt For Next Agent
@@ -596,7 +606,7 @@ Before coding, read:
 Current reliable state:
 - FanoutPolicy production work is complete and service-owned under
   `services/push`.
-- Full ODB + Gateway + Push gRPC baseline passed 21/21 on 2026-06-05 in
+- Full ODB + Gateway + Push gRPC baseline passed 22/22 on 2026-06-05 in
   `build/remote-push-odb`.
 - No-ODB default baseline passed 3/3 on 2026-06-05 after Redis was started.
 - Gateway layout cleanup is complete: HTTP controllers are under
@@ -630,6 +640,10 @@ Current reliable state:
   RemotePushEndToEndSmokeTest starts a real Gateway delivery endpoint and a
   real PushServerApp, calls NotifyUser, and verifies the callback chain,
   encoded payload, delivered marking, and offline/no-session behavior.
+- Remote Push Gateway entrypoint smoke is complete:
+  RemotePushGatewayEntrypointsTest injects a real RemotePushNotifier into
+  MessageWsHandler and GroupMessageHttpController, then verifies direct WS and
+  group HTTP send paths reach push_server and Gateway delivery callbacks.
 - Friend Service/Gateway Friend HTTP compile, link, and pass focused tests.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
@@ -637,8 +651,8 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Add a full Gateway HTTP/WS process-level remote Push smoke, then deepen remote
-endpoint startup/config hardening.
+Add a full `gateway_server` process-level HTTP/WS remote Push smoke, then
+deepen remote endpoint startup/config hardening.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

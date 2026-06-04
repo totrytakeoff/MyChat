@@ -56,7 +56,7 @@ verify.
 - Friend Service MVP provides friend request/respond/list/pending flows with ODB persistence and Gateway HTTP routes.
 - Group Service MVP provides group create/join/leave/list/member flows, group message persistence/history, and multi-recipient fanout through `PushService::push_to_user`.
 - Push Service boundary/gRPC work provides `services/push/PushNotifier`, service-owned fanout policies, `PushRuntime`, `PushGrpcService`, Gateway `RemotePushNotifier`, a standalone `push_server` target, and the first Gateway delivery callback channel. Gateway defaults to local in-process push via `push.mode = "local"` and can use the remote gRPC client when explicit gRPC targets are built. In remote mode, Gateway exposes `GatewayPushDeliveryService` for session lookup, payload send, and delivered marking; `push_server` uses `push.gateway_delivery_endpoint` to call back while Gateway keeps WebSocket session ownership.
-- Active full ODB + Gateway + Push gRPC test count: 21/21 on 2026-06-05, now including `PushServerRemoteAdaptersTest`, `GatewayPushDeliveryServiceTest`, and `RemotePushEndToEndSmokeTest`; no-ODB builds skip ODB-backed Message, Friend, Group, gRPC, and related Gateway targets cleanly (3/3).
+- Active full ODB + Gateway + Push gRPC test count: 22/22 on 2026-06-05, now including `PushServerRemoteAdaptersTest`, `GatewayPushDeliveryServiceTest`, `RemotePushEndToEndSmokeTest`, and `RemotePushGatewayEntrypointsTest`; no-ODB builds skip ODB-backed Message, Friend, Group, gRPC, and related Gateway targets cleanly (3/3).
 
 ## Constraints
 
@@ -75,7 +75,7 @@ verify.
 - Stale codec/gRPC generated files may cause confusion if accidentally regenerated with mismatched protoc versions.
 - Legacy tests (SignalHandlerTest, RouterManagerTests) have pre-existing failures if re-enabled.
 - No schema migration framework for PostgreSQL yet.
-- Full Phase F is not complete: full Gateway HTTP/WS process-level remote Push smoke, deeper remote startup/config hardening, and schema migration remain future work. WebSocket send/ack, online delivery through `ConnectionManager`, pluggable Push fanout, production FanoutPolicy implementations, group multi-recipient fanout, Push gRPC contract/adapter, Gateway remote PushNotifier wiring, the standalone `push_server` process target, the first Gateway delivery callback channel, and a real gRPC-link remote Push smoke are complete.
+- Full Phase F is not complete: full `gateway_server` process-level HTTP/WS remote Push smoke, deeper remote startup/config hardening, and schema migration remain future work. WebSocket send/ack, online delivery through `ConnectionManager`, pluggable Push fanout, production FanoutPolicy implementations, group multi-recipient fanout, Push gRPC contract/adapter, Gateway remote PushNotifier wiring, the standalone `push_server` process target, the first Gateway delivery callback channel, a real gRPC-link remote Push smoke, and Gateway handler/controller entrypoint remote Push smoke are complete.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` has shown a timing-sensitive transient failure on one run and passed on retry; this appears pre-existing and unrelated to Task 004.
 - `SendRequest::msg_type` is caller-supplied even though the current API method is named `send_text_message`; defaulting to `MessageType::TEXT` is a small future cleanup.
 - TLS certificate paths are development defaults; production certificate/secret handling is still open.
