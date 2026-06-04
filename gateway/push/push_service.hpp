@@ -8,10 +8,10 @@
 
 #include <spdlog/logger.h>
 
-#include "../common/proto/base.pb.h"
-#include "../common/proto/command.pb.h"
+#include "../../common/proto/base.pb.h"
+#include "../../common/proto/command.pb.h"
 #include "connection_manager/connection_manager.hpp"
-#include "../common/network/websocket_server.hpp"
+#include "../../common/network/websocket_server.hpp"
 
 namespace im::service::message {
 class MessageService;
@@ -19,8 +19,11 @@ class MessageService;
 
 namespace im::gateway {
 
-// Abstract fanout policy: given all sessions for a user, return the subset
-// that should receive the push.
+// Abstract fanout policy.
+//
+// Input is every active session currently known for a user. Output is the
+// session-id subset that should receive this push. Policies must not mutate
+// ConnectionManager state.
 class FanoutPolicy {
 public:
     virtual ~FanoutPolicy() = default;
@@ -44,7 +47,12 @@ public:
     void set_fanout_policy(std::unique_ptr<FanoutPolicy> policy);
 
     // Push a CMD_PUSH_MESSAGE to the recipient's selected sessions.
-    // Best-effort: returns silently if deps are null or no sessions exist.
+    //
+    // Best-effort semantics:
+    // - returns silently when dependencies are absent, the user is offline, or
+    //   the fanout policy selects no sessions;
+    // - marks the message delivered only after at least one session accepts the
+    //   encoded push payload.
     void push_to_user(const std::string& receiver_uid,
                       uint64_t msg_id,
                       const std::string& content);

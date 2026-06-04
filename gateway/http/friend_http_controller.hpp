@@ -18,6 +18,11 @@ class MultiPlatformAuthManager;
 namespace im {
 namespace gateway {
 
+// REST adapter for Friend Service request/list workflows.
+//
+// This controller performs HTTP/auth translation only. Pair uniqueness,
+// pending/accepted state transitions, and friend-list semantics stay in
+// FriendService.
 class FriendHttpController {
 public:
     FriendHttpController(

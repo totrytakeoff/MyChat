@@ -126,6 +126,6 @@
     "status": "ready",
     "handoff_doc": "docs/devlog/single_agent_handoff.md",
     "recorded_at": "2026-06-03T15:12:00+00:00",
-    "notes": "Codgent multi-agent workflow is paused. Current snapshot committed at e076fe6. Next selected task is codec/gRPC generation chain cleanup from canonical common/proto before standalone Push implementation. Latest baseline: ODB 14/14, no-ODB 2/2; codec explicit-enable smoke build passed."
+    "notes": "Single-agent handoff is ready. Gateway layout cleanup and codec/gRPC generation chain cleanup are committed in latest HEAD. Next selected task is standalone Push Service boundary and incremental migration planning with focused characterization tests for existing push/fanout behavior. Latest baseline: ODB 14/14, no-ODB 2/2; codec explicit-enable smoke build passed."
   }
 }

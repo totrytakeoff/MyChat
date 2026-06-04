@@ -73,6 +73,9 @@ find_package(hiredis CONFIG QUIET)
 find_package(jwt-cpp CONFIG QUIET)
 find_package(httplib CONFIG QUIET)
 find_package(unofficial-libuuid CONFIG QUIET)
+if(MYCHAT_BUILD_CODEC_SERVICE)
+    find_package(gRPC CONFIG QUIET)
+endif()
 
 # ODB 2.5.0 runtime detection.
 #
@@ -197,15 +200,94 @@ if(MYCHAT_BUILD_PGSQL_ODB AND MYCHAT_HAS_ODB_RUNTIME)
     add_subdirectory(services/odb)
 endif()
 
-file(GLOB MYCHAT_COMMON_PROTO_FILES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/common/proto/*.proto")
+set(MYCHAT_PROTO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/common/proto")
+set(MYCHAT_COMMON_PROTO_NAMES
+    base
+    command
+    user
+    friend
+    group
+    message
+    push
+    codec_service
+)
+
+set(MYCHAT_COMMON_PROTO_FILES "")
+set(MYCHAT_COMMON_PROTO_GENERATED_CC "")
+set(MYCHAT_COMMON_PROTO_GENERATED_H "")
+foreach(_proto_name IN LISTS MYCHAT_COMMON_PROTO_NAMES)
+    set(_proto_file "${MYCHAT_PROTO_DIR}/${_proto_name}.proto")
+    set(_proto_cc "${MYCHAT_PROTO_DIR}/${_proto_name}.pb.cc")
+    set(_proto_h "${MYCHAT_PROTO_DIR}/${_proto_name}.pb.h")
+    list(APPEND MYCHAT_COMMON_PROTO_FILES "${_proto_file}")
+    list(APPEND MYCHAT_COMMON_PROTO_GENERATED_CC "${_proto_cc}")
+    list(APPEND MYCHAT_COMMON_PROTO_GENERATED_H "${_proto_h}")
+    add_custom_command(
+        OUTPUT "${_proto_cc}" "${_proto_h}"
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+                -I "${MYCHAT_PROTO_DIR}"
+                --cpp_out=${MYCHAT_PROTO_DIR}
+                "${_proto_file}"
+        DEPENDS "${_proto_file}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Generating protobuf C++ sources for ${_proto_name}.proto"
+        VERBATIM)
+endforeach()
+unset(_proto_name)
+unset(_proto_file)
+unset(_proto_cc)
+unset(_proto_h)
+
+add_custom_target(generate_common_proto
+    DEPENDS ${MYCHAT_COMMON_PROTO_GENERATED_CC} ${MYCHAT_COMMON_PROTO_GENERATED_H})
+
+set(MYCHAT_GRPC_CPP_PLUGIN "")
+if(TARGET gRPC::grpc_cpp_plugin)
+    get_target_property(MYCHAT_GRPC_CPP_PLUGIN gRPC::grpc_cpp_plugin IMPORTED_LOCATION_RELEASE)
+    if(NOT MYCHAT_GRPC_CPP_PLUGIN)
+        get_target_property(MYCHAT_GRPC_CPP_PLUGIN gRPC::grpc_cpp_plugin IMPORTED_LOCATION)
+    endif()
+endif()
+if(NOT MYCHAT_GRPC_CPP_PLUGIN AND DEFINED VCPKG_ROOT)
+    file(GLOB MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES
+        "${VCPKG_ROOT}/installed/x64-linux/tools/grpc/grpc_cpp_plugin*")
+    list(SORT MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES)
+    list(LENGTH MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES MYCHAT_GRPC_CPP_PLUGIN_COUNT)
+    if(MYCHAT_GRPC_CPP_PLUGIN_COUNT GREATER 0)
+        list(GET MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES 0 MYCHAT_GRPC_CPP_PLUGIN)
+    endif()
+endif()
+
+set(MYCHAT_CODEC_GRPC_PROTO "${MYCHAT_PROTO_DIR}/codec_service.proto")
+set(MYCHAT_CODEC_GRPC_GENERATED_CC "${MYCHAT_PROTO_DIR}/codec_service.grpc.pb.cc")
+set(MYCHAT_CODEC_GRPC_GENERATED_H "${MYCHAT_PROTO_DIR}/codec_service.grpc.pb.h")
+if(MYCHAT_GRPC_CPP_PLUGIN)
+    add_custom_command(
+        OUTPUT "${MYCHAT_CODEC_GRPC_GENERATED_CC}" "${MYCHAT_CODEC_GRPC_GENERATED_H}"
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+                -I "${MYCHAT_PROTO_DIR}"
+                --grpc_out=${MYCHAT_PROTO_DIR}
+                --plugin=protoc-gen-grpc=${MYCHAT_GRPC_CPP_PLUGIN}
+                "${MYCHAT_CODEC_GRPC_PROTO}"
+        DEPENDS
+                "${MYCHAT_CODEC_GRPC_PROTO}"
+                "${MYCHAT_PROTO_DIR}/codec_service.pb.h"
+                generate_common_proto
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Generating gRPC C++ sources for codec_service.proto"
+        VERBATIM)
+    add_custom_target(generate_codec_grpc
+        DEPENDS "${MYCHAT_CODEC_GRPC_GENERATED_CC}" "${MYCHAT_CODEC_GRPC_GENERATED_H}")
+    set(MYCHAT_GENERATE_PROTO_DEPS generate_common_proto generate_codec_grpc)
+else()
+    add_custom_target(generate_codec_grpc
+        COMMAND ${CMAKE_COMMAND} -E false
+        COMMENT "gRPC C++ plugin was not found; enable vcpkg feature codec-grpc")
+    set(MYCHAT_GENERATE_PROTO_DEPS generate_common_proto)
+endif()
+
 add_custom_target(generate_proto
-    COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-            -I "${CMAKE_CURRENT_SOURCE_DIR}/common/proto"
-            --cpp_out="${CMAKE_CURRENT_SOURCE_DIR}/common/proto"
-            ${MYCHAT_COMMON_PROTO_FILES}
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    COMMENT "Generating C++ protobuf files for common/proto")
+    DEPENDS ${MYCHAT_GENERATE_PROTO_DEPS})
 
 set(MYCHAT_HAS_GATEWAY_DEPS OFF)
 if(hiredis_FOUND AND jwt-cpp_FOUND AND httplib_FOUND AND unofficial-libuuid_FOUND)

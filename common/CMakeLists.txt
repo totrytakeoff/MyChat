@@ -123,7 +123,10 @@ add_library(im_proto STATIC
     proto/group.pb.cc
     proto/message.pb.cc
     proto/push.pb.cc
+    proto/codec_service.pb.cc
 )
+
+add_dependencies(im_proto generate_common_proto)
 
 target_link_libraries(im_proto
     PUBLIC

@@ -24,6 +24,12 @@
         "libodb",
         "libodb-pgsql"
       ]
+    },
+    "codec-grpc": {
+      "description": "gRPC C++ runtime and plugin for the optional Codec service generation path.",
+      "dependencies": [
+        "grpc"
+      ]
     }
   }
 }

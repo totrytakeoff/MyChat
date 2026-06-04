@@ -18,6 +18,11 @@ class MultiPlatformAuthManager;
 namespace im {
 namespace gateway {
 
+// REST adapter for group membership workflows.
+//
+// The controller maps authenticated HTTP calls to GroupService and handles
+// route-level status codes. Group existence, owner insertion, and membership
+// authorization remain service-layer responsibilities.
 class GroupHttpController {
 public:
     GroupHttpController(

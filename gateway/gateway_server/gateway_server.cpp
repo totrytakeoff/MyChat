@@ -66,7 +66,7 @@
 #endif
 
 #ifdef IM_ENABLE_USER_HTTP
-#include "../user_http_controller.hpp"
+#include "../http/user_http_controller.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
@@ -91,9 +91,9 @@ void register_user_http_routes_on_server(httplib::Server& server,
 #endif
 
 #ifdef IM_ENABLE_MESSAGE_HTTP
-#include "../message_http_controller.hpp"
-#include "../message_ws_handler.hpp"
-#include "../push_service.hpp"
+#include "../http/message_http_controller.hpp"
+#include "../ws/message_ws_handler.hpp"
+#include "../push/push_service.hpp"
 #include "../../services/message/message_service.hpp"
 
 // Free function: registers message HTTP routes on an httplib server.
@@ -116,7 +116,7 @@ void register_message_http_routes_on_server(httplib::Server& server,
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
-#include "../friend_http_controller.hpp"
+#include "../http/friend_http_controller.hpp"
 #include "../../services/friend/friend_service.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
@@ -143,7 +143,7 @@ void register_friend_http_routes_on_server(httplib::Server& server,
 #endif
 
 #ifdef IM_ENABLE_GROUP_HTTP
-#include "../group_http_controller.hpp"
+#include "../http/group_http_controller.hpp"
 #include "../../services/group/group_service.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
@@ -174,8 +174,8 @@ void register_group_http_routes_on_server(httplib::Server& server,
 #endif
 
 #ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-#include "../group_message_http_controller.hpp"
-#include "../push_service.hpp"
+#include "../http/group_message_http_controller.hpp"
+#include "../push/push_service.hpp"
 #include "../../services/group/group_message_service.hpp"
 #include "../../services/group/group_service.hpp"
 #include "../../services/user/password_hasher.hpp"

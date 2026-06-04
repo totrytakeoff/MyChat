@@ -18,7 +18,7 @@
 
 #include <database/redis/redis_mgr.hpp>
 
-#include <gateway/user_http_controller.hpp>
+#include <gateway/http/user_http_controller.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <user_service.hpp>
 #include <password_hasher.hpp>

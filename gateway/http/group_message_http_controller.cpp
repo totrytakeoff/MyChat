@@ -6,12 +6,12 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../common/utils/http_utils.hpp"
-#include "../common/utils/log_manager.hpp"
-#include "../gateway/auth/multi_platform_auth.hpp"
-#include "../gateway/push_service.hpp"
-#include "../services/group/group_message_service.hpp"
-#include "../services/group/group_service.hpp"
+#include "../../common/utils/http_utils.hpp"
+#include "../../common/utils/log_manager.hpp"
+#include "../auth/multi_platform_auth.hpp"
+#include "../push/push_service.hpp"
+#include "../../services/group/group_message_service.hpp"
+#include "../../services/group/group_service.hpp"
 
 namespace im {
 namespace gateway {

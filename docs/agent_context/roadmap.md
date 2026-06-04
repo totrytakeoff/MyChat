@@ -53,8 +53,9 @@ Status: complete.
 ## Phase F: Message Service MVP
 
 Status: in progress (persistence core + HTTP integration + WebSocket send/ack + online
-         delivery + fanout policies + group multi-recipient fanout complete;
-         standalone Push microservice and service-call strategy pending).
+         delivery + fanout policies + group multi-recipient fanout + codec/gRPC
+         generation cleanup complete; standalone Push microservice and
+         service-call strategy pending).
 
 - ✅ Persistence core (task003): `services/message` target, ODB-backed message
   persistence, send one-to-one text, offline message pull, conversation history
@@ -78,8 +79,10 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   session). PushServiceTest expanded from 4 to 11 test cases.
 - [x] Multi-recipient fanout for group messages via `PushService::push_to_user`
   per group member.
-- [ ] Codec/gRPC generation chain cleanup from canonical `common/proto` inputs
-  before standalone Push service work.
+- [x] Codec/gRPC generation chain cleanup from canonical `common/proto` inputs:
+  `generate_common_proto`, `generate_codec_grpc`, and aggregate
+  `generate_proto` now regenerate active protobuf/gRPC files; `im_codec_service`
+  consumes canonical generated files from `common/proto`.
 - Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP message
   API passes; Gateway can deliver message to online user; offline message is
   persisted and pullable. Standalone Push service boundary and service-call

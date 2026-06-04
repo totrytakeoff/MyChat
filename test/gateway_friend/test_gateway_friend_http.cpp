@@ -18,7 +18,7 @@
 
 #include <database/redis/redis_mgr.hpp>
 
-#include <gateway/friend_http_controller.hpp>
+#include <gateway/http/friend_http_controller.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <friend_service.hpp>
 #include <user_service.hpp>

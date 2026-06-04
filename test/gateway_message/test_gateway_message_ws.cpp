@@ -17,10 +17,10 @@
 
 #include <database/redis/redis_mgr.hpp>
 
-#include <gateway/message_ws_handler.hpp>
+#include <gateway/ws/message_ws_handler.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
-#include <gateway/push_service.hpp>
+#include <gateway/push/push_service.hpp>
 #include <message_service.hpp>
 #include <message_repository.hpp>
 #include <utils/log_manager.hpp>

@@ -17,8 +17,8 @@
 
 #include <database/redis/redis_mgr.hpp>
 
-#include <gateway/push_service.hpp>
-#include <gateway/fanout_policies.hpp>
+#include <gateway/push/push_service.hpp>
+#include <gateway/push/fanout_policies.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
 #include <message_service.hpp>
 #include <utils/log_manager.hpp>

@@ -3,11 +3,11 @@
 #include <chrono>
 #include <string>
 
-#include "../common/network/protobuf_codec.hpp"
-#include "../common/utils/log_manager.hpp"
-#include "../common/utils/service_identity.hpp"
-#include "../services/message/message_service.hpp"
-#include "../services/odb/message.hpp"
+#include "../../common/network/protobuf_codec.hpp"
+#include "../../common/utils/log_manager.hpp"
+#include "../../common/utils/service_identity.hpp"
+#include "../../services/message/message_service.hpp"
+#include "../../services/odb/message.hpp"
 
 namespace im::gateway {
 

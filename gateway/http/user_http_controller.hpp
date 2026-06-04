@@ -14,6 +14,13 @@ class UserService;
 namespace im::gateway {
 class MultiPlatformAuthManager;
 
+// REST adapter for User Service account endpoints.
+//
+// Boundary:
+// - Parses HTTP JSON and Bearer tokens.
+// - Calls UserService for register/login/profile workflows.
+// - Issues Gateway auth tokens through MultiPlatformAuthManager.
+// - Does not expose password hashes or trust client-supplied user identity.
 class UserHttpController {
 public:
     UserHttpController(

@@ -6,11 +6,11 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../common/utils/http_utils.hpp"
-#include "../common/utils/log_manager.hpp"
-#include "../gateway/auth/multi_platform_auth.hpp"
-#include "../services/message/message_service.hpp"
-#include "../services/odb/message.hpp"
+#include "../../common/utils/http_utils.hpp"
+#include "../../common/utils/log_manager.hpp"
+#include "../auth/multi_platform_auth.hpp"
+#include "../../services/message/message_service.hpp"
+#include "../../services/odb/message.hpp"
 
 namespace im::gateway {
 

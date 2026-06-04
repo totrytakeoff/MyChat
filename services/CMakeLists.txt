@@ -1,18 +1,18 @@
 # services/CMakeLists.txt
 
-# 获取所需依赖（仅当需要构建对应服务时）
-if(MYCHAT_BUILD_CODEC_SERVICE)
-    find_package(gRPC CONFIG QUIET)
-endif()
-
 # Codec服务库 — 仅在 MYCHAT_BUILD_CODEC_SERVICE=ON 时构建。
 if(MYCHAT_BUILD_CODEC_SERVICE)
-    if(gRPC_FOUND AND TARGET gRPC::grpc++)
+    if(gRPC_FOUND AND TARGET gRPC::grpc++ AND MYCHAT_GRPC_CPP_PLUGIN)
+        set_source_files_properties(
+            ${MYCHAT_CODEC_GRPC_GENERATED_CC}
+            ${MYCHAT_CODEC_GRPC_GENERATED_H}
+            PROPERTIES GENERATED TRUE)
+
         add_library(im_codec_service STATIC
-            codec/codec_service.pb.cc
-            codec/codec_service.grpc.pb.cc
-            codec/base.pb.cc
+            ${MYCHAT_CODEC_GRPC_GENERATED_CC}
+            ${MYCHAT_CODEC_GRPC_GENERATED_H}
         )
+        add_dependencies(im_codec_service generate_codec_grpc)
 
         target_link_libraries(im_codec_service
             PUBLIC
@@ -25,7 +25,7 @@ if(MYCHAT_BUILD_CODEC_SERVICE)
 
         target_include_directories(im_codec_service
             PUBLIC
-                ${CMAKE_CURRENT_SOURCE_DIR}/codec
+                ${CMAKE_SOURCE_DIR}/common/proto
         )
 
         add_library(im::codec_service ALIAS im_codec_service)
@@ -33,10 +33,11 @@ if(MYCHAT_BUILD_CODEC_SERVICE)
     else()
         message(FATAL_ERROR
             "MYCHAT_BUILD_CODEC_SERVICE=ON was set, but gRPC dependencies are not available. "
-            "Install gRPC via vcpkg and ensure gRPC++ targets are found.")
+            "Install gRPC via vcpkg feature codec-grpc and ensure gRPC++ targets plus "
+            "grpc_cpp_plugin are found.")
     endif()
 else()
-    message(STATUS "Codec service is disabled. Set MYCHAT_BUILD_CODEC_SERVICE=ON and install gRPC to enable.")
+    message(STATUS "Codec service is disabled. Set MYCHAT_BUILD_CODEC_SERVICE=ON and enable vcpkg feature codec-grpc to build it.")
 endif()
 
 # 用户服务库 — gated on MYCHAT_BUILD_USER_SERVICE and ODB persistence layer.

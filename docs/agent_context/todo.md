@@ -46,12 +46,14 @@ updated_by: coder
   rejects EMPTY_UID, SELF_REQUEST, TARGET_NOT_FOUND, ALREADY_EXISTS;
   respond_to_request validates FORBIDDEN/NOT_PENDING/NOT_FOUND. All Friend
   HTTP routes registered before legacy catch-all.
+- [x] Codec/gRPC generation chain cleanup (Task 009) - protobuf and codec gRPC
+  generation are deterministic from canonical `common/proto` inputs.
+  `generate_proto` covers active protobuf and codec gRPC outputs when the gRPC
+  plugin is available, and `im_codec_service` no longer compiles duplicated
+  generated files from `services/codec`.
 
 ## Current
 
-- [ ] Codec/gRPC generation chain cleanup (Task 009) - make protobuf and codec
-  gRPC generation deterministic from canonical `common/proto` inputs before
-  standalone Push Service work.
 - [ ] Message Service MVP (Phase F) - Push Service as standalone microservice
   and service-call strategy. Persistence core (Task 003), Gateway HTTP
   integration (Task 004), WebSocket send/ack (Task 006), online delivery
@@ -60,12 +62,15 @@ updated_by: coder
 
 ## Next
 
-- [ ] Define the standalone Push Service contract and migration sequence after
-  Task 009 is complete.
+- [ ] Define the standalone Push Service contract and migration sequence.
+- [ ] Add focused characterization tests for current direct-message push and
+  group-message fanout before moving push out of the Gateway process.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.
 
 ## Blocked
 
 - ODB 2.5.0 runtime build from source — not yet available in vcpkg; CMake fails at configure time if runtime is missing.
-- Stale codec/gRPC generated files in `services/codec` — gated behind `MYCHAT_BUILD_CODEC_SERVICE=OFF`; must be regenerated with correct protoc/gRPC versions.
+- Inactive duplicate codec generated files remain under `services/codec`; they
+  are out of the active build path and should only be removed after a focused
+  legacy include-path check.

@@ -6,10 +6,10 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../common/utils/http_utils.hpp"
-#include "../common/utils/log_manager.hpp"
-#include "../gateway/auth/multi_platform_auth.hpp"
-#include "../services/friend/friend_service.hpp"
+#include "../../common/utils/http_utils.hpp"
+#include "../../common/utils/log_manager.hpp"
+#include "../auth/multi_platform_auth.hpp"
+#include "../../services/friend/friend_service.hpp"
 
 namespace im {
 namespace gateway {

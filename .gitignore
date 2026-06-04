@@ -23,6 +23,11 @@ Makefile
 
 logs/
 
+# Local IDE/index caches
+**/.cache/
+.clangd/
+compile_commands.json
+
 # Local ODB build/runtime cache
 .odb/
 

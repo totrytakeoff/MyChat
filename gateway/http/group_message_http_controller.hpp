@@ -20,6 +20,11 @@ class PushService;
 namespace im {
 namespace gateway {
 
+// REST adapter for group message send/history workflows.
+//
+// GroupMessageService validates persistence and sender membership. When a send
+// succeeds, this controller may use PushService to fan out the persisted
+// message to other online group members.
 class GroupMessageHttpController {
 public:
     GroupMessageHttpController(

@@ -18,7 +18,7 @@
 
 #include <database/redis/redis_mgr.hpp>
 
-#include <gateway/group_message_http_controller.hpp>
+#include <gateway/http/group_message_http_controller.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <group_message_service.hpp>
 #include <group_service.hpp>

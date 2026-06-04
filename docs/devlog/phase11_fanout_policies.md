@@ -11,20 +11,21 @@ Added two production FanoutPolicy implementations to PushService:
   session. Useful for notification-type pushes that only need to reach one
   device.
 
-Both policies live in gateway/fanout_policies.hpp / gateway/fanout_policies.cpp,
-gated behind im::message_service availability (same as PushService itself).
+Both policies now live in `gateway/push/fanout_policies.hpp` and
+`gateway/push/fanout_policies.cpp`, gated behind `im::message_service`
+availability (same as PushService itself).
 
 The default AllSessionsFanoutPolicy behavior is unchanged.
 
 ## New Files
 
-- gateway/fanout_policies.hpp - declarations for PlatformFilterFanoutPolicy
+- gateway/push/fanout_policies.hpp - declarations for PlatformFilterFanoutPolicy
   and NewestSessionFanoutPolicy.
-- gateway/fanout_policies.cpp - implementations.
+- gateway/push/fanout_policies.cpp - implementations.
 
 ## Modified Files
 
-- gateway/CMakeLists.txt - added fanout_policies.cpp to im_gateway_core
+- gateway/CMakeLists.txt - added `push/fanout_policies.cpp` to im_gateway_core
   sources when im::message_service is available.
 - test/gateway_message/test_push_service.cpp - removed the test-local
   PlatformFilterFanoutPolicy class, replaced with the production import.

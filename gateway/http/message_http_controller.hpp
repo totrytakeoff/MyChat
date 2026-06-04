@@ -14,6 +14,11 @@ class MessageService;
 namespace im::gateway {
 class MultiPlatformAuthManager;
 
+// REST adapter for one-to-one message workflows.
+//
+// The verified access token is the actor identity for send/history/offline
+// operations. Client request bodies may name peers and content, but they do not
+// decide the sender UID.
 class MessageHttpController {
 public:
     MessageHttpController(
