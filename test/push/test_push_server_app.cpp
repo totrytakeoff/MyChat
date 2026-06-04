@@ -42,4 +42,14 @@ TEST(PushServerAppTest, NotifyUserRpcReturnsSuccess) {
     server.shutdown();
 }
 
+TEST(PushServerAppTest, StartReturnsFalseForInvalidListenAddress) {
+    im::service::push::PushServerConfig config;
+    config.listen_address = "127.0.0.1:not-a-port";
+
+    im::service::push::PushServerApp server(config);
+    EXPECT_FALSE(server.start());
+    EXPECT_FALSE(server.is_running());
+    EXPECT_EQ(server.selected_port(), 0);
+}
+
 } // namespace

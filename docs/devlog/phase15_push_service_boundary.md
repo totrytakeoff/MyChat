@@ -363,7 +363,7 @@ Result:
 
 ```text
 Configure enabled Message WS, Group Message HTTP, local PushService, and
-Remote PushNotifier. Build passed. Full CTest passed, 20/20.
+Remote PushNotifier. Build passed. Full CTest passed, 21/21.
 ```
 
 Note: a first attempt under `/tmp/mychat-build-remote-push-odb` failed because
@@ -394,11 +394,12 @@ Result:
 git diff --check passed.
 Default no-ODB/no-gRPC build passed.
 Default no-ODB/no-gRPC CTest passed, 3/3.
-push_server, test_push_server_app, test_gateway_push_delivery_service, and
-test_push_server_remote_adapters built.
+push_server, test_push_server_app, test_gateway_push_delivery_service,
+test_push_server_remote_adapters, and test_remote_push_e2e_smoke built.
 PushRuntimeTest, PushGrpcServiceTest, PushServerAppTest,
 PushServerRemoteAdaptersTest, GatewayPushDeliveryServiceTest,
-RemotePushNotifierTest, and PushServiceTest passed, 7/7.
+RemotePushEndToEndSmokeTest, RemotePushNotifierTest, and PushServiceTest
+passed, 8/8.
 ```
 
 Remote delivery plumbing first-slice verification:
@@ -424,23 +425,47 @@ Result:
 
 ```text
 generate_proto passed.
-gateway_server, push_server, test_gateway_push_delivery_service, and
-test_push_server_remote_adapters built.
+gateway_server, push_server, test_gateway_push_delivery_service,
+test_push_server_remote_adapters, and test_remote_push_e2e_smoke built.
 PushRuntimeTest, PushGrpcServiceTest, PushServerAppTest,
 PushServerRemoteAdaptersTest, GatewayPushDeliveryServiceTest,
-RemotePushNotifierTest, and PushServiceTest passed, 7/7.
+RemotePushEndToEndSmokeTest, RemotePushNotifierTest, and PushServiceTest
+passed, 8/8.
 Default no-ODB/no-gRPC configure/build/test passed, 3/3.
+```
+
+Remote Push gRPC-link smoke verification:
+
+```bash
+TMPDIR=/home/myself/workspace/MyChat/build/tmp \
+  cmake --build build/remote-push-odb \
+    --target test_push_server_app test_remote_push_e2e_smoke -j2
+ctest --test-dir build/remote-push-odb \
+  -R "PushServerApp|RemotePushEndToEndSmoke" --output-on-failure
+ctest --test-dir build/remote-push-odb -R "Push" --output-on-failure
+```
+
+Result:
+
+```text
+test_push_server_app and test_remote_push_e2e_smoke built.
+PushServerAppTest and RemotePushEndToEndSmokeTest passed, 2/2.
+PushRuntimeTest, PushGrpcServiceTest, PushServerAppTest,
+PushServerRemoteAdaptersTest, GatewayPushDeliveryServiceTest,
+RemotePushEndToEndSmokeTest, RemotePushNotifierTest, and PushServiceTest
+passed, 8/8.
 ```
 
 ## Remaining Work
 
-- Add an end-to-end smoke that starts Gateway in `push.mode=remote`, starts
-  `push_server` with `push.gateway_delivery_endpoint`, and verifies direct/group
-  fanout reaches Gateway-owned WebSocket sessions with preserved best-effort
-  semantics.
-- Harden the Gateway remote mode operationally: document expected endpoints,
-  validate misconfiguration, and decide startup failure vs degraded best-effort
-  behavior for unavailable Push/Gateway delivery endpoints.
+- Add a full Gateway HTTP/WS process-level smoke that starts Gateway in
+  `push.mode=remote`, starts `push_server` with
+  `push.gateway_delivery_endpoint`, and verifies direct/group fanout reaches
+  Gateway-owned WebSocket sessions with preserved best-effort semantics.
+- Harden the Gateway remote mode operationally beyond the invalid-listen guard:
+  document expected endpoints, validate misconfiguration, and decide startup
+  failure vs degraded best-effort behavior for unavailable Push/Gateway
+  delivery endpoints.
 - Keep Gateway adapter responsibilities narrow: session lookup, payload send,
   and delivered marking.
 - Keep direct-message and group-message characterization tests passing during

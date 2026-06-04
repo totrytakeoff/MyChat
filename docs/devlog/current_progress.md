@@ -111,6 +111,11 @@ Known working:
   `push.gateway_delivery_listen_address`; `push_server` can use
   `push.gateway_delivery_endpoint` to replace its no-op adapters with
   remote-aware Gateway adapters.
+- Remote Push gRPC-link smoke is implemented: `RemotePushEndToEndSmokeTest`
+  starts a real `GatewayPushDeliveryService` endpoint and a real
+  `PushServerApp`, then calls `PushService.NotifyUser` through a generated
+  stub to verify session lookup, payload send, protobuf payload contents, and
+  delivered marking across the remote callback chain.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -280,13 +285,15 @@ Known working:
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: remote Push end-to-end smoke, remote startup
-  hardening, and schema migration remain future work. PushService with
+- Full Phase F is not complete: full Gateway HTTP/WS process-level remote Push
+  smoke, deeper remote startup/config hardening, and schema migration remain
+  future work. PushService with
   pluggable FanoutPolicy, service-owned production fanout policies, group
   multi-recipient fanout, PushNotifier boundary/tests, PushRuntime core
   extraction, codec/gRPC generation cleanup, the Push gRPC contract/adapter,
   Gateway remote PushNotifier client wiring, the standalone `push_server`
-  process target, and the first Gateway delivery callback channel are complete.
+  process target, the first Gateway delivery callback channel, and a real
+  gRPC-link remote Push smoke are complete.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive

@@ -87,6 +87,24 @@ if(TARGET im::push_grpc_service AND TARGET im::gateway_core)
 
     add_test(NAME GatewayPushDeliveryServiceTest COMMAND test_gateway_push_delivery_service)
 
+    add_executable(test_remote_push_e2e_smoke
+        test_remote_push_e2e_smoke.cpp
+    )
+
+    target_link_libraries(test_remote_push_e2e_smoke
+        PRIVATE
+            GTest::gtest
+            GTest::gtest_main
+            im::gateway_core
+            im::push_grpc_service
+            im::network
+            Threads::Threads
+    )
+
+    target_compile_features(test_remote_push_e2e_smoke PRIVATE cxx_std_20)
+
+    add_test(NAME RemotePushEndToEndSmokeTest COMMAND test_remote_push_e2e_smoke)
+
     add_executable(test_remote_push_notifier
         test_remote_push_notifier.cpp
     )

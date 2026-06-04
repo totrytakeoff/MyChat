@@ -14,7 +14,7 @@ updated_by: coder
   integration tests (GatewayGroupHttpTest), GroupMessage ODB model + HTTP
   controller (send/history) + 15 tests (GatewayGroupMessageHttpTest),
   multi-recipient group message fanout via PushService. Latest full ODB +
-  Gateway + Push gRPC baseline: 20/20 suites.
+  Gateway + Push gRPC baseline: 21/21 suites.
 
 ## Completed (Previous)
 
@@ -83,24 +83,34 @@ updated_by: coder
   lookup, payload send, and delivered marking on
   `push.gateway_delivery_listen_address`; `push_server` can call back through
   `push.gateway_delivery_endpoint` via remote-aware adapters.
+- [x] Remote Push gRPC-link E2E smoke - `RemotePushEndToEndSmokeTest` starts a
+  real Gateway delivery gRPC endpoint plus a real `PushServerApp`, calls
+  `NotifyUser`, and verifies session lookup, payload send, protobuf payload
+  contents, delivered marking, and offline/no-session best-effort behavior.
+- [x] Push server invalid-listen startup guard - `PushServerAppTest` verifies an
+  invalid `push.listen_address` returns false and does not mark the server
+  running.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) - remote Push E2E smoke and startup hardening.
+- [ ] Message Service MVP (Phase F) - Gateway process-level remote Push smoke and
+  deeper startup/config hardening.
   Persistence core (Task 003), Gateway HTTP
   integration (Task 004), WebSocket send/ack (Task 006), online delivery
   (Task 007), PushService with FanoutPolicy (Task 008), production fanout
   policies, multi-recipient fanout, PushNotifier boundary/tests, PushRuntime
   core extraction, Push gRPC contract/adapter, Gateway remote-client strategy,
-  standalone `push_server` target, and first Gateway delivery callback channel
-  are complete.
+  standalone `push_server` target, first Gateway delivery callback channel,
+  and gRPC-link remote Push smoke are complete.
 
 ## Next
 
-- [ ] Add an end-to-end remote Push smoke: run standalone Push server, set
-  Gateway `push.mode=remote`, and verify direct/group fanout still use
-  `PushNotifier` best-effort semantics.
-- [ ] Harden remote Push endpoint config and startup behavior.
+- [ ] Add a full Gateway process-level remote Push smoke: run standalone Push
+  server, set Gateway `push.mode=remote`, and verify direct/group fanout still
+  use `PushNotifier` best-effort semantics through Gateway HTTP/WS entry
+  points.
+- [ ] Harden remote Push endpoint config and startup behavior beyond the
+  invalid-listen guard.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.
 
