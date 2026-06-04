@@ -479,16 +479,38 @@ Push focused tests passed, 9/9.
 Full ODB + Gateway + Push gRPC CTest passed, 22/22.
 ```
 
+Full GatewayServer process-level remote Push smoke verification:
+
+```bash
+TMPDIR=/home/myself/workspace/MyChat/build/tmp \
+  cmake --build build/remote-push-odb \
+    --target test_remote_push_gateway_server_smoke -j2
+ctest --test-dir build/remote-push-odb \
+  -R "RemotePushGatewayServerSmokeTest" --output-on-failure
+ctest --test-dir build/remote-push-odb -R "Push" --output-on-failure
+ctest --test-dir build/remote-push-odb --output-on-failure
+ctest --test-dir build/default-regression --output-on-failure
+```
+
+Result:
+
+```text
+test_remote_push_gateway_server_smoke built.
+RemotePushGatewayServerSmokeTest passed, 1/1.
+Push focused tests passed, 10/10.
+Full ODB + Gateway + Push gRPC CTest passed, 23/23.
+No-ODB default CTest passed, 3/3.
+```
+
 ## Remaining Work
 
-- Add a full `gateway_server` process-level HTTP/WS smoke that starts Gateway in
-  `push.mode=remote`, starts `push_server` with
-  `push.gateway_delivery_endpoint`, and verifies direct/group fanout through
-  real server ports with preserved best-effort semantics.
 - Harden the Gateway remote mode operationally beyond the invalid-listen guard:
   document expected endpoints, validate misconfiguration, and decide startup
   failure vs degraded best-effort behavior for unavailable Push/Gateway
   delivery endpoints.
+- Extend real-server remote Push coverage only where it adds new signal, such
+  as group HTTP send through real Gateway HTTP ports or explicit unavailable
+  `push_server` behavior.
 - Keep Gateway adapter responsibilities narrow: session lookup, payload send,
   and delivered marking.
 - Keep direct-message and group-message characterization tests passing during

@@ -58,8 +58,8 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
          cleanup + Push gRPC contract/adapter + Gateway remote-client wiring
          + standalone Push server process + first Gateway delivery callback
          channel + gRPC-link remote E2E smoke + Gateway handler/controller
-         entrypoint remote smoke complete; full gateway_server process smoke
-         and deeper startup hardening pending).
+         entrypoint remote smoke + full gateway_server process remote smoke
+         complete; deeper startup/config hardening pending).
 
 - ✅ Persistence core (task003): `services/message` target, ODB-backed message
   persistence, send one-to-one text, offline message pull, conversation history
@@ -131,14 +131,20 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   and group HTTP send paths reach `push_server` and Gateway delivery callbacks
   with preserved direct-message delivery and group fanout-to-members-only
   semantics.
+- [x] Full GatewayServer process-level remote Push smoke:
+  `RemotePushGatewayServerSmokeTest` starts a real `PushServerApp` and a real
+  `GatewayServer` configured with `push.mode=remote`, verifies HTTP health on
+  the real HTTP port, connects sender/receiver TLS WebSocket clients on the
+  real WS port, sends `CMD_SEND_MESSAGE`, receives the sender ack, and verifies
+  the receiver gets `CMD_PUSH_MESSAGE` through the remote Push callback path.
 - [x] Push server startup guard: invalid `push.listen_address` returns false
   and does not mark the server running.
 - Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP
   message API passes; Gateway can deliver messages to online users; offline
   messages are persisted and pullable. Remote Push now has a callback channel,
-  real gRPC-link smoke, and Gateway handler/controller entrypoint smoke, but
-  still needs a full `gateway_server` process-level HTTP/WS smoke and deeper
-  endpoint startup/config hardening.
+  real gRPC-link smoke, Gateway handler/controller entrypoint smoke, and full
+  `GatewayServer` process-level WS smoke; deeper endpoint startup/config
+  hardening remains.
 
 ## Phase G: Friend Service MVP
 
@@ -167,4 +173,4 @@ Status: complete.
 - ✅ GroupMessage ODB model, GroupMessageService for group message persistence.
 - ✅ GroupMessage HTTP controller (send, history) with tests (15 test cases).
 - ✅ Multi-recipient group message fanout via PushService::push_to_user per member.
-- ✅ Full ODB + Gateway + Push gRPC baseline: 22/22 test suites passing.
+- ✅ Full ODB + Gateway + Push gRPC baseline: 23/23 test suites passing.

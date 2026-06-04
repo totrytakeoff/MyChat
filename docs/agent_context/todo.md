@@ -14,7 +14,7 @@ updated_by: coder
   integration tests (GatewayGroupHttpTest), GroupMessage ODB model + HTTP
   controller (send/history) + 15 tests (GatewayGroupMessageHttpTest),
   multi-recipient group message fanout via PushService. Latest full ODB +
-  Gateway + Push gRPC baseline: 22/22 suites.
+  Gateway + Push gRPC baseline: 23/23 suites.
 
 ## Completed (Previous)
 
@@ -92,14 +92,20 @@ updated_by: coder
   `GroupMessageHttpController`, then verifies direct WS and group HTTP send
   paths reach `push_server` and Gateway delivery callbacks with preserved
   direct/group fanout semantics.
+- [x] Full GatewayServer process-level remote Push smoke -
+  `RemotePushGatewayServerSmokeTest` starts a real `PushServerApp`, starts a
+  real `GatewayServer` with `push.mode=remote`, verifies HTTP health on the
+  real HTTP port, connects sender/receiver TLS WebSocket clients on the real
+  WS port, sends `CMD_SEND_MESSAGE`, receives the sender ack, and verifies the
+  receiver gets `CMD_PUSH_MESSAGE` through the remote Push callback path.
 - [x] Push server invalid-listen startup guard - `PushServerAppTest` verifies an
   invalid `push.listen_address` returns false and does not mark the server
   running.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) - full `gateway_server` process-level remote
-  Push smoke and deeper startup/config hardening.
+- [ ] Message Service MVP (Phase F) - deeper remote Push startup/config
+  hardening and broader real-server coverage where it adds new signal.
   Persistence core (Task 003), Gateway HTTP
   integration (Task 004), WebSocket send/ack (Task 006), online delivery
   (Task 007), PushService with FanoutPolicy (Task 008), production fanout
@@ -107,15 +113,15 @@ updated_by: coder
   core extraction, Push gRPC contract/adapter, Gateway remote-client strategy,
   standalone `push_server` target, first Gateway delivery callback channel,
   gRPC-link remote Push smoke, and Gateway handler/controller entrypoint remote
-  Push smoke are complete.
+  Push smoke, and full GatewayServer remote Push smoke are complete.
 
 ## Next
 
-- [ ] Add a full `gateway_server` process-level remote Push smoke: run
-  standalone Push server, set Gateway `push.mode=remote`, and verify
-  direct/group fanout through real HTTP/WS server wiring.
 - [ ] Harden remote Push endpoint config and startup behavior beyond the
   invalid-listen guard.
+- [ ] Extend real-server remote Push coverage only where it adds new signal,
+  such as group HTTP send through real Gateway HTTP ports or explicit
+  unavailable-`push_server` behavior.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.
 

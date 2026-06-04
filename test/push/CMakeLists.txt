@@ -156,4 +156,32 @@ if(TARGET im::push_grpc_service
 
     add_test(NAME RemotePushGatewayEntrypointsTest
              COMMAND test_remote_push_gateway_entrypoints)
+
+    add_executable(test_remote_push_gateway_server_smoke
+        test_remote_push_gateway_server_smoke.cpp
+    )
+
+    target_link_libraries(test_remote_push_gateway_server_smoke
+        PRIVATE
+            GTest::gtest
+            GTest::gtest_main
+            im::gateway_core
+            im::gateway_auth
+            im::message_service
+            im::push_grpc_service
+            im::database
+            im::network
+            im::utils
+            httplib::httplib
+            Threads::Threads
+    )
+
+    target_compile_features(test_remote_push_gateway_server_smoke PRIVATE cxx_std_20)
+    target_compile_definitions(test_remote_push_gateway_server_smoke
+        PRIVATE
+            MYCHAT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+    )
+
+    add_test(NAME RemotePushGatewayServerSmokeTest
+             COMMAND test_remote_push_gateway_server_smoke)
 endif()

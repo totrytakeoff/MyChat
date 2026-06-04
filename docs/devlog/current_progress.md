@@ -122,6 +122,13 @@ Known working:
   send and group HTTP send reach `push_server` and Gateway delivery callbacks
   with preserved direct-message delivery and group fanout-to-members-only
   semantics.
+- Remote Push full Gateway-server smoke is implemented:
+  `RemotePushGatewayServerSmokeTest` starts a real `PushServerApp`, starts a
+  real `GatewayServer` with `push.mode=remote`, connects sender/receiver
+  WebSocket clients through the real TLS WS port, verifies HTTP health through
+  the real HTTP port, sends `CMD_SEND_MESSAGE`, receives the sender ack, and
+  verifies the receiver gets `CMD_PUSH_MESSAGE` through the remote
+  `push_server -> GatewayPushDeliveryService -> Gateway-owned session` path.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -250,9 +257,10 @@ Known working:
   behavior-preserving push/fanout characterization tests are complete. Fanout
   policy logic and PushRuntime live in `services/push`; the Push gRPC contract
   server-side adapter, Gateway remote PushNotifier client, standalone
-  `push_server` process target, and first Gateway delivery callback channel are
-  in place. The remaining service-call work is an end-to-end remote-mode smoke
-  and operational hardening of the two-process startup/config path.
+  `push_server` process target, first Gateway delivery callback channel, and
+  full `GatewayServer` remote-mode WS smoke are in place. The remaining
+  service-call work is operational hardening of the two-process startup/config
+  path and broader real-port coverage where useful.
 - Friend Service MVP (Phase G) is complete. Persistence model, repository,
   service, and Gateway HTTP controller have focused tests passing, API contract
   documented with TARGET_NOT_FOUND validation and HTTP status mapping.
@@ -265,13 +273,13 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Add an end-to-end local/remote Push smoke: run `push_server`, set Gateway
-   `push.mode=remote`, and verify direct/group fanout still preserves
-   best-effort semantics.
-2. Harden remote Push startup/config behavior: document/validate
+1. Harden remote Push startup/config behavior: document/validate
    `push.remote_endpoint`, `push.gateway_delivery_listen_address`, and
    `push.gateway_delivery_endpoint`; decide failure vs degraded local fallback
    policy for unavailable internal delivery endpoints.
+2. Extend real-server remote Push coverage only where it adds new signal, such
+   as group HTTP send through real Gateway HTTP ports or explicit
+   unavailable-`push_server` behavior.
 3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
@@ -291,16 +299,16 @@ Known working:
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: full `gateway_server` process-level HTTP/WS
-  remote Push smoke, deeper remote startup/config hardening, and schema
-  migration remain future work. PushService with
+- Full Phase F is not complete: deeper remote startup/config hardening, broader
+  real-server remote-mode coverage, and schema migration remain future work.
+  PushService with
   pluggable FanoutPolicy, service-owned production fanout policies, group
   multi-recipient fanout, PushNotifier boundary/tests, PushRuntime core
   extraction, codec/gRPC generation cleanup, the Push gRPC contract/adapter,
   Gateway remote PushNotifier client wiring, the standalone `push_server`
-  process target, the first Gateway delivery callback channel, and a real
-  gRPC-link remote Push smoke plus Gateway handler/controller entrypoint remote
-  Push smoke are complete.
+  process target, the first Gateway delivery callback channel, a real
+  gRPC-link remote Push smoke, Gateway handler/controller entrypoint remote
+  Push smoke, and full `GatewayServer` WS remote Push smoke are complete.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive
