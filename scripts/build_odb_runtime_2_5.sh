@@ -61,14 +61,14 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-PREFIX="$(cd "$(dirname "$PREFIX")" 2>/dev/null && pwd)/$(basename "$PREFIX")" || {
-    mkdir -p "$PREFIX"
-    PREFIX="$(cd "$PREFIX" && pwd)"
+canonical_dir() {
+    local path="$1"
+    mkdir -p "$path"
+    cd "$path" && pwd
 }
-SRC_DIR="$(cd "$(dirname "$SRC_DIR")" 2>/dev/null && pwd)/$(basename "$SRC_DIR")" || {
-    mkdir -p "$SRC_DIR"
-    SRC_DIR="$(cd "$SRC_DIR" && pwd)"
-}
+
+PREFIX="$(canonical_dir "$PREFIX")"
+SRC_DIR="$(canonical_dir "$SRC_DIR")"
 
 # ------------------------------------------------------------------
 # Find PostgreSQL include path (needed for libodb-pgsql)
