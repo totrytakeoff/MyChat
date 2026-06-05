@@ -11,6 +11,24 @@ odb_root="${MYCHAT_ODB_ROOT:-${repo_root}/.odb/installed}"
 build_odb_runtime="${MYCHAT_CI_BUILD_ODB_RUNTIME:-OFF}"
 vcpkg_installed_dir="${MYCHAT_CI_VCPKG_INSTALLED_DIR:-${repo_root}/vcpkg_installed/remote-push-odb}"
 
+regenerate_proto() {
+  echo "==> Removing stale protobuf/gRPC outputs"
+  cmake -E rm -f \
+    common/proto/base.pb.cc common/proto/base.pb.h \
+    common/proto/command.pb.cc common/proto/command.pb.h \
+    common/proto/user.pb.cc common/proto/user.pb.h \
+    common/proto/friend.pb.cc common/proto/friend.pb.h \
+    common/proto/group.pb.cc common/proto/group.pb.h \
+    common/proto/message.pb.cc common/proto/message.pb.h \
+    common/proto/push.pb.cc common/proto/push.pb.h \
+    common/proto/codec_service.pb.cc common/proto/codec_service.pb.h \
+    common/proto/push.grpc.pb.cc common/proto/push.grpc.pb.h \
+    common/proto/codec_service.grpc.pb.cc common/proto/codec_service.grpc.pb.h
+
+  echo "==> Regenerating protobuf/gRPC sources with the configured toolchain"
+  cmake --build "${build_dir}" --target generate_proto -j"${jobs}"
+}
+
 if [[ ! -f "${odb_root}/lib/libodb.a" ]]; then
   if [[ "${build_odb_runtime}" == "ON" || "${build_odb_runtime}" == "1" || "${build_odb_runtime}" == "true" ]]; then
     echo "==> ODB 2.5.0 runtime missing; building it through scripts/build_odb_runtime_2_5.sh"
@@ -71,6 +89,8 @@ cmake -S . -B "${build_dir}" \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DMYCHAT_ODB_ROOT="${odb_root}" \
   -DCMAKE_BUILD_TYPE="${build_type}"
+
+regenerate_proto
 
 echo "==> Building full remote Push Gateway smoke target"
 cmake --build "${build_dir}" --target test_remote_push_gateway_server_smoke -j"${jobs}"

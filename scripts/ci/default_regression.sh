@@ -9,6 +9,22 @@ jobs="${MYCHAT_CI_JOBS:-2}"
 build_type="${MYCHAT_CI_BUILD_TYPE:-Debug}"
 vcpkg_installed_dir="${MYCHAT_CI_VCPKG_INSTALLED_DIR:-${repo_root}/vcpkg_installed/default}"
 
+regenerate_common_proto() {
+  echo "==> Removing stale protobuf outputs"
+  cmake -E rm -f \
+    common/proto/base.pb.cc common/proto/base.pb.h \
+    common/proto/command.pb.cc common/proto/command.pb.h \
+    common/proto/user.pb.cc common/proto/user.pb.h \
+    common/proto/friend.pb.cc common/proto/friend.pb.h \
+    common/proto/group.pb.cc common/proto/group.pb.h \
+    common/proto/message.pb.cc common/proto/message.pb.h \
+    common/proto/push.pb.cc common/proto/push.pb.h \
+    common/proto/codec_service.pb.cc common/proto/codec_service.pb.h
+
+  echo "==> Regenerating protobuf sources with the configured toolchain"
+  cmake --build "${build_dir}" --target generate_common_proto -j"${jobs}"
+}
+
 echo "==> Configuring default no-ODB/no-gRPC regression build: ${build_dir}"
 cmake -S . -B "${build_dir}" \
   -DVCPKG_INSTALLED_DIR="${vcpkg_installed_dir}" \
@@ -16,6 +32,8 @@ cmake -S . -B "${build_dir}" \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=OFF \
   -DCMAKE_BUILD_TYPE="${build_type}"
+
+regenerate_common_proto
 
 echo "==> Building default regression targets"
 cmake --build "${build_dir}" -j"${jobs}"

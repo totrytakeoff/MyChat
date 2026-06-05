@@ -19,6 +19,8 @@ New local CI scripts:
   - Configures `build/ci-default`.
   - Uses `vcpkg_installed/default` by default so local and GitHub cache paths
     match without sharing installed packages with heavier feature builds.
+  - Removes stale checked-in protobuf outputs and regenerates them with the
+    configured vcpkg toolchain before compiling.
   - Keeps default no-ODB/no-gRPC behavior.
   - Uses `MYCHAT_BUILD_SERVICES=OFF` for the default regression slice.
   - Builds and runs all tests registered in that build.
@@ -26,6 +28,8 @@ New local CI scripts:
   - Configures `build/ci-remote-push-odb`.
   - Uses `vcpkg_installed/remote-push-odb` by default so the heavier manifest
     feature install can be cached without causing default CI dependency churn.
+  - Removes stale checked-in protobuf/gRPC outputs and regenerates them with
+    the configured vcpkg toolchain before compiling.
   - Enables `pgsql-odb` and `codec-grpc` manifest features.
   - Enables services, Gateway, Push gRPC, and PostgreSQL/ODB.
   - Starts Redis/PostgreSQL through `docker compose` when Docker is available.
