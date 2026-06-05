@@ -72,6 +72,19 @@ MYCHAT_BUILD_PGSQL_ODB=ON
 Checked-in proto/gRPC outputs remain governed by CMake `generate_proto`.
 The CI work did not introduce ad-hoc `protoc` generation.
 
+Hosted runner compatibility fixes:
+
+- CI regenerates protobuf/gRPC outputs with the configured vcpkg toolchain
+  before compiling, because checked-in generated files may have been produced
+  by a different protobuf version.
+- The commit whitespace check fetches the previous commit and checks
+  `HEAD^..HEAD` when a parent exists, so shallow checkout history does not
+  make historical tree whitespace fail a new commit.
+- Gateway authentication includes jwt-cpp's nlohmann-json defaults header
+  instead of the raw `jwt-cpp/jwt.h` entrypoint, because newer jwt-cpp releases
+  no longer let `jwt::verify()` and `jwt::decode()` infer JSON traits from
+  zero-argument calls.
+
 ## Local Commands
 
 Lightweight regression:
@@ -106,8 +119,8 @@ MYCHAT_ODB_ROOT=/path/to/odb-2.5.0 scripts/ci/remote_push_odb.sh
 
 ## Remaining Work
 
-- Run the GitHub Actions workflow in the remote repository and tune package
-  installation if the hosted runner differs from local assumptions.
+- Re-run the GitHub Actions workflow after each hosted runner compatibility
+  fix until `checks` and `default-regression` are both green on push.
 - Decide whether the heavy `remote-push-odb` job should eventually run on
   `main` pushes after dependency cache stability is proven.
 - Add artifact upload for CTest logs if CI failures become hard to inspect.
@@ -148,3 +161,13 @@ CTest had registered other Push tests whose executables had not been built.
 process-level smoke, then builds all targets before the Push-focused and full
 CTest passes. The fixed script passed the full local remote Push ODB/gRPC
 verification.
+
+Hosted GitHub Actions follow-up on 2026-06-05:
+
+- Run `26988119603` exposed stale protobuf generated output on the hosted
+  runner and hidden whitespace-check diagnostics.
+- Run `27009823882` confirmed protobuf regeneration worked but exposed the
+  shallow-checkout whitespace-check issue.
+- Run `27009928862` confirmed `checks` passed and `remote-push-odb` was skipped
+  on push as designed, then exposed jwt-cpp JSON-traits API drift in
+  `gateway/auth`.
