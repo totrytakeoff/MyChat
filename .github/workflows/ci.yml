@@ -87,8 +87,6 @@ jobs:
           sudo apt-get install -y \
             autoconf \
             automake \
-            bdep \
-            build2 \
             build-essential \
             cmake \
             curl \
@@ -101,6 +99,16 @@ jobs:
             tar \
             unzip \
             zip
+
+      - name: Install build2 toolchain
+        run: |
+          build2_version="0.18.1"
+          build2_deb="build2-toolchain_${build2_version}-0~ubuntu24.04_amd64.deb"
+          curl -fSL -o "/tmp/${build2_deb}" \
+            "https://download.build2.org/${build2_version}/bindist/ubuntu/${build2_deb}"
+          sudo apt-get install -y "/tmp/${build2_deb}"
+          b --version
+          bdep --version
 
       - name: Restore vcpkg and ODB runtime
         uses: actions/cache@v4
