@@ -168,6 +168,8 @@ if(TARGET im::push_grpc_service
             im::gateway_core
             im::gateway_auth
             im::message_service
+            im::group_service
+            im::user_service
             im::push_grpc_service
             im::database
             im::network

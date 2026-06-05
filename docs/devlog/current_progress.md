@@ -129,6 +129,35 @@ Known working:
   the real HTTP port, sends `CMD_SEND_MESSAGE`, receives the sender ack, and
   verifies the receiver gets `CMD_PUSH_MESSAGE` through the remote
   `push_server -> GatewayPushDeliveryService -> Gateway-owned session` path.
+- Gateway remote Push startup/config hardening first slice is implemented:
+  `push.mode=remote` now requires explicit non-blank `push.remote_endpoint`
+  and `push.gateway_delivery_listen_address`, and a blank Gateway delivery
+  listen address fails startup instead of silently disabling the callback
+  endpoint. `RemotePushGatewayServerSmokeTest` covers both config-failure
+  cases plus the real WS remote Push smoke.
+- Configured-but-unavailable remote `push_server` behavior is pinned:
+  Gateway still starts when `push.remote_endpoint` is syntactically configured
+  but no remote Push server is listening, WS send keeps the existing
+  best-effort success ack, and the message remains `SENT` and pullable through
+  the offline path instead of being incorrectly marked delivered.
+- Real Gateway HTTP group-message remote Push coverage is implemented:
+  `RemotePushGatewayServerSmokeTest` now posts to
+  `/api/v1/groups/messages/send` on a real Gateway HTTP port, with real
+  `GatewayServer`, real `PushServerApp`, and online WebSocket group members,
+  then verifies members receive `CMD_PUSH_MESSAGE` through the remote
+  callback path.
+- Remote Push endpoint topology is documented in `gateway/README.md` and this
+  phase devlog: `push.listen_address` belongs to `push_server`,
+  `push.remote_endpoint` is Gateway's client target for Push,
+  `push.gateway_delivery_listen_address` is Gateway's callback listen address,
+  and `push.gateway_delivery_endpoint` is Push server's client target for
+  Gateway callbacks.
+- CI/CD engineering baseline first slice is in place:
+  `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
+  `scripts/ci/remote_push_odb.sh` provide local reusable CI entrypoints.
+  `.github/workflows/ci.yml` runs checks plus the default no-ODB/no-gRPC
+  regression on pull requests and pushes; the heavier remote Push ODB/gRPC
+  regression is manual-only through `workflow_dispatch`.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -257,10 +286,13 @@ Known working:
   behavior-preserving push/fanout characterization tests are complete. Fanout
   policy logic and PushRuntime live in `services/push`; the Push gRPC contract
   server-side adapter, Gateway remote PushNotifier client, standalone
-  `push_server` process target, first Gateway delivery callback channel, and
-  full `GatewayServer` remote-mode WS smoke are in place. The remaining
-  service-call work is operational hardening of the two-process startup/config
-  path and broader real-port coverage where useful.
+  `push_server` process target, first Gateway delivery callback channel, full
+  `GatewayServer` remote-mode WS smoke, Gateway remote-mode required endpoint
+  validation, unavailable remote-endpoint best-effort semantics, and endpoint
+  topology documentation are in place. Real Gateway HTTP group-message send is
+  now covered through the remote Push path. The first CI/CD promotion slice is
+  also in place, with default regression automated and the remote Push ODB/gRPC
+  baseline available as a manual CI job.
 - Friend Service MVP (Phase G) is complete. Persistence model, repository,
   service, and Gateway HTTP controller have focused tests passing, API contract
   documented with TARGET_NOT_FOUND validation and HTTP status mapping.
@@ -273,14 +305,13 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Harden remote Push startup/config behavior: document/validate
-   `push.remote_endpoint`, `push.gateway_delivery_listen_address`, and
-   `push.gateway_delivery_endpoint`; decide failure vs degraded local fallback
-   policy for unavailable internal delivery endpoints.
-2. Extend real-server remote Push coverage only where it adds new signal, such
-   as group HTTP send through real Gateway HTTP ports or explicit
-   unavailable-`push_server` behavior.
-3. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
+1. Validate GitHub Actions in the remote repository and tune runner package
+   installation/cache behavior if needed.
+2. Add a schema migration framework before broader persistence evolution;
+   current focused tests still create missing tables defensively.
+3. Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
+   generated files if no legacy include path still depends on them.
+4. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
 
 ## Risks
@@ -299,8 +330,8 @@ Known working:
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: deeper remote startup/config hardening, broader
-  real-server remote-mode coverage, and schema migration remain future work.
+- Full Phase F is not complete: hosted CI validation, schema migration, and
+  inactive generated-file cleanup remain future work.
   PushService with
   pluggable FanoutPolicy, service-owned production fanout policies, group
   multi-recipient fanout, PushNotifier boundary/tests, PushRuntime core
@@ -354,6 +385,7 @@ Known working:
 - Fanout policies: `docs/devlog/phase11_fanout_policies.md`
 - Friend Service MVP: `docs/devlog/phase12_friend_service_mvp.md`
 - Group Service MVP: `docs/devlog/phase13_group_service_mvp.md`
+- CI/CD engineering baseline: `docs/devlog/phase16_ci_cd.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
 - Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`

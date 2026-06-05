@@ -10,6 +10,7 @@
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -26,7 +27,12 @@
 #include <database/redis/redis_mgr.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <gateway/gateway_server/gateway_server.hpp>
+#include <group_service.hpp>
+#include <message.hpp>
+#include <message_service.hpp>
+#include <password_hasher.hpp>
 #include <push_server_app.hpp>
+#include <user_service.hpp>
 #include <utils/log_manager.hpp>
 
 #include "../../common/network/protobuf_codec.hpp"
@@ -49,8 +55,15 @@ using im::db::redis_manager;
 using im::gateway::GatewayServer;
 using im::gateway::MultiPlatformAuthManager;
 using im::network::ProtobufCodec;
+using im::service::group::CreateGroupRequest;
+using im::service::group::GroupService;
+using im::service::message::MessageService;
+using im::service::message::MessageStatus;
 using im::service::push::PushServerApp;
 using im::service::push::PushServerConfig;
+using im::service::user::PasswordHasher;
+using im::service::user::RegisterRequest;
+using im::service::user::UserService;
 using im::utils::LogManager;
 
 const char* kConnStr =
@@ -84,9 +97,27 @@ int find_free_port() {
     return port;
 }
 
-void ensure_message_table() {
+void ensure_tables() {
     odb::pgsql::database db(kConnStr);
     odb::transaction t(db.begin());
+    db.execute(R"(
+        CREATE TABLE IF NOT EXISTS "im_users" (
+            "uid" TEXT NOT NULL PRIMARY KEY,
+            "account" TEXT NOT NULL,
+            "password_hash" TEXT NOT NULL,
+            "nickname" TEXT NOT NULL,
+            "avatar" TEXT NOT NULL,
+            "gender" INTEGER NOT NULL,
+            "signature" TEXT NOT NULL,
+            "create_time" BIGINT NOT NULL,
+            "last_login" BIGINT NOT NULL,
+            "online" BOOLEAN NOT NULL
+        )
+    )");
+    db.execute(R"(
+        CREATE UNIQUE INDEX IF NOT EXISTS "im_users_account_i"
+            ON "im_users" ("account")
+    )");
     db.execute(R"(
         CREATE TABLE IF NOT EXISTS "im_messages" (
             "msg_id" BIGSERIAL NOT NULL PRIMARY KEY,
@@ -100,15 +131,60 @@ void ensure_message_table() {
             "read_time" BIGINT NOT NULL
         )
     )");
+    db.execute(R"(
+        CREATE TABLE IF NOT EXISTS "im_groups" (
+            "group_id" BIGSERIAL NOT NULL PRIMARY KEY,
+            "name" TEXT NOT NULL,
+            "creator_uid" TEXT NOT NULL,
+            "created_at" BIGINT NOT NULL
+        )
+    )");
+    db.execute(R"(
+        CREATE TABLE IF NOT EXISTS "im_group_members" (
+            "id" BIGSERIAL NOT NULL PRIMARY KEY,
+            "group_id" BIGINT NOT NULL,
+            "user_uid" TEXT NOT NULL,
+            "role" INTEGER NOT NULL,
+            "joined_at" BIGINT NOT NULL
+        )
+    )");
+    db.execute(R"(
+        CREATE UNIQUE INDEX IF NOT EXISTS "im_group_members_pair_i"
+            ON "im_group_members" ("group_id", "user_uid")
+    )");
+    db.execute(R"(
+        CREATE TABLE IF NOT EXISTS "im_group_messages" (
+            "id" BIGSERIAL NOT NULL PRIMARY KEY,
+            "group_id" BIGINT NOT NULL,
+            "sender_uid" TEXT NOT NULL,
+            "content" TEXT NOT NULL,
+            "created_at" BIGINT NOT NULL
+        )
+    )");
     t.commit();
 }
 
-void cleanup_test_messages() {
+void cleanup_test_data() {
     odb::pgsql::database db(kConnStr);
     odb::transaction t(db.begin());
+    db.execute(std::string(R"(DELETE FROM "im_group_messages"
+        WHERE "group_id" IN (
+                SELECT "group_id" FROM "im_groups"
+                WHERE "name" LIKE ')") + kTestUidPrefix + "%' ) OR \"sender_uid\" LIKE '" +
+               kTestUidPrefix + "%'");
+    db.execute(std::string(R"(DELETE FROM "im_group_members"
+        WHERE "group_id" IN (
+                SELECT "group_id" FROM "im_groups"
+                WHERE "name" LIKE ')") + kTestUidPrefix + "%' ) OR \"user_uid\" LIKE '" +
+               kTestUidPrefix + "%'");
+    db.execute(std::string(R"(DELETE FROM "im_groups"
+        WHERE "name" LIKE ')") + kTestUidPrefix + "%' OR \"creator_uid\" LIKE '" +
+               kTestUidPrefix + "%'");
     db.execute(std::string(R"(DELETE FROM "im_messages"
         WHERE "sender_uid" LIKE ')") + kTestUidPrefix + "%' OR \"receiver_uid\" LIKE '" +
                kTestUidPrefix + "%'");
+    db.execute(std::string(R"(DELETE FROM "im_users"
+        WHERE "account" LIKE ')") + kTestUidPrefix + "%'");
     t.commit();
 }
 
@@ -119,7 +195,8 @@ std::filesystem::path source_path(const std::string& relative) {
 std::filesystem::path write_temp_config(int ws_port,
                                         int http_port,
                                         int push_port,
-                                        int gateway_delivery_port) {
+                                        int gateway_delivery_port,
+                                        json push_overrides = json::object()) {
     std::ifstream input(source_path("config/dev.json"));
     if (!input) {
         throw std::runtime_error("Failed to open config/dev.json");
@@ -140,6 +217,9 @@ std::filesystem::path write_temp_config(int ws_port,
     config["push"]["gateway_delivery_endpoint"] =
         "127.0.0.1:" + std::to_string(gateway_delivery_port);
     config["push"]["timeout_ms"] = 1000;
+    for (auto it = push_overrides.begin(); it != push_overrides.end(); ++it) {
+        config["push"][it.key()] = it.value();
+    }
 
     auto out_path = std::filesystem::temp_directory_path() /
         ("mychat-remote-push-gateway-server-" + std::to_string(now_ms()) + ".json");
@@ -265,8 +345,8 @@ protected:
         ASSERT_TRUE(redis_manager().initialize(test_redis_config()))
             << "Start Redis with `docker compose up -d redis` before running this test.";
 
-        ensure_message_table();
-        cleanup_test_messages();
+        ensure_tables();
+        cleanup_test_data();
         cleanup_redis_connection_keys();
     }
 
@@ -284,22 +364,38 @@ protected:
             std::error_code ec;
             std::filesystem::remove(temp_config_, ec);
         }
-        cleanup_test_messages();
+        cleanup_test_data();
         cleanup_redis_connection_keys();
         redis_manager().shutdown();
     }
 
     void cleanup_redis_connection_keys() {
-        redis_manager().execute([](auto& redis) {
+        const auto created_user_ids = created_user_ids_;
+        redis_manager().execute([created_user_ids](auto& redis) {
             redis.del("online:users");
-            redis.del(std::string("user:sessions:") + kTestUidPrefix + "sender");
-            redis.del(std::string("user:sessions:") + kTestUidPrefix + "receiver");
-            redis.del(std::string("user:platform:") + kTestUidPrefix + "sender");
-            redis.del(std::string("user:platform:") + kTestUidPrefix + "receiver");
+            for (const auto& key : redis.keys(std::string("user:sessions:") + kTestUidPrefix + "*")) {
+                redis.del(key);
+            }
+            for (const auto& key : redis.keys(std::string("user:platform:") + kTestUidPrefix + "*")) {
+                redis.del(key);
+            }
+            for (const auto& uid : created_user_ids) {
+                redis.del(std::string("user:sessions:") + uid);
+                redis.del(std::string("user:platform:") + uid);
+            }
             for (const auto& key : redis.keys("session:user:*")) {
                 auto uid = redis.hget(key, "user_id");
                 if (uid && uid->rfind(kTestUidPrefix, 0) == 0) {
                     redis.del(key);
+                    continue;
+                }
+                if (uid) {
+                    for (const auto& created_uid : created_user_ids) {
+                        if (*uid == created_uid) {
+                            redis.del(key);
+                            break;
+                        }
+                    }
                 }
             }
         });
@@ -321,6 +417,22 @@ protected:
 
         temp_config_ = write_temp_config(
             ws_port_, http_port_, push_server_->selected_port(), gateway_delivery_port_);
+        gateway_ = std::make_unique<GatewayServer>(
+            temp_config_.string(), temp_config_.string(), ws_port_, http_port_);
+        gateway_->start();
+        ASSERT_TRUE(wait_for_http_health());
+    }
+
+    void start_gateway_with_unavailable_push_server() {
+        ws_port_ = find_free_port();
+        http_port_ = find_free_port();
+        gateway_delivery_port_ = find_free_port();
+
+        temp_config_ = write_temp_config(ws_port_,
+                                         http_port_,
+                                         find_free_port(),
+                                         gateway_delivery_port_,
+                                         {{"timeout_ms", 50}});
         gateway_ = std::make_unique<GatewayServer>(
             temp_config_.string(), temp_config_.string(), ws_port_, http_port_);
         gateway_->start();
@@ -384,12 +496,59 @@ protected:
         return request;
     }
 
+    std::string create_user(const std::string& account) {
+        auto db = std::make_shared<odb::pgsql::database>(kConnStr);
+        auto hasher = std::make_unique<PasswordHasher>();
+        UserService user_service(db, std::move(hasher));
+
+        RegisterRequest request;
+        request.account = account;
+        request.password = "testPass123";
+        request.nickname = account;
+        request.now_ms = now_ms();
+
+        auto result = user_service.register_user(request);
+        EXPECT_TRUE(result.ok) << "Failed to create test user " << account
+                               << ": " << result.message;
+        created_user_ids_.push_back(result.profile.uid);
+        return result.profile.uid;
+    }
+
+    uint64_t create_group(const std::string& name, const std::string& creator_uid) const {
+        auto db = std::make_shared<odb::pgsql::database>(kConnStr);
+        auto hasher = std::make_unique<PasswordHasher>();
+        auto user_service = std::make_shared<UserService>(db, std::move(hasher));
+        GroupService group_service(db, user_service);
+
+        CreateGroupRequest request;
+        request.name = name;
+        request.creator_uid = creator_uid;
+        request.now_ms = now_ms();
+
+        auto result = group_service.create_group(request);
+        EXPECT_TRUE(result.ok) << "Failed to create test group " << name
+                               << ": " << result.message;
+        return result.group_id;
+    }
+
+    void join_group(uint64_t group_id, const std::string& user_uid) const {
+        auto db = std::make_shared<odb::pgsql::database>(kConnStr);
+        auto hasher = std::make_unique<PasswordHasher>();
+        auto user_service = std::make_shared<UserService>(db, std::move(hasher));
+        GroupService group_service(db, user_service);
+
+        auto result = group_service.join_group(group_id, user_uid, now_ms());
+        EXPECT_TRUE(result.ok) << "Failed to join user " << user_uid
+                               << " to group " << group_id << ": " << result.message;
+    }
+
     int ws_port_ = 0;
     int http_port_ = 0;
     int gateway_delivery_port_ = 0;
     std::filesystem::path temp_config_;
     std::unique_ptr<PushServerApp> push_server_;
     std::unique_ptr<GatewayServer> gateway_;
+    std::vector<std::string> created_user_ids_;
 };
 
 TEST_F(RemotePushGatewayServerSmokeTest, WsSendReachesReceiverThroughRemotePushServer) {
@@ -439,6 +598,146 @@ TEST_F(RemotePushGatewayServerSmokeTest, WsSendReachesReceiverThroughRemotePushS
     EXPECT_EQ(push_request.body().type(), im::push::PUSH_MESSAGE);
     EXPECT_EQ(push_request.body().content(), content);
     EXPECT_EQ(push_request.body().related_message_id(), ack.message().message_id());
+}
+
+TEST_F(RemotePushGatewayServerSmokeTest, GroupHttpSendFansOutThroughRemotePushServer) {
+    start_servers();
+
+    const std::string owner_uid = create_user(std::string(kTestUidPrefix) + "group-owner");
+    const std::string member1_uid = create_user(std::string(kTestUidPrefix) + "group-member1");
+    const std::string member2_uid = create_user(std::string(kTestUidPrefix) + "group-member2");
+    ASSERT_FALSE(owner_uid.empty());
+    ASSERT_FALSE(member1_uid.empty());
+    ASSERT_FALSE(member2_uid.empty());
+
+    const uint64_t group_id =
+        create_group(std::string(kTestUidPrefix) + "group-http-remote-push", owner_uid);
+    ASSERT_GT(group_id, 0U);
+    join_group(group_id, member1_uid);
+    join_group(group_id, member2_uid);
+
+    const std::string owner_token = make_token(owner_uid, "group-owner-device");
+    const std::string member1_token = make_token(member1_uid, "group-member1-device");
+    const std::string member2_token = make_token(member2_uid, "group-member2-device");
+    ASSERT_FALSE(owner_token.empty());
+    ASSERT_FALSE(member1_token.empty());
+    ASSERT_FALSE(member2_token.empty());
+
+    TlsWebSocketClient member1(member1_token);
+    ASSERT_TRUE(member1.connect("127.0.0.1", ws_port_)) << member1.last_error();
+    TlsWebSocketClient member2(member2_token);
+    ASSERT_TRUE(member2.connect("127.0.0.1", ws_port_)) << member2.last_error();
+    ASSERT_TRUE(wait_for_online_count(2));
+
+    const std::string content = "group http send through remote push server";
+    httplib::Client client("127.0.0.1", http_port_);
+    client.set_connection_timeout(0, 200000);
+    client.set_read_timeout(2, 0);
+    httplib::Headers headers = {{"Authorization", "Bearer " + owner_token}};
+    auto response = client.Post("/api/v1/groups/messages/send",
+                                headers,
+                                json{{"group_id", group_id}, {"content", content}}.dump(),
+                                "application/json");
+    ASSERT_TRUE(response) << "HTTP request to Gateway group message route failed";
+    ASSERT_EQ(response->status, 201) << response->body;
+    const auto body = json::parse(response->body);
+    ASSERT_TRUE(body.contains("msg_id"));
+    const std::string msg_id = std::to_string(body["msg_id"].get<uint64_t>());
+
+    auto assert_group_push = [&](TlsWebSocketClient& client_ws,
+                                 const std::string& expected_uid) {
+        auto frame = client_ws.receive(std::chrono::seconds(5));
+        ASSERT_TRUE(frame.has_value()) << client_ws.last_error();
+
+        im::base::IMHeader push_header;
+        im::push::PushRequest push_request;
+        ASSERT_TRUE(ProtobufCodec::decode(*frame, push_header, push_request));
+        EXPECT_EQ(push_header.cmd_id(), im::command::CMD_PUSH_MESSAGE);
+        EXPECT_EQ(push_header.to_uid(), expected_uid);
+        ASSERT_TRUE(push_request.has_body());
+        EXPECT_EQ(push_request.body().type(), im::push::PUSH_MESSAGE);
+        EXPECT_EQ(push_request.body().content(), content);
+        EXPECT_EQ(push_request.body().related_message_id(), msg_id);
+    };
+
+    assert_group_push(member1, member1_uid);
+    assert_group_push(member2, member2_uid);
+}
+
+TEST_F(RemotePushGatewayServerSmokeTest, RemoteModeRejectsEmptyPushEndpoint) {
+    ws_port_ = find_free_port();
+    http_port_ = find_free_port();
+    gateway_delivery_port_ = find_free_port();
+    temp_config_ = write_temp_config(ws_port_,
+                                     http_port_,
+                                     find_free_port(),
+                                     gateway_delivery_port_,
+                                     {{"remote_endpoint", ""}});
+
+    EXPECT_THROW({
+        GatewayServer gateway(temp_config_.string(),
+                              temp_config_.string(),
+                              ws_port_,
+                              http_port_);
+    }, std::runtime_error);
+}
+
+TEST_F(RemotePushGatewayServerSmokeTest, RemoteModeRejectsEmptyGatewayDeliveryListenAddress) {
+    ws_port_ = find_free_port();
+    http_port_ = find_free_port();
+    gateway_delivery_port_ = find_free_port();
+    temp_config_ = write_temp_config(ws_port_,
+                                     http_port_,
+                                     find_free_port(),
+                                     gateway_delivery_port_,
+                                     {{"gateway_delivery_listen_address", ""}});
+
+    EXPECT_THROW({
+        GatewayServer gateway(temp_config_.string(),
+                              temp_config_.string(),
+                              ws_port_,
+                              http_port_);
+    }, std::runtime_error);
+}
+
+TEST_F(RemotePushGatewayServerSmokeTest, UnavailablePushServerKeepsSendBestEffortAndOfflinePullable) {
+    start_gateway_with_unavailable_push_server();
+
+    const std::string sender_uid = std::string(kTestUidPrefix) + "sender";
+    const std::string receiver_uid = std::string(kTestUidPrefix) + "receiver";
+    const std::string sender_device = "remote-server-unavailable-sender-device";
+    const std::string sender_token = make_token(sender_uid, sender_device);
+    ASSERT_FALSE(sender_token.empty());
+
+    TlsWebSocketClient sender(sender_token);
+    ASSERT_TRUE(sender.connect("127.0.0.1", ws_port_)) << sender.last_error();
+    ASSERT_TRUE(wait_for_online_count(1));
+
+    const std::string content = "remote push server unavailable";
+    ASSERT_TRUE(sender.send(
+        send_header(sender_token, sender_uid, receiver_uid, sender_device),
+        send_request(sender_uid, receiver_uid, content)))
+        << sender.last_error();
+
+    auto ack_frame = sender.receive(std::chrono::seconds(5));
+    ASSERT_TRUE(ack_frame.has_value()) << sender.last_error();
+
+    im::base::IMHeader ack_header;
+    im::message::SendMessageResponse ack;
+    ASSERT_TRUE(ProtobufCodec::decode(*ack_frame, ack_header, ack));
+    ASSERT_EQ(ack.base().error_code(), im::base::SUCCESS);
+    ASSERT_TRUE(ack.has_message());
+
+    auto db = std::make_shared<odb::pgsql::database>(kConnStr);
+    MessageService message_service(db);
+    const auto offline = message_service.pull_offline(receiver_uid, now_ms() + 10000, 10);
+    ASSERT_EQ(offline.size(), 1U);
+    EXPECT_EQ(offline[0].msg_id, std::stoull(ack.message().message_id()));
+    EXPECT_EQ(offline[0].sender_uid, sender_uid);
+    EXPECT_EQ(offline[0].receiver_uid, receiver_uid);
+    EXPECT_EQ(offline[0].content, content);
+    EXPECT_EQ(offline[0].status, MessageStatus::SENT);
+    EXPECT_EQ(offline[0].delivered_time, 0);
 }
 
 } // namespace

@@ -215,6 +215,24 @@ void register_group_message_http_routes_on_server(
 namespace im {
 namespace gateway {
 
+namespace {
+
+bool is_blank(const std::string& value) {
+    return value.find_first_not_of(" \t\n\r\f\v") == std::string::npos;
+}
+
+std::string require_non_blank_config(const im::utils::ConfigManager& config,
+                                     const std::string& key,
+                                     const std::string& context) {
+    const std::string value = config.get<std::string>(key, "");
+    if (is_blank(value)) {
+        throw std::runtime_error(context + " requires non-empty config key: " + key);
+    }
+    return value;
+}
+
+} // namespace
+
 // 类型别名定义
 using im::common::CoroutineManager;
 using im::common::Task;
@@ -400,9 +418,9 @@ void GatewayServer::stop() {
 
 #ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
 void GatewayServer::start_gateway_push_delivery_server(const std::string& listen_address) {
-    if (listen_address.empty()) {
-        server_logger->info("Gateway Push delivery gRPC endpoint is not configured");
-        return;
+    if (is_blank(listen_address)) {
+        throw std::runtime_error(
+            "Gateway Push delivery gRPC listen address is not configured");
     }
     if (gateway_push_delivery_server_) {
         server_logger->warn("Gateway Push delivery gRPC server is already running");
@@ -639,10 +657,13 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
             if (use_remote_push) {
                 const std::string endpoint =
-                    push_cfg.get<std::string>("push.remote_endpoint", "127.0.0.1:9101");
+                    require_non_blank_config(push_cfg,
+                                             "push.remote_endpoint",
+                                             "push.mode=remote");
                 const std::string delivery_listen_address =
-                    push_cfg.get<std::string>("push.gateway_delivery_listen_address",
-                                              "127.0.0.1:9102");
+                    require_non_blank_config(push_cfg,
+                                             "push.gateway_delivery_listen_address",
+                                             "push.mode=remote");
                 auto msg_svc_for_push =
                     std::make_shared<im::service::message::MessageService>(odb_db_);
                 push_service_ = std::make_unique<PushService>(

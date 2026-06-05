@@ -63,3 +63,66 @@ features are added only when their service targets exist:
   pullable through offline APIs.
 - The default `AllSessionsFanoutPolicy` in `services/push` must remain "push to
   every active session" unless a task explicitly changes that contract.
+
+## Remote Push Endpoint Topology
+
+Remote Push mode is an explicit two-process topology:
+
+```text
+GatewayServer
+  - client-facing HTTP/WebSocket process
+  - owns WebSocket sessions and delivered marking
+  - listens for PushServer callbacks on push.gateway_delivery_listen_address
+
+PushServer
+  - internal Push gRPC process
+  - listens for Gateway notify calls on push.listen_address
+  - calls Gateway delivery callbacks through push.gateway_delivery_endpoint
+
+GatewayServer -> PushServer:
+  RemotePushNotifier -> im.push.PushService.NotifyUser
+  target: push.remote_endpoint
+
+PushServer -> GatewayServer:
+  Remote Gateway delivery adapters -> im.push.GatewayPushDeliveryService
+  target: push.gateway_delivery_endpoint
+```
+
+Endpoint ownership:
+
+- `push.listen_address` belongs to `push_server`. It is where the standalone
+  Push service accepts `NotifyUser` RPCs.
+- `push.remote_endpoint` belongs to Gateway configuration. It is the client
+  target used by `RemotePushNotifier` to call `push_server`.
+- `push.gateway_delivery_listen_address` belongs to Gateway configuration. It
+  is where Gateway exposes `GatewayPushDeliveryService` so Push can call back
+  into Gateway-owned session lookup, payload send, and delivered marking.
+- `push.gateway_delivery_endpoint` belongs to `push_server` configuration. It
+  is the client target used by Push server remote adapters to call Gateway.
+
+The local development pairing is normally:
+
+```json
+{
+  "push": {
+    "mode": "remote",
+    "listen_address": "0.0.0.0:9101",
+    "remote_endpoint": "127.0.0.1:9101",
+    "gateway_delivery_listen_address": "127.0.0.1:9102",
+    "gateway_delivery_endpoint": "127.0.0.1:9102"
+  }
+}
+```
+
+Operational rules:
+
+- Default builds and `config/dev.json` keep `push.mode = "local"`, so no gRPC
+  Push service is required by default.
+- `push.mode = "remote"` requires an explicit gRPC build with
+  `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
+- In remote mode, Gateway startup fails if `push.remote_endpoint` or
+  `push.gateway_delivery_listen_address` is blank.
+- A configured but unavailable `push.remote_endpoint` does not prevent Gateway
+  startup. Send remains best-effort after persistence: sender ack stays
+  successful, and the recipient message remains `SENT` and offline-pullable
+  unless Push later completes delivery.

@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      run_remote_push_odb:
+        description: "Run the heavier remote Push ODB/gRPC job"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run repository checks
+        run: scripts/ci/checks.sh
+
+  default-regression:
+    runs-on: ubuntu-24.04
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      MYCHAT_CI_JOBS: "2"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            git \
+            ninja-build \
+            pkg-config \
+            python3 \
+            tar \
+            unzip \
+            zip
+
+      - name: Restore vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            ${{ github.workspace }}/vcpkg_installed
+          key: vcpkg-default-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Bootstrap vcpkg
+        run: |
+          if [ ! -d "${VCPKG_ROOT}/.git" ]; then
+            git clone https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}"
+          fi
+          "${VCPKG_ROOT}/bootstrap-vcpkg.sh"
+
+      - name: Run default regression
+        run: scripts/ci/default_regression.sh
+
+  remote-push-odb:
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'workflow_dispatch' && inputs.run_remote_push_odb == 'true'
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      MYCHAT_CI_JOBS: "2"
+      MYCHAT_CI_BUILD_ODB_RUNTIME: "ON"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            autoconf \
+            automake \
+            bdep \
+            build2 \
+            build-essential \
+            cmake \
+            curl \
+            git \
+            libpq-dev \
+            libtool \
+            ninja-build \
+            pkg-config \
+            python3 \
+            tar \
+            unzip \
+            zip
+
+      - name: Restore vcpkg and ODB runtime
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.VCPKG_ROOT }}
+            ${{ github.workspace }}/vcpkg_installed
+            ${{ github.workspace }}/.odb
+          key: vcpkg-odb-grpc-${{ runner.os }}-${{ hashFiles('vcpkg.json', 'scripts/build_odb_runtime_2_5.sh') }}
+
+      - name: Bootstrap vcpkg
+        run: |
+          if [ ! -d "${VCPKG_ROOT}/.git" ]; then
+            git clone https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}"
+          fi
+          "${VCPKG_ROOT}/bootstrap-vcpkg.sh"
+
+      - name: Run remote Push ODB/gRPC regression
+        run: scripts/ci/remote_push_odb.sh

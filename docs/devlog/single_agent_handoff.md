@@ -17,6 +17,10 @@ that work has now been completed and verified.
 
 Latest reliable baseline after this handoff update:
 
+- CI/CD local scripts verified on 2026-06-05:
+  `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
+  `scripts/ci/remote_push_odb.sh` passed locally after splitting default and
+  remote vcpkg installed directories.
 - Full ODB + Gateway + Push gRPC configure/build/test passed on 2026-06-05:
   23/23 tests in `build/remote-push-odb`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
@@ -99,6 +103,30 @@ Latest reliable baseline after this handoff update:
   port, sends `CMD_SEND_MESSAGE`, receives the sender ack, and verifies the
   receiver receives `CMD_PUSH_MESSAGE` through the remote
   `push_server -> GatewayPushDeliveryService -> Gateway-owned session` path.
+- Gateway remote Push startup/config hardening first slice is present in the
+  working tree: `push.mode=remote` now requires explicit non-blank
+  `push.remote_endpoint` and `push.gateway_delivery_listen_address`, and a
+  blank Gateway delivery listen address fails startup instead of silently
+  disabling the callback endpoint. `RemotePushGatewayServerSmokeTest` covers
+  both config-failure cases plus the real WS remote Push smoke.
+- Configured-but-unavailable remote `push_server` behavior is present in the
+  working tree: Gateway still starts when `push.remote_endpoint` is configured
+  but no remote Push server is listening, WS send keeps the current
+  best-effort success ack, and the message remains `SENT` and pullable through
+  the offline path instead of being marked delivered.
+- Real Gateway HTTP group-message remote Push coverage is present in the
+  working tree: `RemotePushGatewayServerSmokeTest` posts to
+  `/api/v1/groups/messages/send` on a real Gateway HTTP port with a real
+  `GatewayServer`, real `PushServerApp`, and online WebSocket group members,
+  then verifies members receive `CMD_PUSH_MESSAGE` through the remote callback
+  path.
+- CI/CD engineering baseline first slice is present in the working tree:
+  `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
+  `scripts/ci/remote_push_odb.sh` provide local CI entrypoints.
+  `.github/workflows/ci.yml` runs checks plus the default no-ODB/no-gRPC
+  regression on pull requests and pushes; the heavier remote Push ODB/gRPC
+  regression is manual-only through `workflow_dispatch` with
+  `run_remote_push_odb=true`.
 
 ## Important Repository Context
 
@@ -157,9 +185,14 @@ Current important moved/new areas from the recent cleanup include:
 - `services/odb/generated/group.sql`
 - `services/odb/generated/group_message-odb.*`
 - `services/odb/generated/group_message.sql`
+- `.github/workflows/ci.yml`
+- `scripts/ci/checks.sh`
+- `scripts/ci/default_regression.sh`
+- `scripts/ci/remote_push_odb.sh`
 - `docs/devlog/phase11_fanout_policies.md`
 - `docs/devlog/phase12_friend_service_mvp.md`
 - `docs/devlog/phase13_group_service_mvp.md`
+- `docs/devlog/phase16_ci_cd.md`
 - `docs/devlog/single_agent_handoff.md`
 - `test/friend/`
 - `test/gateway_friend/`
@@ -371,8 +404,9 @@ Recently reconciled:
   `PushNotifier` boundary, service-owned fanout policies, `PushRuntime`, gRPC
   adapter, Gateway remote client, `push_server` target, Gateway callback
   delivery channel, and full `GatewayServer` remote Push smoke are in place.
-  Continue by hardening endpoint startup/config behavior and extending
-  real-server coverage only where it adds new signal.
+  Gateway remote mode now also validates its required endpoint config at
+  startup. Continue by pinning configured-but-unavailable remote endpoint
+  behavior and extending real-server coverage only where it adds new signal.
 
 ## Verification Commands And Results
 
@@ -491,8 +525,8 @@ Useful latest task records:
 Selected next task:
 
 ```text
-Harden remote Push endpoint startup/config behavior, then extend real-server
-coverage only where it adds new signal.
+Promote the remote Push smoke baseline into CI, or start schema migration
+planning if CI environment work is not the current priority.
 ```
 
 Why this is the right next task:
@@ -510,20 +544,24 @@ Why this is the right next task:
   decision has a safer regression surface.
 - The gRPC server adapter, `push_server` binary, Gateway
   `RemotePushNotifier`, `GatewayPushDeliveryService` callback channel, a real
-  gRPC-link smoke, a Gateway handler/controller entrypoint smoke, and a full
-  `GatewayServer` process-level WS smoke through real server ports are
-  present. What is still missing is deeper startup/config hardening for common
-  remote-mode mistakes.
+  gRPC-link smoke, Gateway handler/controller entrypoint smoke, full
+  `GatewayServer` process-level WS smoke through real server ports, and real
+  Gateway HTTP group-message remote Push smoke are present. Gateway remote
+  mode now fails startup when required endpoint config is blank.
+  Configured-but-unavailable `push_server` behavior is also pinned as
+  best-effort: Gateway starts, sender ack remains success after persistence,
+  and the message remains offline-pullable. Remote Push endpoint topology is
+  documented in `gateway/README.md` and
+  `docs/devlog/phase15_push_service_boundary.md`.
 
 Suggested scope:
 
-- Add config/startup tests for missing `push.remote_endpoint`, missing
-  `push.gateway_delivery_listen_address`, bind failure, and unavailable
-  `push_server` where feasible without broad process orchestration. Invalid
-  `push.listen_address` is already covered by `PushServerAppTest`.
-- Extend real-server remote Push coverage only where it adds new signal, such
-  as group HTTP send through real Gateway HTTP ports or explicit
-  unavailable-`push_server` behavior.
+- Promote the remote Push smoke coverage into CI once the environment contract
+  for Redis/PostgreSQL/gRPC builds is settled.
+- Add a schema migration framework before broader persistence evolution;
+  current focused tests still create missing tables defensively.
+- Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
+  generated files if no legacy include path still depends on them.
 - Keep current direct-message, group-message, `PushRuntimeTest`, and
   `PushGrpcServiceTest`/`PushServerAppTest`/`PushServerRemoteAdaptersTest`/
   `GatewayPushDeliveryServiceTest`/`RemotePushEndToEndSmokeTest`/
@@ -558,8 +596,7 @@ Out of scope for the next task:
 
 Recommended sequence:
 
-1. Harden endpoint config/startup behavior beyond the current invalid-listen
-   guard and document the expected local topology.
+1. Document the expected local two-process remote Push topology.
 2. Add targeted real-server coverage only if it covers a new boundary not
    already pinned by `RemotePushGatewayServerSmokeTest`.
 3. Keep direct-message, group-message, PushRuntime, PushGrpcService,
@@ -656,6 +693,13 @@ Current reliable state:
   HTTP port, connects sender/receiver TLS WebSocket clients through the real WS
   port, and verifies sender ack plus receiver CMD_PUSH_MESSAGE delivery through
   the remote callback path.
+- Gateway remote Push required endpoint validation is complete:
+  push.mode=remote rejects blank push.remote_endpoint and blank
+  push.gateway_delivery_listen_address at Gateway startup.
+- Configured-but-unavailable remote Push behavior is complete:
+  Gateway starts with a configured but unavailable push.remote_endpoint, WS
+  send keeps best-effort success ack semantics after persistence, and the
+  message remains SENT/offline-pullable instead of being marked delivered.
 - Friend Service/Gateway Friend HTTP compile, link, and pass focused tests.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
@@ -663,8 +707,8 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Harden remote Push endpoint startup/config behavior, then extend real-server
-coverage only where it adds new signal.
+Validate GitHub Actions on the remote repository, then start schema migration
+planning if hosted CI only needs small tuning.
 
 Constraints:
 - Do not redo Friend or Group MVP work.
@@ -694,6 +738,12 @@ Constraints:
 - Do not use DROP TABLE in tests.
 - Preserve existing tests and CMake gating.
 - Run both ODB-enabled and no-ODB build/test baselines when done.
+- Keep the default CI job no-ODB/no-gRPC. The remote Push ODB/gRPC baseline
+  should remain explicit/manual until hosted dependency cache and ODB runtime
+  build time are proven stable.
+- Use `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
+  `scripts/ci/remote_push_odb.sh` as canonical CI entrypoints instead of
+  duplicating long CMake commands in new automation.
 
 Useful commands:
 docker compose up -d redis postgres
@@ -752,6 +802,6 @@ When done:
 - Summarize changed files and behavior.
 - Record exact verification commands and pass/fail results.
 - Update docs/devlog/current_progress.md.
-- Update docs/devlog/phase15_push_service_boundary.md or add the next Push
-  remote-wiring devlog with changed files, tests, and remaining risks.
+- Update docs/devlog/phase16_ci_cd.md if CI workflow or CI script behavior
+  changes.
 ```

@@ -12,6 +12,17 @@
 
 - [Redis Structure Design](docs/docs/redis.md) - Detailed Redis data structure design for authentication and connection management modules
 
+## CI/CD:
+
+- `scripts/ci/checks.sh` validates JSON agent state and git diff whitespace.
+- `scripts/ci/default_regression.sh` runs the default no-ODB/no-gRPC
+  regression build used by regular CI.
+- `scripts/ci/remote_push_odb.sh` runs the heavier remote Push ODB/gRPC
+  regression after ODB 2.5.0 runtime and Docker Redis/PostgreSQL are available.
+- GitHub Actions workflow lives at `.github/workflows/ci.yml`; default
+  regression runs on pull requests and pushes, while the remote Push ODB/gRPC
+  job is manual-only through `workflow_dispatch`.
+
 ## 功能：
 
 ### core：

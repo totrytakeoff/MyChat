@@ -101,6 +101,67 @@ Current runtime adapter:
   ownership inside Gateway while allowing `push_server` to call back for
   delivery primitives.
 
+Remote Push endpoint topology:
+
+```text
+GatewayServer
+  - client-facing HTTP/WebSocket process
+  - owns WebSocket sessions and delivered marking
+  - listens for PushServer callbacks on push.gateway_delivery_listen_address
+
+PushServer
+  - internal Push gRPC process
+  - listens for Gateway notify calls on push.listen_address
+  - calls Gateway delivery callbacks through push.gateway_delivery_endpoint
+
+GatewayServer -> PushServer:
+  RemotePushNotifier -> im.push.PushService.NotifyUser
+  target: push.remote_endpoint
+
+PushServer -> GatewayServer:
+  Remote Gateway delivery adapters -> im.push.GatewayPushDeliveryService
+  target: push.gateway_delivery_endpoint
+```
+
+Endpoint ownership:
+
+- `push.listen_address` belongs to `push_server`; it is the service listen
+  address for `im.push.PushService.NotifyUser`.
+- `push.remote_endpoint` belongs to Gateway; it is the client target used by
+  `RemotePushNotifier` to call `push_server`.
+- `push.gateway_delivery_listen_address` belongs to Gateway; it is where
+  Gateway exposes the callback service for session lookup, payload send, and
+  delivered marking.
+- `push.gateway_delivery_endpoint` belongs to `push_server`; it is the client
+  target used by Push server remote adapters to call Gateway.
+
+Local remote-mode pairing:
+
+```json
+{
+  "push": {
+    "mode": "remote",
+    "listen_address": "0.0.0.0:9101",
+    "remote_endpoint": "127.0.0.1:9101",
+    "gateway_delivery_listen_address": "127.0.0.1:9102",
+    "gateway_delivery_endpoint": "127.0.0.1:9102"
+  }
+}
+```
+
+Operational rules:
+
+- Default builds and `config/dev.json` keep `push.mode = "local"`, so no gRPC
+  Push service is required by default.
+- `push.mode = "remote"` requires an explicit gRPC build with
+  `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
+- In remote mode, Gateway startup fails if `push.remote_endpoint` or
+  `push.gateway_delivery_listen_address` is blank.
+- A configured but unavailable `push.remote_endpoint` does not prevent Gateway
+  startup. Send remains best-effort after persistence: sender ack stays
+  successful, and the recipient message remains `SENT` and offline-pullable
+  unless Push later completes delivery.
+
 Gateway build gating:
 
 - `IM_ENABLE_MESSAGE_HTTP` is only for Message HTTP routes.
@@ -502,15 +563,61 @@ Full ODB + Gateway + Push gRPC CTest passed, 23/23.
 No-ODB default CTest passed, 3/3.
 ```
 
+Remote Push Gateway startup/config hardening:
+
+- `GatewayServer` remote mode now requires explicit non-blank
+  `push.remote_endpoint`.
+- `GatewayServer` remote mode now requires explicit non-blank
+  `push.gateway_delivery_listen_address`.
+- `start_gateway_push_delivery_server()` now fails startup for blank listen
+  addresses instead of silently skipping the internal Gateway delivery gRPC
+  endpoint.
+- `RemotePushGatewayServerSmokeTest` now includes startup-failure coverage for
+  both missing/empty required Gateway remote-mode addresses while preserving
+  the real WS remote Push smoke.
+- `RemotePushGatewayServerSmokeTest` also covers a configured but unavailable
+  `push_server`: Gateway still starts, WS send returns the existing
+  best-effort success ack, and the recipient message remains `SENT` and
+  pullable through the offline path instead of being incorrectly marked
+  delivered.
+- `RemotePushGatewayServerSmokeTest` now covers real Gateway HTTP group send
+  through remote Push: the test starts a real `GatewayServer` and
+  `PushServerApp`, creates test users/groups through service helpers, posts to
+  `/api/v1/groups/messages/send` on the real Gateway HTTP port, and verifies
+  online group members receive `CMD_PUSH_MESSAGE` through the
+  `RemotePushNotifier -> PushServerApp -> GatewayPushDeliveryService ->
+  WebSocket` path.
+
+Verification:
+
+```bash
+cmake --build build/remote-push-odb \
+  --target test_remote_push_gateway_server_smoke -j2
+ctest --test-dir build/remote-push-odb \
+  -R RemotePushGatewayServerSmokeTest --output-on-failure
+ctest --test-dir build/remote-push-odb -R Push --output-on-failure
+ctest --test-dir build/remote-push-odb --output-on-failure
+ctest --test-dir build/default-regression --output-on-failure
+git diff --check
+```
+
+Result:
+
+```text
+test_remote_push_gateway_server_smoke built.
+RemotePushGatewayServerSmokeTest passed, 1/1.
+Push focused tests passed, 10/10.
+Full ODB + Gateway + Push gRPC CTest passed, 23/23.
+No-ODB default CTest passed, 3/3.
+git diff --check passed.
+```
+
 ## Remaining Work
 
-- Harden the Gateway remote mode operationally beyond the invalid-listen guard:
-  document expected endpoints, validate misconfiguration, and decide startup
-  failure vs degraded best-effort behavior for unavailable Push/Gateway
-  delivery endpoints.
-- Extend real-server remote Push coverage only where it adds new signal, such
-  as group HTTP send through real Gateway HTTP ports or explicit unavailable
-  `push_server` behavior.
+- Promote the remote Push smoke coverage into CI once the environment contract
+  for Redis/PostgreSQL/gRPC builds is settled.
+- Consider a schema migration framework before adding broader persistence
+  evolution; current focused tests still create missing tables defensively.
 - Keep Gateway adapter responsibilities narrow: session lookup, payload send,
   and delivered marking.
 - Keep direct-message and group-message characterization tests passing during
