@@ -19,6 +19,8 @@ New local CI scripts:
   - Configures `build/ci-default`.
   - Uses `vcpkg_installed/default` by default so local and GitHub cache paths
     match without sharing installed packages with heavier feature builds.
+  - Starts the Redis test dependency through Docker Compose when Docker is
+    available; set `MYCHAT_CI_START_REDIS=OFF` to use an already-running Redis.
   - Removes stale checked-in protobuf outputs and regenerates them with the
     configured vcpkg toolchain before compiling.
   - Keeps default no-ODB/no-gRPC behavior.
@@ -114,6 +116,7 @@ MYCHAT_CI_JOBS=4 scripts/ci/default_regression.sh
 MYCHAT_CI_DEFAULT_BUILD_DIR=build/default-regression scripts/ci/default_regression.sh
 MYCHAT_CI_REMOTE_PUSH_BUILD_DIR=build/remote-push-odb scripts/ci/remote_push_odb.sh
 MYCHAT_CI_VCPKG_INSTALLED_DIR=/path/to/vcpkg_installed_slice scripts/ci/default_regression.sh
+MYCHAT_CI_START_REDIS=OFF scripts/ci/default_regression.sh
 MYCHAT_ODB_ROOT=/path/to/odb-2.5.0 scripts/ci/remote_push_odb.sh
 ```
 
@@ -171,3 +174,5 @@ Hosted GitHub Actions follow-up on 2026-06-05:
 - Run `27009928862` confirmed `checks` passed and `remote-push-odb` was skipped
   on push as designed, then exposed jwt-cpp JSON-traits API drift in
   `gateway/auth`.
+- Run `27010726978` confirmed hosted compilation reached CTest, then exposed
+  the missing Redis dependency in default-regression.
