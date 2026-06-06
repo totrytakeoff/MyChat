@@ -74,10 +74,14 @@ verify.
 - ODB 2.5.0 runtime build is a manual step not yet covered by CI.
 - `PgSqlConnection` wrapper is repaired for current string-ID ODB usage and covered by `PgSqlConnectionTest`; service repositories still use direct `odb::pgsql::database`.
 - Redis wrapper now uses a small RAII connection pool keyed by
-  `RedisConfig::pool_size`; focused tests cover borrow/return stats,
-  concurrent borrowers, reinitialize boundaries, and an Auth token lifecycle
-  concurrency slice. PushService tests also cover concurrent ConnectionManager
-  session metadata reads and no-live-WS PushService lookup semantics.
+  `RedisConfig::pool_size`; pool wait timeout is configurable through
+  `redis.pool_wait_timeout`. Focused tests cover borrow/return stats,
+  exhaustion timeout, concurrent borrowers, reinitialize boundaries, and an
+  Auth token lifecycle concurrency slice. PushService tests also cover
+  concurrent ConnectionManager session metadata reads and no-live-WS
+  PushService lookup semantics. Full Gateway remote Push smoke asserts the
+  pool returns idle after real TLS WebSocket registration, direct remote Push
+  delivery, and HTTP group remote Push fanout.
 - Stale codec/gRPC generated files may cause confusion if accidentally regenerated with mismatched protoc versions.
 - Legacy tests (SignalHandlerTest, RouterManagerTests) have pre-existing failures if re-enabled.
 - PostgreSQL schema migration baseline exists. Local development uses

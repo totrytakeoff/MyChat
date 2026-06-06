@@ -83,8 +83,10 @@ RedisConfig test_redis_config() {
     config.port = 6379;
     config.password = "mychat-dev-pass";
     config.db = 15;
+    config.pool_size = 4;
     config.connect_timeout = 1000;
     config.socket_timeout = 1000;
+    config.pool_wait_timeout = 1000;
     return config;
 }
 
@@ -144,6 +146,8 @@ std::filesystem::path write_temp_config(int ws_port,
     config["gateway"]["key_file"] = source_path("test/network/test_key.pem").string();
 
     config["redis"]["db"] = 15;
+    config["redis"]["pool_size"] = 4;
+    config["redis"]["pool_wait_timeout"] = 1000;
 
     config["push"]["mode"] = "remote";
     config["push"]["remote_endpoint"] = "127.0.0.1:" + std::to_string(push_port);
@@ -399,6 +403,23 @@ protected:
         return false;
     }
 
+    void expect_redis_pool_idle(size_t expected_total) const {
+        for (int i = 0; i < 50; ++i) {
+            const auto stats = redis_manager().get_pool_stats();
+            if (stats.total_connections == expected_total &&
+                stats.available_connections == expected_total &&
+                stats.active_connections == 0) {
+                return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        }
+
+        const auto stats = redis_manager().get_pool_stats();
+        EXPECT_EQ(stats.total_connections, expected_total);
+        EXPECT_EQ(stats.available_connections, expected_total);
+        EXPECT_EQ(stats.active_connections, 0u);
+    }
+
     std::string make_token(const std::string& uid, const std::string& device_id) const {
         MultiPlatformAuthManager auth(temp_config_.string());
         return auth.generate_access_token(uid, uid + "-account", device_id, "web", 3600);
@@ -505,6 +526,7 @@ TEST_F(RemotePushGatewayServerSmokeTest, WsSendReachesReceiverThroughRemotePushS
     TlsWebSocketClient sender(sender_token);
     ASSERT_TRUE(sender.connect("127.0.0.1", ws_port_)) << sender.last_error();
     ASSERT_TRUE(wait_for_online_count(2));
+    expect_redis_pool_idle(4);
 
     const std::string content = "remote push from real gateway server";
     ASSERT_TRUE(sender.send(
@@ -534,6 +556,7 @@ TEST_F(RemotePushGatewayServerSmokeTest, WsSendReachesReceiverThroughRemotePushS
     EXPECT_EQ(push_request.body().type(), im::push::PUSH_MESSAGE);
     EXPECT_EQ(push_request.body().content(), content);
     EXPECT_EQ(push_request.body().related_message_id(), ack.message().message_id());
+    expect_redis_pool_idle(4);
 }
 
 TEST_F(RemotePushGatewayServerSmokeTest, GroupHttpSendFansOutThroughRemotePushServer) {
@@ -564,6 +587,7 @@ TEST_F(RemotePushGatewayServerSmokeTest, GroupHttpSendFansOutThroughRemotePushSe
     TlsWebSocketClient member2(member2_token);
     ASSERT_TRUE(member2.connect("127.0.0.1", ws_port_)) << member2.last_error();
     ASSERT_TRUE(wait_for_online_count(2));
+    expect_redis_pool_idle(4);
 
     const std::string content = "group http send through remote push server";
     httplib::Client client("127.0.0.1", http_port_);
@@ -598,6 +622,7 @@ TEST_F(RemotePushGatewayServerSmokeTest, GroupHttpSendFansOutThroughRemotePushSe
 
     assert_group_push(member1, member1_uid);
     assert_group_push(member2, member2_uid);
+    expect_redis_pool_idle(4);
 }
 
 TEST_F(RemotePushGatewayServerSmokeTest, RemoteModeRejectsEmptyPushEndpoint) {

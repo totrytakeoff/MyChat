@@ -631,9 +631,8 @@ Recommended sequence:
    PushServerApp, PushServerRemoteAdapters, GatewayPushDeliveryService,
    RemotePushEndToEndSmoke, RemotePushGatewayEntrypoints,
    RemotePushGatewayServerSmoke, and RemotePushNotifier tests green.
-5. Extend Redis pool validation from metadata/session lookup and no-live-WS
-   Push best-effort paths into live WebSocket delivery, then tune pool size,
-   wait timeout, and retry/reconnect behavior.
+5. Tune Redis pool size under heavier live Push load and define
+   retry/reconnect behavior for transient Redis failures.
 
 ## Known Risks
 
@@ -648,8 +647,12 @@ Recommended sequence:
   `RedisConfig::pool_size`; focused tests cover pool stats, concurrent
   borrowers, reinitialize boundaries, and an Auth token lifecycle concurrency
   slice. `PushServiceTest` also covers concurrent ConnectionManager session
-  metadata reads and no-live-WS PushService lookup semantics. Pool sizing and
-  timeout behavior still need live WebSocket delivery validation.
+  metadata reads and no-live-WS PushService lookup semantics. Pool wait timeout
+  is configurable through `redis.pool_wait_timeout` and covered by a
+  pool-exhaustion test. `RemotePushGatewayServerSmokeTest` asserts the pool
+  returns idle after real TLS WebSocket registration, direct remote Push
+  delivery, and HTTP group remote Push fanout. Pool sizing under heavier load
+  and retry/reconnect behavior still need tuning.
 - Legacy tests are gated and may fail if re-enabled wholesale.
 - `PgSqlConnection` is repaired for current string-ID ODB wrapper usage and is
   covered by `PgSqlConnectionTest`. Current services still use direct
@@ -762,12 +765,12 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Continue product hardening from the active roadmap: extend Redis pool
-validation into live WebSocket Push delivery, or start the next narrow
-distributed-runtime slice the human selects. Keep service repositories on
-direct `odb::pgsql::database` unless a future task explicitly adopts
-`PgSqlConnection`. Keep hosted CI paused unless the human explicitly asks to
-resume CI work.
+Continue product hardening from the active roadmap: tune Redis pool sizing
+under heavier live Push load, define retry/reconnect behavior for transient
+Redis failures, or start the next narrow distributed-runtime slice the human
+selects. Keep service repositories on direct `odb::pgsql::database` unless a
+future task explicitly adopts `PgSqlConnection`. Keep hosted CI paused unless
+the human explicitly asks to resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

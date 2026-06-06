@@ -102,8 +102,8 @@ codec/gRPC artifacts are regenerated.
 - Risk: Broadly migrating repositories onto the shared `PgSqlConnection` wrapper could churn stable service code.
   Mitigation: `PgSqlConnection` is repaired for current string-ID ODB usage and covered by `PgSqlConnectionTest`, but User/Message/Friend/Group repositories should remain on direct `odb::pgsql::database` unless a separate boundary plan chooses otherwise.
 
-- Risk: Redis pool sizing and timeout behavior are not yet validated under live WebSocket Push delivery.
-  Mitigation: RedisManager now uses a RAII connection pool keyed by `RedisConfig::pool_size`; focused tests cover pool stats, concurrent borrowers, reinitialize boundaries, Auth token concurrency, ConnectionManager session metadata reads, and no-live-WS PushService lookup semantics before live delivery tuning.
+- Risk: Redis pool sizing and retry/reconnect behavior are not yet validated under heavier live Push load.
+  Mitigation: RedisManager now uses a RAII connection pool keyed by `RedisConfig::pool_size`; pool wait timeout is configurable through `redis.pool_wait_timeout`; focused tests cover pool stats, exhaustion timeout, concurrent borrowers, reinitialize boundaries, Auth token concurrency, ConnectionManager session metadata reads, and no-live-WS PushService lookup semantics. Full Gateway remote Push smoke also asserts the pool returns idle after real TLS WebSocket registration, direct remote Push delivery, and HTTP group remote Push fanout.
 
 - Risk: Codec service is still only a placeholder outside the active runtime.
   Mitigation: Active generated outputs live under `common/proto`; do not
@@ -131,4 +131,4 @@ codec/gRPC artifacts are regenerated.
 2. Should the remaining Gateway-to-Message WebSocket/online delivery work continue the direct in-process pattern first, or should codec/gRPC regeneration happen before that delivery work?
 3. Is the ODB-only persistence decision still correct, or should a lighter SQL option be available for developers who cannot build ODB 2.5.0?
 4. Should any future repository adopt `PgSqlConnection`, or should service repositories keep the direct `odb::pgsql::database` pattern?
-5. What pool sizing, timeout, and retry policy should Redis use under live WebSocket Push delivery load?
+5. What pool sizing and retry/reconnect policy should Redis use under heavier live Push delivery load?

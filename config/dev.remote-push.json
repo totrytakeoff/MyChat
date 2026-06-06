@@ -13,7 +13,8 @@
     "db": 0,
     "pool_size": 8,
     "connect_timeout": 2000,
-    "socket_timeout": 2000
+    "socket_timeout": 2000,
+    "pool_wait_timeout": 5000
   },
   "postgres": {
     "host": "127.0.0.1",

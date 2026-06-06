@@ -143,6 +143,30 @@ TEST_F(RedisHiredisTest, ReinitializeDoesNotReturnOldBorrowedConnectionToNewPool
     EXPECT_EQ(after_old_return.active_connections, 0u);
 }
 
+TEST_F(RedisHiredisTest, PoolExhaustionUsesConfiguredWaitTimeout) {
+    auto& manager = im::db::redis_manager();
+
+    im::db::RedisConfig config = test_config();
+    config.pool_size = 1;
+    config.pool_wait_timeout = 100;
+    ASSERT_TRUE(manager.initialize(config));
+
+    auto held = manager.get_connection();
+    ASSERT_TRUE(held.is_valid());
+
+    const auto start = std::chrono::steady_clock::now();
+    EXPECT_THROW(manager.get_connection(), std::runtime_error);
+    const auto elapsed = std::chrono::steady_clock::now() - start;
+
+    EXPECT_LT(std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count(), 1000);
+
+    held = {};
+    auto stats = manager.get_pool_stats();
+    EXPECT_EQ(stats.total_connections, 1u);
+    EXPECT_EQ(stats.available_connections, 1u);
+    EXPECT_EQ(stats.active_connections, 0u);
+}
+
 TEST_F(RedisHiredisTest, HashOperations) {
     auto& manager = im::db::redis_manager();
 

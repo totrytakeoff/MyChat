@@ -324,9 +324,8 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Extend Redis pool validation from metadata/session lookup and no-live-WS
-   Push best-effort paths into live WebSocket delivery, then tune pool size,
-   wait timeout, and retry/reconnect policy.
+1. Tune Redis pool sizing under heavier live Push load and define
+   retry/reconnect behavior for transient Redis failures.
 2. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.
 
@@ -344,13 +343,17 @@ Known working:
 - Old tests still contain references to removed dependencies and may fail if
   re-enabled wholesale.
 - RedisManager now uses a RAII hiredis connection pool keyed by
-  `RedisConfig::pool_size`; focused tests cover pool stats, concurrent
+  `RedisConfig::pool_size`; connection wait timeout is configurable through
+  `RedisConfig::pool_wait_timeout` / `redis.pool_wait_timeout` and covered by
+  a pool-exhaustion test. Focused tests cover pool stats, concurrent
   borrowers, reinitialize boundaries, and an Auth token lifecycle concurrency
-  slice. `PushServiceTest` also covers concurrent `ConnectionManager`
-  session metadata reads and PushService session lookup without live WebSocket
-  sessions, preserving best-effort undelivered behavior. Pool sizing, wait
-  timeout, retry/reconnect policy, and live WebSocket delivery still need
-  broader tuning.
+  slice. `PushServiceTest` also covers concurrent `ConnectionManager` session
+  metadata reads and PushService session lookup without live WebSocket
+  sessions, preserving best-effort undelivered behavior.
+  `RemotePushGatewayServerSmokeTest` now fixes Redis pool settings and asserts
+  the pool returns to idle after real TLS WebSocket registration, direct remote
+  Push delivery, and real HTTP group-message remote Push fanout. Pool sizing
+  under heavier load and retry/reconnect policy still need broader tuning.
 - Full Phase F is not complete: migration adoption in runtime, inactive
   generated-file cleanup, and final hosted CI reintroduction remain future
   hardening work.

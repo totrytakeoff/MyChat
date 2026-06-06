@@ -34,6 +34,7 @@ struct RedisConfig {
     int pool_size = 1;
     int connect_timeout = 1000;
     int socket_timeout = 1000;
+    int pool_wait_timeout = 5000;
 
     static RedisConfig from_file(const std::string& config_path);
 };

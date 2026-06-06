@@ -15,6 +15,7 @@ RedisConfig RedisConfig::from_file(const std::string& config_path) {
     config.pool_size = cfg.get<int>("redis.pool_size", 1);
     config.connect_timeout = cfg.get<int>("redis.connect_timeout", 1000);
     config.socket_timeout = cfg.get<int>("redis.socket_timeout", 1000);
+    config.pool_wait_timeout = cfg.get<int>("redis.pool_wait_timeout", 5000);
     return config;
 }
 
@@ -261,7 +262,7 @@ RedisManager::RedisConnection RedisManager::get_connection() {
         throw std::runtime_error("Redis manager is not initialized");
     }
 
-    if (!pool_cv_.wait_for(lock, std::chrono::seconds(5), [this] {
+    if (!pool_cv_.wait_for(lock, std::chrono::milliseconds(config_.pool_wait_timeout), [this] {
             return !initialized_ || !available_.empty();
         })) {
         throw std::runtime_error("Timed out waiting for Redis connection");

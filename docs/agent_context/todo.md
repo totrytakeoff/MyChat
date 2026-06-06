@@ -151,8 +151,8 @@ updated_by: coder
 ## Next
 
 - [ ] Extend remote Push real-server coverage only where it adds new signal.
-- [ ] Extend Redis pool validation into live WebSocket Push delivery, then tune
-      pool size, wait timeout, and retry/reconnect policy.
+- [ ] Tune Redis pool size under heavier live Push load and define
+      retry/reconnect policy for transient Redis failures.
 - [ ] Decide whether any future repository should adopt `PgSqlConnection`;
       current services remain on direct `odb::pgsql::database`.
 
