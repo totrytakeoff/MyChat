@@ -18,6 +18,7 @@ struct PushServerRuntimeConfig {
     std::string listen_address = "0.0.0.0:9101";
     std::string gateway_delivery_endpoint;
     int timeout_ms = 200;
+    bool require_gateway_delivery_endpoint = false;
     std::string log_level = "info";
 };
 
@@ -92,6 +93,10 @@ int main(int argc, char** argv) {
             g_config.gateway_delivery_endpoint);
         g_config.timeout_ms = config.getWithEnv<int>(
             "push.timeout_ms", "MYCHAT_PUSH_TIMEOUT_MS", g_config.timeout_ms);
+        g_config.require_gateway_delivery_endpoint = config.getWithEnv<bool>(
+            "push.require_gateway_delivery_endpoint",
+            "MYCHAT_PUSH_REQUIRE_GATEWAY_DELIVERY_ENDPOINT",
+            g_config.require_gateway_delivery_endpoint);
         g_config.log_level = config.getWithEnv<std::string>(
             "push.log_level", "MYCHAT_LOG_LEVEL", g_config.log_level);
 
@@ -105,6 +110,8 @@ int main(int argc, char** argv) {
         server_config.listen_address = g_config.listen_address;
         server_config.gateway_delivery_endpoint = g_config.gateway_delivery_endpoint;
         server_config.timeout_ms = g_config.timeout_ms;
+        server_config.require_gateway_delivery_endpoint =
+            g_config.require_gateway_delivery_endpoint;
 
         im::service::push::PushServerApp server(server_config);
         g_server = &server;

@@ -55,6 +55,9 @@ New local CI scripts:
   - Enables `pgsql-odb` and `codec-grpc` manifest features.
   - Enables services, Gateway, Push gRPC, and PostgreSQL/ODB.
   - Starts Redis/PostgreSQL through `docker compose` when Docker is available.
+  - Applies PostgreSQL schema migrations through
+    `scripts/db/migrate_postgres.sh` before configuring/building the ODB/gRPC
+    regression.
   - Requires ODB 2.5.0 runtime at `.odb/installed` by default.
   - Can build the ODB runtime first when
     `MYCHAT_CI_BUILD_ODB_RUNTIME=ON`.

@@ -51,6 +51,13 @@ bool PushServerApp::start() {
         return true;
     }
 
+    if (config_.require_gateway_delivery_endpoint &&
+        config_.gateway_delivery_endpoint.empty()) {
+        logger_->error("Push server requires push.gateway_delivery_endpoint, "
+                       "but it is empty");
+        return false;
+    }
+
     ::grpc::ServerBuilder builder;
     int selected_port = 0;
     builder.AddListeningPort(config_.listen_address,

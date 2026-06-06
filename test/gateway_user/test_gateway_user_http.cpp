@@ -24,6 +24,8 @@
 #include <password_hasher.hpp>
 #include <utils/log_manager.hpp>
 
+#include "../support/postgres_schema.hpp"
+
 // Route registration free function (defined in gateway_server.cpp)
 void register_user_http_routes_on_server(httplib::Server& server,
                                          im::gateway::UserHttpController& controller);
@@ -87,26 +89,7 @@ protected:
 
     static void EnsureTable() {
         odb::pgsql::database db(kConnStr);
-        odb::transaction t(db.begin());
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_users" (
-                "uid" TEXT NOT NULL PRIMARY KEY,
-                "account" TEXT NOT NULL,
-                "password_hash" TEXT NOT NULL,
-                "nickname" TEXT NOT NULL,
-                "avatar" TEXT NOT NULL,
-                "gender" INTEGER NOT NULL,
-                "signature" TEXT NOT NULL,
-                "create_time" BIGINT NOT NULL,
-                "last_login" BIGINT NOT NULL,
-                "online" BOOLEAN NOT NULL
-            )
-        )");
-        db.execute(R"(
-            CREATE UNIQUE INDEX IF NOT EXISTS "im_users_account_i"
-                ON "im_users" ("account")
-        )");
-        t.commit();
+        im::test::EnsureCoreSchema(db);
     }
 
     void CleanupTestData() {

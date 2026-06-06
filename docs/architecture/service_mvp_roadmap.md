@@ -115,7 +115,7 @@ Exit criteria (all met):
 
 ## Phase E: Gateway + User Service Integration
 
-Status: ready to start.
+Status: complete.
 
 Scope:
 
@@ -132,12 +132,13 @@ Exit criteria:
 
 - Gateway endpoint tests pass.
 - Login returns access/refresh tokens.
-- Refresh returns a new valid access token.
-- Logout revokes the relevant tokens.
+- User profile lookup is available through `GET /api/v1/auth/info`.
+- Refresh/logout remain auth-token manager capabilities but are not the current
+  primary Gateway HTTP contract.
 
 ## Phase F: Message Service MVP
 
-Status: not started.
+Status: nearly complete.
 
 Scope:
 
@@ -155,11 +156,15 @@ Exit criteria:
 - Message Service tests pass.
 - Gateway can send a message to an online user.
 - Offline message can be persisted and later pulled.
-- Message schema and protobuf contract are documented.
+- Push fanout, `PushRuntime`, remote Push gRPC, standalone `push_server`, and
+  Gateway callback delivery have focused tests and process-level smoke
+  coverage.
+- Remaining Phase F work is runtime hardening, schema migration preparation,
+  and final cleanup rather than new user-facing message features.
 
 ## Phase G: Friend/Group/Push MVPs
 
-Status: future work.
+Status: Friend and Group complete; Push boundary/service extraction in progress.
 
 Scope:
 
@@ -169,8 +174,10 @@ Scope:
 
 Exit criteria:
 
-- Each service has its own tests and documented API.
-- Each service integrates with Gateway through stable contracts.
+- Friend and Group have their own tests and documented Gateway API.
+- Push has service-owned fanout/runtime code, a gRPC boundary, and a standalone
+  process slice. It is not yet treated as a fully productionized independent
+  service.
 
 ## Build/Test Gate
 

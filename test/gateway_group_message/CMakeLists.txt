@@ -3,6 +3,7 @@
 
 add_executable(test_gateway_group_message_http
     test_gateway_group_message_http.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_gateway_group_message_http

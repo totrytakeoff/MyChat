@@ -108,8 +108,12 @@ codec/gRPC artifacts are regenerated.
 - Risk: Stale codec/gRPC generated files are outside the default build but present in the tree.
   Mitigation: Gated behind `MYCHAT_BUILD_CODEC_SERVICE=OFF`. Must be regenerated before Message Service integration.
 
-- Risk: No schema migration framework for PostgreSQL.
-  Mitigation: Currently handled by `CREATE TABLE IF NOT EXISTS` + test-prefixed `DELETE`. Acceptable during MVP.
+- Risk: PostgreSQL migration startup policy is not decided yet.
+  Mitigation: `db/migrations/001_core_schema.sql` and
+  `scripts/db/migrate_postgres.sh` provide a non-destructive baseline with
+  version/checksum tracking. Service, Gateway, and remote Push smoke tests use
+  `test/support/postgres_schema.*`; decide later whether dev runtime startup
+  should run migrations or require an explicit pre-start migration step.
 
 - Risk: Full Message Service MVP is still incomplete.
   Mitigation: Roadmap and todo keep Phase F in progress; WebSocket send/ack, online delivery through `ConnectionManager`, and Push fanout remain explicit next work.

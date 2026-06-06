@@ -3,6 +3,7 @@
 
 add_executable(test_group_service
     test_group_service.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_group_service

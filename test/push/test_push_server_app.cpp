@@ -52,4 +52,15 @@ TEST(PushServerAppTest, StartReturnsFalseForInvalidListenAddress) {
     EXPECT_EQ(server.selected_port(), 0);
 }
 
+TEST(PushServerAppTest, StartReturnsFalseWhenGatewayDeliveryEndpointIsRequiredButBlank) {
+    im::service::push::PushServerConfig config;
+    config.listen_address = "127.0.0.1:0";
+    config.require_gateway_delivery_endpoint = true;
+
+    im::service::push::PushServerApp server(config);
+    EXPECT_FALSE(server.start());
+    EXPECT_FALSE(server.is_running());
+    EXPECT_EQ(server.selected_port(), 0);
+}
+
 } // namespace

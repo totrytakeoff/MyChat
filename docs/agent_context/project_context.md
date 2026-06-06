@@ -74,8 +74,19 @@ verify.
 - Redis wrapper is single-connection and mutex-serialized — adequate for correctness tests, not for performance.
 - Stale codec/gRPC generated files may cause confusion if accidentally regenerated with mismatched protoc versions.
 - Legacy tests (SignalHandlerTest, RouterManagerTests) have pre-existing failures if re-enabled.
-- No schema migration framework for PostgreSQL yet.
-- Full Phase F is not complete: deeper remote startup/config hardening, broader real-server remote-mode coverage, and schema migration remain future work. WebSocket send/ack, online delivery through `ConnectionManager`, pluggable Push fanout, production FanoutPolicy implementations, group multi-recipient fanout, Push gRPC contract/adapter, Gateway remote PushNotifier wiring, the standalone `push_server` process target, the first Gateway delivery callback channel, a real gRPC-link remote Push smoke, Gateway handler/controller entrypoint remote Push smoke, and full GatewayServer process-level WS remote Push smoke are complete.
+- PostgreSQL schema migration baseline exists, but local runtime startup policy
+  is still undecided. Tests should prefer `test/support/postgres_schema.*` or
+  `scripts/db/migrate_postgres.sh` instead of duplicating core schema SQL.
+- Full Phase F is not complete: runtime migration policy, inactive generated
+  file cleanup, Redis pooling, and final hosted CI reintroduction remain future
+  hardening work. WebSocket send/ack, online delivery through
+  `ConnectionManager`, pluggable Push fanout, production FanoutPolicy
+  implementations, group multi-recipient fanout, Push gRPC contract/adapter,
+  Gateway remote PushNotifier wiring, the standalone `push_server` process
+  target, the first Gateway delivery callback channel, a real gRPC-link remote
+  Push smoke, Gateway handler/controller entrypoint remote Push smoke, full
+  GatewayServer process-level WS remote Push smoke, remote endpoint validation,
+  and schema migration baseline are complete.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` has shown a timing-sensitive transient failure on one run and passed on retry; this appears pre-existing and unrelated to Task 004.
 - `SendRequest::msg_type` is caller-supplied even though the current API method is named `send_text_message`; defaulting to `MessageType::TEXT` is a small future cleanup.
 - TLS certificate paths are development defaults; production certificate/secret handling is still open.

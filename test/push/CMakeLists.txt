@@ -131,6 +131,7 @@ if(TARGET im::push_grpc_service
    AND TARGET im::user_service)
     add_executable(test_remote_push_gateway_entrypoints
         test_remote_push_gateway_entrypoints.cpp
+        ../support/postgres_schema.cpp
     )
 
     target_link_libraries(test_remote_push_gateway_entrypoints
@@ -159,6 +160,7 @@ if(TARGET im::push_grpc_service
 
     add_executable(test_remote_push_gateway_server_smoke
         test_remote_push_gateway_server_smoke.cpp
+        ../support/postgres_schema.cpp
     )
 
     target_link_libraries(test_remote_push_gateway_server_smoke

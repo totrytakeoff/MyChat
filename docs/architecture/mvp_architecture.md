@@ -183,28 +183,42 @@ Completed baseline:
 - Auth token primitives have focused tests.
 - Duplicate Gateway implementation has been collapsed into
   `gateway/gateway_server/gateway_server.cpp`.
+- User, Message, Friend, and Group service MVPs are implemented as
+  independently tested service libraries and integrated through Gateway HTTP
+  and WebSocket paths.
+- Push has crossed the first real service boundary: the service-owned
+  `PushNotifier`/`PushRuntime` contract, gRPC `PushService.NotifyUser`,
+  standalone `push_server`, Gateway `RemotePushNotifier`, and Gateway delivery
+  callback channel are present behind explicit gRPC builds.
+- `config/dev.remote-push.json` documents the local two-process Gateway/Push
+  development topology. Default `config/dev.json` remains local in-process
+  Push for fast development.
+- Local regression scripts exist under `scripts/ci/`; hosted GitHub CI is
+  intentionally paused during fast feature development.
 
 Not complete yet:
 
-- Gateway default business handlers are still incomplete.
-- Gateway-to-service calls are not yet restored as real service boundaries.
-- User Service is not yet a working service MVP.
-- Message/Friend/Group/Push service MVPs are not started.
-- `services/codec` contains stale generated gRPC/protobuf files and remains
-  outside the default build.
+- User, Message, Friend, and Group are still linked in-process into Gateway for
+  the MVP. Their public service boundaries are preserved, but they are not yet
+  independent gRPC service processes.
+- Push is the first partially extracted service process; endpoint/config
+  hardening now has required remote endpoint validation and a two-process
+  development config, but broader operational policy is still being tightened.
+- PostgreSQL schema migration baseline exists through
+  `db/migrations/001_core_schema.sql` and `scripts/db/migrate_postgres.sh`;
+  local runtime startup policy is still open.
+- Redis is still a mutex-serialized single-connection wrapper, not a
+  production connection pool.
+- Inactive duplicate generated files remain under `services/codec`, although
+  active builds use canonical outputs from `common/proto`.
 
 ## Known Technical Debt
 
-- Refresh tokens currently use one Redis hash and need per-token Redis keys with
-  independent TTLs.
-- Access-token revocation currently uses one Redis set and needs per-token TTL
-  cleanup.
 - Redis wrapper is a minimal hiredis adapter, not a production connection pool.
 - ODB 2.5.0 runtime must be built from source; not yet available in vcpkg.
 - `pgsql_conn.hpp` RAII wrapper has string-ID and shared-ptr issues.
 - Several old test suites still reflect `redis-plus-plus` or experimental
   Gateway APIs.
-- Gateway handler registration includes temporary test-oriented paths and needs
-  a real service contract cleanup.
+- Hosted CI is deferred until the service/process boundaries stabilize.
 - TLS certificate paths are development defaults; production certificate/secret
   handling is still open.

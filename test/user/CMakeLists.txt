@@ -2,6 +2,7 @@
 
 add_executable(test_user_service
     test_user_service.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_user_service

@@ -25,6 +25,8 @@
 #include <password_hasher.hpp>
 #include <utils/log_manager.hpp>
 
+#include "../support/postgres_schema.hpp"
+
 // Route registration free function (defined in gateway_server.cpp)
 void register_group_http_routes_on_server(
     httplib::Server& server,
@@ -97,47 +99,7 @@ protected:
 
     static void EnsureTables() {
         odb::pgsql::database db(kConnStr);
-        odb::transaction t(db.begin());
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_users" (
-                "uid" TEXT NOT NULL PRIMARY KEY,
-                "account" TEXT NOT NULL,
-                "password_hash" TEXT NOT NULL,
-                "nickname" TEXT NOT NULL,
-                "avatar" TEXT NOT NULL,
-                "gender" INTEGER NOT NULL,
-                "signature" TEXT NOT NULL,
-                "create_time" BIGINT NOT NULL,
-                "last_login" BIGINT NOT NULL,
-                "online" BOOLEAN NOT NULL
-            )
-        )");
-        db.execute(R"(
-            CREATE UNIQUE INDEX IF NOT EXISTS "im_users_account_i"
-                ON "im_users" ("account")
-        )");
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_groups" (
-                "group_id" BIGSERIAL NOT NULL PRIMARY KEY,
-                "name" TEXT NOT NULL,
-                "creator_uid" TEXT NOT NULL,
-                "created_at" BIGINT NOT NULL
-            )
-        )");
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_group_members" (
-                "id" BIGSERIAL NOT NULL PRIMARY KEY,
-                "group_id" BIGINT NOT NULL,
-                "user_uid" TEXT NOT NULL,
-                "role" INTEGER NOT NULL,
-                "joined_at" BIGINT NOT NULL
-            )
-        )");
-        db.execute(R"(
-            CREATE UNIQUE INDEX IF NOT EXISTS "im_group_members_pair_i"
-                ON "im_group_members" ("group_id", "user_uid")
-        )");
-        t.commit();
+        im::test::EnsureCoreSchema(db);
     }
 
     void CleanupTestData() {

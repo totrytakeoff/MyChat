@@ -26,6 +26,15 @@ Latest reliable baseline after this handoff update:
   `remote-push-odb` hosted job took 1h15m and still failed in Gateway/Auth
   link. Keep local CI scripts, but do not spend the current feature-development
   phase chasing hosted CI unless the human explicitly asks for it.
+- PostgreSQL schema migration baseline is present as of 2026-06-06:
+  `db/migrations/001_core_schema.sql` defines the current core IM tables
+  non-destructively, and `scripts/db/migrate_postgres.sh` applies ordered SQL
+  migrations while tracking version/checksum state in `schema_migrations`.
+- Test schema setup consolidation is present:
+  Service-level, focused Gateway-level, and remote Push Gateway smoke tests use
+  `test/support/postgres_schema.*` instead of carrying duplicated core table
+  creation SQL. The isolated ODB user persistence baseline still keeps a narrow
+  single-table local setup.
 - Full ODB + Gateway + Push gRPC configure/build/test passed on 2026-06-05:
   23/23 tests in `build/remote-push-odb`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
@@ -190,10 +199,15 @@ Current important moved/new areas from the recent cleanup include:
 - `scripts/ci/checks.sh`
 - `scripts/ci/default_regression.sh`
 - `scripts/ci/remote_push_odb.sh`
+- `db/migrations/001_core_schema.sql`
+- `scripts/db/migrate_postgres.sh`
+- `test/support/postgres_schema.hpp`
+- `test/support/postgres_schema.cpp`
 - `docs/devlog/phase11_fanout_policies.md`
 - `docs/devlog/phase12_friend_service_mvp.md`
 - `docs/devlog/phase13_group_service_mvp.md`
 - `docs/devlog/phase16_ci_cd.md`
+- `docs/devlog/phase17_schema_migration_baseline.md`
 - `docs/devlog/single_agent_handoff.md`
 - `test/friend/`
 - `test/gateway_friend/`
@@ -526,8 +540,8 @@ Useful latest task records:
 Selected next task:
 
 ```text
-Promote the remote Push smoke baseline into CI, or start schema migration
-planning if CI environment work is not the current priority.
+Finish remote Push runtime/config closeout, then start the PostgreSQL schema
+migration baseline.
 ```
 
 Why this is the right next task:
@@ -554,13 +568,18 @@ Why this is the right next task:
   and the message remains offline-pullable. Remote Push endpoint topology is
   documented in `gateway/README.md` and
   `docs/devlog/phase15_push_service_boundary.md`.
+- Hosted CI is intentionally paused during fast feature development. Do not
+  spend the next slice tuning GitHub Actions unless the human explicitly asks.
 
 Suggested scope:
 
-- Promote the remote Push smoke coverage into CI once the environment contract
-  for Redis/PostgreSQL/gRPC builds is settled.
-- Add a schema migration framework before broader persistence evolution;
-  current focused tests still create missing tables defensively.
+- Keep remote Push local runtime behavior explicit: use
+  `config/dev.remote-push.json` for two-process development, keep Gateway
+  remote mode and `push_server` callback endpoint validation pinned, and avoid
+  silent no-op fallback in real remote topology.
+- Continue adopting the schema migration baseline in local runtime setup.
+  Service-level, focused Gateway-level, and remote Push Gateway smoke tests
+  already use `test/support/postgres_schema.*`.
 - Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
   generated files if no legacy include path still depends on them.
 - Keep current direct-message, group-message, `PushRuntimeTest`, and
@@ -597,15 +616,16 @@ Out of scope for the next task:
 
 Recommended sequence:
 
-1. Document the expected local two-process remote Push topology.
-2. Add targeted real-server coverage only if it covers a new boundary not
+1. Keep the expected local two-process remote Push topology documented and
+   tested.
+2. Decide the local runtime migration policy.
+3. Add targeted real-server coverage only if it covers a new boundary not
    already pinned by `RemotePushGatewayServerSmokeTest`.
-3. Keep direct-message, group-message, PushRuntime, PushGrpcService,
+4. Keep direct-message, group-message, PushRuntime, PushGrpcService,
    PushServerApp, PushServerRemoteAdapters, GatewayPushDeliveryService,
    RemotePushEndToEndSmoke, RemotePushGatewayEntrypoints,
    RemotePushGatewayServerSmoke, and RemotePushNotifier tests green.
-4. Redis connection pool before performance/load work.
-5. Schema migration framework before broad persistence evolution.
+5. Redis connection pool before performance/load work.
 
 ## Known Risks
 
@@ -613,7 +633,9 @@ Recommended sequence:
   they are out of the active build path.
 - ODB 2.5.0 runtime setup is manual. CMake expects runtime under
   `.odb/installed` or `MYCHAT_ODB_ROOT`.
-- No schema migration framework exists yet.
+- Schema migration baseline exists. Service-level, focused Gateway-level, and
+  remote Push Gateway smoke tests use the shared helper; only the isolated ODB
+  user persistence baseline still keeps a narrow single-table local setup.
 - Redis wrapper is single-connection and mutex-serialized.
 - Legacy tests are gated and may fail if re-enabled wholesale.
 - `pgsql_conn.hpp` has pre-existing string-ID/template/raw-pointer issues.
@@ -697,6 +719,16 @@ Current reliable state:
 - Gateway remote Push required endpoint validation is complete:
   push.mode=remote rejects blank push.remote_endpoint and blank
   push.gateway_delivery_listen_address at Gateway startup.
+- Remote Push local two-process config seed is complete:
+  config/dev.remote-push.json sets push.mode=remote, pairs
+  push.remote_endpoint with push.listen_address, pairs
+  push.gateway_delivery_endpoint with push.gateway_delivery_listen_address,
+  and sets push.require_gateway_delivery_endpoint=true.
+- Push server required callback endpoint validation is complete:
+  PushServerApp::start() returns false when
+  require_gateway_delivery_endpoint=true and gateway_delivery_endpoint is
+  blank. The default remains false so standalone no-session/no-op smoke tests
+  remain possible.
 - Configured-but-unavailable remote Push behavior is complete:
   Gateway starts with a configured but unavailable push.remote_endpoint, WS
   send keeps best-effort success ack semantics after persistence, and the
@@ -708,8 +740,10 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Validate GitHub Actions on the remote repository, then start schema migration
-planning if hosted CI only needs small tuning.
+Define the local runtime migration policy: require explicit
+`scripts/db/migrate_postgres.sh` before Gateway/Push startup, or add a dev-only
+startup hook. Keep hosted CI paused unless the human explicitly asks to resume
+CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.
@@ -737,11 +771,14 @@ Constraints:
   as build/remote-push-odb and set TMPDIR to build/tmp if /tmp tmpfs quota is
   tight.
 - Do not use DROP TABLE in tests.
+- Do not edit an already-applied migration in place for shared databases; add a
+  new migration instead. The first baseline migration is intentionally
+  non-destructive.
 - Preserve existing tests and CMake gating.
 - Run both ODB-enabled and no-ODB build/test baselines when done.
-- Keep the default CI job no-ODB/no-gRPC. The remote Push ODB/gRPC baseline
-  should remain explicit/manual until hosted dependency cache and ODB runtime
-  build time are proven stable.
+- Hosted GitHub CI is paused for now. Keep local regression scripts as the
+  active verification path and revisit hosted CI near stabilization/release
+  hardening.
 - Use `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
   `scripts/ci/remote_push_odb.sh` as canonical CI entrypoints instead of
   duplicating long CMake commands in new automation.

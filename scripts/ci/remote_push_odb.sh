@@ -78,6 +78,9 @@ Expected development defaults:
 MSG
 fi
 
+echo "==> Applying PostgreSQL schema migrations"
+scripts/db/migrate_postgres.sh
+
 echo "==> Configuring remote Push ODB/gRPC build: ${build_dir}"
 cmake -S . -B "${build_dir}" \
   -DVCPKG_INSTALLED_DIR="${vcpkg_installed_dir}" \

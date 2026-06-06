@@ -13,6 +13,8 @@
 #include <password_hasher.hpp>
 #include <user_service.hpp>
 
+#include "../support/postgres_schema.hpp"
+
 namespace {
 
 const char* kConnStr = "host=127.0.0.1 port=5432 dbname=mychat user=mychat password=mychat-dev-pass";
@@ -34,26 +36,7 @@ protected:
 
     static void EnsureTable() {
         odb::pgsql::database db(kConnStr);
-        odb::transaction t(db.begin());
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_users" (
-                "uid" TEXT NOT NULL PRIMARY KEY,
-                "account" TEXT NOT NULL,
-                "password_hash" TEXT NOT NULL,
-                "nickname" TEXT NOT NULL,
-                "avatar" TEXT NOT NULL,
-                "gender" INTEGER NOT NULL,
-                "signature" TEXT NOT NULL,
-                "create_time" BIGINT NOT NULL,
-                "last_login" BIGINT NOT NULL,
-                "online" BOOLEAN NOT NULL
-            )
-        )");
-        db.execute(R"(
-            CREATE UNIQUE INDEX IF NOT EXISTS "im_users_account_i"
-                ON "im_users" ("account")
-        )");
-        t.commit();
+        im::test::EnsureCoreSchema(db);
     }
 
     void Cleanup() {

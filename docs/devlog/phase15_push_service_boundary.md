@@ -2,7 +2,7 @@
 
 Date: 2026-06-04
 
-Updated: 2026-06-05
+Updated: 2026-06-06
 
 ## Purpose
 
@@ -144,7 +144,8 @@ Local remote-mode pairing:
     "listen_address": "0.0.0.0:9101",
     "remote_endpoint": "127.0.0.1:9101",
     "gateway_delivery_listen_address": "127.0.0.1:9102",
-    "gateway_delivery_endpoint": "127.0.0.1:9102"
+    "gateway_delivery_endpoint": "127.0.0.1:9102",
+    "require_gateway_delivery_endpoint": true
   }
 }
 ```
@@ -153,10 +154,16 @@ Operational rules:
 
 - Default builds and `config/dev.json` keep `push.mode = "local"`, so no gRPC
   Push service is required by default.
+- `config/dev.remote-push.json` is the local two-process development seed. It
+  configures Gateway remote mode and requires `push_server` to have a Gateway
+  delivery callback endpoint.
 - `push.mode = "remote"` requires an explicit gRPC build with
   `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
 - In remote mode, Gateway startup fails if `push.remote_endpoint` or
   `push.gateway_delivery_listen_address` is blank.
+- When `push.require_gateway_delivery_endpoint = true`, `push_server` startup
+  fails if `push.gateway_delivery_endpoint` is blank. The default is still
+  `false` so standalone no-session/no-op smoke tests remain possible.
 - A configured but unavailable `push.remote_endpoint` does not prevent Gateway
   startup. Send remains best-effort after persistence: sender ack stays
   successful, and the recipient message remains `SENT` and offline-pullable
@@ -614,11 +621,13 @@ git diff --check passed.
 
 ## Remaining Work
 
-- Promote the remote Push smoke coverage into CI once the environment contract
-  for Redis/PostgreSQL/gRPC builds is settled.
-- Consider a schema migration framework before adding broader persistence
-  evolution; current focused tests still create missing tables defensively.
+- Use the Phase 17 PostgreSQL migration baseline before adding broader
+  persistence evolution. Runtime startup policy is still open: require
+  `scripts/db/migrate_postgres.sh` before process startup, or add a dev-only
+  startup hook.
 - Keep Gateway adapter responsibilities narrow: session lookup, payload send,
   and delivered marking.
 - Keep direct-message and group-message characterization tests passing during
   migration.
+- Revisit hosted CI only near stabilization/release hardening; local regression
+  scripts remain the active verification path during feature development.

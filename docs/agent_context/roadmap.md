@@ -59,7 +59,8 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
          + standalone Push server process + first Gateway delivery callback
          channel + gRPC-link remote E2E smoke + Gateway handler/controller
          entrypoint remote smoke + full gateway_server process remote smoke
-         complete; deeper startup/config hardening pending).
+         + local two-process config seed + Push server required callback
+         endpoint guard complete; schema migration baseline pending).
 
 - ✅ Persistence core (task003): `services/message` target, ODB-backed message
   persistence, send one-to-one text, offline message pull, conversation history
@@ -139,12 +140,19 @@ Status: in progress (persistence core + HTTP integration + WebSocket send/ack + 
   the receiver gets `CMD_PUSH_MESSAGE` through the remote Push callback path.
 - [x] Push server startup guard: invalid `push.listen_address` returns false
   and does not mark the server running.
+- [x] Remote Push local two-process config seed:
+  `config/dev.remote-push.json` configures Gateway remote mode and requires
+  `push_server` to use a Gateway callback endpoint.
+- [x] Push server required callback endpoint guard:
+  `PushServerApp` returns false on startup when
+  `require_gateway_delivery_endpoint=true` and `gateway_delivery_endpoint` is
+  blank.
 - Remaining exit criteria: Message Service persistence tests pass; Gateway HTTP
   message API passes; Gateway can deliver messages to online users; offline
   messages are persisted and pullable. Remote Push now has a callback channel,
   real gRPC-link smoke, Gateway handler/controller entrypoint smoke, and full
-  `GatewayServer` process-level WS smoke; deeper endpoint startup/config
-  hardening remains.
+  `GatewayServer` process-level WS smoke. The next engineering baseline is
+  PostgreSQL schema migration.
 
 ## Phase G: Friend Service MVP
 

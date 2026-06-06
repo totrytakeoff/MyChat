@@ -2,6 +2,7 @@
 
 add_executable(test_message_service
     test_message_service.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_message_service

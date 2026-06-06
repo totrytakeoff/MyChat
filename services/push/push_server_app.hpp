@@ -17,6 +17,7 @@ struct PushServerConfig {
     std::string listen_address = "0.0.0.0:9101";
     std::string gateway_delivery_endpoint;
     int timeout_ms = 200;
+    bool require_gateway_delivery_endpoint = false;
 };
 
 class PushServerApp {

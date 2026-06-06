@@ -3,6 +3,7 @@
 
 add_executable(test_gateway_message_http
     test_gateway_message_http.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_gateway_message_http
@@ -29,6 +30,7 @@ add_test(NAME GatewayMessageHttpTest COMMAND test_gateway_message_http)
 # WebSocket Message handler tests
 add_executable(test_gateway_message_ws
     test_gateway_message_ws.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_gateway_message_ws
@@ -56,6 +58,7 @@ add_test(NAME GatewayMessageWsTest COMMAND test_gateway_message_ws)
 # PushService tests
 add_executable(test_push_service
     test_push_service.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_push_service

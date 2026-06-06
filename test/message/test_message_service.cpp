@@ -12,6 +12,8 @@
 
 #include <message_service.hpp>
 
+#include "../support/postgres_schema.hpp"
+
 namespace {
 
 const char* kConnStr = "host=127.0.0.1 port=5432 dbname=mychat user=mychat password=mychat-dev-pass";
@@ -33,21 +35,7 @@ protected:
 
     static void EnsureTable() {
         odb::pgsql::database db(kConnStr);
-        odb::transaction t(db.begin());
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_messages" (
-                "msg_id" BIGSERIAL NOT NULL PRIMARY KEY,
-                "sender_uid" TEXT NOT NULL,
-                "receiver_uid" TEXT NOT NULL,
-                "content" TEXT NOT NULL,
-                "msg_type" INTEGER NOT NULL,
-                "status" INTEGER NOT NULL,
-                "create_time" BIGINT NOT NULL,
-                "delivered_time" BIGINT NOT NULL,
-                "read_time" BIGINT NOT NULL
-            )
-        )");
-        t.commit();
+        im::test::EnsureCoreSchema(db);
     }
 
     void Cleanup() {

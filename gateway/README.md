@@ -109,7 +109,8 @@ The local development pairing is normally:
     "listen_address": "0.0.0.0:9101",
     "remote_endpoint": "127.0.0.1:9101",
     "gateway_delivery_listen_address": "127.0.0.1:9102",
-    "gateway_delivery_endpoint": "127.0.0.1:9102"
+    "gateway_delivery_endpoint": "127.0.0.1:9102",
+    "require_gateway_delivery_endpoint": true
   }
 }
 ```
@@ -118,11 +119,30 @@ Operational rules:
 
 - Default builds and `config/dev.json` keep `push.mode = "local"`, so no gRPC
   Push service is required by default.
+- `config/dev.remote-push.json` is the local two-process development seed. It
+  sets `push.mode = "remote"` for Gateway and
+  `push.require_gateway_delivery_endpoint = true` for `push_server`.
 - `push.mode = "remote"` requires an explicit gRPC build with
   `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
 - In remote mode, Gateway startup fails if `push.remote_endpoint` or
   `push.gateway_delivery_listen_address` is blank.
+- When `push.require_gateway_delivery_endpoint = true`, `push_server` startup
+  fails if `push.gateway_delivery_endpoint` is blank. The default remains
+  `false` so focused standalone smoke tests can still run with no-op delivery
+  adapters.
 - A configured but unavailable `push.remote_endpoint` does not prevent Gateway
   startup. Send remains best-effort after persistence: sender ack stays
   successful, and the recipient message remains `SENT` and offline-pullable
   unless Push later completes delivery.
+
+Local two-process startup:
+
+```bash
+docker compose up -d redis postgres
+
+build/remote-push-odb/services/push/push_server \
+  --config config/dev.remote-push.json
+
+build/remote-push-odb/gateway/gateway_server \
+  --config config/dev.remote-push.json
+```

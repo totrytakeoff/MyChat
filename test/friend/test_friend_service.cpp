@@ -14,6 +14,8 @@
 #include <user_service.hpp>
 #include <password_hasher.hpp>
 
+#include "../support/postgres_schema.hpp"
+
 namespace {
 
 using im::service::friend_::FriendService;
@@ -43,39 +45,7 @@ protected:
 
     static void EnsureTables() {
         odb::pgsql::database db(kConnStr);
-        odb::transaction t(db.begin());
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_users" (
-                "uid" TEXT NOT NULL PRIMARY KEY,
-                "account" TEXT NOT NULL,
-                "password_hash" TEXT NOT NULL,
-                "nickname" TEXT NOT NULL,
-                "avatar" TEXT NOT NULL,
-                "gender" INTEGER NOT NULL,
-                "signature" TEXT NOT NULL,
-                "create_time" BIGINT NOT NULL,
-                "last_login" BIGINT NOT NULL,
-                "online" BOOLEAN NOT NULL
-            )
-        )");
-        db.execute(R"(
-            CREATE UNIQUE INDEX IF NOT EXISTS "im_users_account_i"
-                ON "im_users" ("account")
-        )");
-        db.execute(R"(
-            CREATE TABLE IF NOT EXISTS "im_friends" (
-                "friend_id" BIGSERIAL NOT NULL PRIMARY KEY,
-                "requester_uid" TEXT NOT NULL,
-                "target_uid" TEXT NOT NULL,
-                "status" INTEGER NOT NULL,
-                "created_at" BIGINT NOT NULL
-            )
-        )");
-        db.execute(R"(
-            CREATE UNIQUE INDEX IF NOT EXISTS "im_friends_pair_i"
-                ON "im_friends" ("requester_uid", "target_uid")
-        )");
-        t.commit();
+        im::test::EnsureCoreSchema(db);
     }
 
     void Cleanup() {

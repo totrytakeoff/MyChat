@@ -101,11 +101,33 @@ updated_by: coder
 - [x] Push server invalid-listen startup guard - `PushServerAppTest` verifies an
   invalid `push.listen_address` returns false and does not mark the server
   running.
+- [x] Remote Push local two-process config seed -
+  `config/dev.remote-push.json` configures Gateway remote mode and requires
+  `push_server` to use Gateway delivery callbacks instead of silently falling
+  back to no-session/no-op adapters.
+- [x] Push server required callback endpoint guard - `PushServerAppTest`
+  verifies `push_server` startup fails when
+  `require_gateway_delivery_endpoint=true` and the endpoint is blank.
+- [x] PostgreSQL schema migration baseline -
+  `db/migrations/001_core_schema.sql` defines the current core IM schema
+  non-destructively, and `scripts/db/migrate_postgres.sh` applies ordered SQL
+  migrations with version/checksum tracking in `schema_migrations`.
+- [x] Service-level schema setup consolidation -
+  User, Message, Friend, and Group service tests now use
+  `test/support/postgres_schema.*` instead of duplicating table creation SQL.
+- [x] Gateway-level schema setup consolidation -
+  Focused Gateway User, Message HTTP/WS, PushService, Friend, Group, and Group
+  Message tests now use `test/support/postgres_schema.*` instead of duplicating
+  table creation SQL.
+- [x] Remote Push smoke schema setup consolidation -
+  Remote Push Gateway entrypoint and full GatewayServer smoke fixtures now use
+  `test/support/postgres_schema.*`.
 
 ## Current
 
-- [ ] Message Service MVP (Phase F) - deeper remote Push startup/config
-  hardening and broader real-server coverage where it adds new signal.
+- [ ] Message/Push runtime hardening (Phase F closeout) - finish remote Push
+  startup/config behavior and continue adopting the persistence migration
+  baseline in local runtime setup.
   Persistence core (Task 003), Gateway HTTP
   integration (Task 004), WebSocket send/ack (Task 006), online delivery
   (Task 007), PushService with FanoutPolicy (Task 008), production fanout
@@ -117,11 +139,12 @@ updated_by: coder
 
 ## Next
 
-- [ ] Harden remote Push endpoint config and startup behavior beyond the
-  invalid-listen guard.
-- [ ] Extend real-server remote Push coverage only where it adds new signal,
-  such as group HTTP send through real Gateway HTTP ports or explicit
-  unavailable-`push_server` behavior.
+- [ ] Decide the local runtime migration policy: explicit
+  `scripts/db/migrate_postgres.sh` before startup versus dev-only service
+  startup integration.
+- [ ] Decide whether the isolated low-level ODB persistence test should keep
+  its narrow single-table setup or move to `test/support/postgres_schema.*`.
+- [ ] Extend remote Push real-server coverage only where it adds new signal.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.
 

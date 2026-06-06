@@ -152,12 +152,25 @@ Known working:
   `push.gateway_delivery_listen_address` is Gateway's callback listen address,
   and `push.gateway_delivery_endpoint` is Push server's client target for
   Gateway callbacks.
-- CI/CD engineering baseline first slice is in place:
+- Remote Push local two-process development seed is in place:
+  `config/dev.remote-push.json` configures Gateway remote mode and requires
+  `push_server` to have a Gateway callback endpoint, preventing the real remote
+  topology from silently falling back to no-session/no-op adapters.
+- PostgreSQL schema migration baseline is in place:
+  `db/migrations/001_core_schema.sql` defines the current core IM tables
+  non-destructively, and `scripts/db/migrate_postgres.sh` applies ordered SQL
+  migrations while recording version/checksum state in `schema_migrations`.
+- Service-level and focused Gateway-level persistence tests now share
+  `test/support/postgres_schema.*` for core table setup instead of duplicating
+  local `CREATE TABLE IF NOT EXISTS` blocks.
+- Remote Push Gateway entrypoint and full GatewayServer smoke fixtures also
+  share `test/support/postgres_schema.*`; remaining fixture-local schema setup
+  is limited to the isolated ODB user persistence baseline.
+- CI/CD engineering baseline local scripts are in place:
   `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
   `scripts/ci/remote_push_odb.sh` provide local reusable CI entrypoints.
-  `.github/workflows/ci.yml` runs checks plus the default no-ODB/no-gRPC
-  regression on pull requests and pushes; the heavier remote Push ODB/gRPC
-  regression is manual-only through `workflow_dispatch`.
+  GitHub hosted CI is paused during feature development; revisit it near
+  stabilization/release hardening.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
 ## Completed Work
@@ -290,9 +303,8 @@ Known working:
   `GatewayServer` remote-mode WS smoke, Gateway remote-mode required endpoint
   validation, unavailable remote-endpoint best-effort semantics, and endpoint
   topology documentation are in place. Real Gateway HTTP group-message send is
-  now covered through the remote Push path. The first CI/CD promotion slice is
-  also in place, with default regression automated and the remote Push ODB/gRPC
-  baseline available as a manual CI job.
+  now covered through the remote Push path. Hosted CI is intentionally paused;
+  local regression scripts remain the active verification path.
 - Friend Service MVP (Phase G) is complete. Persistence model, repository,
   service, and Gateway HTTP controller have focused tests passing, API contract
   documented with TARGET_NOT_FOUND validation and HTTP status mapping.
@@ -305,10 +317,11 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Validate GitHub Actions in the remote repository and tune runner package
-   installation/cache behavior if needed.
-2. Add a schema migration framework before broader persistence evolution;
-   current focused tests still create missing tables defensively.
+1. Finish remote Push local runtime hardening and keep the two-process
+   Gateway/Push server topology documented and testable.
+2. Decide runtime migration policy: require explicit
+   `scripts/db/migrate_postgres.sh` before startup, or add a dev-only startup
+   hook for local Gateway/Push workflows.
 3. Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
    generated files if no legacy include path still depends on them.
 4. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
@@ -330,8 +343,9 @@ Known working:
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough
   for correctness tests, not for performance claims.
-- Full Phase F is not complete: hosted CI validation, schema migration, and
-  inactive generated-file cleanup remain future work.
+- Full Phase F is not complete: migration adoption in runtime, inactive
+  generated-file cleanup, and final hosted CI reintroduction remain future
+  hardening work.
   PushService with
   pluggable FanoutPolicy, service-owned production fanout policies, group
   multi-recipient fanout, PushNotifier boundary/tests, PushRuntime core
