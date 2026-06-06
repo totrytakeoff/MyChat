@@ -85,7 +85,7 @@ Shared dependencies:
   Protobuf/gRPC contracts
 ```
 
-> **MVP Decision (2026-06-03):** All backend services are linked as static libraries directly into the gateway binary. Inter-service calls are in-process function calls, not network RPC. This was chosen deliberately to ship working MVP features without blocking on gRPC/codec regeneration. Extraction into separate processes with gRPC boundaries is deferred until a concrete scalability need arises. The codec gRPC target (`MYCHAT_BUILD_CODEC_SERVICE`) remains OFF by default; stale generated codec files are not regenerated until service-split work begins.
+> **MVP Decision (2026-06-03):** All backend services are linked as static libraries directly into the gateway binary. Inter-service calls are in-process function calls, not network RPC. This was chosen deliberately to ship working MVP features without blocking on gRPC/codec extraction. Extraction into separate processes with gRPC boundaries is deferred until a concrete scalability need arises. The codec gRPC target (`MYCHAT_BUILD_CODEC_SERVICE`) remains OFF by default; active generated outputs are canonical under `common/proto`.
 
 ## Service MVP Boundaries
 
@@ -210,7 +210,7 @@ Not complete yet:
   pre-start hook while service binaries avoid implicit migrations.
 - Redis is still a mutex-serialized single-connection wrapper, not a
   production connection pool.
-- Inactive duplicate generated files remain under `services/codec`, although
+- Inactive duplicate generated files under `services/codec` have been removed;
   active builds use canonical outputs from `common/proto`.
 
 ## Known Technical Debt

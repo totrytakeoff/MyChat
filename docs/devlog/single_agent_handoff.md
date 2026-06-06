@@ -252,8 +252,8 @@ Latest codec/gRPC cleanup details:
 - `im::proto` compiles `common/proto/codec_service.pb.cc`.
 - `im_codec_service` compiles `common/proto/codec_service.grpc.pb.cc` and
   links `im::proto`; it no longer compiles `services/codec/base.pb.cc`.
-- The inactive duplicate generated files under `services/codec` still exist,
-  but are out of the active build path.
+- The inactive duplicate generated files under `services/codec` have been
+  removed. `services/codec/main.cpp` remains only as a placeholder.
 
 Latest Push boundary cleanup details:
 
@@ -585,8 +585,8 @@ Suggested scope:
 - Continue adopting the schema migration baseline in local runtime setup.
   Service-level, focused Gateway-level, and remote Push Gateway smoke tests
   already use `test/support/postgres_schema.*`.
-- Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
-  generated files if no legacy include path still depends on them.
+- Keep explicit codec builds using canonical `common/proto` generated outputs;
+  do not reintroduce generated files under `services/codec`.
 - Keep current direct-message, group-message, `PushRuntimeTest`, and
   `PushGrpcServiceTest`/`PushServerAppTest`/`PushServerRemoteAdaptersTest`/
   `GatewayPushDeliveryServiceTest`/`RemotePushEndToEndSmokeTest`/
@@ -609,8 +609,7 @@ Out of scope for the next task:
   It is a valid transitional slice; evolve the adapters and remote channel.
 - Do not change `MessageWsHandler` ack behavior.
 - Do not change default `AllSessionsFanoutPolicy` behavior.
-- Do not remove inactive duplicate `services/codec/*.pb.*` files unless a
-  focused legacy include-path check is part of the task.
+- Do not reintroduce inactive duplicate `services/codec/*.pb.*` files.
 - Regenerate codec/gRPC artifacts only through the documented CMake target and
   only with the CMake-selected vcpkg `protoc`.
 - Do not refactor `pgsql_conn.hpp` unless it blocks the chosen next task.
@@ -635,8 +634,8 @@ Recommended sequence:
 
 ## Known Risks
 
-- Inactive duplicate generated files still exist under `services/codec`, but
-  they are out of the active build path.
+- Inactive duplicate generated files under `services/codec` have been removed;
+  active codec generated outputs live under `common/proto`.
 - ODB 2.5.0 runtime setup is manual. CMake expects runtime under
   `.odb/installed` or `MYCHAT_ODB_ROOT`.
 - Schema migration baseline exists. Service-level, focused Gateway-level, and
@@ -746,9 +745,10 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
-generated files if no legacy include path still depends on them. Keep hosted CI
-paused unless the human explicitly asks to resume CI work.
+Fix `pgsql_conn.hpp` template wrapper string-ID handling only if the next
+service slice needs that wrapper; otherwise keep following the direct
+`odb::pgsql::database` pattern. Keep hosted CI paused unless the human
+explicitly asks to resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

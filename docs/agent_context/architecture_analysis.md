@@ -105,8 +105,9 @@ codec/gRPC artifacts are regenerated.
 - Risk: Single-connection Redis wrapper limits throughput and provides no failover.
   Mitigation: Sufficient for correctness testing; a connection pool is deferred until load requirements emerge.
 
-- Risk: Stale codec/gRPC generated files are outside the default build but present in the tree.
-  Mitigation: Gated behind `MYCHAT_BUILD_CODEC_SERVICE=OFF`. Must be regenerated before Message Service integration.
+- Risk: Codec service is still only a placeholder outside the active runtime.
+  Mitigation: Active generated outputs live under `common/proto`; do not
+  reintroduce generated files under `services/codec`.
 
 - Risk: PostgreSQL migration startup policy is not decided yet.
   Mitigation: `db/migrations/001_core_schema.sql` and

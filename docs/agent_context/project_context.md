@@ -63,7 +63,9 @@ verify.
 - ODB 2.5.0 runtime must be built from source; CMake fails at configure time if missing.
 - vcpkg root configured at `/home/myself/pkgs/vcpkg`.
 - Docker Redis and PostgreSQL required for most tests.
-- `services/codec` contains stale generated gRPC/protobuf files; gated OFF by default.
+- Codec generated outputs are canonical under `common/proto`; `services/codec`
+  only contains placeholder codec service source and remains gated OFF by
+  default.
 - Message, Friend, and Group Service targets require ODB and are skipped when their ODB targets are unavailable.
 - Legacy test suites (router, network, utils) have pre-existing failures; gated behind `MYCHAT_BUILD_LEGACY_UNIT_TESTS`.
 

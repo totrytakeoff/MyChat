@@ -52,6 +52,9 @@ updated_by: coder
   `generate_proto` covers active protobuf, codec gRPC, and push gRPC outputs
   when the gRPC plugin is available, and `im_codec_service` no longer compiles
   duplicated generated files from `services/codec`.
+- [x] Inactive codec generated-file cleanup -
+  Removed duplicated `services/codec/*.pb.*` outputs after verifying active
+  codec builds consume canonical generated files from `common/proto`.
 - [x] Push Service boundary - `services/push` now owns the
   `im::service::push::PushNotifier` boundary, service-owned fanout policies,
   and `im::push_service` target. Gateway WS and Group Message HTTP depend on
@@ -153,6 +156,5 @@ updated_by: coder
 ## Blocked
 
 - ODB 2.5.0 runtime build from source — not yet available in vcpkg; CMake fails at configure time if runtime is missing.
-- Inactive duplicate codec generated files remain under `services/codec`; they
-  are out of the active build path and should only be removed after a focused
-  legacy include-path check.
+- No active blocker for codec generated-file duplication remains; the
+  duplicated files under `services/codec` have been removed.

@@ -55,8 +55,8 @@ Current generated protobuf files:
 - `common/proto/codec_service.grpc.pb.cc`
 - `common/proto/codec_service.grpc.pb.h`
 
-Historical duplicated codec generated files still exist but are no longer in
-the active build path:
+Historical duplicated codec generated files were removed after a follow-up
+include-path audit:
 
 - `services/codec/base.pb.*`
 - `services/codec/codec_service.pb.*`
@@ -150,6 +150,8 @@ Implemented:
 - Updated `im_codec_service` to consume canonical generated files from
   `common/proto`.
 - Removed duplicated `services/codec/base.pb.*` from the active target.
+- Follow-up cleanup removed the inactive duplicated `services/codec/*.pb.*`
+  files from the tree.
 
 ## Acceptance Criteria
 
@@ -208,9 +210,8 @@ No-ODB: configure/build/test passed, 2/2 tests.
 
 ## Follow-Up
 
-- Decide whether to delete or archive the inactive `services/codec/*.pb.*`
-  duplicates in a later cleanup. They are intentionally not active in CMake
-  after this phase.
+- Do not reintroduce generated files under `services/codec`; active generated
+  outputs should remain under `common/proto`.
 - Design the standalone Push Service boundary only after preserving the current
   direct-message push and group-message fanout behavior with focused tests.
 
@@ -221,6 +222,7 @@ No-ODB: configure/build/test passed, 2/2 tests.
   the CMake-selected `Protobuf_PROTOC_EXECUTABLE`.
 - Moving generated outputs out of `common/proto` would touch many include paths.
   Do that only if the plan explicitly chooses a generated output directory.
-- Linking both `common/proto/base.pb.*` and `services/codec/base.pb.*` into the
-  same binary can create duplicated protobuf descriptors. The active build path
-  no longer does this, but the inactive duplicate files still exist.
+- Linking both `common/proto/base.pb.*` and regenerated
+  `services/codec/base.pb.*` into the same binary can create duplicated
+  protobuf descriptors. Keep generated codec outputs canonical under
+  `common/proto`.

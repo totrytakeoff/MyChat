@@ -18,8 +18,9 @@ foundation buildable before feature work continues.
   package set; they must come from vcpkg.
 - Submitted protobuf generated files were produced by a different Protobuf
   version than the active compiler/runtime.
-- `services/codec` contains old duplicated generated protobuf/grpc files and is
-  disabled for now.
+- Historical note: `services/codec` used to contain old duplicated generated
+  protobuf/gRPC files. Those duplicates have since been removed; active
+  generated outputs live under `common/proto`.
 - `test/utils/CMakeLists.txt` registered `test_utils_integration` without
   defining that executable.
 

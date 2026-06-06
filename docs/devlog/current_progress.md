@@ -85,7 +85,9 @@ Known working:
   covers active protobuf/gRPC generation when the gRPC plugin is available.
   `im::proto` now includes `codec_service.pb.cc`; `im_codec_service` consumes
   canonical generated files from `common/proto` and no longer compiles
-  duplicated `services/codec/base.pb.cc`.
+  duplicated `services/codec/base.pb.cc`. The inactive duplicated
+  `services/codec/*.pb.*` files have been removed; `services/codec` only keeps
+  the placeholder codec service source.
 - Push gRPC remote boundary introduced: `common/proto/push.proto` now defines
   `im.push.PushService.NotifyUser`, `NotifyUserRequest`, and
   `NotifyUserResponse`; `common/proto/push.pb.*` and
@@ -322,12 +324,11 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
-   generated files if no legacy include path still depends on them.
-2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
+1. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
-3. Decide whether the isolated low-level ODB persistence test should keep its
+2. Decide whether the isolated low-level ODB persistence test should keep its
    narrow single-table setup or move to `test/support/postgres_schema.*`.
+3. Add Redis connection pooling before load/performance testing.
 
 ## Risks
 
@@ -338,9 +339,8 @@ Known working:
   raw-pointer return). User Service bypasses it by using `odb::pgsql::database`
   directly; Friend and Group services follow the same direct database pattern.
   Fix this wrapper only when a future task chooses to use it.
-- Inactive duplicate generated files still exist under `services/codec`, but
-  no active target compiles them. Future cleanup can delete or archive them
-  after verifying no legacy include path still depends on them.
+- Inactive duplicate generated codec files were removed from `services/codec`;
+  active codec generation remains under `common/proto`.
 - Old tests still contain references to removed dependencies and may fail if
   re-enabled wholesale.
 - Current Redis wrapper is single-connection and mutex-serialized. It is enough

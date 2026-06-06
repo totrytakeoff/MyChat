@@ -127,6 +127,7 @@ configure fails at `FATAL_ERROR` with a clear message.
 - SignalHandlerTest (`test/utils/`) has pre-existing failures in signal delivery.
   Gated off behind `MYCHAT_BUILD_LEGACY_UNIT_TESTS`.
 - RouterManagerTests (`test/router/`) has pre-existing failures. Gated off.
-- `services/codec/` generated gRPC stubs are stale. They build correctly when
-  `MYCHAT_BUILD_CODEC_SERVICE=ON` and gRPC is available, but the proto/gRPC
-  generation step itself is not automated in CMake.
+- Historical note: `services/codec/` generated gRPC stubs were stale during
+  this phase. Active codec generation is now automated through CMake and
+  canonical outputs live under `common/proto`; duplicated generated files under
+  `services/codec` have been removed.
