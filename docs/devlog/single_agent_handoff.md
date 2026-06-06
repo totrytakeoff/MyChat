@@ -2,7 +2,7 @@
 
 Date: 2026-06-04
 
-Updated: 2026-06-05
+Updated: 2026-06-06
 
 ## Status Summary
 
@@ -21,6 +21,11 @@ Latest reliable baseline after this handoff update:
   `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
   `scripts/ci/remote_push_odb.sh` passed locally after splitting default and
   remote vcpkg installed directories.
+- GitHub hosted CI is intentionally paused as of 2026-06-06:
+  `.github/workflows/ci.yml` was removed after the heavy manual
+  `remote-push-odb` hosted job took 1h15m and still failed in Gateway/Auth
+  link. Keep local CI scripts, but do not spend the current feature-development
+  phase chasing hosted CI unless the human explicitly asks for it.
 - Full ODB + Gateway + Push gRPC configure/build/test passed on 2026-06-05:
   23/23 tests in `build/remote-push-odb`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
@@ -120,13 +125,10 @@ Latest reliable baseline after this handoff update:
   `GatewayServer`, real `PushServerApp`, and online WebSocket group members,
   then verifies members receive `CMD_PUSH_MESSAGE` through the remote callback
   path.
-- CI/CD engineering baseline first slice is present in the working tree:
+- CI/CD engineering baseline local scripts are present in the working tree:
   `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
   `scripts/ci/remote_push_odb.sh` provide local CI entrypoints.
-  `.github/workflows/ci.yml` runs checks plus the default no-ODB/no-gRPC
-  regression on pull requests and pushes; the heavier remote Push ODB/gRPC
-  regression is manual-only through `workflow_dispatch` with
-  `run_remote_push_odb=true`.
+  Hosted GitHub Actions are paused for now; revisit near stabilization.
 
 ## Important Repository Context
 
@@ -185,7 +187,6 @@ Current important moved/new areas from the recent cleanup include:
 - `services/odb/generated/group.sql`
 - `services/odb/generated/group_message-odb.*`
 - `services/odb/generated/group_message.sql`
-- `.github/workflows/ci.yml`
 - `scripts/ci/checks.sh`
 - `scripts/ci/default_regression.sh`
 - `scripts/ci/remote_push_odb.sh`
