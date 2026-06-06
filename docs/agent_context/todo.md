@@ -122,12 +122,17 @@ updated_by: coder
 - [x] Remote Push smoke schema setup consolidation -
   Remote Push Gateway entrypoint and full GatewayServer smoke fixtures now use
   `test/support/postgres_schema.*`.
+- [x] Local runtime migration policy -
+  Gateway and service binaries do not run migrations implicitly; local
+  development uses `scripts/dev/prepare_runtime.sh` before startup, and
+  `scripts/dev/run_remote_push_stack.sh` wraps the two-process remote Push
+  local stack.
 
 ## Current
 
-- [ ] Message/Push runtime hardening (Phase F closeout) - finish remote Push
-  startup/config behavior and continue adopting the persistence migration
-  baseline in local runtime setup.
+- [ ] Message/Push runtime hardening (Phase F closeout) - finish remaining
+  cleanup after remote Push startup/config behavior and local runtime
+  migration policy.
   Persistence core (Task 003), Gateway HTTP
   integration (Task 004), WebSocket send/ack (Task 006), online delivery
   (Task 007), PushService with FanoutPolicy (Task 008), production fanout
@@ -139,9 +144,6 @@ updated_by: coder
 
 ## Next
 
-- [ ] Decide the local runtime migration policy: explicit
-  `scripts/db/migrate_postgres.sh` before startup versus dev-only service
-  startup integration.
 - [ ] Decide whether the isolated low-level ODB persistence test should keep
   its narrow single-table setup or move to `test/support/postgres_schema.*`.
 - [ ] Extend remote Push real-server coverage only where it adds new signal.

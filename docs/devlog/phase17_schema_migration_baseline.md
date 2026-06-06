@@ -87,12 +87,23 @@ MYCHAT_PGDATABASE=mychat MYCHAT_PGUSER=mychat MYCHAT_PGPASSWORD=mychat-dev-pass 
 
 ## Remaining Work
 
-- Decide when Gateway and standalone services should run migrations
-  explicitly versus requiring operators to run them before process startup.
 - Decide whether low-level ODB persistence tests should keep their narrow
   fixture-local schema setup or move to the shared core helper later.
 - Add future schema changes as new migration files instead of editing
   `001_core_schema.sql`.
+
+## Runtime Policy
+
+- Gateway and standalone service binaries do not run migrations implicitly.
+  Runtime schema changes should remain visible operational steps.
+- Local development uses an explicit pre-start hook:
+  `scripts/dev/prepare_runtime.sh`.
+  It starts Redis/PostgreSQL through Docker Compose when available and then
+  runs `scripts/db/migrate_postgres.sh`.
+- Remote Push two-process local development can use
+  `scripts/dev/run_remote_push_stack.sh`, which calls the pre-start hook and
+  then starts `push_server` and `gateway_server` with
+  `config/dev.remote-push.json`.
 
 ## Verification
 
@@ -100,6 +111,7 @@ Verification on 2026-06-06:
 
 ```bash
 bash -n scripts/db/migrate_postgres.sh
+bash -n scripts/dev/prepare_runtime.sh scripts/dev/run_remote_push_stack.sh
 jq empty config/dev.remote-push.json
 scripts/ci/checks.sh
 git diff --check
@@ -126,6 +138,7 @@ ctest --test-dir build/remote-push-odb \
 Results:
 
 - Shell syntax check passed.
+- Development runtime script syntax checks passed.
 - JSON validation passed.
 - Repository checks passed.
 - `git diff --check` passed.

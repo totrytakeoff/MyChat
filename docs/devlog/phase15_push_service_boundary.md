@@ -622,9 +622,9 @@ git diff --check passed.
 ## Remaining Work
 
 - Use the Phase 17 PostgreSQL migration baseline before adding broader
-  persistence evolution. Runtime startup policy is still open: require
-  `scripts/db/migrate_postgres.sh` before process startup, or add a dev-only
-  startup hook.
+  persistence evolution. Service binaries do not run migrations implicitly;
+  local development uses `scripts/dev/prepare_runtime.sh` as the explicit
+  pre-start hook.
 - Keep Gateway adapter responsibilities narrow: session lookup, payload send,
   and delivered marking.
 - Keep direct-message and group-message characterization tests passing during

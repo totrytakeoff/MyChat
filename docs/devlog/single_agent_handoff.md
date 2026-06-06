@@ -35,6 +35,11 @@ Latest reliable baseline after this handoff update:
   `test/support/postgres_schema.*` instead of carrying duplicated core table
   creation SQL. The isolated ODB user persistence baseline still keeps a narrow
   single-table local setup.
+- Local runtime migration policy is present:
+  Gateway and service binaries do not run migrations implicitly. Local
+  development should run `scripts/dev/prepare_runtime.sh` before service
+  startup; `scripts/dev/run_remote_push_stack.sh` wraps the remote Push
+  two-process development topology.
 - Full ODB + Gateway + Push gRPC configure/build/test passed on 2026-06-05:
   23/23 tests in `build/remote-push-odb`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
@@ -618,7 +623,8 @@ Recommended sequence:
 
 1. Keep the expected local two-process remote Push topology documented and
    tested.
-2. Decide the local runtime migration policy.
+2. Use `scripts/dev/prepare_runtime.sh` as the explicit local pre-start
+   migration hook.
 3. Add targeted real-server coverage only if it covers a new boundary not
    already pinned by `RemotePushGatewayServerSmokeTest`.
 4. Keep direct-message, group-message, PushRuntime, PushGrpcService,
@@ -740,10 +746,9 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Define the local runtime migration policy: require explicit
-`scripts/db/migrate_postgres.sh` before Gateway/Push startup, or add a dev-only
-startup hook. Keep hosted CI paused unless the human explicitly asks to resume
-CI work.
+Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
+generated files if no legacy include path still depends on them. Keep hosted CI
+paused unless the human explicitly asks to resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

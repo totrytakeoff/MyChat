@@ -166,6 +166,11 @@ Known working:
 - Remote Push Gateway entrypoint and full GatewayServer smoke fixtures also
   share `test/support/postgres_schema.*`; remaining fixture-local schema setup
   is limited to the isolated ODB user persistence baseline.
+- Local runtime migration policy is explicit:
+  `scripts/dev/prepare_runtime.sh` starts Redis/PostgreSQL when available and
+  runs migrations before service startup; service binaries do not run
+  migrations implicitly. `scripts/dev/run_remote_push_stack.sh` wraps the
+  local remote Push two-process startup.
 - CI/CD engineering baseline local scripts are in place:
   `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
   `scripts/ci/remote_push_odb.sh` provide local reusable CI entrypoints.
@@ -317,15 +322,12 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Finish remote Push local runtime hardening and keep the two-process
-   Gateway/Push server topology documented and testable.
-2. Decide runtime migration policy: require explicit
-   `scripts/db/migrate_postgres.sh` before startup, or add a dev-only startup
-   hook for local Gateway/Push workflows.
-3. Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
+1. Check and then remove/archive inactive duplicate `services/codec/*.pb.*`
    generated files if no legacy include path still depends on them.
-4. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
+2. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
+3. Decide whether the isolated low-level ODB persistence test should keep its
+   narrow single-table setup or move to `test/support/postgres_schema.*`.
 
 ## Risks
 

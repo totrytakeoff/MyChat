@@ -135,14 +135,31 @@ Operational rules:
   successful, and the recipient message remains `SENT` and offline-pullable
   unless Push later completes delivery.
 
+Local runtime policy:
+
+- Gateway and `push_server` binaries do not run PostgreSQL migrations
+  implicitly.
+- Local development should prepare dependencies and schema explicitly before
+  process startup:
+
+```bash
+scripts/dev/prepare_runtime.sh
+```
+
 Local two-process startup:
 
 ```bash
-docker compose up -d redis postgres
+scripts/dev/prepare_runtime.sh
 
 build/remote-push-odb/services/push/push_server \
   --config config/dev.remote-push.json
 
 build/remote-push-odb/gateway/gateway_server \
   --config config/dev.remote-push.json
+```
+
+Or use the wrapper that starts both local processes and stops them together:
+
+```bash
+scripts/dev/run_remote_push_stack.sh
 ```

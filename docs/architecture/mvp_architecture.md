@@ -206,7 +206,8 @@ Not complete yet:
   development config, but broader operational policy is still being tightened.
 - PostgreSQL schema migration baseline exists through
   `db/migrations/001_core_schema.sql` and `scripts/db/migrate_postgres.sh`;
-  local runtime startup policy is still open.
+  local development uses `scripts/dev/prepare_runtime.sh` as the explicit
+  pre-start hook while service binaries avoid implicit migrations.
 - Redis is still a mutex-serialized single-connection wrapper, not a
   production connection pool.
 - Inactive duplicate generated files remain under `services/codec`, although

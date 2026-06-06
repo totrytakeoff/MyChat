@@ -74,12 +74,14 @@ verify.
 - Redis wrapper is single-connection and mutex-serialized — adequate for correctness tests, not for performance.
 - Stale codec/gRPC generated files may cause confusion if accidentally regenerated with mismatched protoc versions.
 - Legacy tests (SignalHandlerTest, RouterManagerTests) have pre-existing failures if re-enabled.
-- PostgreSQL schema migration baseline exists, but local runtime startup policy
-  is still undecided. Tests should prefer `test/support/postgres_schema.*` or
-  `scripts/db/migrate_postgres.sh` instead of duplicating core schema SQL.
-- Full Phase F is not complete: runtime migration policy, inactive generated
-  file cleanup, Redis pooling, and final hosted CI reintroduction remain future
-  hardening work. WebSocket send/ack, online delivery through
+- PostgreSQL schema migration baseline exists. Local development uses
+  `scripts/dev/prepare_runtime.sh` as the explicit pre-start hook; service
+  binaries do not run migrations implicitly. Tests should prefer
+  `test/support/postgres_schema.*` or `scripts/db/migrate_postgres.sh` instead
+  of duplicating core schema SQL.
+- Full Phase F is not complete: inactive generated file cleanup, Redis
+  pooling, and final hosted CI reintroduction remain future hardening work.
+  WebSocket send/ack, online delivery through
   `ConnectionManager`, pluggable Push fanout, production FanoutPolicy
   implementations, group multi-recipient fanout, Push gRPC contract/adapter,
   Gateway remote PushNotifier wiring, the standalone `push_server` process
