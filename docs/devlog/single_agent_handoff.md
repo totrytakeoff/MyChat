@@ -33,8 +33,8 @@ Latest reliable baseline after this handoff update:
 - Test schema setup consolidation is present:
   Service-level, focused Gateway-level, and remote Push Gateway smoke tests use
   `test/support/postgres_schema.*` instead of carrying duplicated core table
-  creation SQL. The isolated ODB user persistence baseline still keeps a narrow
-  single-table local setup.
+  creation SQL. The low-level ODB user persistence test also uses the shared
+  helper.
 - Local runtime migration policy is present:
   Gateway and service binaries do not run migrations implicitly. Local
   development should run `scripts/dev/prepare_runtime.sh` before service
@@ -638,9 +638,9 @@ Recommended sequence:
   active codec generated outputs live under `common/proto`.
 - ODB 2.5.0 runtime setup is manual. CMake expects runtime under
   `.odb/installed` or `MYCHAT_ODB_ROOT`.
-- Schema migration baseline exists. Service-level, focused Gateway-level, and
-  remote Push Gateway smoke tests use the shared helper; only the isolated ODB
-  user persistence baseline still keeps a narrow single-table local setup.
+- Schema migration baseline exists. Service-level, focused Gateway-level,
+  remote Push Gateway smoke, and low-level ODB user persistence tests use the
+  shared helper.
 - Redis wrapper is single-connection and mutex-serialized.
 - Legacy tests are gated and may fail if re-enabled wholesale.
 - `pgsql_conn.hpp` has pre-existing string-ID/template/raw-pointer issues.

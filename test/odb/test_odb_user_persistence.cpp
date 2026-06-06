@@ -9,6 +9,7 @@
 
 #include "services/odb/user.hpp"
 #include "services/odb/generated/user-odb.hxx"
+#include "../support/postgres_schema.hpp"
 
 namespace {
 
@@ -24,30 +25,11 @@ std::string ConnStr() {
     return "host=127.0.0.1 port=5432 dbname=mychat user=mychat password=mychat-dev-pass";
 }
 
-// Ensure the im_users table exists, then clean up any leftover test data.
-// Uses CREATE TABLE IF NOT EXISTS so concurrent tests or data are not
-// destroyed, and only deletes rows with the test-uid prefix.
-void SetupTable(odb::pgsql::database& db) {
+void SetupSchemaAndData(odb::pgsql::database& db) {
+    im::test::EnsureCoreSchema(db);
+
+    // Clean up any previously inserted test rows without touching user data.
     odb::transaction t(db.begin());
-    db.execute(R"(
-        CREATE TABLE IF NOT EXISTS "im_users" (
-            "uid" TEXT NOT NULL PRIMARY KEY,
-            "account" TEXT NOT NULL,
-            "password_hash" TEXT NOT NULL,
-            "nickname" TEXT NOT NULL,
-            "avatar" TEXT NOT NULL,
-            "gender" INTEGER NOT NULL,
-            "signature" TEXT NOT NULL,
-            "create_time" BIGINT NOT NULL,
-            "last_login" BIGINT NOT NULL,
-            "online" BOOLEAN NOT NULL
-        )
-    )");
-    db.execute(R"(
-        CREATE UNIQUE INDEX IF NOT EXISTS "im_users_account_i"
-            ON "im_users" ("account")
-    )");
-    // Clean up any previously inserted test rows (prefix "test-").
     db.execute(R"(DELETE FROM "im_users" WHERE "uid" LIKE 'test-%')");
     t.commit();
 }
@@ -56,7 +38,7 @@ void SetupTable(odb::pgsql::database& db) {
 
 TEST(ODBUserPersistenceTest, PersistAndLoadByUid) {
     odb::pgsql::database db(ConnStr());
-    SetupTable(db);
+    SetupSchemaAndData(db);
 
     im::service::user::User user(
         kTestUid,
@@ -108,7 +90,7 @@ TEST(ODBUserPersistenceTest, PersistAndLoadByUid) {
 
 TEST(ODBUserPersistenceTest, DeterministicReRun) {
     odb::pgsql::database db(ConnStr());
-    SetupTable(db);
+    SetupSchemaAndData(db);
 
     im::service::user::User user(
         "test-uid-002",

@@ -166,8 +166,8 @@ Known working:
   `test/support/postgres_schema.*` for core table setup instead of duplicating
   local `CREATE TABLE IF NOT EXISTS` blocks.
 - Remote Push Gateway entrypoint and full GatewayServer smoke fixtures also
-  share `test/support/postgres_schema.*`; remaining fixture-local schema setup
-  is limited to the isolated ODB user persistence baseline.
+  share `test/support/postgres_schema.*`; the low-level ODB user persistence
+  test has also moved to the shared helper.
 - Local runtime migration policy is explicit:
   `scripts/dev/prepare_runtime.sh` starts Redis/PostgreSQL when available and
   runs migrations before service startup; service binaries do not run
@@ -326,9 +326,7 @@ Known working:
 
 1. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
    it becomes a blocker.
-2. Decide whether the isolated low-level ODB persistence test should keep its
-   narrow single-table setup or move to `test/support/postgres_schema.*`.
-3. Add Redis connection pooling before load/performance testing.
+2. Add Redis connection pooling before load/performance testing.
 
 ## Risks
 

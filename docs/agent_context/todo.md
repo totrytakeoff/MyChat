@@ -125,6 +125,9 @@ updated_by: coder
 - [x] Remote Push smoke schema setup consolidation -
   Remote Push Gateway entrypoint and full GatewayServer smoke fixtures now use
   `test/support/postgres_schema.*`.
+- [x] Low-level ODB test schema setup consolidation -
+  `ODBUserPersistenceTest` now uses `test/support/postgres_schema.*` instead of
+  carrying its own single-table schema SQL.
 - [x] Local runtime migration policy -
   Gateway and service binaries do not run migrations implicitly; local
   development uses `scripts/dev/prepare_runtime.sh` before startup, and
@@ -147,8 +150,6 @@ updated_by: coder
 
 ## Next
 
-- [ ] Decide whether the isolated low-level ODB persistence test should keep
-  its narrow single-table setup or move to `test/support/postgres_schema.*`.
 - [ ] Extend remote Push real-server coverage only where it adds new signal.
 - [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
 - [ ] Add connection pool to Redis wrapper before load/performance testing.

@@ -2,6 +2,7 @@
 
 add_executable(test_odb_user_persistence
     test_odb_user_persistence.cpp
+    ../support/postgres_schema.cpp
 )
 
 target_link_libraries(test_odb_user_persistence

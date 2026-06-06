@@ -82,13 +82,12 @@ MYCHAT_PGDATABASE=mychat MYCHAT_PGUSER=mychat MYCHAT_PGPASSWORD=mychat-dev-pass 
   Group Message tests also use `test/support/postgres_schema.*`.
 - Broader remote Push Gateway entrypoint and full GatewayServer smoke fixtures
   also use `test/support/postgres_schema.*`.
-- Remaining ad-hoc test schema setup is limited to isolated low-level ODB
-  persistence tests that intentionally pin a narrow single-table baseline.
+- The low-level ODB user persistence test also uses
+  `test/support/postgres_schema.*`; core schema setup is centralized for active
+  ODB-backed tests.
 
 ## Remaining Work
 
-- Decide whether low-level ODB persistence tests should keep their narrow
-  fixture-local schema setup or move to the shared core helper later.
 - Add future schema changes as new migration files instead of editing
   `001_core_schema.sql`.
 
@@ -153,4 +152,6 @@ Results:
   Group Message tests passed after switching their table setup to
   `test/support/postgres_schema.*`.
 - Remote Push Gateway entrypoint and full GatewayServer smoke fixtures now use
+  `test/support/postgres_schema.*`.
+- The low-level ODB user persistence test now uses
   `test/support/postgres_schema.*`.
