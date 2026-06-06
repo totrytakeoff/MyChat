@@ -49,11 +49,11 @@ else()
     message(STATUS "Codec service is disabled. Set MYCHAT_BUILD_CODEC_SERVICE=ON and enable vcpkg feature codec-grpc to build it.")
 endif()
 
-# 用户服务库 — gated on MYCHAT_BUILD_USER_SERVICE and ODB persistence layer.
-if(MYCHAT_BUILD_USER_SERVICE AND TARGET im::user_odb)
+# 用户服务库 — gated on MYCHAT_BUILD_USER_SERVICE/MYCHAT_BUILD_USER_GRPC_SERVICE and ODB persistence layer.
+if((MYCHAT_BUILD_USER_SERVICE OR MYCHAT_BUILD_USER_GRPC_SERVICE) AND TARGET im::user_odb)
     add_subdirectory(user)
     message(STATUS "User service (im_user_service) is enabled.")
-elseif(MYCHAT_BUILD_USER_SERVICE)
+elseif(MYCHAT_BUILD_USER_SERVICE OR MYCHAT_BUILD_USER_GRPC_SERVICE)
     message(STATUS "User service is disabled (MYCHAT_BUILD_USER_SERVICE=ON but im::user_odb not available). "
         "Enable MYCHAT_BUILD_PGSQL_ODB=ON and ensure ODB 2.5.0 runtime is available.")
 else()

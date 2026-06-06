@@ -1488,6 +1488,7 @@ class RegisterRequest final : public ::google::protobuf::Message
     kNicknameFieldNumber = 6,
     kAvatarFieldNumber = 7,
     kVerifyCodeFieldNumber = 8,
+    kAccountFieldNumber = 9,
     kHeaderFieldNumber = 1,
     kTypeFieldNumber = 2,
   };
@@ -1587,6 +1588,22 @@ class RegisterRequest final : public ::google::protobuf::Message
   std::string* _internal_mutable_verify_code();
 
   public:
+  // string account = 9;
+  void clear_account() ;
+  const std::string& account() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_account(Arg_&& arg, Args_... args);
+  std::string* mutable_account();
+  PROTOBUF_NODISCARD std::string* release_account();
+  void set_allocated_account(std::string* value);
+
+  private:
+  const std::string& _internal_account() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_account(
+      const std::string& value);
+  std::string* _internal_mutable_account();
+
+  public:
   // .im.base.IMHeader header = 1;
   bool has_header() const;
   void clear_header() ;
@@ -1617,8 +1634,8 @@ class RegisterRequest final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      3, 8, 1,
-      90, 2>
+      4, 9, 1,
+      97, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -1643,6 +1660,7 @@ class RegisterRequest final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr nickname_;
     ::google::protobuf::internal::ArenaStringPtr avatar_;
     ::google::protobuf::internal::ArenaStringPtr verify_code_;
+    ::google::protobuf::internal::ArenaStringPtr account_;
     ::im::base::IMHeader* header_;
     int type_;
     PROTOBUF_TSAN_DECLARE_MEMBER
@@ -2505,6 +2523,7 @@ class GetUserInfoRequest final : public ::google::protobuf::Message
   // accessors -------------------------------------------------------
   enum : int {
     kAccountFieldNumber = 2,
+    kUidFieldNumber = 3,
     kHeaderFieldNumber = 1,
   };
   // string account = 2;
@@ -2521,6 +2540,22 @@ class GetUserInfoRequest final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_account(
       const std::string& value);
   std::string* _internal_mutable_account();
+
+  public:
+  // string uid = 3;
+  void clear_uid() ;
+  const std::string& uid() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_uid(Arg_&& arg, Args_... args);
+  std::string* mutable_uid();
+  PROTOBUF_NODISCARD std::string* release_uid();
+  void set_allocated_uid(std::string* value);
+
+  private:
+  const std::string& _internal_uid() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_uid(
+      const std::string& value);
+  std::string* _internal_mutable_uid();
 
   public:
   // .im.base.IMHeader header = 1;
@@ -2543,8 +2578,8 @@ class GetUserInfoRequest final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      1, 2, 1,
-      42, 2>
+      2, 3, 1,
+      45, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -2564,6 +2599,7 @@ class GetUserInfoRequest final : public ::google::protobuf::Message
     ::google::protobuf::internal::HasBits<1> _has_bits_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::internal::ArenaStringPtr account_;
+    ::google::protobuf::internal::ArenaStringPtr uid_;
     ::im::base::IMHeader* header_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -3800,6 +3836,54 @@ inline void RegisterRequest::set_allocated_verify_code(std::string* value) {
   // @@protoc_insertion_point(field_set_allocated:im.user.RegisterRequest.verify_code)
 }
 
+// string account = 9;
+inline void RegisterRequest::clear_account() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.account_.ClearToEmpty();
+}
+inline const std::string& RegisterRequest::account() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.user.RegisterRequest.account)
+  return _internal_account();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void RegisterRequest::set_account(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.account_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.user.RegisterRequest.account)
+}
+inline std::string* RegisterRequest::mutable_account() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_account();
+  // @@protoc_insertion_point(field_mutable:im.user.RegisterRequest.account)
+  return _s;
+}
+inline const std::string& RegisterRequest::_internal_account() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.account_.Get();
+}
+inline void RegisterRequest::_internal_set_account(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.account_.Set(value, GetArena());
+}
+inline std::string* RegisterRequest::_internal_mutable_account() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.account_.Mutable( GetArena());
+}
+inline std::string* RegisterRequest::release_account() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.user.RegisterRequest.account)
+  return _impl_.account_.Release();
+}
+inline void RegisterRequest::set_allocated_account(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.account_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.account_.IsDefault()) {
+    _impl_.account_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.user.RegisterRequest.account)
+}
+
 // -------------------------------------------------------------------
 
 // RegisterResponse
@@ -4632,6 +4716,54 @@ inline void GetUserInfoRequest::set_allocated_account(std::string* value) {
     _impl_.account_.Set("", GetArena());
   }
   // @@protoc_insertion_point(field_set_allocated:im.user.GetUserInfoRequest.account)
+}
+
+// string uid = 3;
+inline void GetUserInfoRequest::clear_uid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.uid_.ClearToEmpty();
+}
+inline const std::string& GetUserInfoRequest::uid() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.user.GetUserInfoRequest.uid)
+  return _internal_uid();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void GetUserInfoRequest::set_uid(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.user.GetUserInfoRequest.uid)
+}
+inline std::string* GetUserInfoRequest::mutable_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_uid();
+  // @@protoc_insertion_point(field_mutable:im.user.GetUserInfoRequest.uid)
+  return _s;
+}
+inline const std::string& GetUserInfoRequest::_internal_uid() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.uid_.Get();
+}
+inline void GetUserInfoRequest::_internal_set_uid(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.uid_.Set(value, GetArena());
+}
+inline std::string* GetUserInfoRequest::_internal_mutable_uid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.uid_.Mutable( GetArena());
+}
+inline std::string* GetUserInfoRequest::release_uid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.user.GetUserInfoRequest.uid)
+  return _impl_.uid_.Release();
+}
+inline void GetUserInfoRequest::set_allocated_uid(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.uid_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.uid_.IsDefault()) {
+    _impl_.uid_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.user.GetUserInfoRequest.uid)
 }
 
 // -------------------------------------------------------------------

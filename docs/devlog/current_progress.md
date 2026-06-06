@@ -81,7 +81,8 @@ Known working:
   cleanup: `common/proto` is the canonical proto source tree,
   `generate_common_proto` regenerates protobuf outputs, `generate_codec_grpc`
   remains as the legacy-compatible codec target, `generate_push_grpc`
-  regenerates `common/proto/push.grpc.pb.*`, and aggregate `generate_proto`
+  regenerates `common/proto/push.grpc.pb.*`, `generate_user_grpc`
+  regenerates `common/proto/user.grpc.pb.*`, and aggregate `generate_proto`
   covers active protobuf/gRPC generation when the gRPC plugin is available.
   `im::proto` now includes `codec_service.pb.cc`; `im_codec_service` consumes
   canonical generated files from `common/proto` and no longer compiles
@@ -96,6 +97,14 @@ Known working:
   service to the existing `PushNotifier` boundary. `im::push_grpc_service` is
   gated by `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`, so default builds still do not
   require gRPC.
+- User gRPC remote boundary first slice is implemented:
+  `common/proto/user.proto` now defines `im.user.UserService` with
+  `Register`, `Login`, and `GetUserInfo`; `common/proto/user.pb.*` and
+  `common/proto/user.grpc.pb.*` were regenerated through CMake
+  `generate_proto`. `services/user/UserGrpcService` adapts generated gRPC
+  calls to the existing ODB-backed `UserService` semantics. The target
+  `im::user_grpc_service` is gated by `MYCHAT_BUILD_USER_GRPC_SERVICE=ON`, so
+  default builds still do not require gRPC.
 - Gateway remote PushNotifier wiring is now available behind explicit gRPC
   builds: `gateway/push/RemotePushNotifier` uses the generated
   `im.push.PushService::Stub`, `GatewayServer` selects local vs. remote through
@@ -324,9 +333,11 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Decide whether Redis pool sizing needs a dedicated load/benchmark harness
-   beyond the current live remote Push smoke coverage.
-2. Keep service repositories on the direct `odb::pgsql::database` pattern
+1. Add Gateway-side remote User client wiring and/or a standalone `user_server`
+   process around `UserGrpcService`.
+2. Continue service gRPC boundaries for Message/Friend/Group after the User
+   remote path is pinned by focused tests.
+3. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.
 
 ## Risks

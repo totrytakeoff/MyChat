@@ -52,6 +52,7 @@ message RegisterRequest {
     string nickname = 6;           // 昵称（可选）
     string avatar = 7;             // 头像URL（可选）
     string verify_code = 8;        // 验证码（可选，推荐用于安全）
+    string account = 9;            // 账号（当前核心服务使用）
 }
 
 // 用户注册响应
@@ -88,6 +89,7 @@ message LoginResponse {
 message GetUserInfoRequest {
     im.base.IMHeader header = 1;   // 通用消息头
     string account = 2;            // 账号（可查他人信息）
+    string uid = 3;                // 用户 UID（优先于 account）
 }
 
 // 获取用户信息响应
@@ -106,4 +108,14 @@ message UpdateUserInfoRequest {
 message UpdateUserInfoResponse {
     im.base.BaseResponse base = 1;
     UserInfo user = 2;
+}
+
+// UserService is the distributed gRPC boundary for core account workflows.
+// Gateway may keep using the in-process UserService while this boundary is
+// staged; service implementations should map this contract to the same core
+// UserService semantics.
+service UserService {
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse);
 }

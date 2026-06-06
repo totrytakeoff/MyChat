@@ -199,6 +199,9 @@ inline constexpr RegisterRequest::Impl_::Impl_(
         verify_code_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        account_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         header_{nullptr},
         type_{static_cast< ::im::user::RegisterType >(0)} {}
 
@@ -318,6 +321,9 @@ inline constexpr GetUserInfoRequest::Impl_::Impl_(
         account_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        uid_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         header_{nullptr} {}
 
 template <typename>
@@ -390,7 +396,9 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::user::RegisterRequest, _impl_.nickname_),
         PROTOBUF_FIELD_OFFSET(::im::user::RegisterRequest, _impl_.avatar_),
         PROTOBUF_FIELD_OFFSET(::im::user::RegisterRequest, _impl_.verify_code_),
+        PROTOBUF_FIELD_OFFSET(::im::user::RegisterRequest, _impl_.account_),
         0,
+        ~0u,
         ~0u,
         ~0u,
         ~0u,
@@ -452,7 +460,9 @@ const ::uint32_t
         ~0u,  // no sizeof(Split)
         PROTOBUF_FIELD_OFFSET(::im::user::GetUserInfoRequest, _impl_.header_),
         PROTOBUF_FIELD_OFFSET(::im::user::GetUserInfoRequest, _impl_.account_),
+        PROTOBUF_FIELD_OFFSET(::im::user::GetUserInfoRequest, _impl_.uid_),
         0,
+        ~0u,
         ~0u,
         PROTOBUF_FIELD_OFFSET(::im::user::GetUserInfoResponse, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::user::GetUserInfoResponse, _internal_metadata_),
@@ -495,14 +505,14 @@ const ::uint32_t
 static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::im::user::UserInfo)},
-        {27, 43, -1, sizeof(::im::user::RegisterRequest)},
-        {51, 61, -1, sizeof(::im::user::RegisterResponse)},
-        {63, 77, -1, sizeof(::im::user::LoginRequest)},
-        {83, 93, -1, sizeof(::im::user::LoginResponse)},
-        {95, 105, -1, sizeof(::im::user::GetUserInfoRequest)},
-        {107, 117, -1, sizeof(::im::user::GetUserInfoResponse)},
-        {119, 129, -1, sizeof(::im::user::UpdateUserInfoRequest)},
-        {131, 141, -1, sizeof(::im::user::UpdateUserInfoResponse)},
+        {27, 44, -1, sizeof(::im::user::RegisterRequest)},
+        {53, 63, -1, sizeof(::im::user::RegisterResponse)},
+        {65, 79, -1, sizeof(::im::user::LoginRequest)},
+        {85, 95, -1, sizeof(::im::user::LoginResponse)},
+        {97, 108, -1, sizeof(::im::user::GetUserInfoRequest)},
+        {111, 121, -1, sizeof(::im::user::GetUserInfoResponse)},
+        {123, 133, -1, sizeof(::im::user::UpdateUserInfoRequest)},
+        {135, 145, -1, sizeof(::im::user::UpdateUserInfoResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::im::user::_UserInfo_default_instance_._instance,
@@ -526,35 +536,41 @@ const char descriptor_table_protodef_user_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIA
     "\t\022\r\n\005email\030\013 \001(\t\022\017\n\007address\030\014 \001(\t\022\020\n\010bir"
     "thday\030\r \001(\t\022\017\n\007company\030\016 \001(\t\022\021\n\tjob_titl"
     "e\030\017 \001(\t\022\014\n\004wxid\030\020 \001(\t\022\014\n\004qqid\030\021 \001(\t\022\021\n\tr"
-    "eal_name\030\022 \001(\t\022\r\n\005extra\030\023 \001(\t\"\307\001\n\017Regist"
+    "eal_name\030\022 \001(\t\022\r\n\005extra\030\023 \001(\t\"\330\001\n\017Regist"
     "erRequest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHe"
     "ader\022#\n\004type\030\002 \001(\0162\025.im.user.RegisterTyp"
     "e\022\024\n\014phone_number\030\003 \001(\t\022\r\n\005email\030\004 \001(\t\022\020"
     "\n\010password\030\005 \001(\t\022\020\n\010nickname\030\006 \001(\t\022\016\n\006av"
-    "atar\030\007 \001(\t\022\023\n\013verify_code\030\010 \001(\t\"X\n\020Regis"
-    "terResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Base"
-    "Response\022\037\n\004user\030\002 \001(\0132\021.im.user.UserInf"
-    "o\"\233\001\n\014LoginRequest\022!\n\006header\030\001 \001(\0132\021.im."
-    "base.IMHeader\022 \n\004type\030\002 \001(\0162\022.im.user.Lo"
-    "ginType\022\017\n\007account\030\003 \001(\t\022\024\n\014phone_number"
-    "\030\004 \001(\t\022\r\n\005email\030\005 \001(\t\022\020\n\010password\030\006 \001(\t\""
-    "U\n\rLoginResponse\022#\n\004base\030\001 \001(\0132\025.im.base"
-    ".BaseResponse\022\037\n\004user\030\002 \001(\0132\021.im.user.Us"
-    "erInfo\"H\n\022GetUserInfoRequest\022!\n\006header\030\001"
-    " \001(\0132\021.im.base.IMHeader\022\017\n\007account\030\002 \001(\t"
-    "\"[\n\023GetUserInfoResponse\022#\n\004base\030\001 \001(\0132\025."
-    "im.base.BaseResponse\022\037\n\004user\030\002 \001(\0132\021.im."
-    "user.UserInfo\"[\n\025UpdateUserInfoRequest\022!"
-    "\n\006header\030\001 \001(\0132\021.im.base.IMHeader\022\037\n\004use"
-    "r\030\002 \001(\0132\021.im.user.UserInfo\"^\n\026UpdateUser"
-    "InfoResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Bas"
-    "eResponse\022\037\n\004user\030\002 \001(\0132\021.im.user.UserIn"
-    "fo*L\n\014RegisterType\022\024\n\020REGISTER_UNKNOWN\020\000"
-    "\022\022\n\016REGISTER_PHONE\020\001\022\022\n\016REGISTER_EMAIL\020\002"
-    "*6\n\006Gender\022\013\n\007UNKNOWN\020\000\022\010\n\004MALE\020\001\022\n\n\006FEM"
-    "ALE\020\002\022\t\n\005OTHER\020\003*S\n\tLoginType\022\021\n\rLOGIN_U"
-    "NKNOWN\020\000\022\021\n\rLOGIN_ACCOUNT\020\001\022\017\n\013LOGIN_PHO"
-    "NE\020\002\022\017\n\013LOGIN_EMAIL\020\003b\006proto3"
+    "atar\030\007 \001(\t\022\023\n\013verify_code\030\010 \001(\t\022\017\n\007accou"
+    "nt\030\t \001(\t\"X\n\020RegisterResponse\022#\n\004base\030\001 \001"
+    "(\0132\025.im.base.BaseResponse\022\037\n\004user\030\002 \001(\0132"
+    "\021.im.user.UserInfo\"\233\001\n\014LoginRequest\022!\n\006h"
+    "eader\030\001 \001(\0132\021.im.base.IMHeader\022 \n\004type\030\002"
+    " \001(\0162\022.im.user.LoginType\022\017\n\007account\030\003 \001("
+    "\t\022\024\n\014phone_number\030\004 \001(\t\022\r\n\005email\030\005 \001(\t\022\020"
+    "\n\010password\030\006 \001(\t\"U\n\rLoginResponse\022#\n\004bas"
+    "e\030\001 \001(\0132\025.im.base.BaseResponse\022\037\n\004user\030\002"
+    " \001(\0132\021.im.user.UserInfo\"U\n\022GetUserInfoRe"
+    "quest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeader"
+    "\022\017\n\007account\030\002 \001(\t\022\013\n\003uid\030\003 \001(\t\"[\n\023GetUse"
+    "rInfoResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Ba"
+    "seResponse\022\037\n\004user\030\002 \001(\0132\021.im.user.UserI"
+    "nfo\"[\n\025UpdateUserInfoRequest\022!\n\006header\030\001"
+    " \001(\0132\021.im.base.IMHeader\022\037\n\004user\030\002 \001(\0132\021."
+    "im.user.UserInfo\"^\n\026UpdateUserInfoRespon"
+    "se\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\022"
+    "\037\n\004user\030\002 \001(\0132\021.im.user.UserInfo*L\n\014Regi"
+    "sterType\022\024\n\020REGISTER_UNKNOWN\020\000\022\022\n\016REGIST"
+    "ER_PHONE\020\001\022\022\n\016REGISTER_EMAIL\020\002*6\n\006Gender"
+    "\022\013\n\007UNKNOWN\020\000\022\010\n\004MALE\020\001\022\n\n\006FEMALE\020\002\022\t\n\005O"
+    "THER\020\003*S\n\tLoginType\022\021\n\rLOGIN_UNKNOWN\020\000\022\021"
+    "\n\rLOGIN_ACCOUNT\020\001\022\017\n\013LOGIN_PHONE\020\002\022\017\n\013LO"
+    "GIN_EMAIL\020\0032\320\001\n\013UserService\022\?\n\010Register\022"
+    "\030.im.user.RegisterRequest\032\031.im.user.Regi"
+    "sterResponse\0226\n\005Login\022\025.im.user.LoginReq"
+    "uest\032\026.im.user.LoginResponse\022H\n\013GetUserI"
+    "nfo\022\033.im.user.GetUserInfoRequest\032\034.im.us"
+    "er.GetUserInfoResponseb\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_user_2eproto_deps[1] =
     {
@@ -564,7 +580,7 @@ static ::absl::once_flag descriptor_table_user_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_user_2eproto = {
     false,
     false,
-    1509,
+    1750,
     descriptor_table_protodef_user_2eproto,
     "user.proto",
     &descriptor_table_user_2eproto_once,
@@ -1382,7 +1398,8 @@ inline PROTOBUF_NDEBUG_INLINE RegisterRequest::Impl_::Impl_(
         password_(arena, from.password_),
         nickname_(arena, from.nickname_),
         avatar_(arena, from.avatar_),
-        verify_code_(arena, from.verify_code_) {}
+        verify_code_(arena, from.verify_code_),
+        account_(arena, from.account_) {}
 
 RegisterRequest::RegisterRequest(
     ::google::protobuf::Arena* arena,
@@ -1414,7 +1431,8 @@ inline PROTOBUF_NDEBUG_INLINE RegisterRequest::Impl_::Impl_(
         password_(arena),
         nickname_(arena),
         avatar_(arena),
-        verify_code_(arena) {}
+        verify_code_(arena),
+        account_(arena) {}
 
 inline void RegisterRequest::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
@@ -1439,6 +1457,7 @@ inline void RegisterRequest::SharedDtor(MessageLite& self) {
   this_._impl_.nickname_.Destroy();
   this_._impl_.avatar_.Destroy();
   this_._impl_.verify_code_.Destroy();
+  this_._impl_.account_.Destroy();
   delete this_._impl_.header_;
   this_._impl_.~Impl_();
 }
@@ -1479,15 +1498,15 @@ const ::google::protobuf::internal::ClassData* RegisterRequest::GetClassData() c
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 8, 1, 90, 2> RegisterRequest::_table_ = {
+const ::_pbi::TcParseTable<4, 9, 1, 97, 2> RegisterRequest::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_._has_bits_),
     0, // no _extensions_
-    8, 56,  // max_field_number, fast_idx_mask
+    9, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967040,  // skipmap
+    4294966784,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    8,  // num_field_entries
+    9,  // num_field_entries
     1,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
@@ -1497,9 +1516,7 @@ const ::_pbi::TcParseTable<3, 8, 1, 90, 2> RegisterRequest::_table_ = {
     ::_pbi::TcParser::GetTable<::im::user::RegisterRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // string verify_code = 8;
-    {::_pbi::TcParser::FastUS1,
-     {66, 63, 0, PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.verify_code_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // .im.base.IMHeader header = 1;
     {::_pbi::TcParser::FastMtS1,
      {10, 0, 0, PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.header_)}},
@@ -1521,6 +1538,18 @@ const ::_pbi::TcParseTable<3, 8, 1, 90, 2> RegisterRequest::_table_ = {
     // string avatar = 7;
     {::_pbi::TcParser::FastUS1,
      {58, 63, 0, PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.avatar_)}},
+    // string verify_code = 8;
+    {::_pbi::TcParser::FastUS1,
+     {66, 63, 0, PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.verify_code_)}},
+    // string account = 9;
+    {::_pbi::TcParser::FastUS1,
+     {74, 63, 0, PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.account_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
@@ -1548,10 +1577,13 @@ const ::_pbi::TcParseTable<3, 8, 1, 90, 2> RegisterRequest::_table_ = {
     // string verify_code = 8;
     {PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.verify_code_), -1, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string account = 9;
+    {PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.account_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }}, {{
     {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
   }}, {{
-    "\27\0\0\14\5\10\10\6\13\0\0\0\0\0\0\0"
+    "\27\0\0\14\5\10\10\6\13\7\0\0\0\0\0\0"
     "im.user.RegisterRequest"
     "phone_number"
     "email"
@@ -1559,6 +1591,7 @@ const ::_pbi::TcParseTable<3, 8, 1, 90, 2> RegisterRequest::_table_ = {
     "nickname"
     "avatar"
     "verify_code"
+    "account"
   }},
 };
 
@@ -1575,6 +1608,7 @@ PROTOBUF_NOINLINE void RegisterRequest::Clear() {
   _impl_.nickname_.ClearToEmpty();
   _impl_.avatar_.ClearToEmpty();
   _impl_.verify_code_.ClearToEmpty();
+  _impl_.account_.ClearToEmpty();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     ABSL_DCHECK(_impl_.header_ != nullptr);
@@ -1663,6 +1697,14 @@ PROTOBUF_NOINLINE void RegisterRequest::Clear() {
             target = stream->WriteStringMaybeAliased(8, _s, target);
           }
 
+          // string account = 9;
+          if (!this_._internal_account().empty()) {
+            const std::string& _s = this_._internal_account();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.user.RegisterRequest.account");
+            target = stream->WriteStringMaybeAliased(9, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -1718,6 +1760,11 @@ PROTOBUF_NOINLINE void RegisterRequest::Clear() {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_verify_code());
             }
+            // string account = 9;
+            if (!this_._internal_account().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_account());
+            }
           }
            {
             // .im.base.IMHeader header = 1;
@@ -1765,6 +1812,9 @@ void RegisterRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const :
   if (!from._internal_verify_code().empty()) {
     _this->_internal_set_verify_code(from._internal_verify_code());
   }
+  if (!from._internal_account().empty()) {
+    _this->_internal_set_account(from._internal_account());
+  }
   cached_has_bits = from._impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     ABSL_DCHECK(from._impl_.header_ != nullptr);
@@ -1802,6 +1852,7 @@ void RegisterRequest::InternalSwap(RegisterRequest* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.nickname_, &other->_impl_.nickname_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.avatar_, &other->_impl_.avatar_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.verify_code_, &other->_impl_.verify_code_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.account_, &other->_impl_.account_, arena);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(RegisterRequest, _impl_.type_)
       + sizeof(RegisterRequest::_impl_.type_)
@@ -2865,7 +2916,8 @@ inline PROTOBUF_NDEBUG_INLINE GetUserInfoRequest::Impl_::Impl_(
     const Impl_& from, const ::im::user::GetUserInfoRequest& from_msg)
       : _has_bits_{from._has_bits_},
         _cached_size_{0},
-        account_(arena, from.account_) {}
+        account_(arena, from.account_),
+        uid_(arena, from.uid_) {}
 
 GetUserInfoRequest::GetUserInfoRequest(
     ::google::protobuf::Arena* arena,
@@ -2891,7 +2943,8 @@ inline PROTOBUF_NDEBUG_INLINE GetUserInfoRequest::Impl_::Impl_(
     ::google::protobuf::internal::InternalVisibility visibility,
     ::google::protobuf::Arena* arena)
       : _cached_size_{0},
-        account_(arena) {}
+        account_(arena),
+        uid_(arena) {}
 
 inline void GetUserInfoRequest::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
@@ -2906,6 +2959,7 @@ inline void GetUserInfoRequest::SharedDtor(MessageLite& self) {
   this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   ABSL_DCHECK(this_.GetArena() == nullptr);
   this_._impl_.account_.Destroy();
+  this_._impl_.uid_.Destroy();
   delete this_._impl_.header_;
   this_._impl_.~Impl_();
 }
@@ -2946,15 +3000,15 @@ const ::google::protobuf::internal::ClassData* GetUserInfoRequest::GetClassData(
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<1, 2, 1, 42, 2> GetUserInfoRequest::_table_ = {
+const ::_pbi::TcParseTable<2, 3, 1, 45, 2> GetUserInfoRequest::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(GetUserInfoRequest, _impl_._has_bits_),
     0, // no _extensions_
-    2, 8,  // max_field_number, fast_idx_mask
+    3, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967292,  // skipmap
+    4294967288,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    2,  // num_field_entries
+    3,  // num_field_entries
     1,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
@@ -2964,12 +3018,16 @@ const ::_pbi::TcParseTable<1, 2, 1, 42, 2> GetUserInfoRequest::_table_ = {
     ::_pbi::TcParser::GetTable<::im::user::GetUserInfoRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // string account = 2;
-    {::_pbi::TcParser::FastUS1,
-     {18, 63, 0, PROTOBUF_FIELD_OFFSET(GetUserInfoRequest, _impl_.account_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // .im.base.IMHeader header = 1;
     {::_pbi::TcParser::FastMtS1,
      {10, 0, 0, PROTOBUF_FIELD_OFFSET(GetUserInfoRequest, _impl_.header_)}},
+    // string account = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(GetUserInfoRequest, _impl_.account_)}},
+    // string uid = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(GetUserInfoRequest, _impl_.uid_)}},
   }}, {{
     65535, 65535
   }}, {{
@@ -2979,12 +3037,16 @@ const ::_pbi::TcParseTable<1, 2, 1, 42, 2> GetUserInfoRequest::_table_ = {
     // string account = 2;
     {PROTOBUF_FIELD_OFFSET(GetUserInfoRequest, _impl_.account_), -1, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string uid = 3;
+    {PROTOBUF_FIELD_OFFSET(GetUserInfoRequest, _impl_.uid_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }}, {{
     {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
   }}, {{
-    "\32\0\7\0\0\0\0\0"
+    "\32\0\7\3\0\0\0\0"
     "im.user.GetUserInfoRequest"
     "account"
+    "uid"
   }},
 };
 
@@ -2996,6 +3058,7 @@ PROTOBUF_NOINLINE void GetUserInfoRequest::Clear() {
   (void) cached_has_bits;
 
   _impl_.account_.ClearToEmpty();
+  _impl_.uid_.ClearToEmpty();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     ABSL_DCHECK(_impl_.header_ != nullptr);
@@ -3036,6 +3099,14 @@ PROTOBUF_NOINLINE void GetUserInfoRequest::Clear() {
             target = stream->WriteStringMaybeAliased(2, _s, target);
           }
 
+          // string uid = 3;
+          if (!this_._internal_uid().empty()) {
+            const std::string& _s = this_._internal_uid();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.user.GetUserInfoRequest.uid");
+            target = stream->WriteStringMaybeAliased(3, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -3066,6 +3137,11 @@ PROTOBUF_NOINLINE void GetUserInfoRequest::Clear() {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_account());
             }
+            // string uid = 3;
+            if (!this_._internal_uid().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_uid());
+            }
           }
            {
             // .im.base.IMHeader header = 1;
@@ -3090,6 +3166,9 @@ void GetUserInfoRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, cons
 
   if (!from._internal_account().empty()) {
     _this->_internal_set_account(from._internal_account());
+  }
+  if (!from._internal_uid().empty()) {
+    _this->_internal_set_uid(from._internal_uid());
   }
   cached_has_bits = from._impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
@@ -3120,6 +3199,7 @@ void GetUserInfoRequest::InternalSwap(GetUserInfoRequest* PROTOBUF_RESTRICT othe
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.account_, &other->_impl_.account_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.uid_, &other->_impl_.uid_, arena);
   swap(_impl_.header_, other->_impl_.header_);
 }
 

@@ -714,6 +714,11 @@ Current reliable state:
   im.push.PushService.NotifyUser, generate_push_grpc produces
   common/proto/push.grpc.pb.*, and im::push_grpc_service adapts generated gRPC
   calls to PushNotifier behind MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON.
+- User gRPC remote boundary first slice is complete: common/proto/user.proto
+  defines im.user.UserService Register/Login/GetUserInfo, generate_user_grpc
+  produces common/proto/user.grpc.pb.*, and im::user_grpc_service adapts
+  generated gRPC calls to the existing ODB-backed UserService behind
+  MYCHAT_BUILD_USER_GRPC_SERVICE=ON.
 - Gateway remote PushNotifier wiring is complete: gateway/push/RemotePushNotifier
   wraps im.push.PushService::Stub; GatewayServer selects local vs. remote
   notifier through config push.mode; config/dev.json defaults to local.
@@ -771,12 +776,13 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Continue product hardening from the active roadmap: decide whether Redis pool
-sizing needs a dedicated load/benchmark harness beyond the current live remote
-Push smoke coverage, or start the next narrow distributed-runtime slice the
-human selects. Keep service repositories on direct
-`odb::pgsql::database` unless a future task explicitly adopts `PgSqlConnection`.
-Keep hosted CI paused unless the human explicitly asks to resume CI work.
+Continue formal distributed-service work by adding Gateway-side remote User
+client wiring and/or a standalone user_server process around UserGrpcService.
+After the User remote path is pinned by focused tests, continue the same
+pattern for Message, Friend, and Group gRPC boundaries. Keep service
+repositories on direct `odb::pgsql::database` unless a future task explicitly
+adopts `PgSqlConnection`. Keep hosted CI paused unless the human explicitly
+asks to resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.
@@ -797,9 +803,9 @@ Constraints:
   contract updates.
 - Do not use shell protoc for checked-in generated files; use the
   CMake-selected vcpkg protoc path through generate_proto.
-- Keep MYCHAT_BUILD_CODEC_SERVICE=OFF and MYCHAT_BUILD_PUSH_GRPC_SERVICE=OFF
-  default behavior unchanged; explicit gRPC paths should use
-  -DVCPKG_MANIFEST_FEATURES=codec-grpc.
+- Keep MYCHAT_BUILD_CODEC_SERVICE=OFF, MYCHAT_BUILD_PUSH_GRPC_SERVICE=OFF, and
+  MYCHAT_BUILD_USER_GRPC_SERVICE=OFF default behavior unchanged; explicit gRPC
+  paths should use -DVCPKG_MANIFEST_FEATURES=codec-grpc.
 - When building full ODB + gRPC locally, prefer an ignored repo build dir such
   as build/remote-push-odb and set TMPDIR to build/tmp if /tmp tmpfs quota is
   tight.

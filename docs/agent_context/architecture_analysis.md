@@ -109,6 +109,15 @@ codec/gRPC artifacts are regenerated.
   Mitigation: Active generated outputs live under `common/proto`; do not
   reintroduce generated files under `services/codec`.
 
+- Risk: User gRPC is currently a service adapter boundary, not a full
+  standalone runtime path.
+  Mitigation: `common/proto/user.proto` now defines `im.user.UserService`
+  Register/Login/GetUserInfo, `generate_user_grpc` produces canonical
+  `common/proto/user.grpc.pb.*`, and `services/user/UserGrpcService` maps
+  generated gRPC calls to the existing ODB-backed UserService. Keep the next
+  slice focused on Gateway remote User client wiring or a standalone
+  `user_server` process before expanding Message/Friend/Group gRPC boundaries.
+
 - Risk: PostgreSQL migration startup policy is not decided yet.
   Mitigation: `db/migrations/001_core_schema.sql` and
   `scripts/db/migrate_postgres.sh` provide a non-destructive baseline with
@@ -131,4 +140,6 @@ codec/gRPC artifacts are regenerated.
 2. Should the remaining Gateway-to-Message WebSocket/online delivery work continue the direct in-process pattern first, or should codec/gRPC regeneration happen before that delivery work?
 3. Is the ODB-only persistence decision still correct, or should a lighter SQL option be available for developers who cannot build ODB 2.5.0?
 4. Should any future repository adopt `PgSqlConnection`, or should service repositories keep the direct `odb::pgsql::database` pattern?
-5. Does Redis pool sizing need a dedicated load/benchmark harness beyond the current live remote Push smoke coverage?
+5. Should the next distributed-service slice wire Gateway to remote User first,
+   or create a standalone `user_server` process before changing Gateway call
+   sites?

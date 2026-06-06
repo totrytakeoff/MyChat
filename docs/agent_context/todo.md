@@ -74,6 +74,12 @@ updated_by: coder
   `generate_proto` produce `common/proto/push.grpc.pb.*`; `im::push_grpc_service`
   adapts generated gRPC calls to the existing `PushNotifier` boundary behind
   `MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON`.
+- [x] User gRPC remote boundary first slice -
+  `common/proto/user.proto` now defines `im.user.UserService` with
+  Register/Login/GetUserInfo; `generate_user_grpc` and aggregate
+  `generate_proto` produce `common/proto/user.grpc.pb.*`; `im::user_grpc_service`
+  adapts generated gRPC calls to the existing ODB-backed UserService boundary
+  behind `MYCHAT_BUILD_USER_GRPC_SERVICE=ON`.
 - [x] Gateway remote PushNotifier wiring - `gateway/push/RemotePushNotifier`
   wraps the generated `im.push.PushService::Stub`; `GatewayServer` selects
   local vs. remote through `push.mode`; `config/dev.json` defaults to
@@ -151,6 +157,10 @@ updated_by: coder
 ## Next
 
 - [ ] Extend remote Push real-server coverage only where it adds new signal.
+- [ ] Add Gateway-side remote User client wiring and/or a standalone
+      `user_server` process around `UserGrpcService`.
+- [ ] Continue service gRPC boundaries for Message/Friend/Group after the User
+      remote path is pinned by focused tests.
 - [ ] Decide whether Redis pool sizing needs a dedicated load/benchmark
       harness beyond the current live remote Push smoke coverage.
 - [ ] Decide whether any future repository should adopt `PgSqlConnection`;

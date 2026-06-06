@@ -36,7 +36,7 @@ verify.
 ## Build And Test Commands
 
 - Install deps: `vcpkg install` (or rely on CMake manifest mode with `-DVCPKG_MANIFEST_FEATURES=pgsql-odb` for ODB)
-- Configure (ODB + Push gRPC): `cmake -S . -B build/remote-push-odb -DVCPKG_MANIFEST_FEATURES="pgsql-odb;codec-grpc" -DMYCHAT_BUILD_TESTS=ON -DMYCHAT_BUILD_GATEWAY=ON -DMYCHAT_BUILD_SERVICES=ON -DMYCHAT_BUILD_PUSH_GRPC_SERVICE=ON -DMYCHAT_BUILD_PGSQL_ODB=ON -DCMAKE_BUILD_TYPE=Debug`
+- Configure (ODB + Push/User gRPC): `cmake -S . -B build/remote-push-odb -DVCPKG_MANIFEST_FEATURES="pgsql-odb;codec-grpc" -DMYCHAT_BUILD_TESTS=ON -DMYCHAT_BUILD_GATEWAY=ON -DMYCHAT_BUILD_SERVICES=ON -DMYCHAT_BUILD_PUSH_GRPC_SERVICE=ON -DMYCHAT_BUILD_USER_GRPC_SERVICE=ON -DMYCHAT_BUILD_PGSQL_ODB=ON -DCMAKE_BUILD_TYPE=Debug`
 - Configure (no-ODB): same without `PGSQL_ODB` and `VCPKG_MANIFEST_FEATURES`
 - Build: `cmake --build /tmp/mychat-build -j2`
 - Test: `ctest --test-dir /tmp/mychat-build --output-on-failure`
@@ -47,12 +47,12 @@ verify.
 
 - Gateway is a standalone process with HTTP (port 8102) and WebSocket (port 8101) endpoints, health check at `GET /api/v1/health`.
 - Auth uses JWT-based dual token system (access + refresh) with Redis-backed per-token storage and per-JTI revocation keys.
-- User Service (Phase 4) provides register/login/profile via ODB-backed PostgreSQL persistence, using PBKDF2-HMAC-SHA256 password hashing.
+- User Service (Phase 4) provides register/login/profile via ODB-backed PostgreSQL persistence, using PBKDF2-HMAC-SHA256 password hashing. The first User gRPC boundary slice is available behind `MYCHAT_BUILD_USER_GRPC_SERVICE=ON`: `im.user.UserService.Register/Login/GetUserInfo` maps to the same core `UserService` semantics through `services/user/UserGrpcService`.
 - Gateway-to-User integration (Phase 6) wires three HTTP routes: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/info`.
 - ODB 2.5.0 compiler is at `/usr/bin/odb`; runtime must be built from source via `scripts/build_odb_runtime_2_5.sh`.
 - Message Service persistence core (Task 003) provides ODB-backed `im_messages` storage, validated one-to-one text send, chronological conversation history, offline pull for undelivered messages, and delivered/read marking.
 - Gateway Message HTTP integration (Task 004) wires authenticated routes: `POST /api/v1/messages/send`, `GET /api/v1/messages/history`, `GET /api/v1/messages/offline`. The token UID is trusted as sender/actor; offline pull marks returned messages delivered.
-- CMake staged build options: `MYCHAT_BUILD_TESTS`, `MYCHAT_BUILD_GATEWAY`, `MYCHAT_BUILD_SERVICES`, `MYCHAT_BUILD_USER_SERVICE`, `MYCHAT_BUILD_MESSAGE_SERVICE`, `MYCHAT_BUILD_CODEC_SERVICE`, `MYCHAT_BUILD_PGSQL_ODB`, `MYCHAT_BUILD_LEGACY_GATEWAY_TESTS`, `MYCHAT_BUILD_LEGACY_UNIT_TESTS`.
+- CMake staged build options: `MYCHAT_BUILD_TESTS`, `MYCHAT_BUILD_GATEWAY`, `MYCHAT_BUILD_SERVICES`, `MYCHAT_BUILD_USER_SERVICE`, `MYCHAT_BUILD_USER_GRPC_SERVICE`, `MYCHAT_BUILD_MESSAGE_SERVICE`, `MYCHAT_BUILD_CODEC_SERVICE`, `MYCHAT_BUILD_PGSQL_ODB`, `MYCHAT_BUILD_LEGACY_GATEWAY_TESTS`, `MYCHAT_BUILD_LEGACY_UNIT_TESTS`.
 - Friend Service MVP provides friend request/respond/list/pending flows with ODB persistence and Gateway HTTP routes.
 - Group Service MVP provides group create/join/leave/list/member flows, group message persistence/history, and multi-recipient fanout through `PushService::push_to_user`.
 - Push Service boundary/gRPC work provides `services/push/PushNotifier`, service-owned fanout policies, `PushRuntime`, `PushGrpcService`, Gateway `RemotePushNotifier`, a standalone `push_server` target, and the first Gateway delivery callback channel. Gateway defaults to local in-process push via `push.mode = "local"` and can use the remote gRPC client when explicit gRPC targets are built. In remote mode, Gateway exposes `GatewayPushDeliveryService` for session lookup, payload send, and delivered marking; `push_server` uses `push.gateway_delivery_endpoint` to call back while Gateway keeps WebSocket session ownership.
