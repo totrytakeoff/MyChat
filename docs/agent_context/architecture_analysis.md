@@ -99,11 +99,11 @@ codec/gRPC artifacts are regenerated.
 - Risk: ODB 2.5.0 runtime build is manual and not CI-tracked.
   Mitigation: `scripts/build_odb_runtime_2_5.sh` provides a reproducible build; CMake fails fast at configure time if runtime is missing.
 
-- Risk: `pgsql_conn.hpp` RAII wrapper has unresolved template issues (string-ID `std::to_string`, raw-pointer vs shared_ptr).
-  Mitigation: User Service bypasses it by using `odb::pgsql::database` directly. Fix when the wrapper becomes a blocker.
+- Risk: Broadly migrating repositories onto the shared `PgSqlConnection` wrapper could churn stable service code.
+  Mitigation: `PgSqlConnection` is repaired for current string-ID ODB usage and covered by `PgSqlConnectionTest`, but User/Message/Friend/Group repositories should remain on direct `odb::pgsql::database` unless a separate boundary plan chooses otherwise.
 
-- Risk: Single-connection Redis wrapper limits throughput and provides no failover.
-  Mitigation: Sufficient for correctness testing; a connection pool is deferred until load requirements emerge.
+- Risk: Redis pool sizing and timeout behavior are not yet validated under live WebSocket Push delivery.
+  Mitigation: RedisManager now uses a RAII connection pool keyed by `RedisConfig::pool_size`; focused tests cover pool stats, concurrent borrowers, reinitialize boundaries, Auth token concurrency, ConnectionManager session metadata reads, and no-live-WS PushService lookup semantics before live delivery tuning.
 
 - Risk: Codec service is still only a placeholder outside the active runtime.
   Mitigation: Active generated outputs live under `common/proto`; do not
@@ -130,5 +130,5 @@ codec/gRPC artifacts are regenerated.
 1. Is the in-process Gateway-to-User shortcut acceptable until codec/gRPC is regenerated, or should service boundaries be enforced earlier?
 2. Should the remaining Gateway-to-Message WebSocket/online delivery work continue the direct in-process pattern first, or should codec/gRPC regeneration happen before that delivery work?
 3. Is the ODB-only persistence decision still correct, or should a lighter SQL option be available for developers who cannot build ODB 2.5.0?
-4. Should `pgsql_conn.hpp` be fixed or deprecated before Friend/Group services start?
-5. Is the single-connection Redis wrapper acceptable for the full MVP, or should a pool be added before Message/Push work begins?
+4. Should any future repository adopt `PgSqlConnection`, or should service repositories keep the direct `odb::pgsql::database` pattern?
+5. What pool sizing, timeout, and retry policy should Redis use under live WebSocket Push delivery load?

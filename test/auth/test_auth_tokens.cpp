@@ -6,8 +6,10 @@
 
 #include <chrono>
 #include <filesystem>
+#include <future>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace {
 
@@ -17,6 +19,7 @@ im::db::RedisConfig test_redis_config() {
     config.port = 6379;
     config.password = "mychat-dev-pass";
     config.db = 15;
+    config.pool_size = 4;
     config.connect_timeout = 1000;
     config.socket_timeout = 1000;
     return config;
@@ -241,4 +244,71 @@ TEST_F(AuthTokenTest, RevokedAccessTokenCreatesPerJtiKey) {
     bool jti_gone = im::db::redis_manager().execute(
             [&](auto& redis) { return redis.exists("revoked_access_token:" + jti); });
     EXPECT_FALSE(jti_gone) << "revoked_access_token:<jti> key must be deleted after unrevoke";
+}
+
+TEST_F(AuthTokenTest, ConcurrentTokenLifecycleUsesRedisPool) {
+    auto initial = im::db::redis_manager().get_pool_stats();
+    EXPECT_EQ(initial.total_connections, 4u);
+    EXPECT_EQ(initial.available_connections, 4u);
+    EXPECT_EQ(initial.active_connections, 0u);
+
+    constexpr int kWorkers = 8;
+    std::vector<std::future<bool>> futures;
+    futures.reserve(kWorkers);
+
+    for (int i = 0; i < kWorkers; ++i) {
+        futures.push_back(std::async(std::launch::async, [this, i] {
+            const std::string uid = user_id_ + "-concurrent-" + std::to_string(i);
+            const std::string username = username_ + std::to_string(i);
+            const std::string device = device_id_ + "-" + std::to_string(i);
+
+            auto tokens = auth_->generate_tokens(uid, username, device, platform_);
+            if (!tokens.success || tokens.new_access_token.empty() ||
+                tokens.new_refresh_token.empty()) {
+                return false;
+            }
+
+            im::gateway::UserTokenInfo access_info;
+            if (!auth_->verify_access_token(tokens.new_access_token, access_info)) {
+                return false;
+            }
+            if (access_info.user_id != uid || access_info.device_id != device) {
+                return false;
+            }
+
+            im::gateway::UserTokenInfo refresh_info;
+            auto refresh_device = device;
+            if (!auth_->verify_refresh_token(tokens.new_refresh_token, refresh_device,
+                                            refresh_info)) {
+                return false;
+            }
+            if (refresh_info.user_id != uid || refresh_info.device_id != device) {
+                return false;
+            }
+
+            if (!auth_->revoke_token(tokens.new_access_token)) {
+                return false;
+            }
+            if (!auth_->is_token_revoked(tokens.new_access_token)) {
+                return false;
+            }
+            if (!auth_->unrevoke_token(tokens.new_access_token)) {
+                return false;
+            }
+            if (auth_->is_token_revoked(tokens.new_access_token)) {
+                return false;
+            }
+
+            return auth_->del_refresh_token(tokens.new_refresh_token);
+        }));
+    }
+
+    for (auto& future : futures) {
+        EXPECT_TRUE(future.get());
+    }
+
+    auto final = im::db::redis_manager().get_pool_stats();
+    EXPECT_EQ(final.total_connections, 4u);
+    EXPECT_EQ(final.available_connections, 4u);
+    EXPECT_EQ(final.active_connections, 0u);
 }

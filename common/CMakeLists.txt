@@ -70,8 +70,8 @@ if(hiredis_FOUND)
 
     target_link_libraries(im_database
         PUBLIC
+            im::utils
             hiredis::hiredis
-            nlohmann_json::nlohmann_json
     )
 
     target_include_directories(im_database
@@ -98,9 +98,9 @@ if(MYCHAT_BUILD_PGSQL_ODB AND MYCHAT_HAS_ODB_RUNTIME)
 
     target_link_libraries(im_pgsql
         PUBLIC
+            im::utils
             odb::libodb
             odb::libodb-pgsql
-            spdlog::spdlog
             nlohmann_json::nlohmann_json
     )
 

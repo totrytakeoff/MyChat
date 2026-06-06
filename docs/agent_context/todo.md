@@ -151,8 +151,10 @@ updated_by: coder
 ## Next
 
 - [ ] Extend remote Push real-server coverage only where it adds new signal.
-- [ ] Fix `pgsql_conn.hpp` template wrapper string-ID handling (if it becomes a blocker for new service development).
-- [ ] Add connection pool to Redis wrapper before load/performance testing.
+- [ ] Extend Redis pool validation into live WebSocket Push delivery, then tune
+      pool size, wait timeout, and retry/reconnect policy.
+- [ ] Decide whether any future repository should adopt `PgSqlConnection`;
+      current services remain on direct `odb::pgsql::database`.
 
 ## Blocked
 

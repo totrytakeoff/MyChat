@@ -30,15 +30,12 @@ namespace im::db {
 using json = nlohmann::json;
 
 /**
- * 全局日志记录器定义
- * 
- * 实现说明：
- * 1. 这是头文件中extern声明的唯一定义
- * 2. 确保所有编译单元共享同一个logger实例
- * 3. 避免ODR（One Definition Rule）违规
- * 4. 使用"pgsql"作为logger名称，便于日志过滤
+ * 兼容旧代码的日志记录器定义。
+ *
+ * 保持为空指针，实际 logger 由 PgSqlLogger() 在首次使用时创建，避免
+ * 与 LogManager 静态成员之间的初始化顺序问题。
  */
-std::shared_ptr<spdlog::logger> logger = LogManager::GetLogger("pgsql");
+std::shared_ptr<spdlog::logger> logger;
 
 
 // ==================== PgSqlConfig 实现 ====================
@@ -62,7 +59,7 @@ PgSqlConfig im::db::PgSqlConfig::from_file(const std::string& config_path) {
 
     // 确保文件已打开
     if (!file.is_open()) {
-        logger->error("无法打开配置文件: {}", config_path);
+        PgSqlLogger()->error("无法打开配置文件: {}", config_path);
         throw std::runtime_error("Failed to open config file: " + config_path);
     }
 
@@ -115,7 +112,7 @@ PgSqlConfig im::db::PgSqlConfig::from_json(const nlohmann::json& config) {
         config_.validate();
         return config_;
     } catch (const std::exception& e) {
-        logger->error("配置文件内容错误: {}", e.what());
+        PgSqlLogger()->error("配置文件内容错误: {}", e.what());
         throw std::runtime_error("配置文件内容错误: " + std::string(e.what()));
         return config_;
     }
@@ -290,7 +287,7 @@ PgSqlConnection::PgSqlConnection() {
 
         test_connection();
     } catch (const std::exception& e) {
-        logger->error("从环境变量初始化PostgreSQL数据库连接失败: {}", e.what());
+        PgSqlLogger()->error("从环境变量初始化PostgreSQL数据库连接失败: {}", e.what());
         throw;
     }
 }
@@ -302,7 +299,7 @@ PgSqlConnection::PgSqlConnection(const PgSqlConfig& config) : config_(config) {
 
         test_connection();
     } catch (const std::exception& e) {
-        logger->error("创建PostgreSQL数据库连接失败: {}", e.what());
+        PgSqlLogger()->error("创建PostgreSQL数据库连接失败: {}", e.what());
         // 构造失败时，确保资源被清理
         cleanup();
         throw std::runtime_error("PostgreSQL连接创建失败: " + std::string(e.what()));
@@ -317,20 +314,20 @@ PgSqlConnection::PgSqlConnection(const std::string& config_path) {
 
         test_connection();
     } catch (const std::exception& e) {
-        logger->error("从配置文件初始化PostgreSQL数据库连接失败: {}", e.what());
+        PgSqlLogger()->error("从配置文件初始化PostgreSQL数据库连接失败: {}", e.what());
         throw;
     }
 }
 
 PgSqlConnection::PgSqlConnection(DatabasePtr db) : database_(std::move(db)) {
     if (!database_) {
-        logger->error("数据库连接对象为空");
+        PgSqlLogger()->error("数据库连接对象为空");
         throw std::runtime_error("数据库连接对象为空");
     }
     try {
         test_connection();
     } catch (const std::exception& e) {
-        logger->error("从数据库连接对象初始化PostgreSQL数据库连接失败: {}", e.what());
+        PgSqlLogger()->error("从数据库连接对象初始化PostgreSQL数据库连接失败: {}", e.what());
         throw;
     }
 }
@@ -345,12 +342,12 @@ bool PgSqlConnection::is_valid() const {
         return false;
     }
     try {
-        auto t = database_->begin();
+        odb::transaction t(database_->begin());
         database_->execute("SELECT 1");
-        t->commit();
+        t.commit();
         return true;
     } catch (std::exception& e) {
-        logger->error("检查PostgreSQL数据库连接失败: {}", e.what());
+        PgSqlLogger()->error("检查PostgreSQL数据库连接失败: {}", e.what());
         return false;
     }
 }
@@ -362,7 +359,7 @@ PgSqlConnection::Transaction::Transaction(PgSqlConnection& conn) {
     try {
         transaction_ = std::make_unique<odb::transaction>(conn.database_->begin());
     } catch (const std::exception& e) {
-        logger->error("开始事务失败: {}", e.what());
+        PgSqlLogger()->error("开始事务失败: {}", e.what());
         throw std::runtime_error("开始事务失败: " + std::string(e.what()));
     }
 }
@@ -388,24 +385,24 @@ PgSqlConnection::Transaction::~Transaction() {
         try {
             if (transaction_) {
                 transaction_->rollback();
-                logger->warn("事务未提交，已自动回滚 - 可能存在程序逻辑问题");
+                PgSqlLogger()->warn("事务未提交，已自动回滚 - 可能存在程序逻辑问题");
             } else {
-                logger->warn("事务对象失效，已自动回滚");
+                PgSqlLogger()->warn("事务对象失效，已自动回滚");
             }
         } catch (const std::exception& e) {
             // 析构函数不能抛异常，只能记录错误
-            logger->error("自动回滚事务失败: {}", e.what());
+            PgSqlLogger()->error("自动回滚事务失败: {}", e.what());
         }
     }
 }
 
 void PgSqlConnection::Transaction::commit() {
     if (!active_) {
-        logger->error("事务已结束，无法提交");
+        PgSqlLogger()->error("事务已结束，无法提交");
         throw std::runtime_error("事务已结束，无法提交");
     }
     if (!transaction_) {
-        logger->error("事务对象无效，无法提交");
+        PgSqlLogger()->error("事务对象无效，无法提交");
         throw std::runtime_error("事务对象无效，无法提交");
     }
 
@@ -417,18 +414,18 @@ void PgSqlConnection::Transaction::commit() {
 
     } catch (const std::exception& e) {
         active_ = false;
-        logger->error("提交事务失败: {}", e.what());
+        PgSqlLogger()->error("提交事务失败: {}", e.what());
         throw std::runtime_error("提交事务失败: " + std::string(e.what()));
     }
 }
 
 void PgSqlConnection::Transaction::rollback() {
     if (!active_) {
-        logger->error("事务已结束，无法回滚");
+        PgSqlLogger()->error("事务已结束，无法回滚");
         throw std::runtime_error("事务已结束，无法回滚");
     }
     if (!transaction_) {
-        logger->error("事务对象无效，无法回滚");
+        PgSqlLogger()->error("事务对象无效，无法回滚");
         throw std::runtime_error("事务对象无效，无法回滚");
     }
 
@@ -437,7 +434,7 @@ void PgSqlConnection::Transaction::rollback() {
         active_ = false;
     } catch (const std::exception& e) {
         active_ = false;
-        logger->error("回滚事务失败: {}", e.what());
+        PgSqlLogger()->error("回滚事务失败: {}", e.what());
         throw std::runtime_error("回滚事务失败: " + std::string(e.what()));
     }
 }
@@ -453,7 +450,7 @@ void PgSqlConnection::execute_sql(const std::string& sql) {
     try {
         database_->execute(sql);
     } catch (const odb::database_exception& e) {
-        logger->error("执行SQL语句失败: {} , SQL:{}", e.what(), sql);
+        PgSqlLogger()->error("执行SQL语句失败: {} , SQL:{}", e.what(), sql);
         throw std::runtime_error("执行SQL语句失败: " + std::string(e.what()));
     }
 }
@@ -471,7 +468,7 @@ void PgSqlConnection::create_schema(bool drop_existing) {
         tx.commit();
 
     } catch (const odb::database_exception& e) {
-        logger->error("模式创建失败: {}", e.what());
+        PgSqlLogger()->error("模式创建失败: {}", e.what());
         throw std::runtime_error("模式创建失败: " + std::string(e.what()));
     }
 }
@@ -484,7 +481,7 @@ void PgSqlConnection::drop_schema() {
         odb::schema_catalog::drop_schema(*database_);
         tx.commit();
     } catch (const odb::database_exception& e) {
-        logger->error("模式删除失败: {}", e.what());
+        PgSqlLogger()->error("模式删除失败: {}", e.what());
         throw std::runtime_error("模式删除失败: " + std::string(e.what()));
     }
 }
@@ -529,19 +526,19 @@ void PgSqlConnection::cleanup() {
         // 先清理会话缓存
         if (session_) {
             session_.reset();
-            logger->debug("会话缓存已清理");
+            PgSqlLogger()->debug("会话缓存已清理");
         }
 
         // 再清理数据库连接
         if (database_) {
             database_.reset();
-            logger->debug("数据库连接已关闭");
+            PgSqlLogger()->debug("数据库连接已关闭");
         }
         
     } catch (const std::exception& e) {
         // 清理过程中的异常不应该传播
         // 特别是在析构函数中调用时，不能抛出异常
-        logger->error("清理数据库连接失败: {}", e.what());
+        PgSqlLogger()->error("清理数据库连接失败: {}", e.what());
     }
 }
 
@@ -554,12 +551,12 @@ void PgSqlConnection::test_connection() {
     check_db();
 
     try {
-        auto tx = database_->begin();
+        odb::transaction tx(database_->begin());
         database_->execute("SELECT 1");
-        tx->commit();
-        logger->info("成功连接到PostgreSQL数据库 {}:{}", config_.host, config_.port);
+        tx.commit();
+        PgSqlLogger()->info("成功连接到PostgreSQL数据库 {}:{}", config_.host, config_.port);
     } catch (const std::exception& e) {
-        logger->error("测试数据库连接失败: {}", e.what());
+        PgSqlLogger()->error("测试数据库连接失败: {}", e.what());
         throw std::runtime_error("测试数据库连接失败: " + std::string(e.what()));
     }
 }

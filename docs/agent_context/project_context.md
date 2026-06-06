@@ -72,8 +72,12 @@ verify.
 ## Known Risks
 
 - ODB 2.5.0 runtime build is a manual step not yet covered by CI.
-- `pgsql_conn.hpp` RAII wrapper has pre-existing string-ID and raw-pointer issues; User Service bypasses it by using `odb::pgsql::database` directly.
-- Redis wrapper is single-connection and mutex-serialized — adequate for correctness tests, not for performance.
+- `PgSqlConnection` wrapper is repaired for current string-ID ODB usage and covered by `PgSqlConnectionTest`; service repositories still use direct `odb::pgsql::database`.
+- Redis wrapper now uses a small RAII connection pool keyed by
+  `RedisConfig::pool_size`; focused tests cover borrow/return stats,
+  concurrent borrowers, reinitialize boundaries, and an Auth token lifecycle
+  concurrency slice. PushService tests also cover concurrent ConnectionManager
+  session metadata reads and no-live-WS PushService lookup semantics.
 - Stale codec/gRPC generated files may cause confusion if accidentally regenerated with mismatched protoc versions.
 - Legacy tests (SignalHandlerTest, RouterManagerTests) have pre-existing failures if re-enabled.
 - PostgreSQL schema migration baseline exists. Local development uses

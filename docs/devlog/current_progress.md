@@ -231,8 +231,8 @@ Known working:
   - `UserServiceCoreTest` — 5 test cases, all passing.
   - No `DROP TABLE` — cleanup by `DELETE WHERE account LIKE 'task4-test-%'`.
   - Duplicate accounts rejected explicitly (`DUPLICATE_ACCOUNT`).
-  - `pgsql_conn.hpp` template issues remain unfixed; User Service bypasses
-    by using `odb::pgsql::database` directly.
+  - `PgSqlConnectionTest` now covers the shared `pgsql_conn` wrapper for
+    string UID persist/load/find/update/erase and void transaction lambdas.
 - Build gating and test hygiene:
   - Added `MYCHAT_BUILD_USER_SERVICE` (ON by default), `MYCHAT_BUILD_CODEC_SERVICE`
     (OFF by default), `MYCHAT_BUILD_LEGACY_UNIT_TESTS` (OFF by default).
@@ -324,25 +324,33 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Fix `pgsql_conn.hpp` template wrapper issues (string ID handling) when
-   it becomes a blocker.
-2. Add Redis connection pooling before load/performance testing.
+1. Extend Redis pool validation from metadata/session lookup and no-live-WS
+   Push best-effort paths into live WebSocket delivery, then tune pool size,
+   wait timeout, and retry/reconnect policy.
+2. Keep service repositories on the direct `odb::pgsql::database` pattern
+   unless a new slice explicitly chooses to adopt `PgSqlConnection`.
 
 ## Risks
 
 - ODB 2.5.0 runtime must be built from source (until vcpkg packages are
   updated). Developers must run `scripts/build_odb_runtime_2_5.sh` before
   enabling ODB builds. CMake fails at configure time if runtime is missing.
-- `pgsql_conn.hpp` RAII wrapper has pre-existing issues (string-ID handling,
-  raw-pointer return). User Service bypasses it by using `odb::pgsql::database`
-  directly; Friend and Group services follow the same direct database pattern.
-  Fix this wrapper only when a future task chooses to use it.
+- `PgSqlConnection` is repaired for current string-ID ODB usage and has focused
+  `PgSqlConnectionTest` coverage. User, Message, Friend, and Group services
+  still use direct `odb::pgsql::database`; do not migrate them broadly without
+  a separate repository-boundary plan.
 - Inactive duplicate generated codec files were removed from `services/codec`;
   active codec generation remains under `common/proto`.
 - Old tests still contain references to removed dependencies and may fail if
   re-enabled wholesale.
-- Current Redis wrapper is single-connection and mutex-serialized. It is enough
-  for correctness tests, not for performance claims.
+- RedisManager now uses a RAII hiredis connection pool keyed by
+  `RedisConfig::pool_size`; focused tests cover pool stats, concurrent
+  borrowers, reinitialize boundaries, and an Auth token lifecycle concurrency
+  slice. `PushServiceTest` also covers concurrent `ConnectionManager`
+  session metadata reads and PushService session lookup without live WebSocket
+  sessions, preserving best-effort undelivered behavior. Pool sizing, wait
+  timeout, retry/reconnect policy, and live WebSocket delivery still need
+  broader tuning.
 - Full Phase F is not complete: migration adoption in runtime, inactive
   generated-file cleanup, and final hosted CI reintroduction remain future
   hardening work.

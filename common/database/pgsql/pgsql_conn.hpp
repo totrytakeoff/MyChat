@@ -28,8 +28,11 @@
 
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <sstream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include "../../utils/log_manager.hpp"
 // #include "spdlog/logger.h"
 
@@ -41,18 +44,41 @@ namespace im::db {
 using im::utils::LogManager;
 
 /**
- * 全局日志记录器声明
- * 
- * 设计决策：
- * 1. 使用extern声明避免ODR（One Definition Rule）违规
- * 2. 在.cpp文件中唯一定义，确保所有编译单元共享同一个logger实例
- * 3. 使用spdlog::logger类型，线程安全且高性能
- * 
- * 注意：
- * - 头文件中只声明，不定义，避免重复定义链接错误
- * - 实际定义在pgsql_conn.cpp中
+ * 兼容旧代码的日志记录器声明。
+ *
+ * PgSqlConnection 内部使用 PgSqlLogger() 惰性获取 logger，避免全局静态
+ * 初始化顺序问题。外部代码如仍引用 logger，应优先迁移到 PgSqlLogger()。
  */
 extern std::shared_ptr<spdlog::logger> logger;
+
+inline std::shared_ptr<spdlog::logger> PgSqlLogger() {
+    auto current = logger;
+    if (current) {
+        return current;
+    }
+    return LogManager::GetLogger("pgsql");
+}
+
+namespace detail {
+
+template <typename T>
+std::string ToLogString(const T& value) {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}
+
+template <typename T>
+std::shared_ptr<T> ToSharedObject(T* ptr) {
+    return std::shared_ptr<T>(ptr);
+}
+
+template <typename T>
+std::shared_ptr<T> ToSharedObject(std::unique_ptr<T> ptr) {
+    return std::shared_ptr<T>(std::move(ptr));
+}
+
+}  // namespace detail
 
 /**
  * @struct PgSqlConfig
@@ -379,7 +405,10 @@ public:
      * - 使用前会自动调用check_db()验证连接
      * - 不要手动删除返回的指针
      */
-    odb::database* operator->() { return database_.get(); }
+    odb::database* operator->() {
+        check_db();
+        return database_.get();
+    }
     
     /**
      * @brief 获取原始数据库对象引用
@@ -388,7 +417,10 @@ public:
      * 
      * 功能同operator->()，但返回引用而非指针
      */
-    odb::database& operator*() { return *database_; }
+    odb::database& operator*() {
+        check_db();
+        return *database_;
+    }
 
     // ========== 事务管理 ==========
     
@@ -550,14 +582,21 @@ public:
     auto execute_in_transaction(Func&& func) -> decltype(func(*this)) {
         auto tx = begin_transaction();  // RAII事务对象
         try {
-            // 执行用户操作
-            auto ret = func(*this);
-            // 操作成功，提交事务
-            tx.commit();
-            return ret;
+            if constexpr (std::is_void_v<decltype(func(*this))>) {
+                // 执行用户操作
+                std::forward<Func>(func)(*this);
+                // 操作成功，提交事务
+                tx.commit();
+            } else {
+                // 执行用户操作
+                auto ret = std::forward<Func>(func)(*this);
+                // 操作成功，提交事务
+                tx.commit();
+                return ret;
+            }
         } catch (const odb::database_exception& e) {
             // 记录数据库异常，事务会在tx析构时自动回滚
-            logger->error("数据库事务执行异常: {}", e.what());
+            PgSqlLogger()->error("数据库事务执行异常: {}", e.what());
             throw;  // 重新抛出异常，让调用者处理
         }
         // 注意：其他类型的异常也会导致事务回滚（通过RAII）
@@ -598,11 +637,11 @@ public:
             return database_->persist(obj);
         } catch (const odb::object_already_persistent& e) {
             // 对象已存在异常，提供清晰的错误信息
-            logger->error("对象已经存在于数据库中: {}", e.what());
+            PgSqlLogger()->error("对象已经存在于数据库中: {}", e.what());
             throw std::runtime_error("对象已经存在于数据库中: " + std::string(e.what()));
         } catch (const odb::database_exception& e) {
             // 其他数据库异常
-            logger->error("数据库操作失败: {}", e.what());
+            PgSqlLogger()->error("数据库操作失败: {}", e.what());
             throw std::runtime_error("数据库操作失败: " + std::string(e.what()));
         }
     }
@@ -613,10 +652,10 @@ public:
         try {
             database_->update(obj);
         } catch (const odb::object_not_persistent& e) {
-            logger->error("对象不存在于数据库中，ID: {}", obj.id());
+            PgSqlLogger()->error("对象不存在于数据库中: {}", e.what());
             throw std::runtime_error("对象不存在于数据库中: " + std::string(e.what()));
         } catch (const odb::database_exception& e) {
-            logger->error("数据库更新异常: {}", e.what());
+            PgSqlLogger()->error("数据库更新异常: {}", e.what());
             throw std::runtime_error("数据库更新失败: " + std::string(e.what()));
         }
     }
@@ -627,10 +666,10 @@ public:
         try {
             database_->erase(obj);
         } catch (const odb::object_not_persistent& e) {
-            logger->error("对象不存在于数据库中，ID: {}", obj.id());
+            PgSqlLogger()->error("对象不存在于数据库中: {}", e.what());
             throw std::runtime_error("对象不存在于数据库中: " + std::string(e.what()));
         } catch (const odb::database_exception& e) {
-            logger->error("数据库删除异常: {}", e.what());
+            PgSqlLogger()->error("数据库删除异常: {}", e.what());
             throw std::runtime_error("数据库删除失败: " + std::string(e.what()));
         }
     }
@@ -645,10 +684,10 @@ public:
         try {
             database_->erase<T>(id);
         } catch (const odb::object_not_persistent& e) {
-            logger->error("对象不存在于数据库中，ID: {}", id);
-            throw std::runtime_error("对象不存在于数据库中，ID: " + std::to_string(id));
+            PgSqlLogger()->error("对象不存在于数据库中，ID: {}", id);
+            throw std::runtime_error("对象不存在于数据库中，ID: " + detail::ToLogString(id));
         } catch (const odb::database_exception& e) {
-            logger->error("数据库删除异常: {}", e.what());
+            PgSqlLogger()->error("数据库删除异常: {}", e.what());
             throw std::runtime_error("数据库删除失败: " + std::string(e.what()));
         }
     }
@@ -657,12 +696,12 @@ public:
     std::shared_ptr<T> load(const typename odb::object_traits<T>::id_type& id) {
         check_db();
         try {
-            return database_->load<T>(id);
+            return detail::ToSharedObject<T>(database_->load<T>(id));
         } catch (const odb::object_not_persistent& e) {
-            logger->error("对象不存在于数据库中，ID: {}", id);
-            throw std::runtime_error("对象不存在，ID: " + std::to_string(id));
+            PgSqlLogger()->error("对象不存在于数据库中，ID: {}", id);
+            throw std::runtime_error("对象不存在，ID: " + detail::ToLogString(id));
         } catch (const odb::database_exception& e) {
-            logger->error("数据库加载异常: {}", e.what());
+            PgSqlLogger()->error("数据库加载异常: {}", e.what());
             throw std::runtime_error("数据库加载失败: " + std::string(e.what()));
         }
     }
@@ -671,9 +710,9 @@ public:
     std::shared_ptr<T> find(const typename odb::object_traits<T>::id_type& id) {
         check_db();
         try {
-            return database_->find<T>(id);
+            return detail::ToSharedObject<T>(database_->find<T>(id));
         } catch (const odb::database_exception& e) {
-            logger->error("数据库查找异常: {}", e.what());
+            PgSqlLogger()->error("数据库查找异常: {}", e.what());
             throw std::runtime_error("数据库查找失败: " + std::string(e.what()));
         }
     }
@@ -685,7 +724,7 @@ public:
         try {
             return database_->query<T>(q);
         } catch (const odb::database_exception& e) {
-            logger->error("数据库查询异常: {}", e.what());
+            PgSqlLogger()->error("数据库查询异常: {}", e.what());
             throw std::runtime_error("数据库查询失败: " + std::string(e.what()));
         }
     }
@@ -698,7 +737,7 @@ public:
             auto obj = std::make_shared<T>(*it);
             ++it;
             if (it != result.end()) {
-                logger->error("Query returned more than one result");
+                PgSqlLogger()->error("Query returned more than one result");
                 throw std::runtime_error("Query returned more than one result");
             }
             return obj;
@@ -728,7 +767,7 @@ private:
     void cleanup();
     void check_db() {
         if (!database_) {
-            logger->error("数据库连接不可用");
+            PgSqlLogger()->error("数据库连接不可用");
             throw std::runtime_error("Database connection is not available");
         }
     }

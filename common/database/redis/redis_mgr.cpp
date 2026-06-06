@@ -1,6 +1,7 @@
 #include "redis_mgr.hpp"
 
 #include <cstdarg>
+#include <algorithm>
 
 namespace im::db {
 
@@ -183,6 +184,39 @@ void RedisClient::expire(const std::string& key, int seconds) {
     command("EXPIRE %b %d", key.data(), key.size(), seconds);
 }
 
+RedisManager::RedisConnection::~RedisConnection() {
+    release();
+}
+
+RedisManager::RedisConnection::RedisConnection(RedisConnection&& other) noexcept
+        : owner_(other.owner_), redis_(std::move(other.redis_)),
+          generation_(other.generation_) {
+    other.owner_ = nullptr;
+    other.generation_ = 0;
+}
+
+RedisManager::RedisConnection&
+RedisManager::RedisConnection::operator=(RedisConnection&& other) noexcept {
+    if (this != &other) {
+        release();
+        owner_ = other.owner_;
+        redis_ = std::move(other.redis_);
+        generation_ = other.generation_;
+        other.owner_ = nullptr;
+        other.generation_ = 0;
+    }
+    return *this;
+}
+
+void RedisManager::RedisConnection::release() {
+    if (owner_ && redis_) {
+        owner_->release_connection(std::move(redis_), generation_);
+    }
+    owner_ = nullptr;
+    redis_.reset();
+    generation_ = 0;
+}
+
 bool RedisManager::initialize(const std::string& config_path) {
     try {
         return initialize(RedisConfig::from_file(config_path));
@@ -196,13 +230,25 @@ bool RedisManager::initialize(const std::string& config_path) {
 bool RedisManager::initialize(const RedisConfig& config) {
     std::lock_guard<std::mutex> lock(mutex_);
     try {
+        available_.clear();
+        total_connections_ = 0;
+        active_connections_ = 0;
+
         config_ = config;
-        redis_ = std::make_shared<RedisClient>(config_);
+        config_.pool_size = std::max(1, config_.pool_size);
+        ++generation_;
+        for (int i = 0; i < config_.pool_size; ++i) {
+            available_.push_back(std::make_shared<RedisClient>(config_));
+            ++total_connections_;
+        }
         initialized_ = true;
+        pool_cv_.notify_all();
         return true;
     } catch (const std::exception& e) {
         initialized_ = false;
-        redis_.reset();
+        available_.clear();
+        total_connections_ = 0;
+        active_connections_ = 0;
         im::utils::LogManager::GetLogger("redis_manager")
                 ->error("Failed to initialize Redis manager: {}", e.what());
         return false;
@@ -210,30 +256,61 @@ bool RedisManager::initialize(const RedisConfig& config) {
 }
 
 RedisManager::RedisConnection RedisManager::get_connection() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!initialized_ || !redis_) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!initialized_) {
         throw std::runtime_error("Redis manager is not initialized");
     }
-    return RedisConnection(redis_);
+
+    if (!pool_cv_.wait_for(lock, std::chrono::seconds(5), [this] {
+            return !initialized_ || !available_.empty();
+        })) {
+        throw std::runtime_error("Timed out waiting for Redis connection");
+    }
+
+    if (!initialized_) {
+        throw std::runtime_error("Redis manager is not initialized");
+    }
+
+    auto redis = std::move(available_.front());
+    available_.pop_front();
+    ++active_connections_;
+    return RedisConnection(this, std::move(redis), generation_);
+}
+
+void RedisManager::release_connection(RedisPtr redis, size_t generation) {
+    if (!redis) {
+        return;
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (generation != generation_) {
+        pool_cv_.notify_one();
+        return;
+    }
+
+    if (active_connections_ > 0) {
+        --active_connections_;
+    }
+
+    if (initialized_) {
+        available_.push_back(std::move(redis));
+    } else if (total_connections_ > 0) {
+        --total_connections_;
+    }
+    pool_cv_.notify_one();
 }
 
 RedisManager::PoolStats RedisManager::get_pool_stats() const {
     std::lock_guard<std::mutex> lock(mutex_);
-    return initialized_ ? PoolStats{1, 1, 0} : PoolStats{};
+    return initialized_ ? PoolStats{total_connections_, available_.size(), active_connections_}
+                        : PoolStats{};
 }
 
 bool RedisManager::is_healthy() const {
-    std::shared_ptr<RedisClient> redis;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        redis = redis_;
-    }
-    if (!redis) {
-        return false;
-    }
-
     try {
-        return redis->ping() == "PONG";
+        return const_cast<RedisManager*>(this)->execute([](auto& redis) {
+            return redis.ping() == "PONG";
+        });
     } catch (const std::exception& e) {
         im::utils::LogManager::GetLogger("redis_manager")
                 ->error("Redis health check failed: {}", e.what());
@@ -243,8 +320,12 @@ bool RedisManager::is_healthy() const {
 
 void RedisManager::shutdown() {
     std::lock_guard<std::mutex> lock(mutex_);
-    redis_.reset();
+    available_.clear();
+    total_connections_ = 0;
+    active_connections_ = 0;
     initialized_ = false;
+    ++generation_;
+    pool_cv_.notify_all();
 }
 
 }  // namespace im::db

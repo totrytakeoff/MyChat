@@ -612,7 +612,8 @@ Out of scope for the next task:
 - Do not reintroduce inactive duplicate `services/codec/*.pb.*` files.
 - Regenerate codec/gRPC artifacts only through the documented CMake target and
   only with the CMake-selected vcpkg `protoc`.
-- Do not refactor `pgsql_conn.hpp` unless it blocks the chosen next task.
+- `PgSqlConnection` has been repaired for current string-ID ODB usage. Do not
+  broadly migrate stable repositories onto it without a separate boundary plan.
 - Do not enable legacy test suites wholesale.
 - Preserve any nested `gateway/fanout_policies.cpp.cpp...` souvenir file if it
   appears in the workspace. It was not present during the final review, but the
@@ -630,7 +631,9 @@ Recommended sequence:
    PushServerApp, PushServerRemoteAdapters, GatewayPushDeliveryService,
    RemotePushEndToEndSmoke, RemotePushGatewayEntrypoints,
    RemotePushGatewayServerSmoke, and RemotePushNotifier tests green.
-5. Redis connection pool before performance/load work.
+5. Extend Redis pool validation from metadata/session lookup and no-live-WS
+   Push best-effort paths into live WebSocket delivery, then tune pool size,
+   wait timeout, and retry/reconnect behavior.
 
 ## Known Risks
 
@@ -641,10 +644,17 @@ Recommended sequence:
 - Schema migration baseline exists. Service-level, focused Gateway-level,
   remote Push Gateway smoke, and low-level ODB user persistence tests use the
   shared helper.
-- Redis wrapper is single-connection and mutex-serialized.
+- RedisManager now uses a RAII hiredis connection pool keyed by
+  `RedisConfig::pool_size`; focused tests cover pool stats, concurrent
+  borrowers, reinitialize boundaries, and an Auth token lifecycle concurrency
+  slice. `PushServiceTest` also covers concurrent ConnectionManager session
+  metadata reads and no-live-WS PushService lookup semantics. Pool sizing and
+  timeout behavior still need live WebSocket delivery validation.
 - Legacy tests are gated and may fail if re-enabled wholesale.
-- `pgsql_conn.hpp` has pre-existing string-ID/template/raw-pointer issues.
-  Current services bypass it with direct `odb::pgsql::database` usage.
+- `PgSqlConnection` is repaired for current string-ID ODB wrapper usage and is
+  covered by `PgSqlConnectionTest`. Current services still use direct
+  `odb::pgsql::database`; keep that stable pattern unless a future repository
+  task explicitly adopts the wrapper.
 - Friend and Group MVP docs were reconciled in this handoff. If future edits
   touch these areas, preserve the verified 23/23 full ODB + Push gRPC and 3/3
   no-ODB baselines.
@@ -738,6 +748,13 @@ Current reliable state:
   Gateway starts with a configured but unavailable push.remote_endpoint, WS
   send keeps best-effort success ack semantics after persistence, and the
   message remains SENT/offline-pullable instead of being marked delivered.
+- PgSqlConnection wrapper cleanup is complete:
+  `common/database/pgsql/pgsql_conn.hpp/.cpp` now supports string ODB IDs,
+  normalizes ODB load/find ownership to `std::shared_ptr`, supports void
+  transaction lambdas, checks raw database accessors, avoids global logger
+  static-initialization crashes, and uses real `odb::transaction` objects for
+  connection tests. `PgSqlConnectionTest` covers string UID
+  persist/load/find/update/erase and missing-ID formatting.
 - Friend Service/Gateway Friend HTTP compile, link, and pass focused tests.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
@@ -745,10 +762,12 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Fix `pgsql_conn.hpp` template wrapper string-ID handling only if the next
-service slice needs that wrapper; otherwise keep following the direct
-`odb::pgsql::database` pattern. Keep hosted CI paused unless the human
-explicitly asks to resume CI work.
+Continue product hardening from the active roadmap: extend Redis pool
+validation into live WebSocket Push delivery, or start the next narrow
+distributed-runtime slice the human selects. Keep service repositories on
+direct `odb::pgsql::database` unless a future task explicitly adopts
+`PgSqlConnection`. Keep hosted CI paused unless the human explicitly asks to
+resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

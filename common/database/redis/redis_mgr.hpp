@@ -5,7 +5,9 @@
 #include <nlohmann/json.hpp>
 
 #include <chrono>
+#include <condition_variable>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -86,14 +88,26 @@ public:
 
     class RedisConnection {
     public:
-        explicit RedisConnection(RedisPtr redis = nullptr) : redis_(std::move(redis)) {}
+        RedisConnection() = default;
+        RedisConnection(RedisManager* owner, RedisPtr redis, size_t generation)
+            : owner_(owner), redis_(std::move(redis)), generation_(generation) {}
+        ~RedisConnection();
+
+        RedisConnection(const RedisConnection&) = delete;
+        RedisConnection& operator=(const RedisConnection&) = delete;
+        RedisConnection(RedisConnection&& other) noexcept;
+        RedisConnection& operator=(RedisConnection&& other) noexcept;
 
         RedisClient* operator->() { return redis_.get(); }
         RedisClient& operator*() { return *redis_; }
         bool is_valid() const { return static_cast<bool>(redis_); }
 
     private:
+        void release();
+
+        RedisManager* owner_ = nullptr;
         RedisPtr redis_;
+        size_t generation_ = 0;
     };
 
     bool initialize(const std::string& config_path);
@@ -135,10 +149,16 @@ private:
     RedisManager() = default;
     ~RedisManager() = default;
 
+    void release_connection(RedisPtr redis, size_t generation);
+
     mutable std::mutex mutex_;
+    std::condition_variable pool_cv_;
     bool initialized_ = false;
     RedisConfig config_;
-    RedisPtr redis_;
+    std::deque<RedisPtr> available_;
+    size_t total_connections_ = 0;
+    size_t active_connections_ = 0;
+    size_t generation_ = 0;
 };
 
 inline RedisManager& redis_manager() {

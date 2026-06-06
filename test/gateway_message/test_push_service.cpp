@@ -3,8 +3,10 @@
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
+#include <future>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -44,6 +46,7 @@ RedisConfig test_redis_config() {
     config.port = 6379;
     config.password = "mychat-dev-pass";
     config.db = 15;
+    config.pool_size = 4;
     config.connect_timeout = 1000;
     config.socket_timeout = 1000;
     return config;
@@ -78,11 +81,13 @@ protected:
         db_ = std::make_shared<odb::pgsql::database>(kConnStr);
         EnsureTable();
         CleanupTestData();
+        CleanupRedisTestData();
 
         msg_service_ = std::make_shared<MessageService>(db_);
     }
 
     void TearDown() override {
+        CleanupRedisTestData();
         CleanupTestData();
         push_service_.reset();
         conn_mgr_.reset();
@@ -101,6 +106,49 @@ protected:
             WHERE "sender_uid" LIKE 'task8-test-%'
                OR "receiver_uid" LIKE 'task8-test-%')");
         t.commit();
+    }
+
+    static void CleanupRedisTestData() {
+        redis_manager().safe_execute(
+            [](auto& redis) {
+                for (int i = 0; i < 8; ++i) {
+                    const std::string user = "task8-test-pool-user-" + std::to_string(i);
+                    redis.del("user:sessions:" + user);
+                    redis.del("user:platform:" + user);
+                    redis.srem("online:users", user);
+                    for (int j = 0; j < 3; ++j) {
+                        redis.del("session:user:task8-test-pool-session-" +
+                                  std::to_string(i) + "-" + std::to_string(j));
+                    }
+                }
+                return true;
+            },
+            false);
+    }
+
+    static void SeedRedisSessions(const std::string& user, int user_index) {
+        redis_manager().execute([&](auto& redis) {
+            const auto now = std::chrono::system_clock::now();
+            const auto sessions_key = "user:sessions:" + user;
+            const auto devices_key = "user:platform:" + user;
+            for (int j = 0; j < 3; ++j) {
+                im::gateway::DeviceSessionInfo info;
+                info.session_id = "task8-test-pool-session-" +
+                                  std::to_string(user_index) + "-" + std::to_string(j);
+                info.device_id = "task8-test-pool-device-" + std::to_string(j);
+                info.platform = (j % 2 == 0) ? "web" : "mobile";
+                info.connect_time = now + std::chrono::seconds(j);
+
+                const auto field = info.device_id + ":" + info.platform;
+                redis.hset(sessions_key, field, info.to_json().dump());
+                redis.sadd(devices_key, field);
+                redis.hset("session:user:" + info.session_id, "user_id", user);
+                redis.hset("session:user:" + info.session_id, "device_id", info.device_id);
+                redis.hset("session:user:" + info.session_id, "platform", info.platform);
+            }
+            redis.sadd("online:users", user);
+            return true;
+        });
     }
 
     std::shared_ptr<odb::pgsql::database> db_;
@@ -145,6 +193,98 @@ TEST_F(PushServiceTest, NoActiveSessions) {
         }
     }
     EXPECT_TRUE(found);
+}
+
+TEST_F(PushServiceTest, ConcurrentConnectionManagerSessionReadsUseRedisPool) {
+    conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
+
+    constexpr int kUsers = 8;
+    for (int i = 0; i < kUsers; ++i) {
+        SeedRedisSessions("task8-test-pool-user-" + std::to_string(i), i);
+    }
+
+    std::vector<std::future<bool>> futures;
+    futures.reserve(kUsers);
+    for (int i = 0; i < kUsers; ++i) {
+        futures.push_back(std::async(std::launch::async, [this, i] {
+            const std::string user = "task8-test-pool-user-" + std::to_string(i);
+            auto sessions = conn_mgr_->get_user_sessions(user);
+            if (sessions.size() != 3u) {
+                return false;
+            }
+            if (!conn_mgr_->is_user_online_on_platform(user, "web")) {
+                return false;
+            }
+            if (conn_mgr_->get_online_count() < 1u) {
+                return false;
+            }
+            return true;
+        }));
+    }
+
+    for (auto& future : futures) {
+        EXPECT_TRUE(future.get());
+    }
+
+    auto stats = redis_manager().get_pool_stats();
+    EXPECT_EQ(stats.total_connections, 4u);
+    EXPECT_EQ(stats.available_connections, 4u);
+    EXPECT_EQ(stats.active_connections, 0u);
+}
+
+TEST_F(PushServiceTest, ConcurrentPushSessionLookupUsesRedisPoolWithoutLiveSessions) {
+    conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
+    push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_service_);
+
+    constexpr int kUsers = 8;
+    std::vector<uint64_t> msg_ids;
+    msg_ids.reserve(kUsers);
+    for (int i = 0; i < kUsers; ++i) {
+        const std::string receiver = "task8-test-pool-user-" + std::to_string(i);
+        SeedRedisSessions(receiver, i);
+        auto result = msg_service_->send_text_message({
+            .sender_uid = "task8-test-pool-sender",
+            .receiver_uid = receiver,
+            .content = "pool push lookup",
+            .msg_type = im::service::message::MessageType::TEXT,
+            .now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count()
+        });
+        ASSERT_TRUE(result.ok);
+        msg_ids.push_back(result.data.msg_id);
+    }
+
+    std::vector<std::future<void>> futures;
+    futures.reserve(kUsers);
+    for (int i = 0; i < kUsers; ++i) {
+        futures.push_back(std::async(std::launch::async, [this, i, &msg_ids] {
+            const std::string receiver = "task8-test-pool-user-" + std::to_string(i);
+            push_service_->push_to_user(receiver, msg_ids[i], "pool push lookup");
+        }));
+    }
+
+    for (auto& future : futures) {
+        future.get();
+    }
+
+    for (int i = 0; i < kUsers; ++i) {
+        auto msgs = msg_service_->pull_offline("task8-test-pool-user-" + std::to_string(i),
+                                               INT64_MAX, 10);
+        bool found = false;
+        for (const auto& msg : msgs) {
+            if (msg.msg_id == msg_ids[i]) {
+                EXPECT_EQ(msg.delivered_time, 0)
+                    << "No live WebSocketServer means push stays best-effort undelivered";
+                found = true;
+            }
+        }
+        EXPECT_TRUE(found);
+    }
+
+    auto stats = redis_manager().get_pool_stats();
+    EXPECT_EQ(stats.total_connections, 4u);
+    EXPECT_EQ(stats.available_connections, 4u);
+    EXPECT_EQ(stats.active_connections, 0u);
 }
 
 // --- FanoutPolicy unit tests ---

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <future>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -16,6 +17,7 @@ im::db::RedisConfig test_config() {
     config.port = 6379;
     config.password = "mychat-dev-pass";
     config.db = 15;
+    config.pool_size = 3;
     config.connect_timeout = 1000;
     config.socket_timeout = 1000;
     return config;
@@ -48,6 +50,9 @@ protected:
                     redis.del(key("hash"));
                     redis.del(key("set"));
                     redis.del(key("expire"));
+                    redis.del(key("pool-1"));
+                    redis.del(key("pool-2"));
+                    redis.del(key("pool-3"));
                     return true;
                 },
                 false);
@@ -59,6 +64,83 @@ protected:
 TEST_F(RedisHiredisTest, PingAndHealthCheck) {
     EXPECT_TRUE(im::db::redis_manager().is_healthy());
     EXPECT_EQ(im::db::redis_manager().execute([](auto& redis) { return redis.ping(); }), "PONG");
+}
+
+TEST_F(RedisHiredisTest, PoolStatsTrackBorrowAndReturn) {
+    auto& manager = im::db::redis_manager();
+    auto initial = manager.get_pool_stats();
+    EXPECT_EQ(initial.total_connections, 3u);
+    EXPECT_EQ(initial.available_connections, 3u);
+    EXPECT_EQ(initial.active_connections, 0u);
+
+    {
+        auto conn1 = manager.get_connection();
+        auto conn2 = manager.get_connection();
+        ASSERT_TRUE(conn1.is_valid());
+        ASSERT_TRUE(conn2.is_valid());
+
+        auto borrowed = manager.get_pool_stats();
+        EXPECT_EQ(borrowed.total_connections, 3u);
+        EXPECT_EQ(borrowed.available_connections, 1u);
+        EXPECT_EQ(borrowed.active_connections, 2u);
+        EXPECT_EQ(conn1->ping(), "PONG");
+        EXPECT_EQ(conn2->ping(), "PONG");
+    }
+
+    auto returned = manager.get_pool_stats();
+    EXPECT_EQ(returned.total_connections, 3u);
+    EXPECT_EQ(returned.available_connections, 3u);
+    EXPECT_EQ(returned.active_connections, 0u);
+}
+
+TEST_F(RedisHiredisTest, PoolAllowsConcurrentBorrowers) {
+    auto& manager = im::db::redis_manager();
+
+    auto worker = [&manager](int index) {
+        return manager.execute([index](auto& redis) {
+            redis.set(key("pool-" + std::to_string(index)), std::to_string(index));
+            return redis.get(key("pool-" + std::to_string(index))).value_or("");
+        });
+    };
+
+    auto f1 = std::async(std::launch::async, worker, 1);
+    auto f2 = std::async(std::launch::async, worker, 2);
+    auto f3 = std::async(std::launch::async, worker, 3);
+
+    EXPECT_EQ(f1.get(), "1");
+    EXPECT_EQ(f2.get(), "2");
+    EXPECT_EQ(f3.get(), "3");
+
+    auto stats = manager.get_pool_stats();
+    EXPECT_EQ(stats.total_connections, 3u);
+    EXPECT_EQ(stats.available_connections, 3u);
+    EXPECT_EQ(stats.active_connections, 0u);
+}
+
+TEST_F(RedisHiredisTest, ReinitializeDoesNotReturnOldBorrowedConnectionToNewPool) {
+    auto& manager = im::db::redis_manager();
+
+    auto old_conn = manager.get_connection();
+    ASSERT_TRUE(old_conn.is_valid());
+    auto borrowed = manager.get_pool_stats();
+    EXPECT_EQ(borrowed.available_connections, 2u);
+    EXPECT_EQ(borrowed.active_connections, 1u);
+
+    im::db::RedisConfig smaller = test_config();
+    smaller.pool_size = 1;
+    ASSERT_TRUE(manager.initialize(smaller));
+
+    auto reinitialized = manager.get_pool_stats();
+    EXPECT_EQ(reinitialized.total_connections, 1u);
+    EXPECT_EQ(reinitialized.available_connections, 1u);
+    EXPECT_EQ(reinitialized.active_connections, 0u);
+
+    old_conn = {};
+
+    auto after_old_return = manager.get_pool_stats();
+    EXPECT_EQ(after_old_return.total_connections, 1u);
+    EXPECT_EQ(after_old_return.available_connections, 1u);
+    EXPECT_EQ(after_old_return.active_connections, 0u);
 }
 
 TEST_F(RedisHiredisTest, HashOperations) {
