@@ -48,6 +48,8 @@ public:
     RedisClient& operator=(const RedisClient&) = delete;
 
     std::string ping();
+    int64_t client_id();
+    void client_kill_id(int64_t client_id);
 
     void hset(const std::string& key, const std::string& field, const std::string& value);
     std::optional<std::string> hget(const std::string& key, const std::string& field);

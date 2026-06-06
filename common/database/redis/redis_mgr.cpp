@@ -86,7 +86,12 @@ RedisClient::ReplyPtr RedisClient::command(const char* format, ...) {
     if (!raw) {
         std::string err = context_ ? context_->errstr : "unknown";
         connect_locked();
-        throw std::runtime_error("Redis command failed: " + err);
+        va_start(args, format);
+        raw = static_cast<redisReply*>(redisvCommand(context_, format, args));
+        va_end(args);
+        if (!raw) {
+            throw std::runtime_error("Redis command failed after reconnect: " + err);
+        }
     }
 
     ReplyPtr reply(raw, freeReplyObject);
@@ -105,6 +110,15 @@ std::string RedisClient::reply_string(const redisReply* reply) {
 
 std::string RedisClient::ping() {
     return reply_string(command("PING").get());
+}
+
+int64_t RedisClient::client_id() {
+    auto reply = command("CLIENT ID");
+    return reply->type == REDIS_REPLY_INTEGER ? reply->integer : -1;
+}
+
+void RedisClient::client_kill_id(int64_t client_id) {
+    command("CLIENT KILL ID %lld", static_cast<long long>(client_id));
 }
 
 void RedisClient::hset(const std::string& key, const std::string& field, const std::string& value) {

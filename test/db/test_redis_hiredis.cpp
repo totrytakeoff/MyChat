@@ -167,6 +167,34 @@ TEST_F(RedisHiredisTest, PoolExhaustionUsesConfiguredWaitTimeout) {
     EXPECT_EQ(stats.active_connections, 0u);
 }
 
+TEST_F(RedisHiredisTest, ReconnectsAndRetriesOnceAfterConnectionDrop) {
+    auto& manager = im::db::redis_manager();
+
+    im::db::RedisConfig config = test_config();
+    config.pool_size = 2;
+    ASSERT_TRUE(manager.initialize(config));
+
+    auto victim = manager.get_connection();
+    auto killer = manager.get_connection();
+    ASSERT_TRUE(victim.is_valid());
+    ASSERT_TRUE(killer.is_valid());
+
+    const auto victim_id = victim->client_id();
+    ASSERT_GT(victim_id, 0);
+    killer->client_kill_id(victim_id);
+
+    EXPECT_EQ(victim->ping(), "PONG");
+    victim->set(key("pool-1"), "reconnected");
+    EXPECT_EQ(victim->get(key("pool-1")).value_or(""), "reconnected");
+
+    victim = {};
+    killer = {};
+    auto stats = manager.get_pool_stats();
+    EXPECT_EQ(stats.total_connections, 2u);
+    EXPECT_EQ(stats.available_connections, 2u);
+    EXPECT_EQ(stats.active_connections, 0u);
+}
+
 TEST_F(RedisHiredisTest, HashOperations) {
     auto& manager = im::db::redis_manager();
 

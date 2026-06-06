@@ -151,8 +151,8 @@ updated_by: coder
 ## Next
 
 - [ ] Extend remote Push real-server coverage only where it adds new signal.
-- [ ] Tune Redis pool size under heavier live Push load and define
-      retry/reconnect policy for transient Redis failures.
+- [ ] Tune Redis pool size under heavier live Push load and decide whether
+      richer Redis failure policy is needed beyond one reconnect retry.
 - [ ] Decide whether any future repository should adopt `PgSqlConnection`;
       current services remain on direct `odb::pgsql::database`.
 
