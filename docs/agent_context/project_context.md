@@ -81,10 +81,11 @@ verify.
   concurrent ConnectionManager session metadata reads and no-live-WS
   PushService lookup semantics. Full Gateway remote Push smoke asserts the
   pool returns idle after real TLS WebSocket registration, direct remote Push
-  delivery, and HTTP group remote Push fanout. RedisClient reconnects and
-  retries once after hiredis reports a connection-level empty reply; focused
-  Redis coverage kills a live Redis client connection and verifies the next
-  command succeeds.
+  delivery, HTTP group remote Push fanout, and a concurrent direct-send slice
+  with 6 sender/receiver pairs sharing a pool of 4 Redis connections.
+  RedisClient reconnects and retries once after hiredis reports a
+  connection-level empty reply; focused Redis coverage kills a live Redis
+  client connection and verifies the next command succeeds.
 - Stale codec/gRPC generated files may cause confusion if accidentally regenerated with mismatched protoc versions.
 - Legacy tests (SignalHandlerTest, RouterManagerTests) have pre-existing failures if re-enabled.
 - PostgreSQL schema migration baseline exists. Local development uses

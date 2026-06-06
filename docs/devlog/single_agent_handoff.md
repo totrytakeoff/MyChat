@@ -631,8 +631,8 @@ Recommended sequence:
    PushServerApp, PushServerRemoteAdapters, GatewayPushDeliveryService,
    RemotePushEndToEndSmoke, RemotePushGatewayEntrypoints,
    RemotePushGatewayServerSmoke, and RemotePushNotifier tests green.
-5. Tune Redis pool size under heavier live Push load and decide whether richer
-   Redis failure policy is needed beyond one reconnect retry.
+5. Decide whether Redis pool sizing needs a dedicated load/benchmark harness
+   beyond the current live remote Push smoke coverage.
 
 ## Known Risks
 
@@ -651,11 +651,14 @@ Recommended sequence:
   is configurable through `redis.pool_wait_timeout` and covered by a
   pool-exhaustion test. `RemotePushGatewayServerSmokeTest` asserts the pool
   returns idle after real TLS WebSocket registration, direct remote Push
-  delivery, and HTTP group remote Push fanout. RedisClient reconnects and
-  retries once when hiredis reports a connection-level empty reply;
+  delivery, HTTP group remote Push fanout, and a concurrent direct-send slice
+  with 6 sender/receiver pairs sharing a pool of 4 Redis connections.
+  RedisClient reconnects and retries once when hiredis reports a
+  connection-level empty reply;
   `RedisHiredisTest` verifies this by killing a live Redis client connection
-  with `CLIENT KILL ID` and successfully issuing the next command. Pool sizing
-  under heavier load and richer failure policy still need tuning.
+  with `CLIENT KILL ID` and successfully issuing the next command. More
+  realistic pool sizing still needs a dedicated load/benchmark harness if the
+  project wants quantified defaults.
 - Legacy tests are gated and may fail if re-enabled wholesale.
 - `PgSqlConnection` is repaired for current string-ID ODB wrapper usage and is
   covered by `PgSqlConnectionTest`. Current services still use direct
@@ -768,10 +771,10 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Continue product hardening from the active roadmap: tune Redis pool sizing
-under heavier live Push load, decide whether richer Redis failure policy is
-needed beyond one reconnect retry, or start the next narrow distributed-runtime
-slice the human selects. Keep service repositories on direct
+Continue product hardening from the active roadmap: decide whether Redis pool
+sizing needs a dedicated load/benchmark harness beyond the current live remote
+Push smoke coverage, or start the next narrow distributed-runtime slice the
+human selects. Keep service repositories on direct
 `odb::pgsql::database` unless a future task explicitly adopts `PgSqlConnection`.
 Keep hosted CI paused unless the human explicitly asks to resume CI work.
 

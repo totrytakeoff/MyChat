@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -556,6 +557,124 @@ TEST_F(RemotePushGatewayServerSmokeTest, WsSendReachesReceiverThroughRemotePushS
     EXPECT_EQ(push_request.body().type(), im::push::PUSH_MESSAGE);
     EXPECT_EQ(push_request.body().content(), content);
     EXPECT_EQ(push_request.body().related_message_id(), ack.message().message_id());
+    expect_redis_pool_idle(4);
+}
+
+TEST_F(RemotePushGatewayServerSmokeTest, ConcurrentWsSendsKeepRedisPoolHealthy) {
+    start_servers();
+
+    constexpr int kPairCount = 6;
+    std::vector<std::string> sender_uids;
+    std::vector<std::string> receiver_uids;
+    std::vector<std::string> sender_devices;
+    std::vector<std::string> sender_tokens;
+    std::vector<std::string> receiver_tokens;
+    std::vector<std::string> contents;
+    std::vector<std::unique_ptr<TlsWebSocketClient>> senders;
+    std::vector<std::unique_ptr<TlsWebSocketClient>> receivers;
+    sender_uids.reserve(kPairCount);
+    receiver_uids.reserve(kPairCount);
+    sender_devices.reserve(kPairCount);
+    sender_tokens.reserve(kPairCount);
+    receiver_tokens.reserve(kPairCount);
+    contents.reserve(kPairCount);
+    senders.reserve(kPairCount);
+    receivers.reserve(kPairCount);
+
+    for (int i = 0; i < kPairCount; ++i) {
+        sender_uids.push_back(std::string(kTestUidPrefix) + "concurrent-sender-" +
+                              std::to_string(i));
+        receiver_uids.push_back(std::string(kTestUidPrefix) + "concurrent-receiver-" +
+                                std::to_string(i));
+        sender_devices.push_back("remote-server-concurrent-sender-device-" +
+                                 std::to_string(i));
+        sender_tokens.push_back(make_token(sender_uids.back(), sender_devices.back()));
+        receiver_tokens.push_back(make_token(receiver_uids.back(),
+                                             "remote-server-concurrent-receiver-device-" +
+                                                     std::to_string(i)));
+        contents.push_back("remote concurrent push " + std::to_string(i));
+        ASSERT_FALSE(sender_tokens.back().empty());
+        ASSERT_FALSE(receiver_tokens.back().empty());
+
+        receivers.push_back(std::make_unique<TlsWebSocketClient>(receiver_tokens.back()));
+        ASSERT_TRUE(receivers.back()->connect("127.0.0.1", ws_port_))
+            << receivers.back()->last_error();
+        senders.push_back(std::make_unique<TlsWebSocketClient>(sender_tokens.back()));
+        ASSERT_TRUE(senders.back()->connect("127.0.0.1", ws_port_))
+            << senders.back()->last_error();
+    }
+
+    ASSERT_TRUE(wait_for_online_count(kPairCount * 2));
+    expect_redis_pool_idle(4);
+
+    struct SendResult {
+        bool ok = false;
+        std::string error;
+        std::string message_id;
+    };
+    std::vector<std::future<SendResult>> send_tasks;
+    send_tasks.reserve(kPairCount);
+    for (int i = 0; i < kPairCount; ++i) {
+        send_tasks.push_back(std::async(std::launch::async, [&, i] {
+            SendResult result;
+            if (!senders[i]->send(send_header(sender_tokens[i],
+                                              sender_uids[i],
+                                              receiver_uids[i],
+                                              sender_devices[i]),
+                                  send_request(sender_uids[i],
+                                               receiver_uids[i],
+                                               contents[i]))) {
+                result.error = senders[i]->last_error();
+                return result;
+            }
+
+            auto ack_frame = senders[i]->receive(std::chrono::seconds(5));
+            if (!ack_frame.has_value()) {
+                result.error = senders[i]->last_error();
+                return result;
+            }
+
+            im::base::IMHeader ack_header;
+            im::message::SendMessageResponse ack;
+            if (!ProtobufCodec::decode(*ack_frame, ack_header, ack)) {
+                result.error = "failed to decode send ack";
+                return result;
+            }
+            if (ack.base().error_code() != im::base::SUCCESS || !ack.has_message()) {
+                result.error = "send ack was not successful";
+                return result;
+            }
+
+            result.ok = true;
+            result.message_id = ack.message().message_id();
+            return result;
+        }));
+    }
+
+    std::vector<std::string> message_ids;
+    message_ids.reserve(kPairCount);
+    for (auto& task : send_tasks) {
+        auto result = task.get();
+        ASSERT_TRUE(result.ok) << result.error;
+        ASSERT_FALSE(result.message_id.empty());
+        message_ids.push_back(result.message_id);
+    }
+
+    for (int i = 0; i < kPairCount; ++i) {
+        auto push_frame = receivers[i]->receive(std::chrono::seconds(5));
+        ASSERT_TRUE(push_frame.has_value()) << receivers[i]->last_error();
+
+        im::base::IMHeader push_header;
+        im::push::PushRequest push_request;
+        ASSERT_TRUE(ProtobufCodec::decode(*push_frame, push_header, push_request));
+        EXPECT_EQ(push_header.cmd_id(), im::command::CMD_PUSH_MESSAGE);
+        EXPECT_EQ(push_header.to_uid(), receiver_uids[i]);
+        ASSERT_TRUE(push_request.has_body());
+        EXPECT_EQ(push_request.body().type(), im::push::PUSH_MESSAGE);
+        EXPECT_EQ(push_request.body().content(), contents[i]);
+        EXPECT_EQ(push_request.body().related_message_id(), message_ids[i]);
+    }
+
     expect_redis_pool_idle(4);
 }
 

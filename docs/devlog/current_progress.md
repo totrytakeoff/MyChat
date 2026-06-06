@@ -324,8 +324,8 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Tune Redis pool sizing under heavier live Push load and decide whether
-   richer Redis failure policy is needed beyond one reconnect retry.
+1. Decide whether Redis pool sizing needs a dedicated load/benchmark harness
+   beyond the current live remote Push smoke coverage.
 2. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.
 
@@ -352,12 +352,13 @@ Known working:
   sessions, preserving best-effort undelivered behavior.
   `RemotePushGatewayServerSmokeTest` now fixes Redis pool settings and asserts
   the pool returns to idle after real TLS WebSocket registration, direct remote
-  Push delivery, and real HTTP group-message remote Push fanout. RedisClient
-  reconnects and retries once when hiredis reports a connection-level empty
-  reply; `RedisHiredisTest` verifies this by killing a live Redis client
-  connection with `CLIENT KILL ID` and successfully issuing the next command.
-  Pool sizing under heavier load and richer failure policy still need broader
-  tuning.
+  Push delivery, real HTTP group-message remote Push fanout, and a concurrent
+  direct-send slice with 6 sender/receiver pairs sharing a pool of 4 Redis
+  connections. RedisClient reconnects and retries once when hiredis reports a
+  connection-level empty reply; `RedisHiredisTest` verifies this by killing a
+  live Redis client connection with `CLIENT KILL ID` and successfully issuing
+  the next command. More realistic pool sizing still needs a dedicated
+  load/benchmark harness if the project wants quantified defaults.
 - Full Phase F is not complete: migration adoption in runtime, inactive
   generated-file cleanup, and final hosted CI reintroduction remain future
   hardening work.
