@@ -1,8 +1,18 @@
 syntax = "proto3";
 
-package im.friend;
+package im.friend_;
 
 import "base.proto";
+
+// FriendService is the distributed gRPC boundary for friend request workflows.
+// Gateway can keep using local FriendService while this boundary is staged,
+// then switch to RPC without changing the external HTTP contract.
+service FriendService {
+    rpc SendRequest(AddFriendRequest) returns (AddFriendResponse);
+    rpc RespondToRequest(HandleFriendRequest) returns (HandleFriendResponse);
+    rpc GetFriends(GetFriendListRequest) returns (GetFriendListResponse);
+    rpc GetPendingRequests(GetFriendRequestsRequest) returns (GetFriendRequestsResponse);
+}
 
 // 好友请求状态
 enum FriendRequestStatus {
@@ -25,6 +35,9 @@ message FriendInfo {
     string remark = 2;        // 备注
     int64 add_time = 3;       // 添加时间
     repeated FriendPermission permissions = 4; // 权限列表
+    uint64 friend_id = 5;     // 关系记录ID
+    string nickname = 6;      // 用户昵称
+    FriendRequestStatus status = 7; // 关系状态
 }
 
 // 好友请求结构
@@ -35,6 +48,7 @@ message FriendRequest {
     string message = 4;           // 申请附言
     FriendRequestStatus status = 5;// 请求状态
     int64 create_time = 6;        // 请求时间
+    uint64 friend_id = 7;         // 关系记录ID
 }
 
 // 添加好友请求

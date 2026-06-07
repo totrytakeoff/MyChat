@@ -74,6 +74,29 @@ Latest reliable baseline after this handoff update:
   also passed `MessageServiceCoreTest`, `GatewayMessageHttpTest`,
   `GatewayMessageWsTest`, `PushServiceTest`, and `GatewayUserHttpTest` in
   `build/message-grpc-off-verify`.
+- Friend gRPC boundary and standalone server slice passed on 2026-06-07:
+  `common/proto/friend.proto` now defines `im.friend_.FriendService` with
+  `SendRequest`, `RespondToRequest`, `GetFriends`, and `GetPendingRequests`.
+  The package intentionally uses `im.friend_` because `friend` is a C++
+  keyword and the gRPC C++ plugin does not escape it safely. `FriendGrpcService`
+  adapts generated gRPC requests to the existing ODB-backed `FriendService`,
+  and `friend_server` hosts that adapter behind
+  `MYCHAT_BUILD_FRIEND_GRPC_SERVICE=ON`. Focused verification passed
+  `FriendServiceCoreTest`, `FriendGrpcServiceTest`, and `FriendServerAppTest`
+  in `build/remote-push-odb`; a separate gRPC-default-off configure/build/test
+  passed `FriendServiceCoreTest` and `GatewayFriendHttpTest` in
+  `build/friend-grpc-off-verify`.
+- Gateway remote Friend client slice passed on 2026-06-07:
+  `FriendHttpController` now depends on the Gateway `FriendClient` facade;
+  `LocalFriendClient` preserves the in-process `FriendService` path, and
+  `RemoteFriendClient` wraps the generated `im.friend_.FriendService::Stub`.
+  `GatewayServer` selects through `friend.mode`, defaulting to local. Focused
+  verification passed `RemoteFriendClientTest`,
+  `RemoteFriendGatewayServerSmokeTest`, `GatewayFriendHttpTest`,
+  `FriendGrpcServiceTest`, `FriendServerAppTest`, and
+  `FriendServiceCoreTest` in `build/remote-push-odb`; a separate
+  gRPC-default-off configure/build/test passed `FriendServiceCoreTest` and
+  `GatewayFriendHttpTest` in `build/friend-grpc-off-verify`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
 - Codec explicit-enable configure/generate/build passed:
   `generate_proto` and `im_codec_service`.
@@ -838,6 +861,10 @@ Current reliable state:
   connection tests. `PgSqlConnectionTest` covers string UID
   persist/load/find/update/erase and missing-ID formatting.
 - Friend Service/Gateway Friend HTTP compile, link, and pass focused tests.
+- Friend gRPC boundary/server process compile, link, and pass focused tests.
+- Gateway remote Friend client wiring compiles, links, and passes fake-client
+  mapping tests plus a real `FriendServerApp` + `GatewayServer` process-level
+  smoke.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
 - The latest Push/gRPC cleanup may be uncommitted in the working tree. Do not
@@ -845,14 +872,14 @@ Current reliable state:
 
 Recommended next task:
 Continue formal distributed-service work from the now-pinned User, Message,
-and Push remote paths. The next clean slice is Friend/Group gRPC boundary work:
-start with Friend because its service contract is smaller, add
-`common/proto/friend.proto`, generated gRPC outputs, `FriendGrpcService`,
-option-gated `friend_server`, and focused service/server tests before adding a
-Gateway remote Friend client facade. Preserve current HTTP external contracts.
-Keep service repositories on direct `odb::pgsql::database` unless a future task
-explicitly adopts `PgSqlConnection`. Keep hosted CI paused unless the human
-explicitly asks to resume CI work.
+Push, and Friend server/Gateway remote paths. The next clean slice is Group
+gRPC/server/Gateway-remote wiring: define Group and GroupMessage gRPC
+contracts, add generated adapters around the existing ODB-backed services,
+host them in a standalone Group server process, then add Gateway remote Group
+HTTP facades while preserving current Group and Group Message HTTP external
+contracts. Keep service repositories on direct
+`odb::pgsql::database` unless a future task explicitly adopts `PgSqlConnection`.
+Keep hosted CI paused unless the human explicitly asks to resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

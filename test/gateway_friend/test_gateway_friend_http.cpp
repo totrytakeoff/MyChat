@@ -18,6 +18,7 @@
 
 #include <database/redis/redis_mgr.hpp>
 
+#include <gateway/http/friend_client.hpp>
 #include <gateway/http/friend_http_controller.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <friend_service.hpp>
@@ -38,6 +39,7 @@ using json = nlohmann::json;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::FriendHttpController;
+using im::gateway::LocalFriendClient;
 using im::gateway::MultiPlatformAuthManager;
 using im::service::friend_::FriendService;
 using im::service::friend_::FriendInfoDTO;
@@ -86,7 +88,8 @@ protected:
         auto hasher = std::make_unique<PasswordHasher>();
         auto user_svc = std::make_shared<UserService>(db_, std::move(hasher));
         friend_svc_ = std::make_shared<FriendService>(db_, user_svc);
-        controller_ = std::make_unique<FriendHttpController>(friend_svc_, auth_mgr_);
+        friend_client_ = std::make_shared<LocalFriendClient>(friend_svc_);
+        controller_ = std::make_unique<FriendHttpController>(friend_client_, auth_mgr_);
     }
 
     void TearDown() override {
@@ -121,6 +124,7 @@ protected:
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<FriendService> friend_svc_;
+    std::shared_ptr<LocalFriendClient> friend_client_;
     std::unique_ptr<FriendHttpController> controller_;
 };
 

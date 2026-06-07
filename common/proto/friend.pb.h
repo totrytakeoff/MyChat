@@ -188,7 +188,7 @@ inline bool FriendPermission_Parse(absl::string_view name, FriendPermission* val
 // -------------------------------------------------------------------
 
 class FriendRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.FriendRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.FriendRequest) */ {
  public:
   inline FriendRequest() : FriendRequest(nullptr) {}
   ~FriendRequest() PROTOBUF_FINAL;
@@ -312,7 +312,7 @@ class FriendRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.FriendRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.FriendRequest"; }
 
  protected:
   explicit FriendRequest(::google::protobuf::Arena* arena);
@@ -338,6 +338,7 @@ class FriendRequest final : public ::google::protobuf::Message
     kToUidFieldNumber = 3,
     kMessageFieldNumber = 4,
     kCreateTimeFieldNumber = 6,
+    kFriendIdFieldNumber = 7,
     kStatusFieldNumber = 5,
   };
   // string request_id = 1;
@@ -414,7 +415,17 @@ class FriendRequest final : public ::google::protobuf::Message
   void _internal_set_create_time(::int64_t value);
 
   public:
-  // .im.friend.FriendRequestStatus status = 5;
+  // uint64 friend_id = 7;
+  void clear_friend_id() ;
+  ::uint64_t friend_id() const;
+  void set_friend_id(::uint64_t value);
+
+  private:
+  ::uint64_t _internal_friend_id() const;
+  void _internal_set_friend_id(::uint64_t value);
+
+  public:
+  // .im.friend_.FriendRequestStatus status = 5;
   void clear_status() ;
   ::im::friend_::FriendRequestStatus status() const;
   void set_status(::im::friend_::FriendRequestStatus value);
@@ -424,13 +435,13 @@ class FriendRequest final : public ::google::protobuf::Message
   void _internal_set_status(::im::friend_::FriendRequestStatus value);
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.FriendRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.FriendRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      3, 6, 0,
-      63, 2>
+      3, 7, 0,
+      64, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -452,6 +463,7 @@ class FriendRequest final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr to_uid_;
     ::google::protobuf::internal::ArenaStringPtr message_;
     ::int64_t create_time_;
+    ::uint64_t friend_id_;
     int status_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
@@ -462,7 +474,7 @@ class FriendRequest final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class FriendInfo final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.FriendInfo) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.FriendInfo) */ {
  public:
   inline FriendInfo() : FriendInfo(nullptr) {}
   ~FriendInfo() PROTOBUF_FINAL;
@@ -586,7 +598,7 @@ class FriendInfo final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.FriendInfo"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.FriendInfo"; }
 
  protected:
   explicit FriendInfo(::google::protobuf::Arena* arena);
@@ -610,9 +622,12 @@ class FriendInfo final : public ::google::protobuf::Message
     kPermissionsFieldNumber = 4,
     kUidFieldNumber = 1,
     kRemarkFieldNumber = 2,
+    kNicknameFieldNumber = 6,
     kAddTimeFieldNumber = 3,
+    kFriendIdFieldNumber = 5,
+    kStatusFieldNumber = 7,
   };
-  // repeated .im.friend.FriendPermission permissions = 4;
+  // repeated .im.friend_.FriendPermission permissions = 4;
   int permissions_size() const;
   private:
   int _internal_permissions_size() const;
@@ -663,6 +678,22 @@ class FriendInfo final : public ::google::protobuf::Message
   std::string* _internal_mutable_remark();
 
   public:
+  // string nickname = 6;
+  void clear_nickname() ;
+  const std::string& nickname() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_nickname(Arg_&& arg, Args_... args);
+  std::string* mutable_nickname();
+  PROTOBUF_NODISCARD std::string* release_nickname();
+  void set_allocated_nickname(std::string* value);
+
+  private:
+  const std::string& _internal_nickname() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_nickname(
+      const std::string& value);
+  std::string* _internal_mutable_nickname();
+
+  public:
   // int64 add_time = 3;
   void clear_add_time() ;
   ::int64_t add_time() const;
@@ -673,13 +704,33 @@ class FriendInfo final : public ::google::protobuf::Message
   void _internal_set_add_time(::int64_t value);
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.FriendInfo)
+  // uint64 friend_id = 5;
+  void clear_friend_id() ;
+  ::uint64_t friend_id() const;
+  void set_friend_id(::uint64_t value);
+
+  private:
+  ::uint64_t _internal_friend_id() const;
+  void _internal_set_friend_id(::uint64_t value);
+
+  public:
+  // .im.friend_.FriendRequestStatus status = 7;
+  void clear_status() ;
+  ::im::friend_::FriendRequestStatus status() const;
+  void set_status(::im::friend_::FriendRequestStatus value);
+
+  private:
+  ::im::friend_::FriendRequestStatus _internal_status() const;
+  void _internal_set_status(::im::friend_::FriendRequestStatus value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:im.friend_.FriendInfo)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      2, 4, 0,
-      38, 2>
+      3, 7, 0,
+      47, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -700,7 +751,10 @@ class FriendInfo final : public ::google::protobuf::Message
     ::google::protobuf::internal::CachedSize _permissions_cached_byte_size_;
     ::google::protobuf::internal::ArenaStringPtr uid_;
     ::google::protobuf::internal::ArenaStringPtr remark_;
+    ::google::protobuf::internal::ArenaStringPtr nickname_;
     ::int64_t add_time_;
+    ::uint64_t friend_id_;
+    int status_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -710,7 +764,7 @@ class FriendInfo final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class RemoveFromBlacklistResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.RemoveFromBlacklistResponse) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.RemoveFromBlacklistResponse) */ {
  public:
   inline RemoveFromBlacklistResponse() : RemoveFromBlacklistResponse(nullptr) {}
   ~RemoveFromBlacklistResponse() PROTOBUF_FINAL;
@@ -834,7 +888,7 @@ class RemoveFromBlacklistResponse final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.RemoveFromBlacklistResponse"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.RemoveFromBlacklistResponse"; }
 
  protected:
   explicit RemoveFromBlacklistResponse(::google::protobuf::Arena* arena);
@@ -872,7 +926,7 @@ class RemoveFromBlacklistResponse final : public ::google::protobuf::Message
   ::im::base::BaseResponse* _internal_mutable_base();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.RemoveFromBlacklistResponse)
+  // @@protoc_insertion_point(class_scope:im.friend_.RemoveFromBlacklistResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -906,7 +960,7 @@ class RemoveFromBlacklistResponse final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class RemoveFromBlacklistRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.RemoveFromBlacklistRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.RemoveFromBlacklistRequest) */ {
  public:
   inline RemoveFromBlacklistRequest() : RemoveFromBlacklistRequest(nullptr) {}
   ~RemoveFromBlacklistRequest() PROTOBUF_FINAL;
@@ -1030,7 +1084,7 @@ class RemoveFromBlacklistRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.RemoveFromBlacklistRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.RemoveFromBlacklistRequest"; }
 
  protected:
   explicit RemoveFromBlacklistRequest(::google::protobuf::Arena* arena);
@@ -1085,13 +1139,13 @@ class RemoveFromBlacklistRequest final : public ::google::protobuf::Message
   ::im::base::IMHeader* _internal_mutable_header();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.RemoveFromBlacklistRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.RemoveFromBlacklistRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
       1, 2, 1,
-      55, 2>
+      56, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -1120,7 +1174,7 @@ class RemoveFromBlacklistRequest final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class HandleFriendResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.HandleFriendResponse) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.HandleFriendResponse) */ {
  public:
   inline HandleFriendResponse() : HandleFriendResponse(nullptr) {}
   ~HandleFriendResponse() PROTOBUF_FINAL;
@@ -1244,7 +1298,7 @@ class HandleFriendResponse final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.HandleFriendResponse"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.HandleFriendResponse"; }
 
  protected:
   explicit HandleFriendResponse(::google::protobuf::Arena* arena);
@@ -1282,7 +1336,7 @@ class HandleFriendResponse final : public ::google::protobuf::Message
   ::im::base::BaseResponse* _internal_mutable_base();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.HandleFriendResponse)
+  // @@protoc_insertion_point(class_scope:im.friend_.HandleFriendResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -1316,7 +1370,7 @@ class HandleFriendResponse final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class HandleFriendRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.HandleFriendRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.HandleFriendRequest) */ {
  public:
   inline HandleFriendRequest() : HandleFriendRequest(nullptr) {}
   ~HandleFriendRequest() PROTOBUF_FINAL;
@@ -1440,7 +1494,7 @@ class HandleFriendRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.HandleFriendRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.HandleFriendRequest"; }
 
  protected:
   explicit HandleFriendRequest(::google::protobuf::Arena* arena);
@@ -1506,13 +1560,13 @@ class HandleFriendRequest final : public ::google::protobuf::Message
   void _internal_set_accept(bool value);
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.HandleFriendRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.HandleFriendRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
       2, 3, 1,
-      48, 2>
+      49, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -1542,7 +1596,7 @@ class HandleFriendRequest final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class GetFriendRequestsResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.GetFriendRequestsResponse) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.GetFriendRequestsResponse) */ {
  public:
   inline GetFriendRequestsResponse() : GetFriendRequestsResponse(nullptr) {}
   ~GetFriendRequestsResponse() PROTOBUF_FINAL;
@@ -1666,7 +1720,7 @@ class GetFriendRequestsResponse final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.GetFriendRequestsResponse"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.GetFriendRequestsResponse"; }
 
  protected:
   explicit GetFriendRequestsResponse(::google::protobuf::Arena* arena);
@@ -1690,7 +1744,7 @@ class GetFriendRequestsResponse final : public ::google::protobuf::Message
     kRequestsFieldNumber = 2,
     kBaseFieldNumber = 1,
   };
-  // repeated .im.friend.FriendRequest requests = 2;
+  // repeated .im.friend_.FriendRequest requests = 2;
   int requests_size() const;
   private:
   int _internal_requests_size() const;
@@ -1722,7 +1776,7 @@ class GetFriendRequestsResponse final : public ::google::protobuf::Message
   ::im::base::BaseResponse* _internal_mutable_base();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.GetFriendRequestsResponse)
+  // @@protoc_insertion_point(class_scope:im.friend_.GetFriendRequestsResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -1757,7 +1811,7 @@ class GetFriendRequestsResponse final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class GetFriendRequestsRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.GetFriendRequestsRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.GetFriendRequestsRequest) */ {
  public:
   inline GetFriendRequestsRequest() : GetFriendRequestsRequest(nullptr) {}
   ~GetFriendRequestsRequest() PROTOBUF_FINAL;
@@ -1881,7 +1935,7 @@ class GetFriendRequestsRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.GetFriendRequestsRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.GetFriendRequestsRequest"; }
 
  protected:
   explicit GetFriendRequestsRequest(::google::protobuf::Arena* arena);
@@ -1919,7 +1973,7 @@ class GetFriendRequestsRequest final : public ::google::protobuf::Message
   ::im::base::IMHeader* _internal_mutable_header();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.GetFriendRequestsRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.GetFriendRequestsRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -1953,7 +2007,7 @@ class GetFriendRequestsRequest final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class GetFriendListResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.GetFriendListResponse) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.GetFriendListResponse) */ {
  public:
   inline GetFriendListResponse() : GetFriendListResponse(nullptr) {}
   ~GetFriendListResponse() PROTOBUF_FINAL;
@@ -2077,7 +2131,7 @@ class GetFriendListResponse final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.GetFriendListResponse"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.GetFriendListResponse"; }
 
  protected:
   explicit GetFriendListResponse(::google::protobuf::Arena* arena);
@@ -2101,7 +2155,7 @@ class GetFriendListResponse final : public ::google::protobuf::Message
     kFriendsFieldNumber = 2,
     kBaseFieldNumber = 1,
   };
-  // repeated .im.friend.FriendInfo friends = 2;
+  // repeated .im.friend_.FriendInfo friends = 2;
   int friends_size() const;
   private:
   int _internal_friends_size() const;
@@ -2133,7 +2187,7 @@ class GetFriendListResponse final : public ::google::protobuf::Message
   ::im::base::BaseResponse* _internal_mutable_base();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.GetFriendListResponse)
+  // @@protoc_insertion_point(class_scope:im.friend_.GetFriendListResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -2168,7 +2222,7 @@ class GetFriendListResponse final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class GetFriendListRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.GetFriendListRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.GetFriendListRequest) */ {
  public:
   inline GetFriendListRequest() : GetFriendListRequest(nullptr) {}
   ~GetFriendListRequest() PROTOBUF_FINAL;
@@ -2292,7 +2346,7 @@ class GetFriendListRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.GetFriendListRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.GetFriendListRequest"; }
 
  protected:
   explicit GetFriendListRequest(::google::protobuf::Arena* arena);
@@ -2330,7 +2384,7 @@ class GetFriendListRequest final : public ::google::protobuf::Message
   ::im::base::IMHeader* _internal_mutable_header();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.GetFriendListRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.GetFriendListRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -2364,7 +2418,7 @@ class GetFriendListRequest final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class GetBlacklistResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.GetBlacklistResponse) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.GetBlacklistResponse) */ {
  public:
   inline GetBlacklistResponse() : GetBlacklistResponse(nullptr) {}
   ~GetBlacklistResponse() PROTOBUF_FINAL;
@@ -2488,7 +2542,7 @@ class GetBlacklistResponse final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.GetBlacklistResponse"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.GetBlacklistResponse"; }
 
  protected:
   explicit GetBlacklistResponse(::google::protobuf::Arena* arena);
@@ -2549,13 +2603,13 @@ class GetBlacklistResponse final : public ::google::protobuf::Message
   ::im::base::BaseResponse* _internal_mutable_base();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.GetBlacklistResponse)
+  // @@protoc_insertion_point(class_scope:im.friend_.GetBlacklistResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
       1, 2, 1,
-      49, 2>
+      50, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -2584,7 +2638,7 @@ class GetBlacklistResponse final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class GetBlacklistRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.GetBlacklistRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.GetBlacklistRequest) */ {
  public:
   inline GetBlacklistRequest() : GetBlacklistRequest(nullptr) {}
   ~GetBlacklistRequest() PROTOBUF_FINAL;
@@ -2708,7 +2762,7 @@ class GetBlacklistRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.GetBlacklistRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.GetBlacklistRequest"; }
 
  protected:
   explicit GetBlacklistRequest(::google::protobuf::Arena* arena);
@@ -2746,7 +2800,7 @@ class GetBlacklistRequest final : public ::google::protobuf::Message
   ::im::base::IMHeader* _internal_mutable_header();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.GetBlacklistRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.GetBlacklistRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -2780,7 +2834,7 @@ class GetBlacklistRequest final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class AddToBlacklistResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.AddToBlacklistResponse) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.AddToBlacklistResponse) */ {
  public:
   inline AddToBlacklistResponse() : AddToBlacklistResponse(nullptr) {}
   ~AddToBlacklistResponse() PROTOBUF_FINAL;
@@ -2904,7 +2958,7 @@ class AddToBlacklistResponse final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.AddToBlacklistResponse"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.AddToBlacklistResponse"; }
 
  protected:
   explicit AddToBlacklistResponse(::google::protobuf::Arena* arena);
@@ -2942,7 +2996,7 @@ class AddToBlacklistResponse final : public ::google::protobuf::Message
   ::im::base::BaseResponse* _internal_mutable_base();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.AddToBlacklistResponse)
+  // @@protoc_insertion_point(class_scope:im.friend_.AddToBlacklistResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -2976,7 +3030,7 @@ class AddToBlacklistResponse final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class AddToBlacklistRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.AddToBlacklistRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.AddToBlacklistRequest) */ {
  public:
   inline AddToBlacklistRequest() : AddToBlacklistRequest(nullptr) {}
   ~AddToBlacklistRequest() PROTOBUF_FINAL;
@@ -3100,7 +3154,7 @@ class AddToBlacklistRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.AddToBlacklistRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.AddToBlacklistRequest"; }
 
  protected:
   explicit AddToBlacklistRequest(::google::protobuf::Arena* arena);
@@ -3155,13 +3209,13 @@ class AddToBlacklistRequest final : public ::google::protobuf::Message
   ::im::base::IMHeader* _internal_mutable_header();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.AddToBlacklistRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.AddToBlacklistRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
       1, 2, 1,
-      50, 2>
+      51, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -3190,7 +3244,7 @@ class AddToBlacklistRequest final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class AddFriendResponse final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.AddFriendResponse) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.AddFriendResponse) */ {
  public:
   inline AddFriendResponse() : AddFriendResponse(nullptr) {}
   ~AddFriendResponse() PROTOBUF_FINAL;
@@ -3314,7 +3368,7 @@ class AddFriendResponse final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.AddFriendResponse"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.AddFriendResponse"; }
 
  protected:
   explicit AddFriendResponse(::google::protobuf::Arena* arena);
@@ -3353,7 +3407,7 @@ class AddFriendResponse final : public ::google::protobuf::Message
   ::im::base::BaseResponse* _internal_mutable_base();
 
   public:
-  // .im.friend.FriendRequest request = 2;
+  // .im.friend_.FriendRequest request = 2;
   bool has_request() const;
   void clear_request() ;
   const ::im::friend_::FriendRequest& request() const;
@@ -3368,7 +3422,7 @@ class AddFriendResponse final : public ::google::protobuf::Message
   ::im::friend_::FriendRequest* _internal_mutable_request();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.AddFriendResponse)
+  // @@protoc_insertion_point(class_scope:im.friend_.AddFriendResponse)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
@@ -3403,7 +3457,7 @@ class AddFriendResponse final : public ::google::protobuf::Message
 // -------------------------------------------------------------------
 
 class AddFriendRequest final : public ::google::protobuf::Message
-/* @@protoc_insertion_point(class_definition:im.friend.AddFriendRequest) */ {
+/* @@protoc_insertion_point(class_definition:im.friend_.AddFriendRequest) */ {
  public:
   inline AddFriendRequest() : AddFriendRequest(nullptr) {}
   ~AddFriendRequest() PROTOBUF_FINAL;
@@ -3527,7 +3581,7 @@ class AddFriendRequest final : public ::google::protobuf::Message
   template <typename T>
   friend ::absl::string_view(
       ::google::protobuf::internal::GetAnyMessageName)();
-  static ::absl::string_view FullMessageName() { return "im.friend.AddFriendRequest"; }
+  static ::absl::string_view FullMessageName() { return "im.friend_.AddFriendRequest"; }
 
  protected:
   explicit AddFriendRequest(::google::protobuf::Arena* arena);
@@ -3599,13 +3653,13 @@ class AddFriendRequest final : public ::google::protobuf::Message
   ::im::base::IMHeader* _internal_mutable_header();
 
   public:
-  // @@protoc_insertion_point(class_scope:im.friend.AddFriendRequest)
+  // @@protoc_insertion_point(class_scope:im.friend_.AddFriendRequest)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
       2, 3, 1,
-      48, 2>
+      49, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -3656,7 +3710,7 @@ inline void FriendInfo::clear_uid() {
 }
 inline const std::string& FriendInfo::uid() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.FriendInfo.uid)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendInfo.uid)
   return _internal_uid();
 }
 template <typename Arg_, typename... Args_>
@@ -3664,11 +3718,11 @@ inline PROTOBUF_ALWAYS_INLINE void FriendInfo::set_uid(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.FriendInfo.uid)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendInfo.uid)
 }
 inline std::string* FriendInfo::mutable_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_uid();
-  // @@protoc_insertion_point(field_mutable:im.friend.FriendInfo.uid)
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendInfo.uid)
   return _s;
 }
 inline const std::string& FriendInfo::_internal_uid() const {
@@ -3685,7 +3739,7 @@ inline std::string* FriendInfo::_internal_mutable_uid() {
 }
 inline std::string* FriendInfo::release_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.FriendInfo.uid)
+  // @@protoc_insertion_point(field_release:im.friend_.FriendInfo.uid)
   return _impl_.uid_.Release();
 }
 inline void FriendInfo::set_allocated_uid(std::string* value) {
@@ -3694,7 +3748,7 @@ inline void FriendInfo::set_allocated_uid(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.uid_.IsDefault()) {
     _impl_.uid_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.FriendInfo.uid)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendInfo.uid)
 }
 
 // string remark = 2;
@@ -3704,7 +3758,7 @@ inline void FriendInfo::clear_remark() {
 }
 inline const std::string& FriendInfo::remark() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.FriendInfo.remark)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendInfo.remark)
   return _internal_remark();
 }
 template <typename Arg_, typename... Args_>
@@ -3712,11 +3766,11 @@ inline PROTOBUF_ALWAYS_INLINE void FriendInfo::set_remark(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.remark_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.FriendInfo.remark)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendInfo.remark)
 }
 inline std::string* FriendInfo::mutable_remark() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_remark();
-  // @@protoc_insertion_point(field_mutable:im.friend.FriendInfo.remark)
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendInfo.remark)
   return _s;
 }
 inline const std::string& FriendInfo::_internal_remark() const {
@@ -3733,7 +3787,7 @@ inline std::string* FriendInfo::_internal_mutable_remark() {
 }
 inline std::string* FriendInfo::release_remark() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.FriendInfo.remark)
+  // @@protoc_insertion_point(field_release:im.friend_.FriendInfo.remark)
   return _impl_.remark_.Release();
 }
 inline void FriendInfo::set_allocated_remark(std::string* value) {
@@ -3742,7 +3796,7 @@ inline void FriendInfo::set_allocated_remark(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.remark_.IsDefault()) {
     _impl_.remark_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.FriendInfo.remark)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendInfo.remark)
 }
 
 // int64 add_time = 3;
@@ -3751,12 +3805,12 @@ inline void FriendInfo::clear_add_time() {
   _impl_.add_time_ = ::int64_t{0};
 }
 inline ::int64_t FriendInfo::add_time() const {
-  // @@protoc_insertion_point(field_get:im.friend.FriendInfo.add_time)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendInfo.add_time)
   return _internal_add_time();
 }
 inline void FriendInfo::set_add_time(::int64_t value) {
   _internal_set_add_time(value);
-  // @@protoc_insertion_point(field_set:im.friend.FriendInfo.add_time)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendInfo.add_time)
 }
 inline ::int64_t FriendInfo::_internal_add_time() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
@@ -3767,7 +3821,7 @@ inline void FriendInfo::_internal_set_add_time(::int64_t value) {
   _impl_.add_time_ = value;
 }
 
-// repeated .im.friend.FriendPermission permissions = 4;
+// repeated .im.friend_.FriendPermission permissions = 4;
 inline int FriendInfo::_internal_permissions_size() const {
   return _internal_permissions().size();
 }
@@ -3779,26 +3833,26 @@ inline void FriendInfo::clear_permissions() {
   _impl_.permissions_.Clear();
 }
 inline ::im::friend_::FriendPermission FriendInfo::permissions(int index) const {
-  // @@protoc_insertion_point(field_get:im.friend.FriendInfo.permissions)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendInfo.permissions)
   return static_cast<::im::friend_::FriendPermission>(_internal_permissions().Get(index));
 }
 inline void FriendInfo::set_permissions(int index, ::im::friend_::FriendPermission value) {
   _internal_mutable_permissions()->Set(index, value);
-  // @@protoc_insertion_point(field_set:im.friend.FriendInfo.permissions)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendInfo.permissions)
 }
 inline void FriendInfo::add_permissions(::im::friend_::FriendPermission value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _internal_mutable_permissions()->Add(value);
-  // @@protoc_insertion_point(field_add:im.friend.FriendInfo.permissions)
+  // @@protoc_insertion_point(field_add:im.friend_.FriendInfo.permissions)
 }
 inline const ::google::protobuf::RepeatedField<int>& FriendInfo::permissions() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_list:im.friend.FriendInfo.permissions)
+  // @@protoc_insertion_point(field_list:im.friend_.FriendInfo.permissions)
   return _internal_permissions();
 }
 inline ::google::protobuf::RepeatedField<int>* FriendInfo::mutable_permissions()
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable_list:im.friend.FriendInfo.permissions)
+  // @@protoc_insertion_point(field_mutable_list:im.friend_.FriendInfo.permissions)
   ::google::protobuf::internal::TSanWrite(&_impl_);
   return _internal_mutable_permissions();
 }
@@ -3812,6 +3866,98 @@ inline ::google::protobuf::RepeatedField<int>* FriendInfo::_internal_mutable_per
   return &_impl_.permissions_;
 }
 
+// uint64 friend_id = 5;
+inline void FriendInfo::clear_friend_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.friend_id_ = ::uint64_t{0u};
+}
+inline ::uint64_t FriendInfo::friend_id() const {
+  // @@protoc_insertion_point(field_get:im.friend_.FriendInfo.friend_id)
+  return _internal_friend_id();
+}
+inline void FriendInfo::set_friend_id(::uint64_t value) {
+  _internal_set_friend_id(value);
+  // @@protoc_insertion_point(field_set:im.friend_.FriendInfo.friend_id)
+}
+inline ::uint64_t FriendInfo::_internal_friend_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.friend_id_;
+}
+inline void FriendInfo::_internal_set_friend_id(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.friend_id_ = value;
+}
+
+// string nickname = 6;
+inline void FriendInfo::clear_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.ClearToEmpty();
+}
+inline const std::string& FriendInfo::nickname() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.friend_.FriendInfo.nickname)
+  return _internal_nickname();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void FriendInfo::set_nickname(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.friend_.FriendInfo.nickname)
+}
+inline std::string* FriendInfo::mutable_nickname() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_nickname();
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendInfo.nickname)
+  return _s;
+}
+inline const std::string& FriendInfo::_internal_nickname() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.nickname_.Get();
+}
+inline void FriendInfo::_internal_set_nickname(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.Set(value, GetArena());
+}
+inline std::string* FriendInfo::_internal_mutable_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.nickname_.Mutable( GetArena());
+}
+inline std::string* FriendInfo::release_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.friend_.FriendInfo.nickname)
+  return _impl_.nickname_.Release();
+}
+inline void FriendInfo::set_allocated_nickname(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.nickname_.IsDefault()) {
+    _impl_.nickname_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendInfo.nickname)
+}
+
+// .im.friend_.FriendRequestStatus status = 7;
+inline void FriendInfo::clear_status() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.status_ = 0;
+}
+inline ::im::friend_::FriendRequestStatus FriendInfo::status() const {
+  // @@protoc_insertion_point(field_get:im.friend_.FriendInfo.status)
+  return _internal_status();
+}
+inline void FriendInfo::set_status(::im::friend_::FriendRequestStatus value) {
+  _internal_set_status(value);
+  // @@protoc_insertion_point(field_set:im.friend_.FriendInfo.status)
+}
+inline ::im::friend_::FriendRequestStatus FriendInfo::_internal_status() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return static_cast<::im::friend_::FriendRequestStatus>(_impl_.status_);
+}
+inline void FriendInfo::_internal_set_status(::im::friend_::FriendRequestStatus value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.status_ = value;
+}
+
 // -------------------------------------------------------------------
 
 // FriendRequest
@@ -3823,7 +3969,7 @@ inline void FriendRequest::clear_request_id() {
 }
 inline const std::string& FriendRequest::request_id() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.FriendRequest.request_id)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.request_id)
   return _internal_request_id();
 }
 template <typename Arg_, typename... Args_>
@@ -3831,11 +3977,11 @@ inline PROTOBUF_ALWAYS_INLINE void FriendRequest::set_request_id(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.request_id_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.FriendRequest.request_id)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.request_id)
 }
 inline std::string* FriendRequest::mutable_request_id() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_request_id();
-  // @@protoc_insertion_point(field_mutable:im.friend.FriendRequest.request_id)
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendRequest.request_id)
   return _s;
 }
 inline const std::string& FriendRequest::_internal_request_id() const {
@@ -3852,7 +3998,7 @@ inline std::string* FriendRequest::_internal_mutable_request_id() {
 }
 inline std::string* FriendRequest::release_request_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.FriendRequest.request_id)
+  // @@protoc_insertion_point(field_release:im.friend_.FriendRequest.request_id)
   return _impl_.request_id_.Release();
 }
 inline void FriendRequest::set_allocated_request_id(std::string* value) {
@@ -3861,7 +4007,7 @@ inline void FriendRequest::set_allocated_request_id(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.request_id_.IsDefault()) {
     _impl_.request_id_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.FriendRequest.request_id)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendRequest.request_id)
 }
 
 // string from_uid = 2;
@@ -3871,7 +4017,7 @@ inline void FriendRequest::clear_from_uid() {
 }
 inline const std::string& FriendRequest::from_uid() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.FriendRequest.from_uid)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.from_uid)
   return _internal_from_uid();
 }
 template <typename Arg_, typename... Args_>
@@ -3879,11 +4025,11 @@ inline PROTOBUF_ALWAYS_INLINE void FriendRequest::set_from_uid(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.from_uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.FriendRequest.from_uid)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.from_uid)
 }
 inline std::string* FriendRequest::mutable_from_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_from_uid();
-  // @@protoc_insertion_point(field_mutable:im.friend.FriendRequest.from_uid)
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendRequest.from_uid)
   return _s;
 }
 inline const std::string& FriendRequest::_internal_from_uid() const {
@@ -3900,7 +4046,7 @@ inline std::string* FriendRequest::_internal_mutable_from_uid() {
 }
 inline std::string* FriendRequest::release_from_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.FriendRequest.from_uid)
+  // @@protoc_insertion_point(field_release:im.friend_.FriendRequest.from_uid)
   return _impl_.from_uid_.Release();
 }
 inline void FriendRequest::set_allocated_from_uid(std::string* value) {
@@ -3909,7 +4055,7 @@ inline void FriendRequest::set_allocated_from_uid(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.from_uid_.IsDefault()) {
     _impl_.from_uid_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.FriendRequest.from_uid)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendRequest.from_uid)
 }
 
 // string to_uid = 3;
@@ -3919,7 +4065,7 @@ inline void FriendRequest::clear_to_uid() {
 }
 inline const std::string& FriendRequest::to_uid() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.FriendRequest.to_uid)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.to_uid)
   return _internal_to_uid();
 }
 template <typename Arg_, typename... Args_>
@@ -3927,11 +4073,11 @@ inline PROTOBUF_ALWAYS_INLINE void FriendRequest::set_to_uid(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.to_uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.FriendRequest.to_uid)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.to_uid)
 }
 inline std::string* FriendRequest::mutable_to_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_to_uid();
-  // @@protoc_insertion_point(field_mutable:im.friend.FriendRequest.to_uid)
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendRequest.to_uid)
   return _s;
 }
 inline const std::string& FriendRequest::_internal_to_uid() const {
@@ -3948,7 +4094,7 @@ inline std::string* FriendRequest::_internal_mutable_to_uid() {
 }
 inline std::string* FriendRequest::release_to_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.FriendRequest.to_uid)
+  // @@protoc_insertion_point(field_release:im.friend_.FriendRequest.to_uid)
   return _impl_.to_uid_.Release();
 }
 inline void FriendRequest::set_allocated_to_uid(std::string* value) {
@@ -3957,7 +4103,7 @@ inline void FriendRequest::set_allocated_to_uid(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.to_uid_.IsDefault()) {
     _impl_.to_uid_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.FriendRequest.to_uid)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendRequest.to_uid)
 }
 
 // string message = 4;
@@ -3967,7 +4113,7 @@ inline void FriendRequest::clear_message() {
 }
 inline const std::string& FriendRequest::message() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.FriendRequest.message)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.message)
   return _internal_message();
 }
 template <typename Arg_, typename... Args_>
@@ -3975,11 +4121,11 @@ inline PROTOBUF_ALWAYS_INLINE void FriendRequest::set_message(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.message_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.FriendRequest.message)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.message)
 }
 inline std::string* FriendRequest::mutable_message() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_message();
-  // @@protoc_insertion_point(field_mutable:im.friend.FriendRequest.message)
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendRequest.message)
   return _s;
 }
 inline const std::string& FriendRequest::_internal_message() const {
@@ -3996,7 +4142,7 @@ inline std::string* FriendRequest::_internal_mutable_message() {
 }
 inline std::string* FriendRequest::release_message() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.FriendRequest.message)
+  // @@protoc_insertion_point(field_release:im.friend_.FriendRequest.message)
   return _impl_.message_.Release();
 }
 inline void FriendRequest::set_allocated_message(std::string* value) {
@@ -4005,21 +4151,21 @@ inline void FriendRequest::set_allocated_message(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.message_.IsDefault()) {
     _impl_.message_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.FriendRequest.message)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendRequest.message)
 }
 
-// .im.friend.FriendRequestStatus status = 5;
+// .im.friend_.FriendRequestStatus status = 5;
 inline void FriendRequest::clear_status() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.status_ = 0;
 }
 inline ::im::friend_::FriendRequestStatus FriendRequest::status() const {
-  // @@protoc_insertion_point(field_get:im.friend.FriendRequest.status)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.status)
   return _internal_status();
 }
 inline void FriendRequest::set_status(::im::friend_::FriendRequestStatus value) {
   _internal_set_status(value);
-  // @@protoc_insertion_point(field_set:im.friend.FriendRequest.status)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.status)
 }
 inline ::im::friend_::FriendRequestStatus FriendRequest::_internal_status() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
@@ -4036,12 +4182,12 @@ inline void FriendRequest::clear_create_time() {
   _impl_.create_time_ = ::int64_t{0};
 }
 inline ::int64_t FriendRequest::create_time() const {
-  // @@protoc_insertion_point(field_get:im.friend.FriendRequest.create_time)
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.create_time)
   return _internal_create_time();
 }
 inline void FriendRequest::set_create_time(::int64_t value) {
   _internal_set_create_time(value);
-  // @@protoc_insertion_point(field_set:im.friend.FriendRequest.create_time)
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.create_time)
 }
 inline ::int64_t FriendRequest::_internal_create_time() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
@@ -4050,6 +4196,28 @@ inline ::int64_t FriendRequest::_internal_create_time() const {
 inline void FriendRequest::_internal_set_create_time(::int64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.create_time_ = value;
+}
+
+// uint64 friend_id = 7;
+inline void FriendRequest::clear_friend_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.friend_id_ = ::uint64_t{0u};
+}
+inline ::uint64_t FriendRequest::friend_id() const {
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.friend_id)
+  return _internal_friend_id();
+}
+inline void FriendRequest::set_friend_id(::uint64_t value) {
+  _internal_set_friend_id(value);
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.friend_id)
+}
+inline ::uint64_t FriendRequest::_internal_friend_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.friend_id_;
+}
+inline void FriendRequest::_internal_set_friend_id(::uint64_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.friend_id_ = value;
 }
 
 // -------------------------------------------------------------------
@@ -4068,7 +4236,7 @@ inline const ::im::base::IMHeader& AddFriendRequest::_internal_header() const {
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::IMHeader&>(::im::base::_IMHeader_default_instance_);
 }
 inline const ::im::base::IMHeader& AddFriendRequest::header() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddFriendRequest.header)
+  // @@protoc_insertion_point(field_get:im.friend_.AddFriendRequest.header)
   return _internal_header();
 }
 inline void AddFriendRequest::unsafe_arena_set_allocated_header(::im::base::IMHeader* value) {
@@ -4082,7 +4250,7 @@ inline void AddFriendRequest::unsafe_arena_set_allocated_header(::im::base::IMHe
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.AddFriendRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.AddFriendRequest.header)
 }
 inline ::im::base::IMHeader* AddFriendRequest::release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4105,7 +4273,7 @@ inline ::im::base::IMHeader* AddFriendRequest::release_header() {
 }
 inline ::im::base::IMHeader* AddFriendRequest::unsafe_arena_release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddFriendRequest.header)
+  // @@protoc_insertion_point(field_release:im.friend_.AddFriendRequest.header)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::IMHeader* temp = _impl_.header_;
@@ -4123,7 +4291,7 @@ inline ::im::base::IMHeader* AddFriendRequest::_internal_mutable_header() {
 inline ::im::base::IMHeader* AddFriendRequest::mutable_header() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::IMHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddFriendRequest.header)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddFriendRequest.header)
   return _msg;
 }
 inline void AddFriendRequest::set_allocated_header(::im::base::IMHeader* value) {
@@ -4144,7 +4312,7 @@ inline void AddFriendRequest::set_allocated_header(::im::base::IMHeader* value) 
   }
 
   _impl_.header_ = reinterpret_cast<::im::base::IMHeader*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddFriendRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddFriendRequest.header)
 }
 
 // string to_uid = 2;
@@ -4154,7 +4322,7 @@ inline void AddFriendRequest::clear_to_uid() {
 }
 inline const std::string& AddFriendRequest::to_uid() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddFriendRequest.to_uid)
+  // @@protoc_insertion_point(field_get:im.friend_.AddFriendRequest.to_uid)
   return _internal_to_uid();
 }
 template <typename Arg_, typename... Args_>
@@ -4162,11 +4330,11 @@ inline PROTOBUF_ALWAYS_INLINE void AddFriendRequest::set_to_uid(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.to_uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.AddFriendRequest.to_uid)
+  // @@protoc_insertion_point(field_set:im.friend_.AddFriendRequest.to_uid)
 }
 inline std::string* AddFriendRequest::mutable_to_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_to_uid();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddFriendRequest.to_uid)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddFriendRequest.to_uid)
   return _s;
 }
 inline const std::string& AddFriendRequest::_internal_to_uid() const {
@@ -4183,7 +4351,7 @@ inline std::string* AddFriendRequest::_internal_mutable_to_uid() {
 }
 inline std::string* AddFriendRequest::release_to_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddFriendRequest.to_uid)
+  // @@protoc_insertion_point(field_release:im.friend_.AddFriendRequest.to_uid)
   return _impl_.to_uid_.Release();
 }
 inline void AddFriendRequest::set_allocated_to_uid(std::string* value) {
@@ -4192,7 +4360,7 @@ inline void AddFriendRequest::set_allocated_to_uid(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.to_uid_.IsDefault()) {
     _impl_.to_uid_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddFriendRequest.to_uid)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddFriendRequest.to_uid)
 }
 
 // string message = 3;
@@ -4202,7 +4370,7 @@ inline void AddFriendRequest::clear_message() {
 }
 inline const std::string& AddFriendRequest::message() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddFriendRequest.message)
+  // @@protoc_insertion_point(field_get:im.friend_.AddFriendRequest.message)
   return _internal_message();
 }
 template <typename Arg_, typename... Args_>
@@ -4210,11 +4378,11 @@ inline PROTOBUF_ALWAYS_INLINE void AddFriendRequest::set_message(Arg_&& arg,
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.message_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.AddFriendRequest.message)
+  // @@protoc_insertion_point(field_set:im.friend_.AddFriendRequest.message)
 }
 inline std::string* AddFriendRequest::mutable_message() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_message();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddFriendRequest.message)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddFriendRequest.message)
   return _s;
 }
 inline const std::string& AddFriendRequest::_internal_message() const {
@@ -4231,7 +4399,7 @@ inline std::string* AddFriendRequest::_internal_mutable_message() {
 }
 inline std::string* AddFriendRequest::release_message() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddFriendRequest.message)
+  // @@protoc_insertion_point(field_release:im.friend_.AddFriendRequest.message)
   return _impl_.message_.Release();
 }
 inline void AddFriendRequest::set_allocated_message(std::string* value) {
@@ -4240,7 +4408,7 @@ inline void AddFriendRequest::set_allocated_message(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.message_.IsDefault()) {
     _impl_.message_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddFriendRequest.message)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddFriendRequest.message)
 }
 
 // -------------------------------------------------------------------
@@ -4259,7 +4427,7 @@ inline const ::im::base::BaseResponse& AddFriendResponse::_internal_base() const
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::BaseResponse&>(::im::base::_BaseResponse_default_instance_);
 }
 inline const ::im::base::BaseResponse& AddFriendResponse::base() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddFriendResponse.base)
+  // @@protoc_insertion_point(field_get:im.friend_.AddFriendResponse.base)
   return _internal_base();
 }
 inline void AddFriendResponse::unsafe_arena_set_allocated_base(::im::base::BaseResponse* value) {
@@ -4273,7 +4441,7 @@ inline void AddFriendResponse::unsafe_arena_set_allocated_base(::im::base::BaseR
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.AddFriendResponse.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.AddFriendResponse.base)
 }
 inline ::im::base::BaseResponse* AddFriendResponse::release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4296,7 +4464,7 @@ inline ::im::base::BaseResponse* AddFriendResponse::release_base() {
 }
 inline ::im::base::BaseResponse* AddFriendResponse::unsafe_arena_release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddFriendResponse.base)
+  // @@protoc_insertion_point(field_release:im.friend_.AddFriendResponse.base)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::BaseResponse* temp = _impl_.base_;
@@ -4314,7 +4482,7 @@ inline ::im::base::BaseResponse* AddFriendResponse::_internal_mutable_base() {
 inline ::im::base::BaseResponse* AddFriendResponse::mutable_base() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::BaseResponse* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddFriendResponse.base)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddFriendResponse.base)
   return _msg;
 }
 inline void AddFriendResponse::set_allocated_base(::im::base::BaseResponse* value) {
@@ -4335,10 +4503,10 @@ inline void AddFriendResponse::set_allocated_base(::im::base::BaseResponse* valu
   }
 
   _impl_.base_ = reinterpret_cast<::im::base::BaseResponse*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddFriendResponse.base)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddFriendResponse.base)
 }
 
-// .im.friend.FriendRequest request = 2;
+// .im.friend_.FriendRequest request = 2;
 inline bool AddFriendResponse::has_request() const {
   bool value = (_impl_._has_bits_[0] & 0x00000002u) != 0;
   PROTOBUF_ASSUME(!value || _impl_.request_ != nullptr);
@@ -4355,7 +4523,7 @@ inline const ::im::friend_::FriendRequest& AddFriendResponse::_internal_request(
   return p != nullptr ? *p : reinterpret_cast<const ::im::friend_::FriendRequest&>(::im::friend_::_FriendRequest_default_instance_);
 }
 inline const ::im::friend_::FriendRequest& AddFriendResponse::request() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddFriendResponse.request)
+  // @@protoc_insertion_point(field_get:im.friend_.AddFriendResponse.request)
   return _internal_request();
 }
 inline void AddFriendResponse::unsafe_arena_set_allocated_request(::im::friend_::FriendRequest* value) {
@@ -4369,7 +4537,7 @@ inline void AddFriendResponse::unsafe_arena_set_allocated_request(::im::friend_:
   } else {
     _impl_._has_bits_[0] &= ~0x00000002u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.AddFriendResponse.request)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.AddFriendResponse.request)
 }
 inline ::im::friend_::FriendRequest* AddFriendResponse::release_request() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4392,7 +4560,7 @@ inline ::im::friend_::FriendRequest* AddFriendResponse::release_request() {
 }
 inline ::im::friend_::FriendRequest* AddFriendResponse::unsafe_arena_release_request() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddFriendResponse.request)
+  // @@protoc_insertion_point(field_release:im.friend_.AddFriendResponse.request)
 
   _impl_._has_bits_[0] &= ~0x00000002u;
   ::im::friend_::FriendRequest* temp = _impl_.request_;
@@ -4410,7 +4578,7 @@ inline ::im::friend_::FriendRequest* AddFriendResponse::_internal_mutable_reques
 inline ::im::friend_::FriendRequest* AddFriendResponse::mutable_request() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000002u;
   ::im::friend_::FriendRequest* _msg = _internal_mutable_request();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddFriendResponse.request)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddFriendResponse.request)
   return _msg;
 }
 inline void AddFriendResponse::set_allocated_request(::im::friend_::FriendRequest* value) {
@@ -4431,7 +4599,7 @@ inline void AddFriendResponse::set_allocated_request(::im::friend_::FriendReques
   }
 
   _impl_.request_ = reinterpret_cast<::im::friend_::FriendRequest*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddFriendResponse.request)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddFriendResponse.request)
 }
 
 // -------------------------------------------------------------------
@@ -4450,7 +4618,7 @@ inline const ::im::base::IMHeader& HandleFriendRequest::_internal_header() const
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::IMHeader&>(::im::base::_IMHeader_default_instance_);
 }
 inline const ::im::base::IMHeader& HandleFriendRequest::header() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.HandleFriendRequest.header)
+  // @@protoc_insertion_point(field_get:im.friend_.HandleFriendRequest.header)
   return _internal_header();
 }
 inline void HandleFriendRequest::unsafe_arena_set_allocated_header(::im::base::IMHeader* value) {
@@ -4464,7 +4632,7 @@ inline void HandleFriendRequest::unsafe_arena_set_allocated_header(::im::base::I
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.HandleFriendRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.HandleFriendRequest.header)
 }
 inline ::im::base::IMHeader* HandleFriendRequest::release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4487,7 +4655,7 @@ inline ::im::base::IMHeader* HandleFriendRequest::release_header() {
 }
 inline ::im::base::IMHeader* HandleFriendRequest::unsafe_arena_release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.HandleFriendRequest.header)
+  // @@protoc_insertion_point(field_release:im.friend_.HandleFriendRequest.header)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::IMHeader* temp = _impl_.header_;
@@ -4505,7 +4673,7 @@ inline ::im::base::IMHeader* HandleFriendRequest::_internal_mutable_header() {
 inline ::im::base::IMHeader* HandleFriendRequest::mutable_header() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::IMHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:im.friend.HandleFriendRequest.header)
+  // @@protoc_insertion_point(field_mutable:im.friend_.HandleFriendRequest.header)
   return _msg;
 }
 inline void HandleFriendRequest::set_allocated_header(::im::base::IMHeader* value) {
@@ -4526,7 +4694,7 @@ inline void HandleFriendRequest::set_allocated_header(::im::base::IMHeader* valu
   }
 
   _impl_.header_ = reinterpret_cast<::im::base::IMHeader*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.HandleFriendRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.HandleFriendRequest.header)
 }
 
 // string request_id = 2;
@@ -4536,7 +4704,7 @@ inline void HandleFriendRequest::clear_request_id() {
 }
 inline const std::string& HandleFriendRequest::request_id() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.HandleFriendRequest.request_id)
+  // @@protoc_insertion_point(field_get:im.friend_.HandleFriendRequest.request_id)
   return _internal_request_id();
 }
 template <typename Arg_, typename... Args_>
@@ -4544,11 +4712,11 @@ inline PROTOBUF_ALWAYS_INLINE void HandleFriendRequest::set_request_id(Arg_&& ar
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.request_id_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.HandleFriendRequest.request_id)
+  // @@protoc_insertion_point(field_set:im.friend_.HandleFriendRequest.request_id)
 }
 inline std::string* HandleFriendRequest::mutable_request_id() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_request_id();
-  // @@protoc_insertion_point(field_mutable:im.friend.HandleFriendRequest.request_id)
+  // @@protoc_insertion_point(field_mutable:im.friend_.HandleFriendRequest.request_id)
   return _s;
 }
 inline const std::string& HandleFriendRequest::_internal_request_id() const {
@@ -4565,7 +4733,7 @@ inline std::string* HandleFriendRequest::_internal_mutable_request_id() {
 }
 inline std::string* HandleFriendRequest::release_request_id() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.HandleFriendRequest.request_id)
+  // @@protoc_insertion_point(field_release:im.friend_.HandleFriendRequest.request_id)
   return _impl_.request_id_.Release();
 }
 inline void HandleFriendRequest::set_allocated_request_id(std::string* value) {
@@ -4574,7 +4742,7 @@ inline void HandleFriendRequest::set_allocated_request_id(std::string* value) {
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.request_id_.IsDefault()) {
     _impl_.request_id_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.HandleFriendRequest.request_id)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.HandleFriendRequest.request_id)
 }
 
 // bool accept = 3;
@@ -4583,12 +4751,12 @@ inline void HandleFriendRequest::clear_accept() {
   _impl_.accept_ = false;
 }
 inline bool HandleFriendRequest::accept() const {
-  // @@protoc_insertion_point(field_get:im.friend.HandleFriendRequest.accept)
+  // @@protoc_insertion_point(field_get:im.friend_.HandleFriendRequest.accept)
   return _internal_accept();
 }
 inline void HandleFriendRequest::set_accept(bool value) {
   _internal_set_accept(value);
-  // @@protoc_insertion_point(field_set:im.friend.HandleFriendRequest.accept)
+  // @@protoc_insertion_point(field_set:im.friend_.HandleFriendRequest.accept)
 }
 inline bool HandleFriendRequest::_internal_accept() const {
   ::google::protobuf::internal::TSanRead(&_impl_);
@@ -4615,7 +4783,7 @@ inline const ::im::base::BaseResponse& HandleFriendResponse::_internal_base() co
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::BaseResponse&>(::im::base::_BaseResponse_default_instance_);
 }
 inline const ::im::base::BaseResponse& HandleFriendResponse::base() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.HandleFriendResponse.base)
+  // @@protoc_insertion_point(field_get:im.friend_.HandleFriendResponse.base)
   return _internal_base();
 }
 inline void HandleFriendResponse::unsafe_arena_set_allocated_base(::im::base::BaseResponse* value) {
@@ -4629,7 +4797,7 @@ inline void HandleFriendResponse::unsafe_arena_set_allocated_base(::im::base::Ba
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.HandleFriendResponse.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.HandleFriendResponse.base)
 }
 inline ::im::base::BaseResponse* HandleFriendResponse::release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4652,7 +4820,7 @@ inline ::im::base::BaseResponse* HandleFriendResponse::release_base() {
 }
 inline ::im::base::BaseResponse* HandleFriendResponse::unsafe_arena_release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.HandleFriendResponse.base)
+  // @@protoc_insertion_point(field_release:im.friend_.HandleFriendResponse.base)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::BaseResponse* temp = _impl_.base_;
@@ -4670,7 +4838,7 @@ inline ::im::base::BaseResponse* HandleFriendResponse::_internal_mutable_base() 
 inline ::im::base::BaseResponse* HandleFriendResponse::mutable_base() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::BaseResponse* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:im.friend.HandleFriendResponse.base)
+  // @@protoc_insertion_point(field_mutable:im.friend_.HandleFriendResponse.base)
   return _msg;
 }
 inline void HandleFriendResponse::set_allocated_base(::im::base::BaseResponse* value) {
@@ -4691,7 +4859,7 @@ inline void HandleFriendResponse::set_allocated_base(::im::base::BaseResponse* v
   }
 
   _impl_.base_ = reinterpret_cast<::im::base::BaseResponse*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.HandleFriendResponse.base)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.HandleFriendResponse.base)
 }
 
 // -------------------------------------------------------------------
@@ -4710,7 +4878,7 @@ inline const ::im::base::IMHeader& GetFriendListRequest::_internal_header() cons
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::IMHeader&>(::im::base::_IMHeader_default_instance_);
 }
 inline const ::im::base::IMHeader& GetFriendListRequest::header() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetFriendListRequest.header)
+  // @@protoc_insertion_point(field_get:im.friend_.GetFriendListRequest.header)
   return _internal_header();
 }
 inline void GetFriendListRequest::unsafe_arena_set_allocated_header(::im::base::IMHeader* value) {
@@ -4724,7 +4892,7 @@ inline void GetFriendListRequest::unsafe_arena_set_allocated_header(::im::base::
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.GetFriendListRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.GetFriendListRequest.header)
 }
 inline ::im::base::IMHeader* GetFriendListRequest::release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4747,7 +4915,7 @@ inline ::im::base::IMHeader* GetFriendListRequest::release_header() {
 }
 inline ::im::base::IMHeader* GetFriendListRequest::unsafe_arena_release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.GetFriendListRequest.header)
+  // @@protoc_insertion_point(field_release:im.friend_.GetFriendListRequest.header)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::IMHeader* temp = _impl_.header_;
@@ -4765,7 +4933,7 @@ inline ::im::base::IMHeader* GetFriendListRequest::_internal_mutable_header() {
 inline ::im::base::IMHeader* GetFriendListRequest::mutable_header() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::IMHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:im.friend.GetFriendListRequest.header)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetFriendListRequest.header)
   return _msg;
 }
 inline void GetFriendListRequest::set_allocated_header(::im::base::IMHeader* value) {
@@ -4786,7 +4954,7 @@ inline void GetFriendListRequest::set_allocated_header(::im::base::IMHeader* val
   }
 
   _impl_.header_ = reinterpret_cast<::im::base::IMHeader*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.GetFriendListRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.GetFriendListRequest.header)
 }
 
 // -------------------------------------------------------------------
@@ -4805,7 +4973,7 @@ inline const ::im::base::BaseResponse& GetFriendListResponse::_internal_base() c
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::BaseResponse&>(::im::base::_BaseResponse_default_instance_);
 }
 inline const ::im::base::BaseResponse& GetFriendListResponse::base() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetFriendListResponse.base)
+  // @@protoc_insertion_point(field_get:im.friend_.GetFriendListResponse.base)
   return _internal_base();
 }
 inline void GetFriendListResponse::unsafe_arena_set_allocated_base(::im::base::BaseResponse* value) {
@@ -4819,7 +4987,7 @@ inline void GetFriendListResponse::unsafe_arena_set_allocated_base(::im::base::B
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.GetFriendListResponse.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.GetFriendListResponse.base)
 }
 inline ::im::base::BaseResponse* GetFriendListResponse::release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4842,7 +5010,7 @@ inline ::im::base::BaseResponse* GetFriendListResponse::release_base() {
 }
 inline ::im::base::BaseResponse* GetFriendListResponse::unsafe_arena_release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.GetFriendListResponse.base)
+  // @@protoc_insertion_point(field_release:im.friend_.GetFriendListResponse.base)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::BaseResponse* temp = _impl_.base_;
@@ -4860,7 +5028,7 @@ inline ::im::base::BaseResponse* GetFriendListResponse::_internal_mutable_base()
 inline ::im::base::BaseResponse* GetFriendListResponse::mutable_base() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::BaseResponse* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:im.friend.GetFriendListResponse.base)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetFriendListResponse.base)
   return _msg;
 }
 inline void GetFriendListResponse::set_allocated_base(::im::base::BaseResponse* value) {
@@ -4881,10 +5049,10 @@ inline void GetFriendListResponse::set_allocated_base(::im::base::BaseResponse* 
   }
 
   _impl_.base_ = reinterpret_cast<::im::base::BaseResponse*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.GetFriendListResponse.base)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.GetFriendListResponse.base)
 }
 
-// repeated .im.friend.FriendInfo friends = 2;
+// repeated .im.friend_.FriendInfo friends = 2;
 inline int GetFriendListResponse::_internal_friends_size() const {
   return _internal_friends().size();
 }
@@ -4897,29 +5065,29 @@ inline void GetFriendListResponse::clear_friends() {
 }
 inline ::im::friend_::FriendInfo* GetFriendListResponse::mutable_friends(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable:im.friend.GetFriendListResponse.friends)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetFriendListResponse.friends)
   return _internal_mutable_friends()->Mutable(index);
 }
 inline ::google::protobuf::RepeatedPtrField<::im::friend_::FriendInfo>* GetFriendListResponse::mutable_friends()
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable_list:im.friend.GetFriendListResponse.friends)
+  // @@protoc_insertion_point(field_mutable_list:im.friend_.GetFriendListResponse.friends)
   ::google::protobuf::internal::TSanWrite(&_impl_);
   return _internal_mutable_friends();
 }
 inline const ::im::friend_::FriendInfo& GetFriendListResponse::friends(int index) const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetFriendListResponse.friends)
+  // @@protoc_insertion_point(field_get:im.friend_.GetFriendListResponse.friends)
   return _internal_friends().Get(index);
 }
 inline ::im::friend_::FriendInfo* GetFriendListResponse::add_friends() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   ::im::friend_::FriendInfo* _add = _internal_mutable_friends()->Add();
-  // @@protoc_insertion_point(field_add:im.friend.GetFriendListResponse.friends)
+  // @@protoc_insertion_point(field_add:im.friend_.GetFriendListResponse.friends)
   return _add;
 }
 inline const ::google::protobuf::RepeatedPtrField<::im::friend_::FriendInfo>& GetFriendListResponse::friends() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_list:im.friend.GetFriendListResponse.friends)
+  // @@protoc_insertion_point(field_list:im.friend_.GetFriendListResponse.friends)
   return _internal_friends();
 }
 inline const ::google::protobuf::RepeatedPtrField<::im::friend_::FriendInfo>&
@@ -4949,7 +5117,7 @@ inline const ::im::base::IMHeader& GetFriendRequestsRequest::_internal_header() 
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::IMHeader&>(::im::base::_IMHeader_default_instance_);
 }
 inline const ::im::base::IMHeader& GetFriendRequestsRequest::header() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetFriendRequestsRequest.header)
+  // @@protoc_insertion_point(field_get:im.friend_.GetFriendRequestsRequest.header)
   return _internal_header();
 }
 inline void GetFriendRequestsRequest::unsafe_arena_set_allocated_header(::im::base::IMHeader* value) {
@@ -4963,7 +5131,7 @@ inline void GetFriendRequestsRequest::unsafe_arena_set_allocated_header(::im::ba
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.GetFriendRequestsRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.GetFriendRequestsRequest.header)
 }
 inline ::im::base::IMHeader* GetFriendRequestsRequest::release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -4986,7 +5154,7 @@ inline ::im::base::IMHeader* GetFriendRequestsRequest::release_header() {
 }
 inline ::im::base::IMHeader* GetFriendRequestsRequest::unsafe_arena_release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.GetFriendRequestsRequest.header)
+  // @@protoc_insertion_point(field_release:im.friend_.GetFriendRequestsRequest.header)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::IMHeader* temp = _impl_.header_;
@@ -5004,7 +5172,7 @@ inline ::im::base::IMHeader* GetFriendRequestsRequest::_internal_mutable_header(
 inline ::im::base::IMHeader* GetFriendRequestsRequest::mutable_header() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::IMHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:im.friend.GetFriendRequestsRequest.header)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetFriendRequestsRequest.header)
   return _msg;
 }
 inline void GetFriendRequestsRequest::set_allocated_header(::im::base::IMHeader* value) {
@@ -5025,7 +5193,7 @@ inline void GetFriendRequestsRequest::set_allocated_header(::im::base::IMHeader*
   }
 
   _impl_.header_ = reinterpret_cast<::im::base::IMHeader*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.GetFriendRequestsRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.GetFriendRequestsRequest.header)
 }
 
 // -------------------------------------------------------------------
@@ -5044,7 +5212,7 @@ inline const ::im::base::BaseResponse& GetFriendRequestsResponse::_internal_base
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::BaseResponse&>(::im::base::_BaseResponse_default_instance_);
 }
 inline const ::im::base::BaseResponse& GetFriendRequestsResponse::base() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetFriendRequestsResponse.base)
+  // @@protoc_insertion_point(field_get:im.friend_.GetFriendRequestsResponse.base)
   return _internal_base();
 }
 inline void GetFriendRequestsResponse::unsafe_arena_set_allocated_base(::im::base::BaseResponse* value) {
@@ -5058,7 +5226,7 @@ inline void GetFriendRequestsResponse::unsafe_arena_set_allocated_base(::im::bas
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.GetFriendRequestsResponse.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.GetFriendRequestsResponse.base)
 }
 inline ::im::base::BaseResponse* GetFriendRequestsResponse::release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -5081,7 +5249,7 @@ inline ::im::base::BaseResponse* GetFriendRequestsResponse::release_base() {
 }
 inline ::im::base::BaseResponse* GetFriendRequestsResponse::unsafe_arena_release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.GetFriendRequestsResponse.base)
+  // @@protoc_insertion_point(field_release:im.friend_.GetFriendRequestsResponse.base)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::BaseResponse* temp = _impl_.base_;
@@ -5099,7 +5267,7 @@ inline ::im::base::BaseResponse* GetFriendRequestsResponse::_internal_mutable_ba
 inline ::im::base::BaseResponse* GetFriendRequestsResponse::mutable_base() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::BaseResponse* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:im.friend.GetFriendRequestsResponse.base)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetFriendRequestsResponse.base)
   return _msg;
 }
 inline void GetFriendRequestsResponse::set_allocated_base(::im::base::BaseResponse* value) {
@@ -5120,10 +5288,10 @@ inline void GetFriendRequestsResponse::set_allocated_base(::im::base::BaseRespon
   }
 
   _impl_.base_ = reinterpret_cast<::im::base::BaseResponse*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.GetFriendRequestsResponse.base)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.GetFriendRequestsResponse.base)
 }
 
-// repeated .im.friend.FriendRequest requests = 2;
+// repeated .im.friend_.FriendRequest requests = 2;
 inline int GetFriendRequestsResponse::_internal_requests_size() const {
   return _internal_requests().size();
 }
@@ -5136,29 +5304,29 @@ inline void GetFriendRequestsResponse::clear_requests() {
 }
 inline ::im::friend_::FriendRequest* GetFriendRequestsResponse::mutable_requests(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable:im.friend.GetFriendRequestsResponse.requests)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetFriendRequestsResponse.requests)
   return _internal_mutable_requests()->Mutable(index);
 }
 inline ::google::protobuf::RepeatedPtrField<::im::friend_::FriendRequest>* GetFriendRequestsResponse::mutable_requests()
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable_list:im.friend.GetFriendRequestsResponse.requests)
+  // @@protoc_insertion_point(field_mutable_list:im.friend_.GetFriendRequestsResponse.requests)
   ::google::protobuf::internal::TSanWrite(&_impl_);
   return _internal_mutable_requests();
 }
 inline const ::im::friend_::FriendRequest& GetFriendRequestsResponse::requests(int index) const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetFriendRequestsResponse.requests)
+  // @@protoc_insertion_point(field_get:im.friend_.GetFriendRequestsResponse.requests)
   return _internal_requests().Get(index);
 }
 inline ::im::friend_::FriendRequest* GetFriendRequestsResponse::add_requests() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   ::im::friend_::FriendRequest* _add = _internal_mutable_requests()->Add();
-  // @@protoc_insertion_point(field_add:im.friend.GetFriendRequestsResponse.requests)
+  // @@protoc_insertion_point(field_add:im.friend_.GetFriendRequestsResponse.requests)
   return _add;
 }
 inline const ::google::protobuf::RepeatedPtrField<::im::friend_::FriendRequest>& GetFriendRequestsResponse::requests() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_list:im.friend.GetFriendRequestsResponse.requests)
+  // @@protoc_insertion_point(field_list:im.friend_.GetFriendRequestsResponse.requests)
   return _internal_requests();
 }
 inline const ::google::protobuf::RepeatedPtrField<::im::friend_::FriendRequest>&
@@ -5188,7 +5356,7 @@ inline const ::im::base::IMHeader& AddToBlacklistRequest::_internal_header() con
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::IMHeader&>(::im::base::_IMHeader_default_instance_);
 }
 inline const ::im::base::IMHeader& AddToBlacklistRequest::header() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddToBlacklistRequest.header)
+  // @@protoc_insertion_point(field_get:im.friend_.AddToBlacklistRequest.header)
   return _internal_header();
 }
 inline void AddToBlacklistRequest::unsafe_arena_set_allocated_header(::im::base::IMHeader* value) {
@@ -5202,7 +5370,7 @@ inline void AddToBlacklistRequest::unsafe_arena_set_allocated_header(::im::base:
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.AddToBlacklistRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.AddToBlacklistRequest.header)
 }
 inline ::im::base::IMHeader* AddToBlacklistRequest::release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -5225,7 +5393,7 @@ inline ::im::base::IMHeader* AddToBlacklistRequest::release_header() {
 }
 inline ::im::base::IMHeader* AddToBlacklistRequest::unsafe_arena_release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddToBlacklistRequest.header)
+  // @@protoc_insertion_point(field_release:im.friend_.AddToBlacklistRequest.header)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::IMHeader* temp = _impl_.header_;
@@ -5243,7 +5411,7 @@ inline ::im::base::IMHeader* AddToBlacklistRequest::_internal_mutable_header() {
 inline ::im::base::IMHeader* AddToBlacklistRequest::mutable_header() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::IMHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddToBlacklistRequest.header)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddToBlacklistRequest.header)
   return _msg;
 }
 inline void AddToBlacklistRequest::set_allocated_header(::im::base::IMHeader* value) {
@@ -5264,7 +5432,7 @@ inline void AddToBlacklistRequest::set_allocated_header(::im::base::IMHeader* va
   }
 
   _impl_.header_ = reinterpret_cast<::im::base::IMHeader*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddToBlacklistRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddToBlacklistRequest.header)
 }
 
 // string target_uid = 2;
@@ -5274,7 +5442,7 @@ inline void AddToBlacklistRequest::clear_target_uid() {
 }
 inline const std::string& AddToBlacklistRequest::target_uid() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddToBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_get:im.friend_.AddToBlacklistRequest.target_uid)
   return _internal_target_uid();
 }
 template <typename Arg_, typename... Args_>
@@ -5282,11 +5450,11 @@ inline PROTOBUF_ALWAYS_INLINE void AddToBlacklistRequest::set_target_uid(Arg_&& 
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.target_uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.AddToBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_set:im.friend_.AddToBlacklistRequest.target_uid)
 }
 inline std::string* AddToBlacklistRequest::mutable_target_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_target_uid();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddToBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddToBlacklistRequest.target_uid)
   return _s;
 }
 inline const std::string& AddToBlacklistRequest::_internal_target_uid() const {
@@ -5303,7 +5471,7 @@ inline std::string* AddToBlacklistRequest::_internal_mutable_target_uid() {
 }
 inline std::string* AddToBlacklistRequest::release_target_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddToBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_release:im.friend_.AddToBlacklistRequest.target_uid)
   return _impl_.target_uid_.Release();
 }
 inline void AddToBlacklistRequest::set_allocated_target_uid(std::string* value) {
@@ -5312,7 +5480,7 @@ inline void AddToBlacklistRequest::set_allocated_target_uid(std::string* value) 
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.target_uid_.IsDefault()) {
     _impl_.target_uid_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddToBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddToBlacklistRequest.target_uid)
 }
 
 // -------------------------------------------------------------------
@@ -5331,7 +5499,7 @@ inline const ::im::base::BaseResponse& AddToBlacklistResponse::_internal_base() 
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::BaseResponse&>(::im::base::_BaseResponse_default_instance_);
 }
 inline const ::im::base::BaseResponse& AddToBlacklistResponse::base() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.AddToBlacklistResponse.base)
+  // @@protoc_insertion_point(field_get:im.friend_.AddToBlacklistResponse.base)
   return _internal_base();
 }
 inline void AddToBlacklistResponse::unsafe_arena_set_allocated_base(::im::base::BaseResponse* value) {
@@ -5345,7 +5513,7 @@ inline void AddToBlacklistResponse::unsafe_arena_set_allocated_base(::im::base::
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.AddToBlacklistResponse.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.AddToBlacklistResponse.base)
 }
 inline ::im::base::BaseResponse* AddToBlacklistResponse::release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -5368,7 +5536,7 @@ inline ::im::base::BaseResponse* AddToBlacklistResponse::release_base() {
 }
 inline ::im::base::BaseResponse* AddToBlacklistResponse::unsafe_arena_release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.AddToBlacklistResponse.base)
+  // @@protoc_insertion_point(field_release:im.friend_.AddToBlacklistResponse.base)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::BaseResponse* temp = _impl_.base_;
@@ -5386,7 +5554,7 @@ inline ::im::base::BaseResponse* AddToBlacklistResponse::_internal_mutable_base(
 inline ::im::base::BaseResponse* AddToBlacklistResponse::mutable_base() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::BaseResponse* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:im.friend.AddToBlacklistResponse.base)
+  // @@protoc_insertion_point(field_mutable:im.friend_.AddToBlacklistResponse.base)
   return _msg;
 }
 inline void AddToBlacklistResponse::set_allocated_base(::im::base::BaseResponse* value) {
@@ -5407,7 +5575,7 @@ inline void AddToBlacklistResponse::set_allocated_base(::im::base::BaseResponse*
   }
 
   _impl_.base_ = reinterpret_cast<::im::base::BaseResponse*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.AddToBlacklistResponse.base)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.AddToBlacklistResponse.base)
 }
 
 // -------------------------------------------------------------------
@@ -5426,7 +5594,7 @@ inline const ::im::base::IMHeader& RemoveFromBlacklistRequest::_internal_header(
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::IMHeader&>(::im::base::_IMHeader_default_instance_);
 }
 inline const ::im::base::IMHeader& RemoveFromBlacklistRequest::header() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.RemoveFromBlacklistRequest.header)
+  // @@protoc_insertion_point(field_get:im.friend_.RemoveFromBlacklistRequest.header)
   return _internal_header();
 }
 inline void RemoveFromBlacklistRequest::unsafe_arena_set_allocated_header(::im::base::IMHeader* value) {
@@ -5440,7 +5608,7 @@ inline void RemoveFromBlacklistRequest::unsafe_arena_set_allocated_header(::im::
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.RemoveFromBlacklistRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.RemoveFromBlacklistRequest.header)
 }
 inline ::im::base::IMHeader* RemoveFromBlacklistRequest::release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -5463,7 +5631,7 @@ inline ::im::base::IMHeader* RemoveFromBlacklistRequest::release_header() {
 }
 inline ::im::base::IMHeader* RemoveFromBlacklistRequest::unsafe_arena_release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.RemoveFromBlacklistRequest.header)
+  // @@protoc_insertion_point(field_release:im.friend_.RemoveFromBlacklistRequest.header)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::IMHeader* temp = _impl_.header_;
@@ -5481,7 +5649,7 @@ inline ::im::base::IMHeader* RemoveFromBlacklistRequest::_internal_mutable_heade
 inline ::im::base::IMHeader* RemoveFromBlacklistRequest::mutable_header() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::IMHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:im.friend.RemoveFromBlacklistRequest.header)
+  // @@protoc_insertion_point(field_mutable:im.friend_.RemoveFromBlacklistRequest.header)
   return _msg;
 }
 inline void RemoveFromBlacklistRequest::set_allocated_header(::im::base::IMHeader* value) {
@@ -5502,7 +5670,7 @@ inline void RemoveFromBlacklistRequest::set_allocated_header(::im::base::IMHeade
   }
 
   _impl_.header_ = reinterpret_cast<::im::base::IMHeader*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.RemoveFromBlacklistRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.RemoveFromBlacklistRequest.header)
 }
 
 // string target_uid = 2;
@@ -5512,7 +5680,7 @@ inline void RemoveFromBlacklistRequest::clear_target_uid() {
 }
 inline const std::string& RemoveFromBlacklistRequest::target_uid() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.RemoveFromBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_get:im.friend_.RemoveFromBlacklistRequest.target_uid)
   return _internal_target_uid();
 }
 template <typename Arg_, typename... Args_>
@@ -5520,11 +5688,11 @@ inline PROTOBUF_ALWAYS_INLINE void RemoveFromBlacklistRequest::set_target_uid(Ar
                                                      Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.target_uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
-  // @@protoc_insertion_point(field_set:im.friend.RemoveFromBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_set:im.friend_.RemoveFromBlacklistRequest.target_uid)
 }
 inline std::string* RemoveFromBlacklistRequest::mutable_target_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   std::string* _s = _internal_mutable_target_uid();
-  // @@protoc_insertion_point(field_mutable:im.friend.RemoveFromBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_mutable:im.friend_.RemoveFromBlacklistRequest.target_uid)
   return _s;
 }
 inline const std::string& RemoveFromBlacklistRequest::_internal_target_uid() const {
@@ -5541,7 +5709,7 @@ inline std::string* RemoveFromBlacklistRequest::_internal_mutable_target_uid() {
 }
 inline std::string* RemoveFromBlacklistRequest::release_target_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.RemoveFromBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_release:im.friend_.RemoveFromBlacklistRequest.target_uid)
   return _impl_.target_uid_.Release();
 }
 inline void RemoveFromBlacklistRequest::set_allocated_target_uid(std::string* value) {
@@ -5550,7 +5718,7 @@ inline void RemoveFromBlacklistRequest::set_allocated_target_uid(std::string* va
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.target_uid_.IsDefault()) {
     _impl_.target_uid_.Set("", GetArena());
   }
-  // @@protoc_insertion_point(field_set_allocated:im.friend.RemoveFromBlacklistRequest.target_uid)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.RemoveFromBlacklistRequest.target_uid)
 }
 
 // -------------------------------------------------------------------
@@ -5569,7 +5737,7 @@ inline const ::im::base::BaseResponse& RemoveFromBlacklistResponse::_internal_ba
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::BaseResponse&>(::im::base::_BaseResponse_default_instance_);
 }
 inline const ::im::base::BaseResponse& RemoveFromBlacklistResponse::base() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.RemoveFromBlacklistResponse.base)
+  // @@protoc_insertion_point(field_get:im.friend_.RemoveFromBlacklistResponse.base)
   return _internal_base();
 }
 inline void RemoveFromBlacklistResponse::unsafe_arena_set_allocated_base(::im::base::BaseResponse* value) {
@@ -5583,7 +5751,7 @@ inline void RemoveFromBlacklistResponse::unsafe_arena_set_allocated_base(::im::b
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.RemoveFromBlacklistResponse.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.RemoveFromBlacklistResponse.base)
 }
 inline ::im::base::BaseResponse* RemoveFromBlacklistResponse::release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -5606,7 +5774,7 @@ inline ::im::base::BaseResponse* RemoveFromBlacklistResponse::release_base() {
 }
 inline ::im::base::BaseResponse* RemoveFromBlacklistResponse::unsafe_arena_release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.RemoveFromBlacklistResponse.base)
+  // @@protoc_insertion_point(field_release:im.friend_.RemoveFromBlacklistResponse.base)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::BaseResponse* temp = _impl_.base_;
@@ -5624,7 +5792,7 @@ inline ::im::base::BaseResponse* RemoveFromBlacklistResponse::_internal_mutable_
 inline ::im::base::BaseResponse* RemoveFromBlacklistResponse::mutable_base() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::BaseResponse* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:im.friend.RemoveFromBlacklistResponse.base)
+  // @@protoc_insertion_point(field_mutable:im.friend_.RemoveFromBlacklistResponse.base)
   return _msg;
 }
 inline void RemoveFromBlacklistResponse::set_allocated_base(::im::base::BaseResponse* value) {
@@ -5645,7 +5813,7 @@ inline void RemoveFromBlacklistResponse::set_allocated_base(::im::base::BaseResp
   }
 
   _impl_.base_ = reinterpret_cast<::im::base::BaseResponse*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.RemoveFromBlacklistResponse.base)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.RemoveFromBlacklistResponse.base)
 }
 
 // -------------------------------------------------------------------
@@ -5664,7 +5832,7 @@ inline const ::im::base::IMHeader& GetBlacklistRequest::_internal_header() const
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::IMHeader&>(::im::base::_IMHeader_default_instance_);
 }
 inline const ::im::base::IMHeader& GetBlacklistRequest::header() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetBlacklistRequest.header)
+  // @@protoc_insertion_point(field_get:im.friend_.GetBlacklistRequest.header)
   return _internal_header();
 }
 inline void GetBlacklistRequest::unsafe_arena_set_allocated_header(::im::base::IMHeader* value) {
@@ -5678,7 +5846,7 @@ inline void GetBlacklistRequest::unsafe_arena_set_allocated_header(::im::base::I
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.GetBlacklistRequest.header)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.GetBlacklistRequest.header)
 }
 inline ::im::base::IMHeader* GetBlacklistRequest::release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -5701,7 +5869,7 @@ inline ::im::base::IMHeader* GetBlacklistRequest::release_header() {
 }
 inline ::im::base::IMHeader* GetBlacklistRequest::unsafe_arena_release_header() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.GetBlacklistRequest.header)
+  // @@protoc_insertion_point(field_release:im.friend_.GetBlacklistRequest.header)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::IMHeader* temp = _impl_.header_;
@@ -5719,7 +5887,7 @@ inline ::im::base::IMHeader* GetBlacklistRequest::_internal_mutable_header() {
 inline ::im::base::IMHeader* GetBlacklistRequest::mutable_header() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::IMHeader* _msg = _internal_mutable_header();
-  // @@protoc_insertion_point(field_mutable:im.friend.GetBlacklistRequest.header)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetBlacklistRequest.header)
   return _msg;
 }
 inline void GetBlacklistRequest::set_allocated_header(::im::base::IMHeader* value) {
@@ -5740,7 +5908,7 @@ inline void GetBlacklistRequest::set_allocated_header(::im::base::IMHeader* valu
   }
 
   _impl_.header_ = reinterpret_cast<::im::base::IMHeader*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.GetBlacklistRequest.header)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.GetBlacklistRequest.header)
 }
 
 // -------------------------------------------------------------------
@@ -5759,7 +5927,7 @@ inline const ::im::base::BaseResponse& GetBlacklistResponse::_internal_base() co
   return p != nullptr ? *p : reinterpret_cast<const ::im::base::BaseResponse&>(::im::base::_BaseResponse_default_instance_);
 }
 inline const ::im::base::BaseResponse& GetBlacklistResponse::base() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetBlacklistResponse.base)
+  // @@protoc_insertion_point(field_get:im.friend_.GetBlacklistResponse.base)
   return _internal_base();
 }
 inline void GetBlacklistResponse::unsafe_arena_set_allocated_base(::im::base::BaseResponse* value) {
@@ -5773,7 +5941,7 @@ inline void GetBlacklistResponse::unsafe_arena_set_allocated_base(::im::base::Ba
   } else {
     _impl_._has_bits_[0] &= ~0x00000001u;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend.GetBlacklistResponse.base)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:im.friend_.GetBlacklistResponse.base)
 }
 inline ::im::base::BaseResponse* GetBlacklistResponse::release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
@@ -5796,7 +5964,7 @@ inline ::im::base::BaseResponse* GetBlacklistResponse::release_base() {
 }
 inline ::im::base::BaseResponse* GetBlacklistResponse::unsafe_arena_release_base() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  // @@protoc_insertion_point(field_release:im.friend.GetBlacklistResponse.base)
+  // @@protoc_insertion_point(field_release:im.friend_.GetBlacklistResponse.base)
 
   _impl_._has_bits_[0] &= ~0x00000001u;
   ::im::base::BaseResponse* temp = _impl_.base_;
@@ -5814,7 +5982,7 @@ inline ::im::base::BaseResponse* GetBlacklistResponse::_internal_mutable_base() 
 inline ::im::base::BaseResponse* GetBlacklistResponse::mutable_base() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   _impl_._has_bits_[0] |= 0x00000001u;
   ::im::base::BaseResponse* _msg = _internal_mutable_base();
-  // @@protoc_insertion_point(field_mutable:im.friend.GetBlacklistResponse.base)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetBlacklistResponse.base)
   return _msg;
 }
 inline void GetBlacklistResponse::set_allocated_base(::im::base::BaseResponse* value) {
@@ -5835,7 +6003,7 @@ inline void GetBlacklistResponse::set_allocated_base(::im::base::BaseResponse* v
   }
 
   _impl_.base_ = reinterpret_cast<::im::base::BaseResponse*>(value);
-  // @@protoc_insertion_point(field_set_allocated:im.friend.GetBlacklistResponse.base)
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.GetBlacklistResponse.base)
 }
 
 // repeated string black_uids = 2;
@@ -5852,17 +6020,17 @@ inline void GetBlacklistResponse::clear_black_uids() {
 inline std::string* GetBlacklistResponse::add_black_uids() ABSL_ATTRIBUTE_LIFETIME_BOUND {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   std::string* _s = _internal_mutable_black_uids()->Add();
-  // @@protoc_insertion_point(field_add_mutable:im.friend.GetBlacklistResponse.black_uids)
+  // @@protoc_insertion_point(field_add_mutable:im.friend_.GetBlacklistResponse.black_uids)
   return _s;
 }
 inline const std::string& GetBlacklistResponse::black_uids(int index) const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_get:im.friend.GetBlacklistResponse.black_uids)
+  // @@protoc_insertion_point(field_get:im.friend_.GetBlacklistResponse.black_uids)
   return _internal_black_uids().Get(index);
 }
 inline std::string* GetBlacklistResponse::mutable_black_uids(int index)
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable:im.friend.GetBlacklistResponse.black_uids)
+  // @@protoc_insertion_point(field_mutable:im.friend_.GetBlacklistResponse.black_uids)
   return _internal_mutable_black_uids()->Mutable(index);
 }
 template <typename Arg_, typename... Args_>
@@ -5870,7 +6038,7 @@ inline void GetBlacklistResponse::set_black_uids(int index, Arg_&& value, Args_.
   ::google::protobuf::internal::AssignToString(
       *_internal_mutable_black_uids()->Mutable(index),
       std::forward<Arg_>(value), args... );
-  // @@protoc_insertion_point(field_set:im.friend.GetBlacklistResponse.black_uids)
+  // @@protoc_insertion_point(field_set:im.friend_.GetBlacklistResponse.black_uids)
 }
 template <typename Arg_, typename... Args_>
 inline void GetBlacklistResponse::add_black_uids(Arg_&& value, Args_... args) {
@@ -5878,16 +6046,16 @@ inline void GetBlacklistResponse::add_black_uids(Arg_&& value, Args_... args) {
   ::google::protobuf::internal::AddToRepeatedPtrField(*_internal_mutable_black_uids(),
                                std::forward<Arg_>(value),
                                args... );
-  // @@protoc_insertion_point(field_add:im.friend.GetBlacklistResponse.black_uids)
+  // @@protoc_insertion_point(field_add:im.friend_.GetBlacklistResponse.black_uids)
 }
 inline const ::google::protobuf::RepeatedPtrField<std::string>&
 GetBlacklistResponse::black_uids() const ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_list:im.friend.GetBlacklistResponse.black_uids)
+  // @@protoc_insertion_point(field_list:im.friend_.GetBlacklistResponse.black_uids)
   return _internal_black_uids();
 }
 inline ::google::protobuf::RepeatedPtrField<std::string>*
 GetBlacklistResponse::mutable_black_uids() ABSL_ATTRIBUTE_LIFETIME_BOUND {
-  // @@protoc_insertion_point(field_mutable_list:im.friend.GetBlacklistResponse.black_uids)
+  // @@protoc_insertion_point(field_mutable_list:im.friend_.GetBlacklistResponse.black_uids)
   ::google::protobuf::internal::TSanWrite(&_impl_);
   return _internal_mutable_black_uids();
 }

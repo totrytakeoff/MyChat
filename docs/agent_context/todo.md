@@ -113,6 +113,26 @@ updated_by: coder
   `RemoteMessageClientTest` and process-level
   `RemoteMessageGatewayServerSmokeTest` verify remote mapping and unchanged
   Message HTTP contracts.
+- [x] Friend gRPC boundary first slice -
+  `common/proto/friend.proto` now defines `im.friend_.FriendService` with
+  SendRequest/RespondToRequest/GetFriends/GetPendingRequests;
+  `generate_friend_grpc` and aggregate `generate_proto` produce
+  `common/proto/friend.grpc.pb.*`; `im::friend_grpc_service` adapts generated
+  gRPC calls to the existing ODB-backed FriendService boundary behind
+  `MYCHAT_BUILD_FRIEND_GRPC_SERVICE=ON`.
+- [x] Standalone Friend server process slice -
+  `services/friend/friend_server` hosts `FriendGrpcService` around the
+  ODB-backed `FriendService` behind `MYCHAT_BUILD_FRIEND_GRPC_SERVICE=ON`.
+  `FriendServerAppTest` verifies send/respond/list through a generated gRPC
+  stub against Docker PostgreSQL.
+- [x] Gateway remote Friend client wiring -
+  `FriendHttpController` now depends on the Gateway `FriendClient` facade;
+  `LocalFriendClient` preserves the in-process `FriendService` path, and
+  `RemoteFriendClient` wraps the generated `im.friend_.FriendService::Stub`.
+  `GatewayServer` selects through `friend.mode`, defaulting to local. Focused
+  `RemoteFriendClientTest` and process-level
+  `RemoteFriendGatewayServerSmokeTest` verify remote mapping and unchanged
+  Friend HTTP contracts.
 - [x] Gateway remote PushNotifier wiring - `gateway/push/RemotePushNotifier`
   wraps the generated `im.push.PushService::Stub`; `GatewayServer` selects
   local vs. remote through `push.mode`; `config/dev.json` defaults to
@@ -175,17 +195,15 @@ updated_by: coder
 
 ## Current
 
-- [ ] Friend gRPC boundary first slice - add canonical `common/proto/friend.proto`,
-  generated gRPC outputs, `FriendGrpcService`, option-gated `friend_server`,
-  and focused service/server tests while preserving the existing FriendService
-  and Gateway Friend HTTP contracts.
+- [ ] Group gRPC boundary and standalone server process slice - define Group
+  and GroupMessage gRPC contracts, add generated adapters around the existing
+  ODB-backed services, and pin them with focused service/server tests.
 
 ## Next
 
-- [ ] Add Gateway remote Friend client facade after FriendGrpcService and
-      `friend_server` are pinned by focused tests.
-- [ ] Continue the same gRPC/server/Gateway-remote pattern for Group after
-      Friend remote path is stable.
+- [ ] Add Gateway remote Group client facades after Group gRPC/server tests are
+      pinned, preserving current Group and Group Message HTTP contracts.
+- [ ] Re-run the remote ODB regression after Group remote wiring lands.
 - [ ] Extend remote Push/Message real-server coverage only where it adds new
       signal.
 - [ ] Decide whether Redis pool sizing needs a dedicated load/benchmark

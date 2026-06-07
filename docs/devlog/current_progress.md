@@ -372,6 +372,27 @@ Known working:
 - Friend Service MVP (Phase G) is complete. Persistence model, repository,
   service, and Gateway HTTP controller have focused tests passing, API contract
   documented with TARGET_NOT_FOUND validation and HTTP status mapping.
+- Friend gRPC boundary first slice is complete behind explicit gRPC builds:
+  `common/proto/friend.proto` now defines `im.friend_.FriendService` with
+  `SendRequest`, `RespondToRequest`, `GetFriends`, and
+  `GetPendingRequests`; `common/proto/friend.pb.*` and
+  `common/proto/friend.grpc.pb.*` were regenerated through CMake
+  `generate_proto`. `services/friend/FriendGrpcService` adapts generated gRPC
+  calls to the existing ODB-backed `FriendService` semantics, and
+  `services/friend/friend_server` hosts that adapter as a standalone process
+  on `friend.listen_address` (default `0.0.0.0:9003`). The gRPC package uses
+  `im.friend_` because `friend` is a C++ keyword and the gRPC plugin does not
+  escape it safely.
+- Gateway remote Friend client wiring is complete behind explicit gRPC builds:
+  `gateway/http/FriendClient` is the local/remote facade consumed by
+  `FriendHttpController`; `LocalFriendClient` preserves the existing
+  in-process `FriendService` path, and `RemoteFriendClient` wraps the
+  generated `im.friend_.FriendService::Stub`. `GatewayServer` selects local
+  vs. remote through `friend.mode`, with `config/dev.json` defaulting to
+  `friend.mode = "local"`. `RemoteFriendGatewayServerSmokeTest` starts a real
+  `FriendServerApp` plus a real `GatewayServer` in remote Friend mode and
+  verifies request, pending, respond, and friends HTTP routes preserve the
+  current external contract through the remote Friend process.
 - Group Service MVP (Phase H) is complete. ODB schema (group + group_member),
   GroupRepository, GroupService, GroupMessageService service-level validation
   tests (17 total cases in the group test binary), Gateway HTTP controller and
@@ -381,11 +402,11 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Add Friend gRPC boundary and standalone `friend_server` behind explicit
-   build flags, preserving the existing FriendService and Gateway Friend HTTP
-   contracts.
-2. Add Gateway remote Friend client facade after the Friend gRPC service/server
-   path is pinned by focused tests, then continue the same pattern for Group.
+1. Continue the same gRPC/server/Gateway-remote pattern for Group:
+   define the Group gRPC contract, add the server adapter/process slice, then
+   add Gateway remote Group HTTP facades while preserving current external
+   HTTP contracts.
+2. Re-run a broader remote ODB regression after Group remote wiring lands.
 3. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.
 

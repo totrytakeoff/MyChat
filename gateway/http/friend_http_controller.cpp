@@ -9,14 +9,13 @@
 #include "../../common/utils/http_utils.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
-#include "../../services/friend/friend_service.hpp"
+#include "friend_client.hpp"
 
 namespace im {
 namespace gateway {
 
 using json = nlohmann::json;
 using im::service::friend_::FriendRequest;
-using im::service::friend_::FriendService;
 using im::service::friend_::FriendInfoDTO;
 using im::utils::HttpUtils;
 using im::utils::LogManager;
@@ -42,9 +41,9 @@ json friend_info_to_json(const FriendInfoDTO& info) {
 } // anonymous namespace
 
 FriendHttpController::FriendHttpController(
-    std::shared_ptr<FriendService> friend_service,
+    std::shared_ptr<FriendClient> friend_client,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr)
-    : friend_service_(std::move(friend_service))
+    : friend_client_(std::move(friend_client))
     , auth_mgr_(std::move(auth_mgr))
 {
     LogManager::SetLogToFile("friend_http_controller", "logs/friend_http_controller.log");
@@ -86,7 +85,7 @@ void FriendHttpController::handle_send_request(
         request.target_uid = target_uid;
         request.now_ms = now_ms();
 
-        auto result = friend_service_->send_request(request);
+        auto result = friend_client_->send_request(request);
 
         if (!result.ok) {
             int status = 400;
@@ -142,7 +141,7 @@ void FriendHttpController::handle_respond_request(
             return;
         }
 
-        auto result = friend_service_->respond_to_request(friend_id, user_info.user_id, accept);
+        auto result = friend_client_->respond_to_request(friend_id, user_info.user_id, accept);
 
         if (!result.ok) {
             int status = 400;
@@ -182,7 +181,7 @@ void FriendHttpController::handle_list_friends(
             return;
         }
 
-        auto friends = friend_service_->get_friends(user_info.user_id);
+        auto friends = friend_client_->get_friends(user_info.user_id);
 
         json friends_array = json::array();
         for (const auto& f : friends) {
@@ -216,7 +215,7 @@ void FriendHttpController::handle_pending_requests(
             return;
         }
 
-        auto pending = friend_service_->get_pending_requests(user_info.user_id);
+        auto pending = friend_client_->get_pending_requests(user_info.user_id);
 
         json pending_array = json::array();
         for (const auto& p : pending) {

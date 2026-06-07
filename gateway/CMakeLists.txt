@@ -115,12 +115,25 @@ else()
 endif()
 # Friend HTTP Controller — 仅当 Friend Service 可用时编译和链接
 if(TARGET im::friend_service)
-    target_sources(im_gateway_core PRIVATE http/friend_http_controller.cpp)
+    target_sources(im_gateway_core PRIVATE
+        http/friend_client.cpp
+        http/friend_http_controller.cpp
+    )
     target_link_libraries(im_gateway_core PUBLIC im::friend_service)
     target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_FRIEND_HTTP)
     message(STATUS "Friend HTTP controller enabled (im::friend_service available)")
 else()
     message(STATUS "Friend HTTP controller disabled (im::friend_service not available)")
+endif()
+
+# Remote Friend client — explicit gRPC path only.
+if(TARGET im::friend_grpc_service)
+    target_sources(im_gateway_core PRIVATE http/remote_friend_client.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::friend_grpc_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_REMOTE_FRIEND_CLIENT)
+    message(STATUS "Remote Friend client enabled (im::friend_grpc_service available)")
+else()
+    message(STATUS "Remote Friend client disabled (im::friend_grpc_service not available)")
 endif()
 
 # Group HTTP Controller — 仅当 Group Service 可用时编译和链接

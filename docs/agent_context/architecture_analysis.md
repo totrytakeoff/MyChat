@@ -122,9 +122,9 @@ the external auth/profile API.
   Mitigation: Active generated outputs live under `common/proto`; do not
   reintroduce generated files under `services/codec`.
 
-- Risk: User, Message, and Push now have pinned remote paths, but Friend and
-  Group still lack formal gRPC server/client boundaries and other services
-  still consume local service objects in-process.
+- Risk: User, Message, Push, and Friend now have pinned remote boundaries and
+  Gateway remote paths, but Group still lacks a formal gRPC server/client
+  boundary and other services still consume local service objects in-process.
   Mitigation: `common/proto/user.proto` now defines `im.user.UserService`
   Register/Login/GetUserInfo, `generate_user_grpc` produces canonical
   `common/proto/user.grpc.pb.*`, `services/user/UserGrpcService` maps generated
@@ -137,8 +137,13 @@ the external auth/profile API.
   ODB-backed MessageService. `services/message/message_server` hosts the
   adapter as a standalone process, and Gateway Message HTTP/WS plus Push
   delivered marking can use `RemoteMessageClient` when `message.mode=remote`.
-  Keep Friend/Group gRPC contracts, Gateway remote Friend/Group facades, and
-  service-to-service User lookups as explicit follow-up slices.
+  `common/proto/friend.proto` now defines `im.friend_.FriendService`,
+  `generate_friend_grpc` produces canonical `common/proto/friend.grpc.pb.*`,
+  and `services/friend/FriendGrpcService` maps generated gRPC calls to the
+  ODB-backed FriendService. `services/friend/friend_server` hosts the adapter
+  as a standalone process. Gateway Friend HTTP can use `RemoteFriendClient`
+  when `friend.mode=remote`. Keep Group gRPC contracts, Gateway remote Group
+  facades, and service-to-service User lookups as explicit follow-up slices.
 
 - Risk: PostgreSQL migration startup policy is not decided yet.
   Mitigation: `db/migrations/001_core_schema.sql` and
@@ -158,8 +163,8 @@ the external auth/profile API.
 
 ## Review Questions
 
-1. Should Friend gRPC be split into request/respond/list/pending methods that
-   mirror `FriendService`, or should it expose a coarser command-style API?
+1. Should Group gRPC be split into separate Group and GroupMessage services, or
+   one combined gRPC service matching the current HTTP surface?
 2. Should Friend/Group gRPC boundaries call remote User directly for existence
    checks, or should they keep receiving a local UserService-compatible facade
    until all service processes are split?

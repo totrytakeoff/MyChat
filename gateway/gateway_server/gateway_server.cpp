@@ -144,6 +144,7 @@ void register_message_http_routes_on_server(httplib::Server& server,
 
 #ifdef IM_ENABLE_FRIEND_HTTP
 #include "../http/friend_http_controller.hpp"
+#include "../http/friend_client.hpp"
 #include "../../services/friend/friend_service.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
@@ -167,6 +168,10 @@ void register_friend_http_routes_on_server(httplib::Server& server,
             controller.handle_pending_requests(req, res);
         });
 }
+#endif
+
+#ifdef IM_ENABLE_REMOTE_FRIEND_CLIENT
+#include "../http/remote_friend_client.hpp"
 #endif
 
 #ifdef IM_ENABLE_GROUP_HTTP
@@ -227,7 +232,7 @@ namespace gateway {
 
 namespace {
 
-#if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
+#if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_FRIEND_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
 bool is_blank(const std::string& value) {
     return value.find_first_not_of(" \t\n\r\f\v") == std::string::npos;
 }
@@ -671,10 +676,49 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
 #ifdef IM_ENABLE_FRIEND_HTTP
         try {
-            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
-            auto friend_svc = std::make_shared<im::service::friend_::FriendService>(odb_db_, user_svc);
-            friend_http_controller_ = std::make_unique<FriendHttpController>(friend_svc, auth_mgr_);
+            ConfigManager friend_cfg(config_path_);
+            const std::string friend_mode =
+                friend_cfg.get<std::string>("friend.mode", "local");
+
+#ifdef IM_ENABLE_REMOTE_FRIEND_CLIENT
+            if (friend_mode == "remote") {
+                const int friend_timeout_ms =
+                    friend_cfg.get<int>("friend.timeout_ms", 200);
+                const std::string endpoint =
+                    require_non_blank_config(friend_cfg,
+                                             "friend.remote_endpoint",
+                                             "friend.mode=remote");
+                friend_client_ = std::make_shared<RemoteFriendClient>(
+                    endpoint, std::chrono::milliseconds(friend_timeout_ms));
+                server_logger->info(
+                    "Remote Friend client initialized for endpoint {} with timeout {} ms",
+                    endpoint, friend_timeout_ms);
+            }
+#else
+            if (friend_mode == "remote") {
+                server_logger->warn(
+                    "friend.mode=remote requested but RemoteFriendClient is not compiled; "
+                    "falling back to local FriendService");
+            }
+#endif
+
+            if (!friend_client_) {
+                if (friend_mode != "local" && friend_mode != "remote") {
+                    server_logger->warn(
+                        "Unknown friend.mode='{}'; falling back to local FriendService",
+                        friend_mode);
+                }
+                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+                auto user_svc = std::make_shared<im::service::user::UserService>(
+                    odb_db_, std::move(hasher));
+                auto friend_svc = std::make_shared<im::service::friend_::FriendService>(
+                    odb_db_, user_svc);
+                friend_client_ = std::make_shared<LocalFriendClient>(friend_svc);
+                server_logger->info("Local Friend client initialized");
+            }
+
+            friend_http_controller_ = std::make_unique<FriendHttpController>(
+                friend_client_, auth_mgr_);
             server_logger->info("Friend HTTP controller initialized");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Friend HTTP controller: {}", e.what());

@@ -7,11 +7,8 @@
 #include <httplib.h>
 #include <spdlog/logger.h>
 
-namespace im::service::friend_ {
-class FriendService;
-}
-
 namespace im::gateway {
+class FriendClient;
 class MultiPlatformAuthManager;
 }
 
@@ -26,7 +23,7 @@ namespace gateway {
 class FriendHttpController {
 public:
     FriendHttpController(
-        std::shared_ptr<im::service::friend_::FriendService> friend_service,
+        std::shared_ptr<FriendClient> friend_client,
         std::shared_ptr<MultiPlatformAuthManager> auth_mgr
     );
 
@@ -38,7 +35,7 @@ public:
 private:
     std::string extract_bearer_token(const httplib::Request& req) const;
 
-    std::shared_ptr<im::service::friend_::FriendService> friend_service_;
+    std::shared_ptr<FriendClient> friend_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<spdlog::logger> logger_;
 };

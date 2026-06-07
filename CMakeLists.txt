@@ -29,6 +29,7 @@ option(MYCHAT_BUILD_USER_GRPC_SERVICE "Build User gRPC boundary target (requires
 option(MYCHAT_BUILD_MESSAGE_SERVICE "Build Message Service target (requires ODB)" ON)
 option(MYCHAT_BUILD_MESSAGE_GRPC_SERVICE "Build Message gRPC boundary target (requires gRPC)" OFF)
 option(MYCHAT_BUILD_FRIEND_SERVICE "Build Friend Service target (requires ODB and User Service)" ON)
+option(MYCHAT_BUILD_FRIEND_GRPC_SERVICE "Build Friend gRPC boundary target (requires gRPC)" OFF)
 option(MYCHAT_BUILD_GROUP_SERVICE "Build Group Service target (requires ODB and User Service)" ON)
 option(MYCHAT_BUILD_PUSH_SERVICE "Build Push Service boundary target" ON)
 option(MYCHAT_BUILD_PUSH_GRPC_SERVICE "Build Push gRPC boundary target (requires gRPC)" OFF)
@@ -77,7 +78,7 @@ find_package(hiredis CONFIG QUIET)
 find_package(jwt-cpp CONFIG QUIET)
 find_package(httplib CONFIG QUIET)
 find_package(unofficial-libuuid CONFIG QUIET)
-if(MYCHAT_BUILD_CODEC_SERVICE OR MYCHAT_BUILD_PUSH_GRPC_SERVICE OR MYCHAT_BUILD_USER_GRPC_SERVICE OR MYCHAT_BUILD_MESSAGE_GRPC_SERVICE)
+if(MYCHAT_BUILD_CODEC_SERVICE OR MYCHAT_BUILD_PUSH_GRPC_SERVICE OR MYCHAT_BUILD_USER_GRPC_SERVICE OR MYCHAT_BUILD_MESSAGE_GRPC_SERVICE OR MYCHAT_BUILD_FRIEND_GRPC_SERVICE)
     find_package(gRPC CONFIG QUIET)
 endif()
 
@@ -264,6 +265,7 @@ endif()
 
 set(MYCHAT_GRPC_PROTO_NAMES
     codec_service
+    friend
     message
     push
     user

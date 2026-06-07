@@ -71,7 +71,7 @@ namespace im::gateway { class GatewayPushDeliveryService; }
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
-namespace im::service::friend_ { class FriendService; }
+namespace im::gateway { class FriendClient; }
 namespace im::gateway { class FriendHttpController; }
 #endif
 
@@ -248,6 +248,7 @@ private:
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
+    std::shared_ptr<FriendClient> friend_client_;
     std::unique_ptr<FriendHttpController> friend_http_controller_;
 #endif
 
