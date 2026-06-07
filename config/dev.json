@@ -44,6 +44,12 @@
     "remote_endpoint": "127.0.0.1:9003",
     "timeout_ms": 200
   },
+  "group": {
+    "mode": "local",
+    "listen_address": "0.0.0.0:9004",
+    "remote_endpoint": "127.0.0.1:9004",
+    "timeout_ms": 200
+  },
   "push": {
     "mode": "local",
     "listen_address": "0.0.0.0:9101",

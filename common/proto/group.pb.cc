@@ -27,6 +27,42 @@ namespace _fl = ::google::protobuf::internal::field_layout;
 namespace im {
 namespace group {
 
+inline constexpr GroupMessage::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : sender_uid_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        sender_nickname_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        content_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        msg_id_{::uint64_t{0u}},
+        group_id_{::uint64_t{0u}},
+        create_time_{::int64_t{0}},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR GroupMessage::GroupMessage(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct GroupMessageDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GroupMessageDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GroupMessageDefaultTypeInternal() {}
+  union {
+    GroupMessage _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GroupMessageDefaultTypeInternal _GroupMessage_default_instance_;
+
 inline constexpr GroupMember::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : uid_(
@@ -38,6 +74,7 @@ inline constexpr GroupMember::Impl_::Impl_(
         role_{static_cast< ::im::group::GroupRole >(0)},
         is_muted_{0},
         join_time_{::int64_t{0}},
+        member_record_id_{::uint64_t{0u}},
         _cached_size_{0} {}
 
 template <typename>
@@ -79,6 +116,8 @@ inline constexpr GroupInfo::Impl_::Impl_(
             ::_pbi::ConstantInitialized()),
         create_time_{::int64_t{0}},
         is_muted_{0},
+        member_count_{0},
+        group_record_id_{::uint64_t{0u}},
         _cached_size_{0} {}
 
 template <typename>
@@ -214,6 +253,62 @@ struct SetGroupAdminRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SetGroupAdminRequestDefaultTypeInternal _SetGroupAdminRequest_default_instance_;
 
+inline constexpr SendGroupMessageResponse::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        base_{nullptr},
+        message_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR SendGroupMessageResponse::SendGroupMessageResponse(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct SendGroupMessageResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SendGroupMessageResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SendGroupMessageResponseDefaultTypeInternal() {}
+  union {
+    SendGroupMessageResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SendGroupMessageResponseDefaultTypeInternal _SendGroupMessageResponse_default_instance_;
+
+inline constexpr SendGroupMessageRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        content_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        header_{nullptr},
+        group_id_{::uint64_t{0u}},
+        create_time_{::int64_t{0}} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR SendGroupMessageRequest::SendGroupMessageRequest(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct SendGroupMessageRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SendGroupMessageRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SendGroupMessageRequestDefaultTypeInternal() {}
+  union {
+    SendGroupMessageRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SendGroupMessageRequestDefaultTypeInternal _SendGroupMessageRequest_default_instance_;
+
 inline constexpr QuitGroupResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -330,6 +425,32 @@ struct ModifyGroupInfoRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ModifyGroupInfoRequestDefaultTypeInternal _ModifyGroupInfoRequest_default_instance_;
 
+inline constexpr LeaveGroupRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        header_{nullptr},
+        group_id_{::uint64_t{0u}} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR LeaveGroupRequest::LeaveGroupRequest(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct LeaveGroupRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR LeaveGroupRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~LeaveGroupRequestDefaultTypeInternal() {}
+  union {
+    LeaveGroupRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 LeaveGroupRequestDefaultTypeInternal _LeaveGroupRequest_default_instance_;
+
 inline constexpr KickMemberResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -383,6 +504,32 @@ struct KickMemberRequestDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 KickMemberRequestDefaultTypeInternal _KickMemberRequest_default_instance_;
+
+inline constexpr JoinGroupRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        header_{nullptr},
+        group_id_{::uint64_t{0u}} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR JoinGroupRequest::JoinGroupRequest(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct JoinGroupRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR JoinGroupRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~JoinGroupRequestDefaultTypeInternal() {}
+  union {
+    JoinGroupRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 JoinGroupRequestDefaultTypeInternal _JoinGroupRequest_default_instance_;
 
 inline constexpr InviteMemberResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -438,6 +585,31 @@ struct InviteMemberRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 InviteMemberRequestDefaultTypeInternal _InviteMemberRequest_default_instance_;
 
+inline constexpr GroupActionResponse::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        base_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR GroupActionResponse::GroupActionResponse(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct GroupActionResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GroupActionResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GroupActionResponseDefaultTypeInternal() {}
+  union {
+    GroupActionResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GroupActionResponseDefaultTypeInternal _GroupActionResponse_default_instance_;
+
 inline constexpr GetGroupMessagesResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -472,6 +644,7 @@ inline constexpr GetGroupMessagesRequest::Impl_::Impl_(
             ::_pbi::ConstantInitialized()),
         header_{nullptr},
         since_{::int64_t{0}},
+        group_record_id_{::uint64_t{0u}},
         limit_{0} {}
 
 template <typename>
@@ -526,7 +699,8 @@ inline constexpr GetGroupMembersRequest::Impl_::Impl_(
         group_id_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
-        header_{nullptr} {}
+        header_{nullptr},
+        group_record_id_{::uint64_t{0u}} {}
 
 template <typename>
 PROTOBUF_CONSTEXPR GetGroupMembersRequest::GetGroupMembersRequest(::_pbi::ConstantInitialized)
@@ -658,7 +832,8 @@ inline constexpr CreateGroupResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
         base_{nullptr},
-        group_{nullptr} {}
+        group_{nullptr},
+        group_id_{::uint64_t{0u}} {}
 
 template <typename>
 PROTOBUF_CONSTEXPR CreateGroupResponse::CreateGroupResponse(::_pbi::ConstantInitialized)
@@ -790,6 +965,8 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::group::GroupInfo, _impl_.owner_uid_),
         PROTOBUF_FIELD_OFFSET(::im::group::GroupInfo, _impl_.is_muted_),
         PROTOBUF_FIELD_OFFSET(::im::group::GroupInfo, _impl_.create_time_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupInfo, _impl_.group_record_id_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupInfo, _impl_.member_count_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::im::group::GroupMember, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -803,6 +980,21 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::group::GroupMember, _impl_.nickname_),
         PROTOBUF_FIELD_OFFSET(::im::group::GroupMember, _impl_.is_muted_),
         PROTOBUF_FIELD_OFFSET(::im::group::GroupMember, _impl_.join_time_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMember, _impl_.member_record_id_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMessage, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMessage, _impl_.msg_id_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMessage, _impl_.group_id_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMessage, _impl_.sender_uid_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMessage, _impl_.sender_nickname_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMessage, _impl_.content_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupMessage, _impl_.create_time_),
         PROTOBUF_FIELD_OFFSET(::im::group::CreateGroupRequest, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::group::CreateGroupRequest, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -829,8 +1021,44 @@ const ::uint32_t
         ~0u,  // no sizeof(Split)
         PROTOBUF_FIELD_OFFSET(::im::group::CreateGroupResponse, _impl_.base_),
         PROTOBUF_FIELD_OFFSET(::im::group::CreateGroupResponse, _impl_.group_),
+        PROTOBUF_FIELD_OFFSET(::im::group::CreateGroupResponse, _impl_.group_id_),
         0,
         1,
+        ~0u,
+        PROTOBUF_FIELD_OFFSET(::im::group::JoinGroupRequest, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::group::JoinGroupRequest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::group::JoinGroupRequest, _impl_.header_),
+        PROTOBUF_FIELD_OFFSET(::im::group::JoinGroupRequest, _impl_.group_id_),
+        0,
+        ~0u,
+        PROTOBUF_FIELD_OFFSET(::im::group::LeaveGroupRequest, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::group::LeaveGroupRequest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::group::LeaveGroupRequest, _impl_.header_),
+        PROTOBUF_FIELD_OFFSET(::im::group::LeaveGroupRequest, _impl_.group_id_),
+        0,
+        ~0u,
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupActionResponse, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupActionResponse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::group::GroupActionResponse, _impl_.base_),
+        0,
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupInfoRequest, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupInfoRequest, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1013,7 +1241,9 @@ const ::uint32_t
         ~0u,  // no sizeof(Split)
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMembersRequest, _impl_.header_),
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMembersRequest, _impl_.group_id_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMembersRequest, _impl_.group_record_id_),
         0,
+        ~0u,
         ~0u,
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMembersResponse, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMembersResponse, _internal_metadata_),
@@ -1039,7 +1269,9 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMessagesRequest, _impl_.group_id_),
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMessagesRequest, _impl_.since_),
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMessagesRequest, _impl_.limit_),
+        PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMessagesRequest, _impl_.group_record_id_),
         0,
+        ~0u,
         ~0u,
         ~0u,
         ~0u,
@@ -1055,6 +1287,34 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::group::GetGroupMessagesResponse, _impl_.messages_),
         0,
         ~0u,
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageRequest, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageRequest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageRequest, _impl_.header_),
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageRequest, _impl_.group_id_),
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageRequest, _impl_.content_),
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageRequest, _impl_.create_time_),
+        0,
+        ~0u,
+        ~0u,
+        ~0u,
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageResponse, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageResponse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageResponse, _impl_.base_),
+        PROTOBUF_FIELD_OFFSET(::im::group::SendGroupMessageResponse, _impl_.message_),
+        0,
+        1,
         PROTOBUF_FIELD_OFFSET(::im::group::TransferGroupOwnerRequest, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::group::TransferGroupOwnerRequest, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1110,37 +1370,47 @@ const ::uint32_t
 static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::im::group::GroupInfo)},
-        {15, -1, -1, sizeof(::im::group::GroupMember)},
-        {28, 40, -1, sizeof(::im::group::CreateGroupRequest)},
-        {44, 54, -1, sizeof(::im::group::CreateGroupResponse)},
-        {56, 66, -1, sizeof(::im::group::GetGroupInfoRequest)},
-        {68, 79, -1, sizeof(::im::group::GetGroupInfoResponse)},
-        {82, 91, -1, sizeof(::im::group::GetGroupListRequest)},
-        {92, 102, -1, sizeof(::im::group::GetGroupListResponse)},
-        {104, 117, -1, sizeof(::im::group::ModifyGroupInfoRequest)},
-        {122, 132, -1, sizeof(::im::group::ModifyGroupInfoResponse)},
-        {134, 145, -1, sizeof(::im::group::InviteMemberRequest)},
-        {148, 157, -1, sizeof(::im::group::InviteMemberResponse)},
-        {158, 169, -1, sizeof(::im::group::KickMemberRequest)},
-        {172, 181, -1, sizeof(::im::group::KickMemberResponse)},
-        {182, 193, -1, sizeof(::im::group::ApplyJoinGroupRequest)},
-        {196, 205, -1, sizeof(::im::group::ApplyJoinGroupResponse)},
-        {206, 216, -1, sizeof(::im::group::QuitGroupRequest)},
-        {218, 227, -1, sizeof(::im::group::QuitGroupResponse)},
-        {228, 238, -1, sizeof(::im::group::GetGroupMembersRequest)},
-        {240, 250, -1, sizeof(::im::group::GetGroupMembersResponse)},
-        {252, 264, -1, sizeof(::im::group::GetGroupMessagesRequest)},
-        {268, 278, -1, sizeof(::im::group::GetGroupMessagesResponse)},
-        {280, 291, -1, sizeof(::im::group::TransferGroupOwnerRequest)},
-        {294, 303, -1, sizeof(::im::group::TransferGroupOwnerResponse)},
-        {304, 316, -1, sizeof(::im::group::SetGroupAdminRequest)},
-        {320, 329, -1, sizeof(::im::group::SetGroupAdminResponse)},
+        {17, -1, -1, sizeof(::im::group::GroupMember)},
+        {31, -1, -1, sizeof(::im::group::GroupMessage)},
+        {45, 57, -1, sizeof(::im::group::CreateGroupRequest)},
+        {61, 72, -1, sizeof(::im::group::CreateGroupResponse)},
+        {75, 85, -1, sizeof(::im::group::JoinGroupRequest)},
+        {87, 97, -1, sizeof(::im::group::LeaveGroupRequest)},
+        {99, 108, -1, sizeof(::im::group::GroupActionResponse)},
+        {109, 119, -1, sizeof(::im::group::GetGroupInfoRequest)},
+        {121, 132, -1, sizeof(::im::group::GetGroupInfoResponse)},
+        {135, 144, -1, sizeof(::im::group::GetGroupListRequest)},
+        {145, 155, -1, sizeof(::im::group::GetGroupListResponse)},
+        {157, 170, -1, sizeof(::im::group::ModifyGroupInfoRequest)},
+        {175, 185, -1, sizeof(::im::group::ModifyGroupInfoResponse)},
+        {187, 198, -1, sizeof(::im::group::InviteMemberRequest)},
+        {201, 210, -1, sizeof(::im::group::InviteMemberResponse)},
+        {211, 222, -1, sizeof(::im::group::KickMemberRequest)},
+        {225, 234, -1, sizeof(::im::group::KickMemberResponse)},
+        {235, 246, -1, sizeof(::im::group::ApplyJoinGroupRequest)},
+        {249, 258, -1, sizeof(::im::group::ApplyJoinGroupResponse)},
+        {259, 269, -1, sizeof(::im::group::QuitGroupRequest)},
+        {271, 280, -1, sizeof(::im::group::QuitGroupResponse)},
+        {281, 292, -1, sizeof(::im::group::GetGroupMembersRequest)},
+        {295, 305, -1, sizeof(::im::group::GetGroupMembersResponse)},
+        {307, 320, -1, sizeof(::im::group::GetGroupMessagesRequest)},
+        {325, 335, -1, sizeof(::im::group::GetGroupMessagesResponse)},
+        {337, 349, -1, sizeof(::im::group::SendGroupMessageRequest)},
+        {353, 363, -1, sizeof(::im::group::SendGroupMessageResponse)},
+        {365, 376, -1, sizeof(::im::group::TransferGroupOwnerRequest)},
+        {379, 388, -1, sizeof(::im::group::TransferGroupOwnerResponse)},
+        {389, 401, -1, sizeof(::im::group::SetGroupAdminRequest)},
+        {405, 414, -1, sizeof(::im::group::SetGroupAdminResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::im::group::_GroupInfo_default_instance_._instance,
     &::im::group::_GroupMember_default_instance_._instance,
+    &::im::group::_GroupMessage_default_instance_._instance,
     &::im::group::_CreateGroupRequest_default_instance_._instance,
     &::im::group::_CreateGroupResponse_default_instance_._instance,
+    &::im::group::_JoinGroupRequest_default_instance_._instance,
+    &::im::group::_LeaveGroupRequest_default_instance_._instance,
+    &::im::group::_GroupActionResponse_default_instance_._instance,
     &::im::group::_GetGroupInfoRequest_default_instance_._instance,
     &::im::group::_GetGroupInfoResponse_default_instance_._instance,
     &::im::group::_GetGroupListRequest_default_instance_._instance,
@@ -1159,6 +1429,8 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::im::group::_GetGroupMembersResponse_default_instance_._instance,
     &::im::group::_GetGroupMessagesRequest_default_instance_._instance,
     &::im::group::_GetGroupMessagesResponse_default_instance_._instance,
+    &::im::group::_SendGroupMessageRequest_default_instance_._instance,
+    &::im::group::_SendGroupMessageResponse_default_instance_._instance,
     &::im::group::_TransferGroupOwnerRequest_default_instance_._instance,
     &::im::group::_TransferGroupOwnerResponse_default_instance_._instance,
     &::im::group::_SetGroupAdminRequest_default_instance_._instance,
@@ -1166,68 +1438,101 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 const char descriptor_table_protodef_group_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\013group.proto\022\010im.group\032\nbase.proto\"\205\001\n\t"
+    "\n\013group.proto\022\010im.group\032\nbase.proto\"\264\001\n\t"
     "GroupInfo\022\020\n\010group_id\030\001 \001(\t\022\014\n\004name\030\002 \001("
     "\t\022\016\n\006avatar\030\003 \001(\t\022\016\n\006notice\030\004 \001(\t\022\021\n\town"
     "er_uid\030\005 \001(\t\022\020\n\010is_muted\030\006 \001(\005\022\023\n\013create"
-    "_time\030\007 \001(\003\"t\n\013GroupMember\022\013\n\003uid\030\001 \001(\t\022"
-    "!\n\004role\030\002 \001(\0162\023.im.group.GroupRole\022\020\n\010ni"
-    "ckname\030\003 \001(\t\022\020\n\010is_muted\030\004 \001(\005\022\021\n\tjoin_t"
-    "ime\030\005 \001(\003\"f\n\022CreateGroupRequest\022!\n\006heade"
-    "r\030\001 \001(\0132\021.im.base.IMHeader\022\014\n\004name\030\002 \001(\t"
-    "\022\016\n\006avatar\030\003 \001(\t\022\017\n\007members\030\004 \003(\t\"^\n\023Cre"
-    "ateGroupResponse\022#\n\004base\030\001 \001(\0132\025.im.base"
-    ".BaseResponse\022\"\n\005group\030\002 \001(\0132\023.im.group."
-    "GroupInfo\"J\n\023GetGroupInfoRequest\022!\n\006head"
-    "er\030\001 \001(\0132\021.im.base.IMHeader\022\020\n\010group_id\030"
-    "\002 \001(\t\"\207\001\n\024GetGroupInfoResponse\022#\n\004base\030\001"
-    " \001(\0132\025.im.base.BaseResponse\022\"\n\005group\030\002 \001"
-    "(\0132\023.im.group.GroupInfo\022&\n\007members\030\003 \003(\013"
-    "2\025.im.group.GroupMember\"8\n\023GetGroupListR"
-    "equest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeade"
-    "r\"`\n\024GetGroupListResponse\022#\n\004base\030\001 \001(\0132"
-    "\025.im.base.BaseResponse\022#\n\006groups\030\002 \003(\0132\023"
-    ".im.group.GroupInfo\"{\n\026ModifyGroupInfoRe"
-    "quest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeader"
-    "\022\020\n\010group_id\030\002 \001(\t\022\014\n\004name\030\003 \001(\t\022\016\n\006avat"
-    "ar\030\004 \001(\t\022\016\n\006notice\030\005 \001(\t\"b\n\027ModifyGroupI"
-    "nfoResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Base"
-    "Response\022\"\n\005group\030\002 \001(\0132\023.im.group.Group"
-    "Info\"_\n\023InviteMemberRequest\022!\n\006header\030\001 "
-    "\001(\0132\021.im.base.IMHeader\022\020\n\010group_id\030\002 \001(\t"
-    "\022\023\n\013invite_uids\030\003 \003(\t\";\n\024InviteMemberRes"
+    "_time\030\007 \001(\003\022\027\n\017group_record_id\030\010 \001(\004\022\024\n\014"
+    "member_count\030\t \001(\005\"\216\001\n\013GroupMember\022\013\n\003ui"
+    "d\030\001 \001(\t\022!\n\004role\030\002 \001(\0162\023.im.group.GroupRo"
+    "le\022\020\n\010nickname\030\003 \001(\t\022\020\n\010is_muted\030\004 \001(\005\022\021"
+    "\n\tjoin_time\030\005 \001(\003\022\030\n\020member_record_id\030\006 "
+    "\001(\004\"\203\001\n\014GroupMessage\022\016\n\006msg_id\030\001 \001(\004\022\020\n\010"
+    "group_id\030\002 \001(\004\022\022\n\nsender_uid\030\003 \001(\t\022\027\n\017se"
+    "nder_nickname\030\004 \001(\t\022\017\n\007content\030\005 \001(\t\022\023\n\013"
+    "create_time\030\006 \001(\003\"f\n\022CreateGroupRequest\022"
+    "!\n\006header\030\001 \001(\0132\021.im.base.IMHeader\022\014\n\004na"
+    "me\030\002 \001(\t\022\016\n\006avatar\030\003 \001(\t\022\017\n\007members\030\004 \003("
+    "\t\"p\n\023CreateGroupResponse\022#\n\004base\030\001 \001(\0132\025"
+    ".im.base.BaseResponse\022\"\n\005group\030\002 \001(\0132\023.i"
+    "m.group.GroupInfo\022\020\n\010group_id\030\003 \001(\004\"G\n\020J"
+    "oinGroupRequest\022!\n\006header\030\001 \001(\0132\021.im.bas"
+    "e.IMHeader\022\020\n\010group_id\030\002 \001(\004\"H\n\021LeaveGro"
+    "upRequest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHe"
+    "ader\022\020\n\010group_id\030\002 \001(\004\":\n\023GroupActionRes"
     "ponse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRespon"
-    "se\"[\n\021KickMemberRequest\022!\n\006header\030\001 \001(\0132"
-    "\021.im.base.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\021\n\t"
-    "kick_uids\030\003 \003(\t\"9\n\022KickMemberResponse\022#\n"
-    "\004base\030\001 \001(\0132\025.im.base.BaseResponse\"_\n\025Ap"
-    "plyJoinGroupRequest\022!\n\006header\030\001 \001(\0132\021.im"
-    ".base.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\021\n\tappl"
-    "y_msg\030\003 \001(\t\"=\n\026ApplyJoinGroupResponse\022#\n"
-    "\004base\030\001 \001(\0132\025.im.base.BaseResponse\"G\n\020Qu"
-    "itGroupRequest\022!\n\006header\030\001 \001(\0132\021.im.base"
-    ".IMHeader\022\020\n\010group_id\030\002 \001(\t\"8\n\021QuitGroup"
+    "se\"J\n\023GetGroupInfoRequest\022!\n\006header\030\001 \001("
+    "\0132\021.im.base.IMHeader\022\020\n\010group_id\030\002 \001(\t\"\207"
+    "\001\n\024GetGroupInfoResponse\022#\n\004base\030\001 \001(\0132\025."
+    "im.base.BaseResponse\022\"\n\005group\030\002 \001(\0132\023.im"
+    ".group.GroupInfo\022&\n\007members\030\003 \003(\0132\025.im.g"
+    "roup.GroupMember\"8\n\023GetGroupListRequest\022"
+    "!\n\006header\030\001 \001(\0132\021.im.base.IMHeader\"`\n\024Ge"
+    "tGroupListResponse\022#\n\004base\030\001 \001(\0132\025.im.ba"
+    "se.BaseResponse\022#\n\006groups\030\002 \003(\0132\023.im.gro"
+    "up.GroupInfo\"{\n\026ModifyGroupInfoRequest\022!"
+    "\n\006header\030\001 \001(\0132\021.im.base.IMHeader\022\020\n\010gro"
+    "up_id\030\002 \001(\t\022\014\n\004name\030\003 \001(\t\022\016\n\006avatar\030\004 \001("
+    "\t\022\016\n\006notice\030\005 \001(\t\"b\n\027ModifyGroupInfoResp"
+    "onse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRespons"
+    "e\022\"\n\005group\030\002 \001(\0132\023.im.group.GroupInfo\"_\n"
+    "\023InviteMemberRequest\022!\n\006header\030\001 \001(\0132\021.i"
+    "m.base.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\023\n\013inv"
+    "ite_uids\030\003 \003(\t\";\n\024InviteMemberResponse\022#"
+    "\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\"[\n\021K"
+    "ickMemberRequest\022!\n\006header\030\001 \001(\0132\021.im.ba"
+    "se.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\021\n\tkick_ui"
+    "ds\030\003 \003(\t\"9\n\022KickMemberResponse\022#\n\004base\030\001"
+    " \001(\0132\025.im.base.BaseResponse\"_\n\025ApplyJoin"
+    "GroupRequest\022!\n\006header\030\001 \001(\0132\021.im.base.I"
+    "MHeader\022\020\n\010group_id\030\002 \001(\t\022\021\n\tapply_msg\030\003"
+    " \001(\t\"=\n\026ApplyJoinGroupResponse\022#\n\004base\030\001"
+    " \001(\0132\025.im.base.BaseResponse\"G\n\020QuitGroup"
+    "Request\022!\n\006header\030\001 \001(\0132\021.im.base.IMHead"
+    "er\022\020\n\010group_id\030\002 \001(\t\"8\n\021QuitGroupRespons"
+    "e\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\"f"
+    "\n\026GetGroupMembersRequest\022!\n\006header\030\001 \001(\013"
+    "2\021.im.base.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\027\n"
+    "\017group_record_id\030\003 \001(\004\"f\n\027GetGroupMember"
+    "sResponse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRe"
+    "sponse\022&\n\007members\030\002 \003(\0132\025.im.group.Group"
+    "Member\"\205\001\n\027GetGroupMessagesRequest\022!\n\006he"
+    "ader\030\001 \001(\0132\021.im.base.IMHeader\022\020\n\010group_i"
+    "d\030\002 \001(\t\022\r\n\005since\030\003 \001(\003\022\r\n\005limit\030\004 \001(\005\022\027\n"
+    "\017group_record_id\030\005 \001(\004\"i\n\030GetGroupMessag"
+    "esResponse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseR"
+    "esponse\022(\n\010messages\030\002 \003(\0132\026.im.group.Gro"
+    "upMessage\"t\n\027SendGroupMessageRequest\022!\n\006"
+    "header\030\001 \001(\0132\021.im.base.IMHeader\022\020\n\010group"
+    "_id\030\002 \001(\004\022\017\n\007content\030\003 \001(\t\022\023\n\013create_tim"
+    "e\030\004 \001(\003\"h\n\030SendGroupMessageResponse\022#\n\004b"
+    "ase\030\001 \001(\0132\025.im.base.BaseResponse\022\'\n\007mess"
+    "age\030\002 \001(\0132\026.im.group.GroupMessage\"g\n\031Tra"
+    "nsferGroupOwnerRequest\022!\n\006header\030\001 \001(\0132\021"
+    ".im.base.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\025\n\rn"
+    "ew_owner_uid\030\003 \001(\t\"A\n\032TransferGroupOwner"
     "Response\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRes"
-    "ponse\"M\n\026GetGroupMembersRequest\022!\n\006heade"
-    "r\030\001 \001(\0132\021.im.base.IMHeader\022\020\n\010group_id\030\002"
-    " \001(\t\"f\n\027GetGroupMembersResponse\022#\n\004base\030"
-    "\001 \001(\0132\025.im.base.BaseResponse\022&\n\007members\030"
-    "\002 \003(\0132\025.im.group.GroupMember\"l\n\027GetGroup"
-    "MessagesRequest\022!\n\006header\030\001 \001(\0132\021.im.bas"
-    "e.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\r\n\005since\030\003 "
-    "\001(\003\022\r\n\005limit\030\004 \001(\005\"Q\n\030GetGroupMessagesRe"
-    "sponse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRespo"
-    "nse\022\020\n\010messages\030\002 \003(\014\"g\n\031TransferGroupOw"
-    "nerRequest\022!\n\006header\030\001 \001(\0132\021.im.base.IMH"
-    "eader\022\020\n\010group_id\030\002 \001(\t\022\025\n\rnew_owner_uid"
-    "\030\003 \001(\t\"A\n\032TransferGroupOwnerResponse\022#\n\004"
-    "base\030\001 \001(\0132\025.im.base.BaseResponse\"k\n\024Set"
-    "GroupAdminRequest\022!\n\006header\030\001 \001(\0132\021.im.b"
-    "ase.IMHeader\022\020\n\010group_id\030\002 \001(\t\022\013\n\003uid\030\003 "
-    "\001(\t\022\021\n\tset_admin\030\004 \001(\010\"<\n\025SetGroupAdminR"
-    "esponse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResp"
-    "onse*-\n\tGroupRole\022\n\n\006MEMBER\020\000\022\t\n\005ADMIN\020\001"
-    "\022\t\n\005OWNER\020\002b\006proto3"
+    "ponse\"k\n\024SetGroupAdminRequest\022!\n\006header\030"
+    "\001 \001(\0132\021.im.base.IMHeader\022\020\n\010group_id\030\002 \001"
+    "(\t\022\013\n\003uid\030\003 \001(\t\022\021\n\tset_admin\030\004 \001(\010\"<\n\025Se"
+    "tGroupAdminResponse\022#\n\004base\030\001 \001(\0132\025.im.b"
+    "ase.BaseResponse*-\n\tGroupRole\022\n\n\006MEMBER\020"
+    "\000\022\t\n\005ADMIN\020\001\022\t\n\005OWNER\020\0022\305\004\n\014GroupService"
+    "\022J\n\013CreateGroup\022\034.im.group.CreateGroupRe"
+    "quest\032\035.im.group.CreateGroupResponse\022F\n\t"
+    "JoinGroup\022\032.im.group.JoinGroupRequest\032\035."
+    "im.group.GroupActionResponse\022H\n\nLeaveGro"
+    "up\022\033.im.group.LeaveGroupRequest\032\035.im.gro"
+    "up.GroupActionResponse\022M\n\014ListMyGroups\022\035"
+    ".im.group.GetGroupListRequest\032\036.im.group"
+    ".GetGroupListResponse\022R\n\013ListMembers\022 .i"
+    "m.group.GetGroupMembersRequest\032!.im.grou"
+    "p.GetGroupMembersResponse\022Y\n\020SendGroupMe"
+    "ssage\022!.im.group.SendGroupMessageRequest"
+    "\032\".im.group.SendGroupMessageResponse\022Y\n\020"
+    "GetGroupMessages\022!.im.group.GetGroupMess"
+    "agesRequest\032\".im.group.GetGroupMessagesR"
+    "esponseb\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_group_2eproto_deps[1] =
     {
@@ -1237,13 +1542,13 @@ static ::absl::once_flag descriptor_table_group_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_group_2eproto = {
     false,
     false,
-    2459,
+    3775,
     descriptor_table_protodef_group_2eproto,
     "group.proto",
     &descriptor_table_group_2eproto_once,
     descriptor_table_group_2eproto_deps,
     1,
-    26,
+    32,
     schemas,
     file_default_instances,
     TableStruct_group_2eproto::offsets,
@@ -1303,9 +1608,9 @@ GroupInfo::GroupInfo(
                offsetof(Impl_, create_time_),
            reinterpret_cast<const char *>(&from._impl_) +
                offsetof(Impl_, create_time_),
-           offsetof(Impl_, is_muted_) -
+           offsetof(Impl_, group_record_id_) -
                offsetof(Impl_, create_time_) +
-               sizeof(Impl_::is_muted_));
+               sizeof(Impl_::group_record_id_));
 
   // @@protoc_insertion_point(copy_constructor:im.group.GroupInfo)
 }
@@ -1324,9 +1629,9 @@ inline void GroupInfo::SharedCtor(::_pb::Arena* arena) {
   ::memset(reinterpret_cast<char *>(&_impl_) +
                offsetof(Impl_, create_time_),
            0,
-           offsetof(Impl_, is_muted_) -
+           offsetof(Impl_, group_record_id_) -
                offsetof(Impl_, create_time_) +
-               sizeof(Impl_::is_muted_));
+               sizeof(Impl_::group_record_id_));
 }
 GroupInfo::~GroupInfo() {
   // @@protoc_insertion_point(destructor:im.group.GroupInfo)
@@ -1380,15 +1685,15 @@ const ::google::protobuf::internal::ClassData* GroupInfo::GetClassData() const {
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 7, 0, 60, 2> GroupInfo::_table_ = {
+const ::_pbi::TcParseTable<4, 9, 0, 68, 2> GroupInfo::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    7, 56,  // max_field_number, fast_idx_mask
+    9, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967168,  // skipmap
+    4294966784,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    7,  // num_field_entries
+    9,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -1420,6 +1725,18 @@ const ::_pbi::TcParseTable<3, 7, 0, 60, 2> GroupInfo::_table_ = {
     // int64 create_time = 7;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GroupInfo, _impl_.create_time_), 63>(),
      {56, 63, 0, PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.create_time_)}},
+    // uint64 group_record_id = 8;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GroupInfo, _impl_.group_record_id_), 63>(),
+     {64, 63, 0, PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.group_record_id_)}},
+    // int32 member_count = 9;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(GroupInfo, _impl_.member_count_), 63>(),
+     {72, 63, 0, PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.member_count_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
@@ -1444,10 +1761,16 @@ const ::_pbi::TcParseTable<3, 7, 0, 60, 2> GroupInfo::_table_ = {
     // int64 create_time = 7;
     {PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.create_time_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
+    // uint64 group_record_id = 8;
+    {PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.group_record_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+    // int32 member_count = 9;
+    {PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.member_count_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
   }},
   // no aux_entries
   {{
-    "\22\10\4\6\6\11\0\0"
+    "\22\10\4\6\6\11\0\0\0\0\0\0\0\0\0\0"
     "im.group.GroupInfo"
     "group_id"
     "name"
@@ -1470,8 +1793,8 @@ PROTOBUF_NOINLINE void GroupInfo::Clear() {
   _impl_.notice_.ClearToEmpty();
   _impl_.owner_uid_.ClearToEmpty();
   ::memset(&_impl_.create_time_, 0, static_cast<::size_t>(
-      reinterpret_cast<char*>(&_impl_.is_muted_) -
-      reinterpret_cast<char*>(&_impl_.create_time_)) + sizeof(_impl_.is_muted_));
+      reinterpret_cast<char*>(&_impl_.group_record_id_) -
+      reinterpret_cast<char*>(&_impl_.create_time_)) + sizeof(_impl_.group_record_id_));
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
@@ -1544,6 +1867,20 @@ PROTOBUF_NOINLINE void GroupInfo::Clear() {
                     stream, this_._internal_create_time(), target);
           }
 
+          // uint64 group_record_id = 8;
+          if (this_._internal_group_record_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                8, this_._internal_group_record_id(), target);
+          }
+
+          // int32 member_count = 9;
+          if (this_._internal_member_count() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<9>(
+                    stream, this_._internal_member_count(), target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -1604,6 +1941,16 @@ PROTOBUF_NOINLINE void GroupInfo::Clear() {
               total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
                   this_._internal_is_muted());
             }
+            // int32 member_count = 9;
+            if (this_._internal_member_count() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_member_count());
+            }
+            // uint64 group_record_id = 8;
+            if (this_._internal_group_record_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_record_id());
+            }
           }
           return this_.MaybeComputeUnknownFieldsSize(total_size,
                                                      &this_._impl_._cached_size_);
@@ -1638,6 +1985,12 @@ void GroupInfo::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::googl
   if (from._internal_is_muted() != 0) {
     _this->_impl_.is_muted_ = from._impl_.is_muted_;
   }
+  if (from._internal_member_count() != 0) {
+    _this->_impl_.member_count_ = from._impl_.member_count_;
+  }
+  if (from._internal_group_record_id() != 0) {
+    _this->_impl_.group_record_id_ = from._impl_.group_record_id_;
+  }
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -1660,8 +2013,8 @@ void GroupInfo::InternalSwap(GroupInfo* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.notice_, &other->_impl_.notice_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.owner_uid_, &other->_impl_.owner_uid_, arena);
   ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.is_muted_)
-      + sizeof(GroupInfo::_impl_.is_muted_)
+      PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.group_record_id_)
+      + sizeof(GroupInfo::_impl_.group_record_id_)
       - PROTOBUF_FIELD_OFFSET(GroupInfo, _impl_.create_time_)>(
           reinterpret_cast<char*>(&_impl_.create_time_),
           reinterpret_cast<char*>(&other->_impl_.create_time_));
@@ -1709,9 +2062,9 @@ GroupMember::GroupMember(
                offsetof(Impl_, role_),
            reinterpret_cast<const char *>(&from._impl_) +
                offsetof(Impl_, role_),
-           offsetof(Impl_, join_time_) -
+           offsetof(Impl_, member_record_id_) -
                offsetof(Impl_, role_) +
-               sizeof(Impl_::join_time_));
+               sizeof(Impl_::member_record_id_));
 
   // @@protoc_insertion_point(copy_constructor:im.group.GroupMember)
 }
@@ -1727,9 +2080,9 @@ inline void GroupMember::SharedCtor(::_pb::Arena* arena) {
   ::memset(reinterpret_cast<char *>(&_impl_) +
                offsetof(Impl_, role_),
            0,
-           offsetof(Impl_, join_time_) -
+           offsetof(Impl_, member_record_id_) -
                offsetof(Impl_, role_) +
-               sizeof(Impl_::join_time_));
+               sizeof(Impl_::member_record_id_));
 }
 GroupMember::~GroupMember() {
   // @@protoc_insertion_point(destructor:im.group.GroupMember)
@@ -1780,15 +2133,15 @@ const ::google::protobuf::internal::ClassData* GroupMember::GetClassData() const
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 5, 0, 40, 2> GroupMember::_table_ = {
+const ::_pbi::TcParseTable<3, 6, 0, 40, 2> GroupMember::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    5, 56,  // max_field_number, fast_idx_mask
+    6, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967264,  // skipmap
+    4294967232,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    5,  // num_field_entries
+    6,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -1814,7 +2167,9 @@ const ::_pbi::TcParseTable<3, 5, 0, 40, 2> GroupMember::_table_ = {
     // int64 join_time = 5;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GroupMember, _impl_.join_time_), 63>(),
      {40, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMember, _impl_.join_time_)}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // uint64 member_record_id = 6;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GroupMember, _impl_.member_record_id_), 63>(),
+     {48, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMember, _impl_.member_record_id_)}},
     {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
@@ -1834,6 +2189,9 @@ const ::_pbi::TcParseTable<3, 5, 0, 40, 2> GroupMember::_table_ = {
     // int64 join_time = 5;
     {PROTOBUF_FIELD_OFFSET(GroupMember, _impl_.join_time_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
+    // uint64 member_record_id = 6;
+    {PROTOBUF_FIELD_OFFSET(GroupMember, _impl_.member_record_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
   }},
   // no aux_entries
   {{
@@ -1854,8 +2212,8 @@ PROTOBUF_NOINLINE void GroupMember::Clear() {
   _impl_.uid_.ClearToEmpty();
   _impl_.nickname_.ClearToEmpty();
   ::memset(&_impl_.role_, 0, static_cast<::size_t>(
-      reinterpret_cast<char*>(&_impl_.join_time_) -
-      reinterpret_cast<char*>(&_impl_.role_)) + sizeof(_impl_.join_time_));
+      reinterpret_cast<char*>(&_impl_.member_record_id_) -
+      reinterpret_cast<char*>(&_impl_.role_)) + sizeof(_impl_.member_record_id_));
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
@@ -1911,6 +2269,13 @@ PROTOBUF_NOINLINE void GroupMember::Clear() {
                     stream, this_._internal_join_time(), target);
           }
 
+          // uint64 member_record_id = 6;
+          if (this_._internal_member_record_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                6, this_._internal_member_record_id(), target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -1961,6 +2326,11 @@ PROTOBUF_NOINLINE void GroupMember::Clear() {
               total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
                   this_._internal_join_time());
             }
+            // uint64 member_record_id = 6;
+            if (this_._internal_member_record_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_member_record_id());
+            }
           }
           return this_.MaybeComputeUnknownFieldsSize(total_size,
                                                      &this_._impl_._cached_size_);
@@ -1989,6 +2359,9 @@ void GroupMember::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::goo
   if (from._internal_join_time() != 0) {
     _this->_impl_.join_time_ = from._impl_.join_time_;
   }
+  if (from._internal_member_record_id() != 0) {
+    _this->_impl_.member_record_id_ = from._impl_.member_record_id_;
+  }
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -2008,14 +2381,389 @@ void GroupMember::InternalSwap(GroupMember* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.uid_, &other->_impl_.uid_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.nickname_, &other->_impl_.nickname_, arena);
   ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(GroupMember, _impl_.join_time_)
-      + sizeof(GroupMember::_impl_.join_time_)
+      PROTOBUF_FIELD_OFFSET(GroupMember, _impl_.member_record_id_)
+      + sizeof(GroupMember::_impl_.member_record_id_)
       - PROTOBUF_FIELD_OFFSET(GroupMember, _impl_.role_)>(
           reinterpret_cast<char*>(&_impl_.role_),
           reinterpret_cast<char*>(&other->_impl_.role_));
 }
 
 ::google::protobuf::Metadata GroupMember::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class GroupMessage::_Internal {
+ public:
+};
+
+GroupMessage::GroupMessage(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.group.GroupMessage)
+}
+inline PROTOBUF_NDEBUG_INLINE GroupMessage::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::group::GroupMessage& from_msg)
+      : sender_uid_(arena, from.sender_uid_),
+        sender_nickname_(arena, from.sender_nickname_),
+        content_(arena, from.content_),
+        _cached_size_{0} {}
+
+GroupMessage::GroupMessage(
+    ::google::protobuf::Arena* arena,
+    const GroupMessage& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  GroupMessage* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, msg_id_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, msg_id_),
+           offsetof(Impl_, create_time_) -
+               offsetof(Impl_, msg_id_) +
+               sizeof(Impl_::create_time_));
+
+  // @@protoc_insertion_point(copy_constructor:im.group.GroupMessage)
+}
+inline PROTOBUF_NDEBUG_INLINE GroupMessage::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : sender_uid_(arena),
+        sender_nickname_(arena),
+        content_(arena),
+        _cached_size_{0} {}
+
+inline void GroupMessage::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, msg_id_),
+           0,
+           offsetof(Impl_, create_time_) -
+               offsetof(Impl_, msg_id_) +
+               sizeof(Impl_::create_time_));
+}
+GroupMessage::~GroupMessage() {
+  // @@protoc_insertion_point(destructor:im.group.GroupMessage)
+  SharedDtor(*this);
+}
+inline void GroupMessage::SharedDtor(MessageLite& self) {
+  GroupMessage& this_ = static_cast<GroupMessage&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.sender_uid_.Destroy();
+  this_._impl_.sender_nickname_.Destroy();
+  this_._impl_.content_.Destroy();
+  this_._impl_.~Impl_();
+}
+
+inline void* GroupMessage::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) GroupMessage(arena);
+}
+constexpr auto GroupMessage::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(GroupMessage),
+                                            alignof(GroupMessage));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull GroupMessage::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_GroupMessage_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &GroupMessage::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<GroupMessage>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &GroupMessage::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<GroupMessage>(), &GroupMessage::ByteSizeLong,
+            &GroupMessage::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_._cached_size_),
+        false,
+    },
+    &GroupMessage::kDescriptorMethods,
+    &descriptor_table_group_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* GroupMessage::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 6, 0, 62, 2> GroupMessage::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    6, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967232,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    6,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::group::GroupMessage>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // uint64 msg_id = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GroupMessage, _impl_.msg_id_), 63>(),
+     {8, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.msg_id_)}},
+    // uint64 group_id = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GroupMessage, _impl_.group_id_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.group_id_)}},
+    // string sender_uid = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.sender_uid_)}},
+    // string sender_nickname = 4;
+    {::_pbi::TcParser::FastUS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.sender_nickname_)}},
+    // string content = 5;
+    {::_pbi::TcParser::FastUS1,
+     {42, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.content_)}},
+    // int64 create_time = 6;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GroupMessage, _impl_.create_time_), 63>(),
+     {48, 63, 0, PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.create_time_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // uint64 msg_id = 1;
+    {PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.msg_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+    // uint64 group_id = 2;
+    {PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.group_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+    // string sender_uid = 3;
+    {PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.sender_uid_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string sender_nickname = 4;
+    {PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.sender_nickname_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string content = 5;
+    {PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.content_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // int64 create_time = 6;
+    {PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.create_time_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
+  }},
+  // no aux_entries
+  {{
+    "\25\0\0\12\17\7\0\0"
+    "im.group.GroupMessage"
+    "sender_uid"
+    "sender_nickname"
+    "content"
+  }},
+};
+
+PROTOBUF_NOINLINE void GroupMessage::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.group.GroupMessage)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.sender_uid_.ClearToEmpty();
+  _impl_.sender_nickname_.ClearToEmpty();
+  _impl_.content_.ClearToEmpty();
+  ::memset(&_impl_.msg_id_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.create_time_) -
+      reinterpret_cast<char*>(&_impl_.msg_id_)) + sizeof(_impl_.create_time_));
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* GroupMessage::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const GroupMessage& this_ = static_cast<const GroupMessage&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* GroupMessage::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const GroupMessage& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.group.GroupMessage)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          // uint64 msg_id = 1;
+          if (this_._internal_msg_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                1, this_._internal_msg_id(), target);
+          }
+
+          // uint64 group_id = 2;
+          if (this_._internal_group_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                2, this_._internal_group_id(), target);
+          }
+
+          // string sender_uid = 3;
+          if (!this_._internal_sender_uid().empty()) {
+            const std::string& _s = this_._internal_sender_uid();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.group.GroupMessage.sender_uid");
+            target = stream->WriteStringMaybeAliased(3, _s, target);
+          }
+
+          // string sender_nickname = 4;
+          if (!this_._internal_sender_nickname().empty()) {
+            const std::string& _s = this_._internal_sender_nickname();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.group.GroupMessage.sender_nickname");
+            target = stream->WriteStringMaybeAliased(4, _s, target);
+          }
+
+          // string content = 5;
+          if (!this_._internal_content().empty()) {
+            const std::string& _s = this_._internal_content();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.group.GroupMessage.content");
+            target = stream->WriteStringMaybeAliased(5, _s, target);
+          }
+
+          // int64 create_time = 6;
+          if (this_._internal_create_time() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt64ToArrayWithField<6>(
+                    stream, this_._internal_create_time(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.group.GroupMessage)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t GroupMessage::ByteSizeLong(const MessageLite& base) {
+          const GroupMessage& this_ = static_cast<const GroupMessage&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t GroupMessage::ByteSizeLong() const {
+          const GroupMessage& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.group.GroupMessage)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // string sender_uid = 3;
+            if (!this_._internal_sender_uid().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_sender_uid());
+            }
+            // string sender_nickname = 4;
+            if (!this_._internal_sender_nickname().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_sender_nickname());
+            }
+            // string content = 5;
+            if (!this_._internal_content().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_content());
+            }
+            // uint64 msg_id = 1;
+            if (this_._internal_msg_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_msg_id());
+            }
+            // uint64 group_id = 2;
+            if (this_._internal_group_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_id());
+            }
+            // int64 create_time = 6;
+            if (this_._internal_create_time() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
+                  this_._internal_create_time());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void GroupMessage::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<GroupMessage*>(&to_msg);
+  auto& from = static_cast<const GroupMessage&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.group.GroupMessage)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_sender_uid().empty()) {
+    _this->_internal_set_sender_uid(from._internal_sender_uid());
+  }
+  if (!from._internal_sender_nickname().empty()) {
+    _this->_internal_set_sender_nickname(from._internal_sender_nickname());
+  }
+  if (!from._internal_content().empty()) {
+    _this->_internal_set_content(from._internal_content());
+  }
+  if (from._internal_msg_id() != 0) {
+    _this->_impl_.msg_id_ = from._impl_.msg_id_;
+  }
+  if (from._internal_group_id() != 0) {
+    _this->_impl_.group_id_ = from._impl_.group_id_;
+  }
+  if (from._internal_create_time() != 0) {
+    _this->_impl_.create_time_ = from._impl_.create_time_;
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GroupMessage::CopyFrom(const GroupMessage& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.group.GroupMessage)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void GroupMessage::InternalSwap(GroupMessage* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.sender_uid_, &other->_impl_.sender_uid_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.sender_nickname_, &other->_impl_.sender_nickname_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.content_, &other->_impl_.content_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.create_time_)
+      + sizeof(GroupMessage::_impl_.create_time_)
+      - PROTOBUF_FIELD_OFFSET(GroupMessage, _impl_.msg_id_)>(
+          reinterpret_cast<char*>(&_impl_.msg_id_),
+          reinterpret_cast<char*>(&other->_impl_.msg_id_));
+}
+
+::google::protobuf::Metadata GroupMessage::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================
@@ -2429,6 +3177,7 @@ CreateGroupResponse::CreateGroupResponse(
   _impl_.group_ = (cached_has_bits & 0x00000002u) ? ::google::protobuf::Message::CopyConstruct<::im::group::GroupInfo>(
                               arena, *from._impl_.group_)
                         : nullptr;
+  _impl_.group_id_ = from._impl_.group_id_;
 
   // @@protoc_insertion_point(copy_constructor:im.group.CreateGroupResponse)
 }
@@ -2442,9 +3191,9 @@ inline void CreateGroupResponse::SharedCtor(::_pb::Arena* arena) {
   ::memset(reinterpret_cast<char *>(&_impl_) +
                offsetof(Impl_, base_),
            0,
-           offsetof(Impl_, group_) -
+           offsetof(Impl_, group_id_) -
                offsetof(Impl_, base_) +
-               sizeof(Impl_::group_));
+               sizeof(Impl_::group_id_));
 }
 CreateGroupResponse::~CreateGroupResponse() {
   // @@protoc_insertion_point(destructor:im.group.CreateGroupResponse)
@@ -2495,15 +3244,15 @@ const ::google::protobuf::internal::ClassData* CreateGroupResponse::GetClassData
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<1, 2, 2, 0, 2> CreateGroupResponse::_table_ = {
+const ::_pbi::TcParseTable<2, 3, 2, 0, 2> CreateGroupResponse::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_._has_bits_),
     0, // no _extensions_
-    2, 8,  // max_field_number, fast_idx_mask
+    3, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967292,  // skipmap
+    4294967288,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    2,  // num_field_entries
+    3,  // num_field_entries
     2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
@@ -2513,12 +3262,16 @@ const ::_pbi::TcParseTable<1, 2, 2, 0, 2> CreateGroupResponse::_table_ = {
     ::_pbi::TcParser::GetTable<::im::group::CreateGroupResponse>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // .im.group.GroupInfo group = 2;
-    {::_pbi::TcParser::FastMtS1,
-     {18, 1, 1, PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.group_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // .im.base.BaseResponse base = 1;
     {::_pbi::TcParser::FastMtS1,
      {10, 0, 0, PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.base_)}},
+    // .im.group.GroupInfo group = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.group_)}},
+    // uint64 group_id = 3;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(CreateGroupResponse, _impl_.group_id_), 63>(),
+     {24, 63, 0, PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.group_id_)}},
   }}, {{
     65535, 65535
   }}, {{
@@ -2528,6 +3281,9 @@ const ::_pbi::TcParseTable<1, 2, 2, 0, 2> CreateGroupResponse::_table_ = {
     // .im.group.GroupInfo group = 2;
     {PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.group_), _Internal::kHasBitsOffset + 1, 1,
     (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // uint64 group_id = 3;
+    {PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.group_id_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
   }}, {{
     {::_pbi::TcParser::GetTable<::im::base::BaseResponse>()},
     {::_pbi::TcParser::GetTable<::im::group::GroupInfo>()},
@@ -2553,6 +3309,7 @@ PROTOBUF_NOINLINE void CreateGroupResponse::Clear() {
       _impl_.group_->Clear();
     }
   }
+  _impl_.group_id_ = ::uint64_t{0u};
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -2585,6 +3342,13 @@ PROTOBUF_NOINLINE void CreateGroupResponse::Clear() {
             target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
                 2, *this_._impl_.group_, this_._impl_.group_->GetCachedSize(), target,
                 stream);
+          }
+
+          // uint64 group_id = 3;
+          if (this_._internal_group_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                3, this_._internal_group_id(), target);
           }
 
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -2624,6 +3388,13 @@ PROTOBUF_NOINLINE void CreateGroupResponse::Clear() {
                             ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.group_);
             }
           }
+           {
+            // uint64 group_id = 3;
+            if (this_._internal_group_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_id());
+            }
+          }
           return this_.MaybeComputeUnknownFieldsSize(total_size,
                                                      &this_._impl_._cached_size_);
         }
@@ -2658,6 +3429,9 @@ void CreateGroupResponse::MergeImpl(::google::protobuf::MessageLite& to_msg, con
       }
     }
   }
+  if (from._internal_group_id() != 0) {
+    _this->_impl_.group_id_ = from._impl_.group_id_;
+  }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -2675,14 +3449,851 @@ void CreateGroupResponse::InternalSwap(CreateGroupResponse* PROTOBUF_RESTRICT ot
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::google::protobuf::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.group_)
-      + sizeof(CreateGroupResponse::_impl_.group_)
+      PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.group_id_)
+      + sizeof(CreateGroupResponse::_impl_.group_id_)
       - PROTOBUF_FIELD_OFFSET(CreateGroupResponse, _impl_.base_)>(
           reinterpret_cast<char*>(&_impl_.base_),
           reinterpret_cast<char*>(&other->_impl_.base_));
 }
 
 ::google::protobuf::Metadata CreateGroupResponse::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class JoinGroupRequest::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<JoinGroupRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_._has_bits_);
+};
+
+void JoinGroupRequest::clear_header() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.header_ != nullptr) _impl_.header_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+JoinGroupRequest::JoinGroupRequest(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.group.JoinGroupRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE JoinGroupRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::group::JoinGroupRequest& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0} {}
+
+JoinGroupRequest::JoinGroupRequest(
+    ::google::protobuf::Arena* arena,
+    const JoinGroupRequest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  JoinGroupRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.header_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(
+                              arena, *from._impl_.header_)
+                        : nullptr;
+  _impl_.group_id_ = from._impl_.group_id_;
+
+  // @@protoc_insertion_point(copy_constructor:im.group.JoinGroupRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE JoinGroupRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
+
+inline void JoinGroupRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, header_),
+           0,
+           offsetof(Impl_, group_id_) -
+               offsetof(Impl_, header_) +
+               sizeof(Impl_::group_id_));
+}
+JoinGroupRequest::~JoinGroupRequest() {
+  // @@protoc_insertion_point(destructor:im.group.JoinGroupRequest)
+  SharedDtor(*this);
+}
+inline void JoinGroupRequest::SharedDtor(MessageLite& self) {
+  JoinGroupRequest& this_ = static_cast<JoinGroupRequest&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  delete this_._impl_.header_;
+  this_._impl_.~Impl_();
+}
+
+inline void* JoinGroupRequest::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) JoinGroupRequest(arena);
+}
+constexpr auto JoinGroupRequest::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(JoinGroupRequest),
+                                            alignof(JoinGroupRequest));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull JoinGroupRequest::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_JoinGroupRequest_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &JoinGroupRequest::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<JoinGroupRequest>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &JoinGroupRequest::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<JoinGroupRequest>(), &JoinGroupRequest::ByteSizeLong,
+            &JoinGroupRequest::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_._cached_size_),
+        false,
+    },
+    &JoinGroupRequest::kDescriptorMethods,
+    &descriptor_table_group_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* JoinGroupRequest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 1, 0, 2> JoinGroupRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::group::JoinGroupRequest>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // uint64 group_id = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(JoinGroupRequest, _impl_.group_id_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_.group_id_)}},
+    // .im.base.IMHeader header = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_.header_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.IMHeader header = 1;
+    {PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_.header_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // uint64 group_id = 2;
+    {PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_.group_id_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
+  }}, {{
+  }},
+};
+
+PROTOBUF_NOINLINE void JoinGroupRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.group.JoinGroupRequest)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.header_ != nullptr);
+    _impl_.header_->Clear();
+  }
+  _impl_.group_id_ = ::uint64_t{0u};
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* JoinGroupRequest::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const JoinGroupRequest& this_ = static_cast<const JoinGroupRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* JoinGroupRequest::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const JoinGroupRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.group.JoinGroupRequest)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.IMHeader header = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.header_, this_._impl_.header_->GetCachedSize(), target,
+                stream);
+          }
+
+          // uint64 group_id = 2;
+          if (this_._internal_group_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                2, this_._internal_group_id(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.group.JoinGroupRequest)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t JoinGroupRequest::ByteSizeLong(const MessageLite& base) {
+          const JoinGroupRequest& this_ = static_cast<const JoinGroupRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t JoinGroupRequest::ByteSizeLong() const {
+          const JoinGroupRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.group.JoinGroupRequest)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // .im.base.IMHeader header = 1;
+            cached_has_bits = this_._impl_._has_bits_[0];
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.header_);
+            }
+          }
+           {
+            // uint64 group_id = 2;
+            if (this_._internal_group_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_id());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void JoinGroupRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<JoinGroupRequest*>(&to_msg);
+  auto& from = static_cast<const JoinGroupRequest&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.group.JoinGroupRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(from._impl_.header_ != nullptr);
+    if (_this->_impl_.header_ == nullptr) {
+      _this->_impl_.header_ =
+          ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(arena, *from._impl_.header_);
+    } else {
+      _this->_impl_.header_->MergeFrom(*from._impl_.header_);
+    }
+  }
+  if (from._internal_group_id() != 0) {
+    _this->_impl_.group_id_ = from._impl_.group_id_;
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void JoinGroupRequest::CopyFrom(const JoinGroupRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.group.JoinGroupRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void JoinGroupRequest::InternalSwap(JoinGroupRequest* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_.group_id_)
+      + sizeof(JoinGroupRequest::_impl_.group_id_)
+      - PROTOBUF_FIELD_OFFSET(JoinGroupRequest, _impl_.header_)>(
+          reinterpret_cast<char*>(&_impl_.header_),
+          reinterpret_cast<char*>(&other->_impl_.header_));
+}
+
+::google::protobuf::Metadata JoinGroupRequest::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class LeaveGroupRequest::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<LeaveGroupRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_._has_bits_);
+};
+
+void LeaveGroupRequest::clear_header() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.header_ != nullptr) _impl_.header_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+LeaveGroupRequest::LeaveGroupRequest(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.group.LeaveGroupRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE LeaveGroupRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::group::LeaveGroupRequest& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0} {}
+
+LeaveGroupRequest::LeaveGroupRequest(
+    ::google::protobuf::Arena* arena,
+    const LeaveGroupRequest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  LeaveGroupRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.header_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(
+                              arena, *from._impl_.header_)
+                        : nullptr;
+  _impl_.group_id_ = from._impl_.group_id_;
+
+  // @@protoc_insertion_point(copy_constructor:im.group.LeaveGroupRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE LeaveGroupRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
+
+inline void LeaveGroupRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, header_),
+           0,
+           offsetof(Impl_, group_id_) -
+               offsetof(Impl_, header_) +
+               sizeof(Impl_::group_id_));
+}
+LeaveGroupRequest::~LeaveGroupRequest() {
+  // @@protoc_insertion_point(destructor:im.group.LeaveGroupRequest)
+  SharedDtor(*this);
+}
+inline void LeaveGroupRequest::SharedDtor(MessageLite& self) {
+  LeaveGroupRequest& this_ = static_cast<LeaveGroupRequest&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  delete this_._impl_.header_;
+  this_._impl_.~Impl_();
+}
+
+inline void* LeaveGroupRequest::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) LeaveGroupRequest(arena);
+}
+constexpr auto LeaveGroupRequest::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(LeaveGroupRequest),
+                                            alignof(LeaveGroupRequest));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull LeaveGroupRequest::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_LeaveGroupRequest_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &LeaveGroupRequest::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<LeaveGroupRequest>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &LeaveGroupRequest::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<LeaveGroupRequest>(), &LeaveGroupRequest::ByteSizeLong,
+            &LeaveGroupRequest::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_._cached_size_),
+        false,
+    },
+    &LeaveGroupRequest::kDescriptorMethods,
+    &descriptor_table_group_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* LeaveGroupRequest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 1, 0, 2> LeaveGroupRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::group::LeaveGroupRequest>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // uint64 group_id = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(LeaveGroupRequest, _impl_.group_id_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_.group_id_)}},
+    // .im.base.IMHeader header = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_.header_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.IMHeader header = 1;
+    {PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_.header_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // uint64 group_id = 2;
+    {PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_.group_id_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
+  }}, {{
+  }},
+};
+
+PROTOBUF_NOINLINE void LeaveGroupRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.group.LeaveGroupRequest)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.header_ != nullptr);
+    _impl_.header_->Clear();
+  }
+  _impl_.group_id_ = ::uint64_t{0u};
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* LeaveGroupRequest::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const LeaveGroupRequest& this_ = static_cast<const LeaveGroupRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* LeaveGroupRequest::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const LeaveGroupRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.group.LeaveGroupRequest)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.IMHeader header = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.header_, this_._impl_.header_->GetCachedSize(), target,
+                stream);
+          }
+
+          // uint64 group_id = 2;
+          if (this_._internal_group_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                2, this_._internal_group_id(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.group.LeaveGroupRequest)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t LeaveGroupRequest::ByteSizeLong(const MessageLite& base) {
+          const LeaveGroupRequest& this_ = static_cast<const LeaveGroupRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t LeaveGroupRequest::ByteSizeLong() const {
+          const LeaveGroupRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.group.LeaveGroupRequest)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // .im.base.IMHeader header = 1;
+            cached_has_bits = this_._impl_._has_bits_[0];
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.header_);
+            }
+          }
+           {
+            // uint64 group_id = 2;
+            if (this_._internal_group_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_id());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void LeaveGroupRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<LeaveGroupRequest*>(&to_msg);
+  auto& from = static_cast<const LeaveGroupRequest&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.group.LeaveGroupRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(from._impl_.header_ != nullptr);
+    if (_this->_impl_.header_ == nullptr) {
+      _this->_impl_.header_ =
+          ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(arena, *from._impl_.header_);
+    } else {
+      _this->_impl_.header_->MergeFrom(*from._impl_.header_);
+    }
+  }
+  if (from._internal_group_id() != 0) {
+    _this->_impl_.group_id_ = from._impl_.group_id_;
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void LeaveGroupRequest::CopyFrom(const LeaveGroupRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.group.LeaveGroupRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void LeaveGroupRequest::InternalSwap(LeaveGroupRequest* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_.group_id_)
+      + sizeof(LeaveGroupRequest::_impl_.group_id_)
+      - PROTOBUF_FIELD_OFFSET(LeaveGroupRequest, _impl_.header_)>(
+          reinterpret_cast<char*>(&_impl_.header_),
+          reinterpret_cast<char*>(&other->_impl_.header_));
+}
+
+::google::protobuf::Metadata LeaveGroupRequest::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class GroupActionResponse::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<GroupActionResponse>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(GroupActionResponse, _impl_._has_bits_);
+};
+
+void GroupActionResponse::clear_base() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.base_ != nullptr) _impl_.base_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+GroupActionResponse::GroupActionResponse(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.group.GroupActionResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE GroupActionResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::group::GroupActionResponse& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0} {}
+
+GroupActionResponse::GroupActionResponse(
+    ::google::protobuf::Arena* arena,
+    const GroupActionResponse& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  GroupActionResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.base_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(
+                              arena, *from._impl_.base_)
+                        : nullptr;
+
+  // @@protoc_insertion_point(copy_constructor:im.group.GroupActionResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE GroupActionResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
+
+inline void GroupActionResponse::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.base_ = {};
+}
+GroupActionResponse::~GroupActionResponse() {
+  // @@protoc_insertion_point(destructor:im.group.GroupActionResponse)
+  SharedDtor(*this);
+}
+inline void GroupActionResponse::SharedDtor(MessageLite& self) {
+  GroupActionResponse& this_ = static_cast<GroupActionResponse&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  delete this_._impl_.base_;
+  this_._impl_.~Impl_();
+}
+
+inline void* GroupActionResponse::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) GroupActionResponse(arena);
+}
+constexpr auto GroupActionResponse::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(GroupActionResponse),
+                                            alignof(GroupActionResponse));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull GroupActionResponse::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_GroupActionResponse_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &GroupActionResponse::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<GroupActionResponse>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &GroupActionResponse::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<GroupActionResponse>(), &GroupActionResponse::ByteSizeLong,
+            &GroupActionResponse::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(GroupActionResponse, _impl_._cached_size_),
+        false,
+    },
+    &GroupActionResponse::kDescriptorMethods,
+    &descriptor_table_group_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* GroupActionResponse::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 1, 0, 2> GroupActionResponse::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(GroupActionResponse, _impl_._has_bits_),
+    0, // no _extensions_
+    1, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967294,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::group::GroupActionResponse>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // .im.base.BaseResponse base = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(GroupActionResponse, _impl_.base_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.BaseResponse base = 1;
+    {PROTOBUF_FIELD_OFFSET(GroupActionResponse, _impl_.base_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::BaseResponse>()},
+  }}, {{
+  }},
+};
+
+PROTOBUF_NOINLINE void GroupActionResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.group.GroupActionResponse)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.base_ != nullptr);
+    _impl_.base_->Clear();
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* GroupActionResponse::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const GroupActionResponse& this_ = static_cast<const GroupActionResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* GroupActionResponse::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const GroupActionResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.group.GroupActionResponse)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.BaseResponse base = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.base_, this_._impl_.base_->GetCachedSize(), target,
+                stream);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.group.GroupActionResponse)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t GroupActionResponse::ByteSizeLong(const MessageLite& base) {
+          const GroupActionResponse& this_ = static_cast<const GroupActionResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t GroupActionResponse::ByteSizeLong() const {
+          const GroupActionResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.group.GroupActionResponse)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+           {
+            // .im.base.BaseResponse base = 1;
+            cached_has_bits = this_._impl_._has_bits_[0];
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.base_);
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void GroupActionResponse::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<GroupActionResponse*>(&to_msg);
+  auto& from = static_cast<const GroupActionResponse&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.group.GroupActionResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(from._impl_.base_ != nullptr);
+    if (_this->_impl_.base_ == nullptr) {
+      _this->_impl_.base_ =
+          ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(arena, *from._impl_.base_);
+    } else {
+      _this->_impl_.base_->MergeFrom(*from._impl_.base_);
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GroupActionResponse::CopyFrom(const GroupActionResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.group.GroupActionResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void GroupActionResponse::InternalSwap(GroupActionResponse* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.base_, other->_impl_.base_);
+}
+
+::google::protobuf::Metadata GroupActionResponse::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================
@@ -6911,6 +8522,7 @@ GetGroupMembersRequest::GetGroupMembersRequest(
   _impl_.header_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(
                               arena, *from._impl_.header_)
                         : nullptr;
+  _impl_.group_record_id_ = from._impl_.group_record_id_;
 
   // @@protoc_insertion_point(copy_constructor:im.group.GetGroupMembersRequest)
 }
@@ -6922,7 +8534,12 @@ inline PROTOBUF_NDEBUG_INLINE GetGroupMembersRequest::Impl_::Impl_(
 
 inline void GetGroupMembersRequest::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
-  _impl_.header_ = {};
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, header_),
+           0,
+           offsetof(Impl_, group_record_id_) -
+               offsetof(Impl_, header_) +
+               sizeof(Impl_::group_record_id_));
 }
 GetGroupMembersRequest::~GetGroupMembersRequest() {
   // @@protoc_insertion_point(destructor:im.group.GetGroupMembersRequest)
@@ -6973,15 +8590,15 @@ const ::google::protobuf::internal::ClassData* GetGroupMembersRequest::GetClassD
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<1, 2, 1, 48, 2> GetGroupMembersRequest::_table_ = {
+const ::_pbi::TcParseTable<2, 3, 1, 48, 2> GetGroupMembersRequest::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_._has_bits_),
     0, // no _extensions_
-    2, 8,  // max_field_number, fast_idx_mask
+    3, 24,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967292,  // skipmap
+    4294967288,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    2,  // num_field_entries
+    3,  // num_field_entries
     1,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
@@ -6991,12 +8608,16 @@ const ::_pbi::TcParseTable<1, 2, 1, 48, 2> GetGroupMembersRequest::_table_ = {
     ::_pbi::TcParser::GetTable<::im::group::GetGroupMembersRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // string group_id = 2;
-    {::_pbi::TcParser::FastUS1,
-     {18, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.group_id_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // .im.base.IMHeader header = 1;
     {::_pbi::TcParser::FastMtS1,
      {10, 0, 0, PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.header_)}},
+    // string group_id = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.group_id_)}},
+    // uint64 group_record_id = 3;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GetGroupMembersRequest, _impl_.group_record_id_), 63>(),
+     {24, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.group_record_id_)}},
   }}, {{
     65535, 65535
   }}, {{
@@ -7006,6 +8627,9 @@ const ::_pbi::TcParseTable<1, 2, 1, 48, 2> GetGroupMembersRequest::_table_ = {
     // string group_id = 2;
     {PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.group_id_), -1, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // uint64 group_record_id = 3;
+    {PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.group_record_id_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
   }}, {{
     {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
   }}, {{
@@ -7028,6 +8652,7 @@ PROTOBUF_NOINLINE void GetGroupMembersRequest::Clear() {
     ABSL_DCHECK(_impl_.header_ != nullptr);
     _impl_.header_->Clear();
   }
+  _impl_.group_record_id_ = ::uint64_t{0u};
   _impl_._has_bits_.Clear();
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -7061,6 +8686,13 @@ PROTOBUF_NOINLINE void GetGroupMembersRequest::Clear() {
             ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
                 _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.group.GetGroupMembersRequest.group_id");
             target = stream->WriteStringMaybeAliased(2, _s, target);
+          }
+
+          // uint64 group_record_id = 3;
+          if (this_._internal_group_record_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                3, this_._internal_group_record_id(), target);
           }
 
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -7102,6 +8734,13 @@ PROTOBUF_NOINLINE void GetGroupMembersRequest::Clear() {
                             ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.header_);
             }
           }
+           {
+            // uint64 group_record_id = 3;
+            if (this_._internal_group_record_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_record_id());
+            }
+          }
           return this_.MaybeComputeUnknownFieldsSize(total_size,
                                                      &this_._impl_._cached_size_);
         }
@@ -7128,6 +8767,9 @@ void GetGroupMembersRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, 
       _this->_impl_.header_->MergeFrom(*from._impl_.header_);
     }
   }
+  if (from._internal_group_record_id() != 0) {
+    _this->_impl_.group_record_id_ = from._impl_.group_record_id_;
+  }
   _this->_impl_._has_bits_[0] |= cached_has_bits;
   _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -7147,7 +8789,12 @@ void GetGroupMembersRequest::InternalSwap(GetGroupMembersRequest* PROTOBUF_RESTR
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.group_id_, &other->_impl_.group_id_, arena);
-  swap(_impl_.header_, other->_impl_.header_);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.group_record_id_)
+      + sizeof(GetGroupMembersRequest::_impl_.group_record_id_)
+      - PROTOBUF_FIELD_OFFSET(GetGroupMembersRequest, _impl_.header_)>(
+          reinterpret_cast<char*>(&_impl_.header_),
+          reinterpret_cast<char*>(&other->_impl_.header_));
 }
 
 ::google::protobuf::Metadata GetGroupMembersRequest::GetMetadata() const {
@@ -7576,15 +9223,15 @@ const ::google::protobuf::internal::ClassData* GetGroupMessagesRequest::GetClass
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<2, 4, 1, 49, 2> GetGroupMessagesRequest::_table_ = {
+const ::_pbi::TcParseTable<3, 5, 1, 49, 2> GetGroupMessagesRequest::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_._has_bits_),
     0, // no _extensions_
-    4, 24,  // max_field_number, fast_idx_mask
+    5, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967280,  // skipmap
+    4294967264,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    4,  // num_field_entries
+    5,  // num_field_entries
     1,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
@@ -7594,9 +9241,7 @@ const ::_pbi::TcParseTable<2, 4, 1, 49, 2> GetGroupMessagesRequest::_table_ = {
     ::_pbi::TcParser::GetTable<::im::group::GetGroupMessagesRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // int32 limit = 4;
-    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(GetGroupMessagesRequest, _impl_.limit_), 63>(),
-     {32, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_.limit_)}},
+    {::_pbi::TcParser::MiniParse, {}},
     // .im.base.IMHeader header = 1;
     {::_pbi::TcParser::FastMtS1,
      {10, 0, 0, PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_.header_)}},
@@ -7606,6 +9251,14 @@ const ::_pbi::TcParseTable<2, 4, 1, 49, 2> GetGroupMessagesRequest::_table_ = {
     // int64 since = 3;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GetGroupMessagesRequest, _impl_.since_), 63>(),
      {24, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_.since_)}},
+    // int32 limit = 4;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(GetGroupMessagesRequest, _impl_.limit_), 63>(),
+     {32, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_.limit_)}},
+    // uint64 group_record_id = 5;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(GetGroupMessagesRequest, _impl_.group_record_id_), 63>(),
+     {40, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_.group_record_id_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
@@ -7621,6 +9274,9 @@ const ::_pbi::TcParseTable<2, 4, 1, 49, 2> GetGroupMessagesRequest::_table_ = {
     // int32 limit = 4;
     {PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_.limit_), -1, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // uint64 group_record_id = 5;
+    {PROTOBUF_FIELD_OFFSET(GetGroupMessagesRequest, _impl_.group_record_id_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
   }}, {{
     {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
   }}, {{
@@ -7695,6 +9351,13 @@ PROTOBUF_NOINLINE void GetGroupMessagesRequest::Clear() {
                     stream, this_._internal_limit(), target);
           }
 
+          // uint64 group_record_id = 5;
+          if (this_._internal_group_record_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                5, this_._internal_group_record_id(), target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -7740,6 +9403,11 @@ PROTOBUF_NOINLINE void GetGroupMessagesRequest::Clear() {
               total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
                   this_._internal_since());
             }
+            // uint64 group_record_id = 5;
+            if (this_._internal_group_record_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_record_id());
+            }
             // int32 limit = 4;
             if (this_._internal_limit() != 0) {
               total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
@@ -7774,6 +9442,9 @@ void GetGroupMessagesRequest::MergeImpl(::google::protobuf::MessageLite& to_msg,
   }
   if (from._internal_since() != 0) {
     _this->_impl_.since_ = from._impl_.since_;
+  }
+  if (from._internal_group_record_id() != 0) {
+    _this->_impl_.group_record_id_ = from._impl_.group_record_id_;
   }
   if (from._internal_limit() != 0) {
     _this->_impl_.limit_ = from._impl_.limit_;
@@ -7929,7 +9600,7 @@ const ::google::protobuf::internal::ClassData* GetGroupMessagesResponse::GetClas
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<1, 2, 1, 0, 2> GetGroupMessagesResponse::_table_ = {
+const ::_pbi::TcParseTable<1, 2, 2, 0, 2> GetGroupMessagesResponse::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(GetGroupMessagesResponse, _impl_._has_bits_),
     0, // no _extensions_
@@ -7938,7 +9609,7 @@ const ::_pbi::TcParseTable<1, 2, 1, 0, 2> GetGroupMessagesResponse::_table_ = {
     4294967292,  // skipmap
     offsetof(decltype(_table_), field_entries),
     2,  // num_field_entries
-    1,  // num_aux_entries
+    2,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
     nullptr,  // post_loop_handler
@@ -7947,9 +9618,9 @@ const ::_pbi::TcParseTable<1, 2, 1, 0, 2> GetGroupMessagesResponse::_table_ = {
     ::_pbi::TcParser::GetTable<::im::group::GetGroupMessagesResponse>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    // repeated bytes messages = 2;
-    {::_pbi::TcParser::FastBR1,
-     {18, 63, 0, PROTOBUF_FIELD_OFFSET(GetGroupMessagesResponse, _impl_.messages_)}},
+    // repeated .im.group.GroupMessage messages = 2;
+    {::_pbi::TcParser::FastMtR1,
+     {18, 63, 1, PROTOBUF_FIELD_OFFSET(GetGroupMessagesResponse, _impl_.messages_)}},
     // .im.base.BaseResponse base = 1;
     {::_pbi::TcParser::FastMtS1,
      {10, 0, 0, PROTOBUF_FIELD_OFFSET(GetGroupMessagesResponse, _impl_.base_)}},
@@ -7959,11 +9630,12 @@ const ::_pbi::TcParseTable<1, 2, 1, 0, 2> GetGroupMessagesResponse::_table_ = {
     // .im.base.BaseResponse base = 1;
     {PROTOBUF_FIELD_OFFSET(GetGroupMessagesResponse, _impl_.base_), _Internal::kHasBitsOffset + 0, 0,
     (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
-    // repeated bytes messages = 2;
-    {PROTOBUF_FIELD_OFFSET(GetGroupMessagesResponse, _impl_.messages_), -1, 0,
-    (0 | ::_fl::kFcRepeated | ::_fl::kBytes | ::_fl::kRepSString)},
+    // repeated .im.group.GroupMessage messages = 2;
+    {PROTOBUF_FIELD_OFFSET(GetGroupMessagesResponse, _impl_.messages_), -1, 1,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
   }}, {{
     {::_pbi::TcParser::GetTable<::im::base::BaseResponse>()},
+    {::_pbi::TcParser::GetTable<::im::group::GroupMessage>()},
   }}, {{
   }},
 };
@@ -8008,10 +9680,15 @@ PROTOBUF_NOINLINE void GetGroupMessagesResponse::Clear() {
                 stream);
           }
 
-          // repeated bytes messages = 2;
-          for (int i = 0, n = this_._internal_messages_size(); i < n; ++i) {
-            const auto& s = this_._internal_messages().Get(i);
-            target = stream->WriteBytes(2, s, target);
+          // repeated .im.group.GroupMessage messages = 2;
+          for (unsigned i = 0, n = static_cast<unsigned>(
+                                   this_._internal_messages_size());
+               i < n; i++) {
+            const auto& repfield = this_._internal_messages().Get(i);
+            target =
+                ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                    2, repfield, repfield.GetCachedSize(),
+                    target, stream);
           }
 
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
@@ -8039,13 +9716,11 @@ PROTOBUF_NOINLINE void GetGroupMessagesResponse::Clear() {
 
           ::_pbi::Prefetch5LinesFrom7Lines(&this_);
            {
-            // repeated bytes messages = 2;
+            // repeated .im.group.GroupMessage messages = 2;
             {
-              total_size +=
-                  1 * ::google::protobuf::internal::FromIntSize(this_._internal_messages().size());
-              for (int i = 0, n = this_._internal_messages().size(); i < n; ++i) {
-                total_size += ::google::protobuf::internal::WireFormatLite::BytesSize(
-                    this_._internal_messages().Get(i));
+              total_size += 1UL * this_._internal_messages_size();
+              for (const auto& msg : this_._internal_messages()) {
+                total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
               }
             }
           }
@@ -8070,7 +9745,8 @@ void GetGroupMessagesResponse::MergeImpl(::google::protobuf::MessageLite& to_msg
   ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_internal_mutable_messages()->MergeFrom(from._internal_messages());
+  _this->_internal_mutable_messages()->MergeFrom(
+      from._internal_messages());
   cached_has_bits = from._impl_._has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     ABSL_DCHECK(from._impl_.base_ != nullptr);
@@ -8102,6 +9778,666 @@ void GetGroupMessagesResponse::InternalSwap(GetGroupMessagesResponse* PROTOBUF_R
 }
 
 ::google::protobuf::Metadata GetGroupMessagesResponse::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class SendGroupMessageRequest::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<SendGroupMessageRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_._has_bits_);
+};
+
+void SendGroupMessageRequest::clear_header() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.header_ != nullptr) _impl_.header_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+SendGroupMessageRequest::SendGroupMessageRequest(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.group.SendGroupMessageRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE SendGroupMessageRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::group::SendGroupMessageRequest& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        content_(arena, from.content_) {}
+
+SendGroupMessageRequest::SendGroupMessageRequest(
+    ::google::protobuf::Arena* arena,
+    const SendGroupMessageRequest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SendGroupMessageRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.header_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(
+                              arena, *from._impl_.header_)
+                        : nullptr;
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, group_id_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, group_id_),
+           offsetof(Impl_, create_time_) -
+               offsetof(Impl_, group_id_) +
+               sizeof(Impl_::create_time_));
+
+  // @@protoc_insertion_point(copy_constructor:im.group.SendGroupMessageRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE SendGroupMessageRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        content_(arena) {}
+
+inline void SendGroupMessageRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, header_),
+           0,
+           offsetof(Impl_, create_time_) -
+               offsetof(Impl_, header_) +
+               sizeof(Impl_::create_time_));
+}
+SendGroupMessageRequest::~SendGroupMessageRequest() {
+  // @@protoc_insertion_point(destructor:im.group.SendGroupMessageRequest)
+  SharedDtor(*this);
+}
+inline void SendGroupMessageRequest::SharedDtor(MessageLite& self) {
+  SendGroupMessageRequest& this_ = static_cast<SendGroupMessageRequest&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.content_.Destroy();
+  delete this_._impl_.header_;
+  this_._impl_.~Impl_();
+}
+
+inline void* SendGroupMessageRequest::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) SendGroupMessageRequest(arena);
+}
+constexpr auto SendGroupMessageRequest::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(SendGroupMessageRequest),
+                                            alignof(SendGroupMessageRequest));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull SendGroupMessageRequest::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_SendGroupMessageRequest_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &SendGroupMessageRequest::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<SendGroupMessageRequest>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &SendGroupMessageRequest::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<SendGroupMessageRequest>(), &SendGroupMessageRequest::ByteSizeLong,
+            &SendGroupMessageRequest::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_._cached_size_),
+        false,
+    },
+    &SendGroupMessageRequest::kDescriptorMethods,
+    &descriptor_table_group_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* SendGroupMessageRequest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 4, 1, 48, 2> SendGroupMessageRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    4, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967280,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    4,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::group::SendGroupMessageRequest>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int64 create_time = 4;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(SendGroupMessageRequest, _impl_.create_time_), 63>(),
+     {32, 63, 0, PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.create_time_)}},
+    // .im.base.IMHeader header = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.header_)}},
+    // uint64 group_id = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint64_t, offsetof(SendGroupMessageRequest, _impl_.group_id_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.group_id_)}},
+    // string content = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.content_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.IMHeader header = 1;
+    {PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.header_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // uint64 group_id = 2;
+    {PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.group_id_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+    // string content = 3;
+    {PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.content_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // int64 create_time = 4;
+    {PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.create_time_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt64)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
+  }}, {{
+    "\40\0\0\7\0\0\0\0"
+    "im.group.SendGroupMessageRequest"
+    "content"
+  }},
+};
+
+PROTOBUF_NOINLINE void SendGroupMessageRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.group.SendGroupMessageRequest)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.content_.ClearToEmpty();
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.header_ != nullptr);
+    _impl_.header_->Clear();
+  }
+  ::memset(&_impl_.group_id_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.create_time_) -
+      reinterpret_cast<char*>(&_impl_.group_id_)) + sizeof(_impl_.create_time_));
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* SendGroupMessageRequest::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const SendGroupMessageRequest& this_ = static_cast<const SendGroupMessageRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* SendGroupMessageRequest::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const SendGroupMessageRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.group.SendGroupMessageRequest)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.IMHeader header = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.header_, this_._impl_.header_->GetCachedSize(), target,
+                stream);
+          }
+
+          // uint64 group_id = 2;
+          if (this_._internal_group_id() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteUInt64ToArray(
+                2, this_._internal_group_id(), target);
+          }
+
+          // string content = 3;
+          if (!this_._internal_content().empty()) {
+            const std::string& _s = this_._internal_content();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.group.SendGroupMessageRequest.content");
+            target = stream->WriteStringMaybeAliased(3, _s, target);
+          }
+
+          // int64 create_time = 4;
+          if (this_._internal_create_time() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt64ToArrayWithField<4>(
+                    stream, this_._internal_create_time(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.group.SendGroupMessageRequest)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t SendGroupMessageRequest::ByteSizeLong(const MessageLite& base) {
+          const SendGroupMessageRequest& this_ = static_cast<const SendGroupMessageRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t SendGroupMessageRequest::ByteSizeLong() const {
+          const SendGroupMessageRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.group.SendGroupMessageRequest)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // string content = 3;
+            if (!this_._internal_content().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_content());
+            }
+          }
+           {
+            // .im.base.IMHeader header = 1;
+            cached_has_bits = this_._impl_._has_bits_[0];
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.header_);
+            }
+          }
+           {
+            // uint64 group_id = 2;
+            if (this_._internal_group_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
+                  this_._internal_group_id());
+            }
+            // int64 create_time = 4;
+            if (this_._internal_create_time() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
+                  this_._internal_create_time());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void SendGroupMessageRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<SendGroupMessageRequest*>(&to_msg);
+  auto& from = static_cast<const SendGroupMessageRequest&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.group.SendGroupMessageRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_content().empty()) {
+    _this->_internal_set_content(from._internal_content());
+  }
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(from._impl_.header_ != nullptr);
+    if (_this->_impl_.header_ == nullptr) {
+      _this->_impl_.header_ =
+          ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(arena, *from._impl_.header_);
+    } else {
+      _this->_impl_.header_->MergeFrom(*from._impl_.header_);
+    }
+  }
+  if (from._internal_group_id() != 0) {
+    _this->_impl_.group_id_ = from._impl_.group_id_;
+  }
+  if (from._internal_create_time() != 0) {
+    _this->_impl_.create_time_ = from._impl_.create_time_;
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SendGroupMessageRequest::CopyFrom(const SendGroupMessageRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.group.SendGroupMessageRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void SendGroupMessageRequest::InternalSwap(SendGroupMessageRequest* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.content_, &other->_impl_.content_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.create_time_)
+      + sizeof(SendGroupMessageRequest::_impl_.create_time_)
+      - PROTOBUF_FIELD_OFFSET(SendGroupMessageRequest, _impl_.header_)>(
+          reinterpret_cast<char*>(&_impl_.header_),
+          reinterpret_cast<char*>(&other->_impl_.header_));
+}
+
+::google::protobuf::Metadata SendGroupMessageRequest::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class SendGroupMessageResponse::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<SendGroupMessageResponse>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_._has_bits_);
+};
+
+void SendGroupMessageResponse::clear_base() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.base_ != nullptr) _impl_.base_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+SendGroupMessageResponse::SendGroupMessageResponse(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.group.SendGroupMessageResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE SendGroupMessageResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::group::SendGroupMessageResponse& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0} {}
+
+SendGroupMessageResponse::SendGroupMessageResponse(
+    ::google::protobuf::Arena* arena,
+    const SendGroupMessageResponse& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SendGroupMessageResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.base_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(
+                              arena, *from._impl_.base_)
+                        : nullptr;
+  _impl_.message_ = (cached_has_bits & 0x00000002u) ? ::google::protobuf::Message::CopyConstruct<::im::group::GroupMessage>(
+                              arena, *from._impl_.message_)
+                        : nullptr;
+
+  // @@protoc_insertion_point(copy_constructor:im.group.SendGroupMessageResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE SendGroupMessageResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
+
+inline void SendGroupMessageResponse::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, base_),
+           0,
+           offsetof(Impl_, message_) -
+               offsetof(Impl_, base_) +
+               sizeof(Impl_::message_));
+}
+SendGroupMessageResponse::~SendGroupMessageResponse() {
+  // @@protoc_insertion_point(destructor:im.group.SendGroupMessageResponse)
+  SharedDtor(*this);
+}
+inline void SendGroupMessageResponse::SharedDtor(MessageLite& self) {
+  SendGroupMessageResponse& this_ = static_cast<SendGroupMessageResponse&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  delete this_._impl_.base_;
+  delete this_._impl_.message_;
+  this_._impl_.~Impl_();
+}
+
+inline void* SendGroupMessageResponse::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) SendGroupMessageResponse(arena);
+}
+constexpr auto SendGroupMessageResponse::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(SendGroupMessageResponse),
+                                            alignof(SendGroupMessageResponse));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull SendGroupMessageResponse::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_SendGroupMessageResponse_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &SendGroupMessageResponse::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<SendGroupMessageResponse>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &SendGroupMessageResponse::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<SendGroupMessageResponse>(), &SendGroupMessageResponse::ByteSizeLong,
+            &SendGroupMessageResponse::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_._cached_size_),
+        false,
+    },
+    &SendGroupMessageResponse::kDescriptorMethods,
+    &descriptor_table_group_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* SendGroupMessageResponse::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 2, 0, 2> SendGroupMessageResponse::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::group::SendGroupMessageResponse>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // .im.group.GroupMessage message = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_.message_)}},
+    // .im.base.BaseResponse base = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_.base_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.BaseResponse base = 1;
+    {PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_.base_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .im.group.GroupMessage message = 2;
+    {PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_.message_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::BaseResponse>()},
+    {::_pbi::TcParser::GetTable<::im::group::GroupMessage>()},
+  }}, {{
+  }},
+};
+
+PROTOBUF_NOINLINE void SendGroupMessageResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.group.SendGroupMessageResponse)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.base_ != nullptr);
+      _impl_.base_->Clear();
+    }
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.message_ != nullptr);
+      _impl_.message_->Clear();
+    }
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* SendGroupMessageResponse::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const SendGroupMessageResponse& this_ = static_cast<const SendGroupMessageResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* SendGroupMessageResponse::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const SendGroupMessageResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.group.SendGroupMessageResponse)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.BaseResponse base = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.base_, this_._impl_.base_->GetCachedSize(), target,
+                stream);
+          }
+
+          // .im.group.GroupMessage message = 2;
+          if (cached_has_bits & 0x00000002u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                2, *this_._impl_.message_, this_._impl_.message_->GetCachedSize(), target,
+                stream);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.group.SendGroupMessageResponse)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t SendGroupMessageResponse::ByteSizeLong(const MessageLite& base) {
+          const SendGroupMessageResponse& this_ = static_cast<const SendGroupMessageResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t SendGroupMessageResponse::ByteSizeLong() const {
+          const SendGroupMessageResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.group.SendGroupMessageResponse)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+          cached_has_bits = this_._impl_._has_bits_[0];
+          if (cached_has_bits & 0x00000003u) {
+            // .im.base.BaseResponse base = 1;
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.base_);
+            }
+            // .im.group.GroupMessage message = 2;
+            if (cached_has_bits & 0x00000002u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.message_);
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void SendGroupMessageResponse::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<SendGroupMessageResponse*>(&to_msg);
+  auto& from = static_cast<const SendGroupMessageResponse&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.group.SendGroupMessageResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(from._impl_.base_ != nullptr);
+      if (_this->_impl_.base_ == nullptr) {
+        _this->_impl_.base_ =
+            ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(arena, *from._impl_.base_);
+      } else {
+        _this->_impl_.base_->MergeFrom(*from._impl_.base_);
+      }
+    }
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(from._impl_.message_ != nullptr);
+      if (_this->_impl_.message_ == nullptr) {
+        _this->_impl_.message_ =
+            ::google::protobuf::Message::CopyConstruct<::im::group::GroupMessage>(arena, *from._impl_.message_);
+      } else {
+        _this->_impl_.message_->MergeFrom(*from._impl_.message_);
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SendGroupMessageResponse::CopyFrom(const SendGroupMessageResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.group.SendGroupMessageResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void SendGroupMessageResponse::InternalSwap(SendGroupMessageResponse* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_.message_)
+      + sizeof(SendGroupMessageResponse::_impl_.message_)
+      - PROTOBUF_FIELD_OFFSET(SendGroupMessageResponse, _impl_.base_)>(
+          reinterpret_cast<char*>(&_impl_.base_),
+          reinterpret_cast<char*>(&other->_impl_.base_));
+}
+
+::google::protobuf::Metadata SendGroupMessageResponse::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================

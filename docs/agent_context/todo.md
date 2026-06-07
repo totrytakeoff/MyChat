@@ -192,17 +192,25 @@ updated_by: coder
   development uses `scripts/dev/prepare_runtime.sh` before startup, and
   `scripts/dev/run_remote_push_stack.sh` wraps the two-process remote Push
   local stack.
+- [x] Group gRPC boundary and standalone server process slice -
+  `common/proto/group.proto` now defines `im.group.GroupService` for
+  create/join/leave/list, member listing, group message send, and group
+  message history; `generate_group_grpc` and aggregate `generate_proto`
+  produce `common/proto/group.grpc.pb.*`; `im::group_grpc_service` adapts
+  generated gRPC calls to the existing ODB-backed GroupService and
+  GroupMessageService boundaries behind `MYCHAT_BUILD_GROUP_GRPC_SERVICE=ON`.
+  `services/group/group_server` hosts that adapter, and focused
+  `GroupGrpcServiceTest` plus `GroupServerAppTest` pin the service/server
+  behavior against Docker PostgreSQL.
 
 ## Current
 
-- [ ] Group gRPC boundary and standalone server process slice - define Group
-  and GroupMessage gRPC contracts, add generated adapters around the existing
-  ODB-backed services, and pin them with focused service/server tests.
+- [ ] Gateway remote Group client facades - add local/remote abstractions for
+  Group HTTP and Group Message HTTP, wire `GatewayServer` through `group.mode`,
+  and preserve existing external HTTP contracts.
 
 ## Next
 
-- [ ] Add Gateway remote Group client facades after Group gRPC/server tests are
-      pinned, preserving current Group and Group Message HTTP contracts.
 - [ ] Re-run the remote ODB regression after Group remote wiring lands.
 - [ ] Extend remote Push/Message real-server coverage only where it adds new
       signal.

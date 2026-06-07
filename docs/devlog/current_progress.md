@@ -399,13 +399,21 @@ Known working:
   tests (23 cases), GroupMessage ODB model, message send/history HTTP
   controller and tests (15 cases), and multi-recipient group message fanout via
   PushService are all passing.
+- Group gRPC boundary and standalone server slice is complete behind explicit
+  gRPC builds: `common/proto/group.proto` now defines
+  `im.group.GroupService` for create/join/leave/list, member listing, group
+  message send, and group message history; `common/proto/group.pb.*` and
+  `common/proto/group.grpc.pb.*` were regenerated through CMake
+  `generate_proto`. `services/group/GroupGrpcService` adapts generated gRPC
+  calls to the existing ODB-backed `GroupService` and `GroupMessageService`
+  semantics, and `services/group/group_server` hosts that adapter as a
+  standalone process on `group.listen_address` (default `0.0.0.0:9004`).
 
 ## Next Immediate Tasks
 
-1. Continue the same gRPC/server/Gateway-remote pattern for Group:
-   define the Group gRPC contract, add the server adapter/process slice, then
-   add Gateway remote Group HTTP facades while preserving current external
-   HTTP contracts.
+1. Add Gateway remote Group client facades around `GroupGrpcService` and
+   `group_server`, preserving current Group and Group Message HTTP external
+   contracts.
 2. Re-run a broader remote ODB regression after Group remote wiring lands.
 3. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.

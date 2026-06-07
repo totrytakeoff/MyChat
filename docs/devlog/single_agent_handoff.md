@@ -865,6 +865,7 @@ Current reliable state:
 - Gateway remote Friend client wiring compiles, links, and passes fake-client
   mapping tests plus a real `FriendServerApp` + `GatewayServer` process-level
   smoke.
+- Group gRPC boundary/server process compile, link, and pass focused tests.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
 - The latest Push/gRPC cleanup may be uncommitted in the working tree. Do not
@@ -872,12 +873,12 @@ Current reliable state:
 
 Recommended next task:
 Continue formal distributed-service work from the now-pinned User, Message,
-Push, and Friend server/Gateway remote paths. The next clean slice is Group
-gRPC/server/Gateway-remote wiring: define Group and GroupMessage gRPC
-contracts, add generated adapters around the existing ODB-backed services,
-host them in a standalone Group server process, then add Gateway remote Group
-HTTP facades while preserving current Group and Group Message HTTP external
-contracts. Keep service repositories on direct
+Push, Friend, and Group server-side remote paths. The next clean slice is
+Gateway remote Group client wiring: add local/remote facades for the existing
+Group HTTP and Group Message HTTP controllers, wrap the generated
+`im.group.GroupService::Stub`, and let `GatewayServer` select local vs. remote
+through `group.mode`, defaulting to local. Preserve current Group and Group
+Message HTTP external contracts. Keep service repositories on direct
 `odb::pgsql::database` unless a future task explicitly adopts `PgSqlConnection`.
 Keep hosted CI paused unless the human explicitly asks to resume CI work.
 

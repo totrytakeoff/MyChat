@@ -4,6 +4,19 @@ package im.group;
 
 import "base.proto";
 
+// GroupService is the distributed gRPC boundary for the current Group MVP.
+// It mirrors the existing Gateway HTTP surface: create/join/leave/list,
+// member listing, group message send, and group message history.
+service GroupService {
+    rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+    rpc JoinGroup(JoinGroupRequest) returns (GroupActionResponse);
+    rpc LeaveGroup(LeaveGroupRequest) returns (GroupActionResponse);
+    rpc ListMyGroups(GetGroupListRequest) returns (GetGroupListResponse);
+    rpc ListMembers(GetGroupMembersRequest) returns (GetGroupMembersResponse);
+    rpc SendGroupMessage(SendGroupMessageRequest) returns (SendGroupMessageResponse);
+    rpc GetGroupMessages(GetGroupMessagesRequest) returns (GetGroupMessagesResponse);
+}
+
 // 群成员角色
 enum GroupRole {
     MEMBER = 0;      // 普通成员
@@ -20,6 +33,8 @@ message GroupInfo {
     string owner_uid = 5;        // 群主ID
     int32 is_muted = 6; // 群状态（0=正常，1=禁言, 2=封禁 , 3=勿扰  ）;
     int64 create_time = 7;       // 创建时间
+    uint64 group_record_id = 8;  // 数值群ID，匹配当前ODB模型
+    int32 member_count = 9;      // 成员数
 }
 
 // 群成员信息
@@ -29,6 +44,17 @@ message GroupMember {
     string nickname = 3;          // 昵称
     int32 is_muted = 4;           // 成员状态（0=正常，1=禁言 ）;
     int64 join_time = 5;         // 加入时间
+    uint64 member_record_id = 6;  // 数值成员关系ID
+}
+
+// 群消息结构
+message GroupMessage {
+    uint64 msg_id = 1;
+    uint64 group_id = 2;
+    string sender_uid = 3;
+    string sender_nickname = 4;
+    string content = 5;
+    int64 create_time = 6;
 }
 
 // 创建群请求
@@ -43,6 +69,24 @@ message CreateGroupRequest {
 message CreateGroupResponse {
     im.base.BaseResponse base = 1;
     GroupInfo group = 2;
+    uint64 group_id = 3;
+}
+
+// 加入群请求
+message JoinGroupRequest {
+    im.base.IMHeader header = 1;
+    uint64 group_id = 2;
+}
+
+// 退出群请求
+message LeaveGroupRequest {
+    im.base.IMHeader header = 1;
+    uint64 group_id = 2;
+}
+
+// 通用群操作响应
+message GroupActionResponse {
+    im.base.BaseResponse base = 1;
 }
 
 // 获取群信息请求
@@ -135,6 +179,7 @@ message QuitGroupResponse {
 message GetGroupMembersRequest {
     im.base.IMHeader header = 1;
     string group_id = 2;
+    uint64 group_record_id = 3;
 }
 
 // 获取群成员列表响应
@@ -149,13 +194,27 @@ message GetGroupMessagesRequest {
     string group_id = 2;
     int64 since = 3;
     int32 limit = 4;
+    uint64 group_record_id = 5;
 }
 
 // 获取群消息响应
 message GetGroupMessagesResponse {
     im.base.BaseResponse base = 1;
-    // 可复用 message.proto 的 MessageBody
-    repeated bytes messages = 2; // 建议用 bytes 或直接 import message.proto
+    repeated GroupMessage messages = 2;
+}
+
+// 发送群消息请求
+message SendGroupMessageRequest {
+    im.base.IMHeader header = 1;
+    uint64 group_id = 2;
+    string content = 3;
+    int64 create_time = 4;
+}
+
+// 发送群消息响应
+message SendGroupMessageResponse {
+    im.base.BaseResponse base = 1;
+    GroupMessage message = 2;
 }
 
 // 转让群主请求

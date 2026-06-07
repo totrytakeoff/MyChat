@@ -142,8 +142,13 @@ the external auth/profile API.
   and `services/friend/FriendGrpcService` maps generated gRPC calls to the
   ODB-backed FriendService. `services/friend/friend_server` hosts the adapter
   as a standalone process. Gateway Friend HTTP can use `RemoteFriendClient`
-  when `friend.mode=remote`. Keep Group gRPC contracts, Gateway remote Group
-  facades, and service-to-service User lookups as explicit follow-up slices.
+  when `friend.mode=remote`. `common/proto/group.proto` now defines
+  `im.group.GroupService`, `generate_group_grpc` produces canonical
+  `common/proto/group.grpc.pb.*`, and `services/group/GroupGrpcService` maps
+  generated gRPC calls to the ODB-backed GroupService and GroupMessageService.
+  `services/group/group_server` hosts the adapter as a standalone process.
+  Keep Gateway remote Group facades and service-to-service User lookups as
+  explicit follow-up slices.
 
 - Risk: PostgreSQL migration startup policy is not decided yet.
   Mitigation: `db/migrations/001_core_schema.sql` and
@@ -163,8 +168,9 @@ the external auth/profile API.
 
 ## Review Questions
 
-1. Should Group gRPC be split into separate Group and GroupMessage services, or
-   one combined gRPC service matching the current HTTP surface?
+1. Should Gateway remote Group use one combined `GroupClient` facade for Group
+   and GroupMessage HTTP, or separate facades that mirror the existing
+   controllers?
 2. Should Friend/Group gRPC boundaries call remote User directly for existence
    checks, or should they keep receiving a local UserService-compatible facade
    until all service processes are split?
