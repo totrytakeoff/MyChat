@@ -9,14 +9,13 @@
 #include "../../common/utils/http_utils.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
-#include "../../services/message/message_service.hpp"
+#include "message_client.hpp"
 #include "../../services/odb/message.hpp"
 
 namespace im::gateway {
 
 using json = nlohmann::json;
 using im::service::message::MessageData;
-using im::service::message::MessageService;
 using im::service::message::SendRequest;
 using im::utils::HttpUtils;
 using im::utils::LogManager;
@@ -46,9 +45,9 @@ json message_data_to_json(const MessageData& d) {
 } // anonymous namespace
 
 MessageHttpController::MessageHttpController(
-    std::shared_ptr<MessageService> msg_service,
+    std::shared_ptr<MessageClient> msg_client,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr)
-    : msg_service_(std::move(msg_service))
+    : msg_client_(std::move(msg_client))
     , auth_mgr_(std::move(auth_mgr))
 {
     LogManager::SetLogToFile("message_http_controller", "logs/message_http_controller.log");
@@ -95,7 +94,7 @@ void MessageHttpController::handle_send(const httplib::Request& req, httplib::Re
         send_req.msg_type = im::service::message::MessageType::TEXT;
         send_req.now_ms = now_ms();
 
-        auto result = msg_service_->send_text_message(send_req);
+        auto result = msg_client_->send_text_message(send_req);
 
         if (!result.ok) {
             HttpUtils::buildResponse(res, 500, "", result.message);
@@ -159,7 +158,7 @@ void MessageHttpController::handle_history(const httplib::Request& req, httplib:
             }
         }
 
-        auto msgs = msg_service_->get_conversation(
+        auto msgs = msg_client_->get_conversation(
             user_info.user_id, peer_uid, before_time, limit);
 
         json messages = json::array();
@@ -215,13 +214,13 @@ void MessageHttpController::handle_offline(const httplib::Request& req, httplib:
             }
         }
 
-        auto msgs = msg_service_->pull_offline(
+        auto msgs = msg_client_->pull_offline(
             user_info.user_id, before_time, limit);
 
     // Mark returned messages as delivered and update status in-place
     int64_t delivered_now = now_ms();
     for (auto& m : msgs) {
-        msg_service_->mark_delivered(m.msg_id, delivered_now);
+        msg_client_->mark_delivered(m.msg_id, delivered_now);
         m.status = im::service::message::MessageStatus::DELIVERED;
         m.delivered_time = delivered_now;
     }

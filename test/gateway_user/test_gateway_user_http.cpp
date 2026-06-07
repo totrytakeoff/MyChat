@@ -19,6 +19,7 @@
 #include <database/redis/redis_mgr.hpp>
 
 #include <gateway/http/user_http_controller.hpp>
+#include <gateway/http/user_client.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <user_service.hpp>
 #include <password_hasher.hpp>
@@ -77,7 +78,8 @@ protected:
             "test_secret_key_for_gateway_user_http_tests", config_path());
         auto hasher = std::make_unique<PasswordHasher>();
         user_service_ = std::make_shared<UserService>(db_, std::move(hasher));
-        controller_ = std::make_unique<UserHttpController>(user_service_, auth_mgr_);
+        user_client_ = std::make_shared<im::gateway::LocalUserClient>(user_service_);
+        controller_ = std::make_unique<UserHttpController>(user_client_, auth_mgr_);
     }
 
     void TearDown() override {
@@ -101,6 +103,7 @@ protected:
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<UserService> user_service_;
+    std::shared_ptr<im::gateway::UserClient> user_client_;
     std::unique_ptr<UserHttpController> controller_;
 };
 

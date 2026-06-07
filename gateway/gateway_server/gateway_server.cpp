@@ -68,6 +68,7 @@
 
 #ifdef IM_ENABLE_USER_HTTP
 #include "../http/user_http_controller.hpp"
+#include "../http/user_client.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
@@ -91,9 +92,18 @@ void register_user_http_routes_on_server(httplib::Server& server,
 }
 #endif
 
+#ifdef IM_ENABLE_REMOTE_USER_CLIENT
+#include "../http/remote_user_client.hpp"
+#endif
+
 #if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS)
 #include "../http/message_http_controller.hpp"
+#include "../http/message_client.hpp"
 #include "../../services/message/message_service.hpp"
+#endif
+
+#ifdef IM_ENABLE_REMOTE_MESSAGE_CLIENT
+#include "../http/remote_message_client.hpp"
 #endif
 
 #ifdef IM_ENABLE_PUSH_SERVICE
@@ -217,6 +227,7 @@ namespace gateway {
 
 namespace {
 
+#if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
 bool is_blank(const std::string& value) {
     return value.find_first_not_of(" \t\n\r\f\v") == std::string::npos;
 }
@@ -230,6 +241,7 @@ std::string require_non_blank_config(const im::utils::ConfigManager& config,
     }
     return value;
 }
+#endif
 
 } // namespace
 
@@ -557,9 +569,48 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
 #ifdef IM_ENABLE_USER_HTTP
         try {
-            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
-            user_http_controller_ = std::make_unique<UserHttpController>(user_svc, auth_mgr_);
+            ConfigManager user_cfg(config_path_);
+            const std::string user_mode =
+                user_cfg.get<std::string>("user.mode", "local");
+            std::shared_ptr<UserClient> user_client;
+
+#ifdef IM_ENABLE_REMOTE_USER_CLIENT
+            if (user_mode == "remote") {
+                const int user_timeout_ms =
+                    user_cfg.get<int>("user.timeout_ms", 200);
+                const std::string endpoint =
+                    require_non_blank_config(user_cfg,
+                                             "user.remote_endpoint",
+                                             "user.mode=remote");
+                user_client = std::make_shared<RemoteUserClient>(
+                    endpoint, std::chrono::milliseconds(user_timeout_ms));
+                server_logger->info(
+                    "Remote User client initialized for endpoint {} with timeout {} ms",
+                    endpoint, user_timeout_ms);
+            }
+#else
+            if (user_mode == "remote") {
+                server_logger->warn(
+                    "user.mode=remote requested but RemoteUserClient is not compiled; "
+                    "falling back to local UserService");
+            }
+#endif
+
+            if (!user_client) {
+                if (user_mode != "local" && user_mode != "remote") {
+                    server_logger->warn(
+                        "Unknown user.mode='{}'; falling back to local UserService",
+                        user_mode);
+                }
+                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+                auto user_svc = std::make_shared<im::service::user::UserService>(
+                    odb_db_, std::move(hasher));
+                user_client = std::make_shared<LocalUserClient>(user_svc);
+                server_logger->info("Local User client initialized");
+            }
+
+            user_http_controller_ = std::make_unique<UserHttpController>(
+                user_client, auth_mgr_);
             server_logger->info("User HTTP controller initialized");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize User HTTP controller: {}", e.what());
@@ -569,8 +620,46 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
 #ifdef IM_ENABLE_MESSAGE_HTTP
         try {
-            auto msg_svc = std::make_shared<im::service::message::MessageService>(odb_db_);
-            message_http_controller_ = std::make_unique<MessageHttpController>(msg_svc, auth_mgr_);
+            ConfigManager message_cfg(config_path_);
+            const std::string message_mode =
+                message_cfg.get<std::string>("message.mode", "local");
+
+#ifdef IM_ENABLE_REMOTE_MESSAGE_CLIENT
+            if (message_mode == "remote") {
+                const int message_timeout_ms =
+                    message_cfg.get<int>("message.timeout_ms", 200);
+                const std::string endpoint =
+                    require_non_blank_config(message_cfg,
+                                             "message.remote_endpoint",
+                                             "message.mode=remote");
+                message_client_ = std::make_shared<RemoteMessageClient>(
+                    endpoint, std::chrono::milliseconds(message_timeout_ms));
+                server_logger->info(
+                    "Remote Message client initialized for endpoint {} with timeout {} ms",
+                    endpoint, message_timeout_ms);
+            }
+#else
+            if (message_mode == "remote") {
+                server_logger->warn(
+                    "message.mode=remote requested but RemoteMessageClient is not compiled; "
+                    "falling back to local MessageService");
+            }
+#endif
+
+            if (!message_client_) {
+                if (message_mode != "local" && message_mode != "remote") {
+                    server_logger->warn(
+                        "Unknown message.mode='{}'; falling back to local MessageService",
+                        message_mode);
+                }
+                auto msg_svc =
+                    std::make_shared<im::service::message::MessageService>(odb_db_);
+                message_client_ = std::make_shared<LocalMessageClient>(msg_svc);
+                server_logger->info("Local Message client initialized");
+            }
+
+            message_http_controller_ = std::make_unique<MessageHttpController>(
+                message_client_, auth_mgr_);
             server_logger->info("Message HTTP controller initialized");
 
 
@@ -631,11 +720,16 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         // Initialize PushService and WS message handler after ConnectionManager and WebSocketServer are ready.
 #ifdef IM_ENABLE_MESSAGE_WS
         try {
+            if (!message_client_) {
+                auto msg_svc =
+                    std::make_shared<im::service::message::MessageService>(odb_db_);
+                message_client_ = std::make_shared<LocalMessageClient>(msg_svc);
+                server_logger->info("Local Message client initialized for WS/Push");
+            }
+
             ConfigManager push_cfg(config_path_);
             const std::string push_mode =
                 push_cfg.get<std::string>("push.mode", "local");
-            const int push_timeout_ms =
-                push_cfg.get<int>("push.timeout_ms", 200);
             bool use_remote_push = false;
 
 #ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
@@ -656,6 +750,9 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
             }
 
             if (use_remote_push) {
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+                const int push_timeout_ms =
+                    push_cfg.get<int>("push.timeout_ms", 200);
                 const std::string endpoint =
                     require_non_blank_config(push_cfg,
                                              "push.remote_endpoint",
@@ -664,10 +761,8 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
                     require_non_blank_config(push_cfg,
                                              "push.gateway_delivery_listen_address",
                                              "push.mode=remote");
-                auto msg_svc_for_push =
-                    std::make_shared<im::service::message::MessageService>(odb_db_);
                 push_service_ = std::make_unique<PushService>(
-                    conn_mgr_.get(), websocket_server_.get(), msg_svc_for_push);
+                    conn_mgr_.get(), websocket_server_.get(), message_client_);
                 start_gateway_push_delivery_server(delivery_listen_address);
                 remote_push_notifier_ = std::make_unique<RemotePushNotifier>(
                     endpoint, std::chrono::milliseconds(push_timeout_ms));
@@ -676,18 +771,16 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
                     "Remote PushNotifier initialized for endpoint {} with timeout {} ms; "
                     "Gateway delivery endpoint {} is available for push_server",
                     endpoint, push_timeout_ms, delivery_listen_address);
+#endif
             } else {
-                auto msg_svc_for_push =
-                    std::make_shared<im::service::message::MessageService>(odb_db_);
                 push_service_ = std::make_unique<PushService>(
-                    conn_mgr_.get(), websocket_server_.get(), msg_svc_for_push);
+                    conn_mgr_.get(), websocket_server_.get(), message_client_);
                 push_notifier_ = push_service_.get();
                 server_logger->info("Local PushService initialized");
             }
 
-            auto msg_svc_for_ws = std::make_shared<im::service::message::MessageService>(odb_db_);
             message_ws_handler_ = std::make_unique<MessageWsHandler>(
-                msg_svc_for_ws, auth_mgr_, push_notifier_);
+                message_client_, auth_mgr_, push_notifier_);
             server_logger->info("Message WS handler initialized with PushNotifier");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Message WS handler: {}", e.what());

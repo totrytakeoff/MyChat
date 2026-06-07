@@ -34,6 +34,8 @@ if(MYCHAT_BUILD_USER_GRPC_SERVICE)
         add_library(im_user_grpc_service STATIC
             user_grpc_service.cpp
             user_grpc_service.hpp
+            user_server_app.cpp
+            user_server_app.hpp
             ${MYCHAT_USER_GRPC_GENERATED_CC}
             ${MYCHAT_USER_GRPC_GENERATED_H}
         )
@@ -56,6 +58,16 @@ if(MYCHAT_BUILD_USER_GRPC_SERVICE)
         )
 
         add_library(im::user_grpc_service ALIAS im_user_grpc_service)
+
+        add_executable(user_server
+            user_server_main.cpp
+        )
+
+        target_link_libraries(user_server
+            PRIVATE
+                im::user_grpc_service
+                im::utils
+        )
     else()
         message(FATAL_ERROR
             "MYCHAT_BUILD_USER_GRPC_SERVICE=ON was set, but gRPC dependencies are not available. "

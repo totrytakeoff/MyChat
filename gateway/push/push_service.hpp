@@ -13,11 +13,8 @@
 #include "../../services/push/push_notifier.hpp"
 #include "../../services/push/push_runtime.hpp"
 
-namespace im::service::message {
-class MessageService;
-}
-
 namespace im::gateway {
+class MessageClient;
 
 class PushService : public im::service::push::PushNotifier,
                     public im::service::push::PushSessionProvider,
@@ -26,7 +23,7 @@ class PushService : public im::service::push::PushNotifier,
 public:
     PushService(ConnectionManager* conn_mgr,
                 im::network::WebSocketServer* ws_server,
-                std::shared_ptr<im::service::message::MessageService> msg_service);
+                std::shared_ptr<MessageClient> msg_client);
 
     void set_fanout_policy(std::unique_ptr<im::service::push::FanoutPolicy> policy);
 
@@ -56,7 +53,7 @@ public:
 private:
     ConnectionManager* conn_mgr_;
     im::network::WebSocketServer* ws_server_;
-    std::shared_ptr<im::service::message::MessageService> msg_service_;
+    std::shared_ptr<MessageClient> msg_client_;
     im::service::push::PushRuntime runtime_;
 };
 

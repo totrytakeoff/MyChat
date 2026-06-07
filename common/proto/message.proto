@@ -3,6 +3,18 @@ package im.message;
 
 import "base.proto";
 
+// MessageService is the service-to-service boundary for persisted one-to-one
+// message workflows. Gateway can keep using local MessageService while this
+// boundary is staged, then switch to RPC without changing the external HTTP/WS
+// contract.
+service MessageService {
+    rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+    rpc GetConversation(GetConversationRequest) returns (GetConversationResponse);
+    rpc PullOffline(PullOfflineRequest) returns (PullOfflineResponse);
+    rpc MarkDelivered(MarkMessageDeliveredRequest) returns (MarkMessageDeliveredResponse);
+    rpc MarkRead(MarkMessageReadRequest) returns (MarkMessageReadResponse);
+}
+
 // 消息类型枚举
 enum MessageType {
     TEXT = 0;         // 文本消息
@@ -27,6 +39,11 @@ message MessageBody {
     bool is_read = 5;              // 是否已读
     string at_uids = 6;            // @的用户ID列表（逗号分隔，群聊时用）
     string ext = 7;                // 扩展字段（JSON字符串，便于后续扩展）
+    string sender_uid = 8;         // 发送者用户ID
+    string receiver_uid = 9;       // 接收者用户ID
+    int64 create_time = 10;        // 创建时间，毫秒时间戳
+    int64 delivered_time = 11;     // 投递时间，毫秒时间戳
+    int64 read_time = 12;          // 已读时间，毫秒时间戳
 }
 
 // 发送消息请求
@@ -53,4 +70,49 @@ message PullMessageRequest {
 message PullMessageResponse {
     im.base.BaseResponse base = 1;
     repeated MessageBody messages = 2; // 拉取到的消息
+}
+
+// 单聊历史查询请求。before_time<=0 时由服务端使用默认上界。
+message GetConversationRequest {
+    string user_a = 1;
+    string user_b = 2;
+    int64 before_time = 3;
+    int32 limit = 4;
+}
+
+message GetConversationResponse {
+    im.base.BaseResponse base = 1;
+    repeated MessageBody messages = 2;
+}
+
+// 离线拉取请求。当前核心服务只返回未投递的一对一消息。
+message PullOfflineRequest {
+    string receiver_uid = 1;
+    int64 before_time = 2;
+    int32 limit = 3;
+}
+
+message PullOfflineResponse {
+    im.base.BaseResponse base = 1;
+    repeated MessageBody messages = 2;
+}
+
+message MarkMessageDeliveredRequest {
+    uint64 msg_id = 1;
+    int64 delivered_time = 2;
+}
+
+message MarkMessageDeliveredResponse {
+    im.base.BaseResponse base = 1;
+    bool marked = 2;
+}
+
+message MarkMessageReadRequest {
+    uint64 msg_id = 1;
+    int64 read_time = 2;
+}
+
+message MarkMessageReadResponse {
+    im.base.BaseResponse base = 1;
+    bool marked = 2;
 }

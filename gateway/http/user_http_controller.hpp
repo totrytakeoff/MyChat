@@ -13,6 +13,7 @@ class UserService;
 
 namespace im::gateway {
 class MultiPlatformAuthManager;
+class UserClient;
 
 // REST adapter for User Service account endpoints.
 //
@@ -24,7 +25,7 @@ class MultiPlatformAuthManager;
 class UserHttpController {
 public:
     UserHttpController(
-        std::shared_ptr<im::service::user::UserService> user_service,
+        std::shared_ptr<UserClient> user_client,
         std::shared_ptr<MultiPlatformAuthManager> auth_mgr
     );
 
@@ -35,7 +36,7 @@ public:
 private:
     std::string extract_bearer_token(const httplib::Request& req) const;
 
-    std::shared_ptr<im::service::user::UserService> user_service_;
+    std::shared_ptr<UserClient> user_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<spdlog::logger> logger_;
 };

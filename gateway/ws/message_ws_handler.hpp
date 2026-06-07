@@ -13,15 +13,12 @@
 #include "message_processor/unified_message.hpp"
 #include "message_processor/message_processor.hpp"
 
-namespace im::service::message {
-class MessageService;
-}
-
 namespace im::service::push {
 class PushNotifier;
 }
 
 namespace im::gateway {
+class MessageClient;
 
 // Handles CMD_SEND_MESSAGE over WebSocket.
 //
@@ -32,14 +29,14 @@ namespace im::gateway {
 class MessageWsHandler {
 public:
     MessageWsHandler(
-        std::shared_ptr<im::service::message::MessageService> msg_service,
+        std::shared_ptr<MessageClient> msg_client,
         std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
         im::service::push::PushNotifier* push_notifier = nullptr);
 
     ProcessorResult handle_send(const UnifiedMessage& msg);
 
 private:
-    std::shared_ptr<im::service::message::MessageService> msg_service_;
+    std::shared_ptr<MessageClient> msg_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     im::service::push::PushNotifier* push_notifier_;
     std::shared_ptr<spdlog::logger> logger_;

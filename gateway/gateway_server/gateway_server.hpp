@@ -42,10 +42,11 @@ namespace grpc { class Server; }
 
 #ifdef IM_ENABLE_USER_HTTP
 namespace im::gateway { class UserHttpController; }
+namespace im::gateway { class UserClient; }
 #endif
 
-#if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS)
-namespace im::service::message { class MessageService; }
+#if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS) || defined(IM_ENABLE_PUSH_SERVICE)
+namespace im::gateway { class MessageClient; }
 #endif
 
 #ifdef IM_ENABLE_MESSAGE_HTTP
@@ -221,6 +222,10 @@ private:
 
 #ifdef IM_ENABLE_MESSAGE_HTTP
     std::unique_ptr<MessageHttpController> message_http_controller_;
+#endif
+
+#if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS) || defined(IM_ENABLE_PUSH_SERVICE)
+    std::shared_ptr<MessageClient> message_client_;
 #endif
 
 #ifdef IM_ENABLE_MESSAGE_WS

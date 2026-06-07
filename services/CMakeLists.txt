@@ -90,12 +90,12 @@ else()
     message(STATUS "Group service is disabled (MYCHAT_BUILD_GROUP_SERVICE=OFF).")
 endif()
 
-# 消息服务库 — gated on MYCHAT_BUILD_MESSAGE_SERVICE and ODB persistence layer.
-if(MYCHAT_BUILD_MESSAGE_SERVICE AND TARGET im::message_odb)
+# 消息服务库 — gated on MYCHAT_BUILD_MESSAGE_SERVICE/MYCHAT_BUILD_MESSAGE_GRPC_SERVICE and ODB persistence layer.
+if((MYCHAT_BUILD_MESSAGE_SERVICE OR MYCHAT_BUILD_MESSAGE_GRPC_SERVICE) AND TARGET im::message_odb)
     add_subdirectory(message)
     message(STATUS "Message service (im_message_service) is enabled.")
-elseif(MYCHAT_BUILD_MESSAGE_SERVICE)
-    message(STATUS "Message service is disabled (MYCHAT_BUILD_MESSAGE_SERVICE=ON but im::message_odb not available). "
+elseif(MYCHAT_BUILD_MESSAGE_SERVICE OR MYCHAT_BUILD_MESSAGE_GRPC_SERVICE)
+    message(STATUS "Message service is disabled (MYCHAT_BUILD_MESSAGE_SERVICE=ON or MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON but im::message_odb not available). "
         "Enable MYCHAT_BUILD_PGSQL_ODB=ON and ensure ODB 2.5.0 runtime is available.")
 else()
     message(STATUS "Message service is disabled (MYCHAT_BUILD_MESSAGE_SERVICE=OFF).")

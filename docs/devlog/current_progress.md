@@ -105,6 +105,51 @@ Known working:
   calls to the existing ODB-backed `UserService` semantics. The target
   `im::user_grpc_service` is gated by `MYCHAT_BUILD_USER_GRPC_SERVICE=ON`, so
   default builds still do not require gRPC.
+- Message gRPC remote boundary first slice is implemented:
+  `common/proto/message.proto` now defines `im.message.MessageService` with
+  `SendMessage`, `GetConversation`, `PullOffline`, `MarkDelivered`, and
+  `MarkRead`; `common/proto/message.pb.*` and
+  `common/proto/message.grpc.pb.*` were regenerated through CMake
+  `generate_proto`. `services/message/MessageGrpcService` adapts generated
+  gRPC calls to the existing ODB-backed `MessageService` semantics. The target
+  `im::message_grpc_service` is gated by `MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON`,
+  so default builds still do not require gRPC.
+- Standalone Message server process slice is implemented behind explicit gRPC
+  builds: `services/message/message_server` hosts `MessageGrpcService` around
+  the ODB-backed `MessageService`, reads PostgreSQL settings from `postgres.*`
+  via `message_server_main`, and listens on `message.listen_address` (default
+  `0.0.0.0:9002`). `MessageServerAppTest` starts the server on an ephemeral
+  port and verifies send, offline pull, and delivered marking through a
+  generated gRPC stub against Docker PostgreSQL.
+- Standalone User server process slice is implemented behind explicit gRPC
+  builds: `services/user/user_server` hosts `UserGrpcService` around the
+  ODB-backed `UserService`, reads PostgreSQL settings from `postgres.*` via
+  `user_server_main`, and listens on `user.listen_address` (default
+  `0.0.0.0:9001`). `UserServerAppTest` starts the server on an ephemeral port
+  and verifies `Register`, `Login`, and `GetUserInfo` through a generated gRPC
+  stub against Docker PostgreSQL.
+- Gateway remote User client wiring is implemented behind explicit gRPC builds:
+  `gateway/http/UserClient` is the local/remote facade consumed by
+  `UserHttpController`; `LocalUserClient` wraps the existing in-process
+  `UserService`, and `RemoteUserClient` wraps the generated
+  `im.user.UserService::Stub`. `GatewayServer` selects local vs. remote through
+  `user.mode`, with `config/dev.json` defaulting to `user.mode = "local"` so
+  existing HTTP behavior remains the default. `RemoteUserGatewayServerSmokeTest`
+  starts a real `UserServerApp` plus a real `GatewayServer` in remote User mode
+  and verifies `/api/v1/auth/register`, `/api/v1/auth/login`, and
+  `/api/v1/auth/info` preserve the current external HTTP contract.
+- Gateway remote Message client wiring is implemented behind explicit gRPC
+  builds: `gateway/http/MessageClient` is the local/remote facade consumed by
+  Message HTTP, Message WS, and Push delivered marking; `LocalMessageClient`
+  wraps the existing in-process `MessageService`, and `RemoteMessageClient`
+  wraps the generated `im.message.MessageService::Stub`. `GatewayServer`
+  selects local vs. remote through `message.mode`, with `config/dev.json`
+  defaulting to `message.mode = "local"` so existing HTTP/WS behavior remains
+  the default. `RemoteMessageGatewayServerSmokeTest` starts a real
+  `MessageServerApp` plus a real `GatewayServer` in remote Message mode and
+  verifies `/api/v1/messages/send`, `/api/v1/messages/history`, and
+  `/api/v1/messages/offline` preserve the current external HTTP contract while
+  using the remote Message process.
 - Gateway remote PushNotifier wiring is now available behind explicit gRPC
   builds: `gateway/push/RemotePushNotifier` uses the generated
   `im.push.PushService::Stub`, `GatewayServer` selects local vs. remote through
@@ -319,8 +364,11 @@ Known working:
   `GatewayServer` remote-mode WS smoke, Gateway remote-mode required endpoint
   validation, unavailable remote-endpoint best-effort semantics, and endpoint
   topology documentation are in place. Real Gateway HTTP group-message send is
-  now covered through the remote Push path. Hosted CI is intentionally paused;
-  local regression scripts remain the active verification path.
+  now covered through the remote Push path. The Message gRPC boundary and
+  standalone `message_server` process are also in place; Gateway remote Message
+  client wiring is complete for Message HTTP, Message WS persistence, and Push
+  delivered marking through `message.mode=remote`. Hosted CI is intentionally
+  paused; local regression scripts remain the active verification path.
 - Friend Service MVP (Phase G) is complete. Persistence model, repository,
   service, and Gateway HTTP controller have focused tests passing, API contract
   documented with TARGET_NOT_FOUND validation and HTTP status mapping.
@@ -333,10 +381,11 @@ Known working:
 
 ## Next Immediate Tasks
 
-1. Add Gateway-side remote User client wiring and/or a standalone `user_server`
-   process around `UserGrpcService`.
-2. Continue service gRPC boundaries for Message/Friend/Group after the User
-   remote path is pinned by focused tests.
+1. Add Friend gRPC boundary and standalone `friend_server` behind explicit
+   build flags, preserving the existing FriendService and Gateway Friend HTTP
+   contracts.
+2. Add Gateway remote Friend client facade after the Friend gRPC service/server
+   path is pinned by focused tests, then continue the same pattern for Group.
 3. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.
 

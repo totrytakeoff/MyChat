@@ -18,6 +18,7 @@
 
 #include <database/redis/redis_mgr.hpp>
 
+#include <gateway/http/message_client.hpp>
 #include <gateway/ws/message_ws_handler.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
@@ -41,6 +42,7 @@ using im::base::ErrorCode;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::ConnectionManager;
+using im::gateway::LocalMessageClient;
 using im::gateway::MessageWsHandler;
 using im::gateway::MultiPlatformAuthManager;
 using im::gateway::ProcessorResult;
@@ -108,14 +110,16 @@ protected:
         auth_mgr_ = std::make_shared<MultiPlatformAuthManager>(
             "test_secret_key_for_gateway_message_ws_tests", config_path());
         msg_service_ = std::make_shared<MessageService>(db_);
+        msg_client_ = std::make_shared<LocalMessageClient>(msg_service_);
         // Default: construct without push infrastructure (null conn_mgr, null ws_server)
-        ws_handler_ = std::make_unique<MessageWsHandler>(msg_service_, auth_mgr_, nullptr);
+        ws_handler_ = std::make_unique<MessageWsHandler>(msg_client_, auth_mgr_, nullptr);
     }
 
     void TearDown() override {
         CleanupTestData();
         ws_handler_.reset();
         conn_mgr_.reset();
+        msg_client_.reset();
         msg_service_.reset();
         auth_mgr_.reset();
         redis_manager().shutdown();
@@ -137,9 +141,9 @@ protected:
     // Create a PushService with a real ConnectionManager (no live sessions) for push-path tests.
     void SetUpPushService() {
         conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
-        push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_service_);
+        push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_client_);
         ws_handler_ = std::make_unique<MessageWsHandler>(
-            msg_service_, auth_mgr_, push_service_.get());
+            msg_client_, auth_mgr_, push_service_.get());
     }
 
     std::string make_token(const std::string& uid,
@@ -195,6 +199,7 @@ protected:
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<MessageService> msg_service_;
+    std::shared_ptr<LocalMessageClient> msg_client_;
     std::unique_ptr<ConnectionManager> conn_mgr_;
     std::unique_ptr<PushService> push_service_;
     std::unique_ptr<MessageWsHandler> ws_handler_;
@@ -246,7 +251,7 @@ TEST_F(GatewayMessageWsTest, SuccessfulSendNotifiesReceiverThroughBoundary) {
     std::string receiver = "task8-test-notify-rec";
     std::string token = make_token(sender);
     ws_handler_ = std::make_unique<MessageWsHandler>(
-        msg_service_, auth_mgr_, &recording_notifier_);
+        msg_client_, auth_mgr_, &recording_notifier_);
 
     auto msg = make_send_message(token, sender, receiver, "Notify receiver");
     ProcessorResult result = ws_handler_->handle_send(*msg);

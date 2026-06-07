@@ -80,6 +80,39 @@ updated_by: coder
   `generate_proto` produce `common/proto/user.grpc.pb.*`; `im::user_grpc_service`
   adapts generated gRPC calls to the existing ODB-backed UserService boundary
   behind `MYCHAT_BUILD_USER_GRPC_SERVICE=ON`.
+- [x] Standalone User server process slice -
+  `services/user/user_server` hosts `UserGrpcService` around the ODB-backed
+  `UserService` behind `MYCHAT_BUILD_USER_GRPC_SERVICE=ON`.
+  `UserServerAppTest` verifies Register/Login/GetUserInfo through a generated
+  gRPC stub against Docker PostgreSQL.
+- [x] Gateway remote User client wiring -
+  `UserHttpController` now depends on the Gateway `UserClient` facade;
+  `LocalUserClient` preserves the existing in-process UserService path, and
+  `RemoteUserClient` wraps the generated `im.user.UserService::Stub`.
+  `GatewayServer` selects through `user.mode`, defaulting to local. Focused
+  `RemoteUserClientTest` and process-level `RemoteUserGatewayServerSmokeTest`
+  verify remote mapping and unchanged HTTP auth/profile contracts.
+- [x] Message gRPC remote boundary first slice -
+  `common/proto/message.proto` now defines `im.message.MessageService` with
+  SendMessage/GetConversation/PullOffline/MarkDelivered/MarkRead;
+  `generate_message_grpc` and aggregate `generate_proto` produce
+  `common/proto/message.grpc.pb.*`; `im::message_grpc_service` adapts generated
+  gRPC calls to the existing ODB-backed MessageService boundary behind
+  `MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON`.
+- [x] Standalone Message server process slice -
+  `services/message/message_server` hosts `MessageGrpcService` around the
+  ODB-backed `MessageService` behind `MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON`.
+  `MessageServerAppTest` verifies send/offline-pull/delivered-marking through
+  a generated gRPC stub against Docker PostgreSQL.
+- [x] Gateway remote Message client wiring -
+  `MessageHttpController`, `MessageWsHandler`, and `PushService` now depend on
+  the Gateway `MessageClient` facade; `LocalMessageClient` preserves the
+  in-process `MessageService` path, and `RemoteMessageClient` wraps the
+  generated `im.message.MessageService::Stub`. `GatewayServer` selects through
+  `message.mode`, defaulting to local. Focused
+  `RemoteMessageClientTest` and process-level
+  `RemoteMessageGatewayServerSmokeTest` verify remote mapping and unchanged
+  Message HTTP contracts.
 - [x] Gateway remote PushNotifier wiring - `gateway/push/RemotePushNotifier`
   wraps the generated `im.push.PushService::Stub`; `GatewayServer` selects
   local vs. remote through `push.mode`; `config/dev.json` defaults to
@@ -142,25 +175,19 @@ updated_by: coder
 
 ## Current
 
-- [ ] Message/Push runtime hardening (Phase F closeout) - finish remaining
-  cleanup after remote Push startup/config behavior and local runtime
-  migration policy.
-  Persistence core (Task 003), Gateway HTTP
-  integration (Task 004), WebSocket send/ack (Task 006), online delivery
-  (Task 007), PushService with FanoutPolicy (Task 008), production fanout
-  policies, multi-recipient fanout, PushNotifier boundary/tests, PushRuntime
-  core extraction, Push gRPC contract/adapter, Gateway remote-client strategy,
-  standalone `push_server` target, first Gateway delivery callback channel,
-  gRPC-link remote Push smoke, and Gateway handler/controller entrypoint remote
-  Push smoke, and full GatewayServer remote Push smoke are complete.
+- [ ] Friend gRPC boundary first slice - add canonical `common/proto/friend.proto`,
+  generated gRPC outputs, `FriendGrpcService`, option-gated `friend_server`,
+  and focused service/server tests while preserving the existing FriendService
+  and Gateway Friend HTTP contracts.
 
 ## Next
 
-- [ ] Extend remote Push real-server coverage only where it adds new signal.
-- [ ] Add Gateway-side remote User client wiring and/or a standalone
-      `user_server` process around `UserGrpcService`.
-- [ ] Continue service gRPC boundaries for Message/Friend/Group after the User
-      remote path is pinned by focused tests.
+- [ ] Add Gateway remote Friend client facade after FriendGrpcService and
+      `friend_server` are pinned by focused tests.
+- [ ] Continue the same gRPC/server/Gateway-remote pattern for Group after
+      Friend remote path is stable.
+- [ ] Extend remote Push/Message real-server coverage only where it adds new
+      signal.
 - [ ] Decide whether Redis pool sizing needs a dedicated load/benchmark
       harness beyond the current live remote Push smoke coverage.
 - [ ] Decide whether any future repository should adopt `PgSqlConnection`;

@@ -42,6 +42,38 @@ Latest reliable baseline after this handoff update:
   two-process development topology.
 - Full ODB + Gateway + Push gRPC configure/build/test passed on 2026-06-05:
   23/23 tests in `build/remote-push-odb`.
+- User gRPC standalone server slice passed on 2026-06-06:
+  `user_server`, `test_user_server_app`, `UserServiceCoreTest`,
+  `UserGrpcServiceTest`, and `UserServerAppTest` build/run in
+  `build/remote-push-odb`.
+- Gateway remote User client slice passed on 2026-06-06:
+  `RemoteUserClientTest`, `RemoteUserGatewayServerSmokeTest`,
+  `GatewayUserHttpTest`, and full `build/remote-push-odb` ctest passed
+  (28/28). A separate `MYCHAT_BUILD_USER_GRPC_SERVICE=OFF` Gateway local User
+  path check passed `GatewayUserHttpTest` and `UserServiceCoreTest`.
+- Message gRPC boundary first slice passed on 2026-06-06:
+  `generate_proto` and `test_message_grpc_service` build with
+  `MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON`; focused regression passed
+  `MessageGrpcServiceTest`, `MessageServiceCoreTest`,
+  `RemoteUserGatewayServerSmokeTest`, and `RemotePushGatewayServerSmokeTest`.
+- Standalone Message server process slice passed on 2026-06-06:
+  `message_server` and `test_message_server_app` build with
+  `MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON`; `MessageServerAppTest` verifies
+  send/offline-pull/delivered-marking through a generated gRPC stub.
+- Gateway remote Message client slice passed on 2026-06-06:
+  `MessageHttpController`, `MessageWsHandler`, and `PushService` now depend on
+  the Gateway `MessageClient` facade; `LocalMessageClient` preserves the
+  in-process `MessageService` path, and `RemoteMessageClient` wraps the
+  generated `im.message.MessageService::Stub`. `GatewayServer` selects through
+  `message.mode`, defaulting to local. Focused verification passed
+  `RemoteMessageClientTest`, `RemoteMessageGatewayServerSmokeTest`,
+  `GatewayMessageHttpTest`, `GatewayMessageWsTest`, `PushServiceTest`,
+  `MessageServerAppTest`, `MessageGrpcServiceTest`,
+  `RemoteUserGatewayServerSmokeTest`, and `RemotePushGatewayServerSmokeTest`
+  in `build/remote-push-odb`. A separate gRPC-default-off configure/build/test
+  also passed `MessageServiceCoreTest`, `GatewayMessageHttpTest`,
+  `GatewayMessageWsTest`, `PushServiceTest`, and `GatewayUserHttpTest` in
+  `build/message-grpc-off-verify`.
 - No-ODB default configure/build/test re-verified on 2026-06-05: 3/3 tests.
 - Codec explicit-enable configure/generate/build passed:
   `generate_proto` and `im_codec_service`.
@@ -166,6 +198,10 @@ Current important moved/new areas from the recent cleanup include:
 - `gateway/http/group_message_http_controller.cpp`
 - `gateway/http/message_http_controller.hpp`
 - `gateway/http/message_http_controller.cpp`
+- `gateway/http/message_client.hpp`
+- `gateway/http/message_client.cpp`
+- `gateway/http/remote_message_client.hpp`
+- `gateway/http/remote_message_client.cpp`
 - `gateway/http/user_http_controller.hpp`
 - `gateway/http/user_http_controller.cpp`
 - `gateway/ws/message_ws_handler.hpp`
@@ -719,6 +755,38 @@ Current reliable state:
   produces common/proto/user.grpc.pb.*, and im::user_grpc_service adapts
   generated gRPC calls to the existing ODB-backed UserService behind
   MYCHAT_BUILD_USER_GRPC_SERVICE=ON.
+- Standalone User server process slice is complete:
+  services/user/user_server hosts UserGrpcService around the ODB-backed
+  UserService, reads postgres.* config plus MYCHAT_DB_* overrides, and listens
+  on user.listen_address. UserServerAppTest starts it on an ephemeral port and
+  verifies Register/Login/GetUserInfo through im.user.UserService::Stub.
+- Gateway remote User client wiring is complete:
+  UserHttpController depends on the Gateway UserClient facade; LocalUserClient
+  preserves the existing in-process UserService path; RemoteUserClient wraps
+  im.user.UserService::Stub. GatewayServer selects local vs. remote with
+  user.mode, defaulting to local. RemoteUserGatewayServerSmokeTest starts a
+  real user_server plus GatewayServer and verifies register/login/profile HTTP
+  routes through the remote User path.
+- Message gRPC remote boundary first slice is complete:
+  common/proto/message.proto defines im.message.MessageService
+  SendMessage/GetConversation/PullOffline/MarkDelivered/MarkRead,
+  generate_message_grpc produces common/proto/message.grpc.pb.*, and
+  im::message_grpc_service adapts generated gRPC calls to the existing
+  ODB-backed MessageService behind MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON.
+- Standalone Message server process slice is complete:
+  services/message/message_server hosts MessageGrpcService around the
+  ODB-backed MessageService, reads postgres.* config plus MYCHAT_DB_* overrides,
+  and listens on message.listen_address. MessageServerAppTest starts it on an
+  ephemeral port and verifies send/offline-pull/delivered-marking through
+  im.message.MessageService::Stub.
+- Gateway remote Message client wiring is complete:
+  MessageHttpController, MessageWsHandler, and PushService depend on the
+  Gateway MessageClient facade; LocalMessageClient preserves the existing
+  in-process MessageService path; RemoteMessageClient wraps
+  im.message.MessageService::Stub. GatewayServer selects local vs. remote with
+  message.mode, defaulting to local. RemoteMessageGatewayServerSmokeTest starts
+  a real message_server plus GatewayServer and verifies send/history/offline
+  HTTP routes through the remote Message path.
 - Gateway remote PushNotifier wiring is complete: gateway/push/RemotePushNotifier
   wraps im.push.PushService::Stub; GatewayServer selects local vs. remote
   notifier through config push.mode; config/dev.json defaults to local.
@@ -776,13 +844,15 @@ Current reliable state:
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
-Continue formal distributed-service work by adding Gateway-side remote User
-client wiring and/or a standalone user_server process around UserGrpcService.
-After the User remote path is pinned by focused tests, continue the same
-pattern for Message, Friend, and Group gRPC boundaries. Keep service
-repositories on direct `odb::pgsql::database` unless a future task explicitly
-adopts `PgSqlConnection`. Keep hosted CI paused unless the human explicitly
-asks to resume CI work.
+Continue formal distributed-service work from the now-pinned User, Message,
+and Push remote paths. The next clean slice is Friend/Group gRPC boundary work:
+start with Friend because its service contract is smaller, add
+`common/proto/friend.proto`, generated gRPC outputs, `FriendGrpcService`,
+option-gated `friend_server`, and focused service/server tests before adding a
+Gateway remote Friend client facade. Preserve current HTTP external contracts.
+Keep service repositories on direct `odb::pgsql::database` unless a future task
+explicitly adopts `PgSqlConnection`. Keep hosted CI paused unless the human
+explicitly asks to resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

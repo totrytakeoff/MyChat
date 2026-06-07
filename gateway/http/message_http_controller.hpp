@@ -7,12 +7,9 @@
 #include <httplib.h>
 #include <spdlog/logger.h>
 
-namespace im::service::message {
-class MessageService;
-}
-
 namespace im::gateway {
 class MultiPlatformAuthManager;
+class MessageClient;
 
 // REST adapter for one-to-one message workflows.
 //
@@ -22,7 +19,7 @@ class MultiPlatformAuthManager;
 class MessageHttpController {
 public:
     MessageHttpController(
-        std::shared_ptr<im::service::message::MessageService> msg_service,
+        std::shared_ptr<MessageClient> msg_client,
         std::shared_ptr<MultiPlatformAuthManager> auth_mgr
     );
 
@@ -33,7 +30,7 @@ public:
 private:
     std::string extract_bearer_token(const httplib::Request& req) const;
 
-    std::shared_ptr<im::service::message::MessageService> msg_service_;
+    std::shared_ptr<MessageClient> msg_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<spdlog::logger> logger_;
 };

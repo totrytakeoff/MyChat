@@ -64,9 +64,11 @@ Gateway Service
 Shared dependencies: Redis, PostgreSQL, Protobuf/gRPC contracts
 ```
 
-Service boundaries are preserved; current in-process calls from Gateway to User
-Service are an MVP shortcut that will become real service calls (gRPC) once the
-codec/gRPC artifacts are regenerated.
+Service boundaries are preserved. Gateway defaults to in-process User calls
+through `LocalUserClient`, but the User gRPC service contract, standalone
+`user_server`, and Gateway `RemoteUserClient` path now exist. User HTTP routes
+can be switched to cross-process calls with `user.mode=remote` without changing
+the external auth/profile API.
 
 ## Key Decisions
 
@@ -84,6 +86,17 @@ codec/gRPC artifacts are regenerated.
 
 - Decision: Gateway-only route registration, no codec gating on auth endpoints.
   Rationale: Auth endpoints were wired directly in Gateway HTTP handlers (Phase 6) rather than waiting for gRPC codec regeneration, keeping the integration MVP simple.
+
+- Decision: Add standalone `user_server` before changing Gateway auth/profile
+  handlers.
+  Rationale: The generated User gRPC contract and `UserGrpcService` adapter are
+  now process-tested independently, so the next change can focus only on
+  Gateway client-side selection and error mapping.
+
+- Decision: Put a small `UserClient` facade between User HTTP and UserService.
+  Rationale: This preserves the existing controller and HTTP response mapping
+  while allowing `GatewayServer` to choose local `UserService` or remote
+  `im.user.UserService::Stub` based on config.
 
 - Decision: Build Message Service persistence before Gateway delivery.
   Rationale: Phase F is split so ODB-backed message storage, validation, chronological history, offline pull, and delivered/read marking are independently tested before HTTP/WebSocket delivery and Push fanout are added.
@@ -109,14 +122,23 @@ codec/gRPC artifacts are regenerated.
   Mitigation: Active generated outputs live under `common/proto`; do not
   reintroduce generated files under `services/codec`.
 
-- Risk: User gRPC is currently a service adapter boundary, not a full
-  standalone runtime path.
+- Risk: User, Message, and Push now have pinned remote paths, but Friend and
+  Group still lack formal gRPC server/client boundaries and other services
+  still consume local service objects in-process.
   Mitigation: `common/proto/user.proto` now defines `im.user.UserService`
   Register/Login/GetUserInfo, `generate_user_grpc` produces canonical
-  `common/proto/user.grpc.pb.*`, and `services/user/UserGrpcService` maps
-  generated gRPC calls to the existing ODB-backed UserService. Keep the next
-  slice focused on Gateway remote User client wiring or a standalone
-  `user_server` process before expanding Message/Friend/Group gRPC boundaries.
+  `common/proto/user.grpc.pb.*`, `services/user/UserGrpcService` maps generated
+  gRPC calls to the ODB-backed UserService, `services/user/user_server` hosts
+  the adapter as a standalone process, and Gateway User HTTP can use
+  `RemoteUserClient` when `user.mode=remote`. `common/proto/message.proto`
+  now defines `im.message.MessageService`, `generate_message_grpc` produces
+  canonical `common/proto/message.grpc.pb.*`, and
+  `services/message/MessageGrpcService` maps generated gRPC calls to the
+  ODB-backed MessageService. `services/message/message_server` hosts the
+  adapter as a standalone process, and Gateway Message HTTP/WS plus Push
+  delivered marking can use `RemoteMessageClient` when `message.mode=remote`.
+  Keep Friend/Group gRPC contracts, Gateway remote Friend/Group facades, and
+  service-to-service User lookups as explicit follow-up slices.
 
 - Risk: PostgreSQL migration startup policy is not decided yet.
   Mitigation: `db/migrations/001_core_schema.sql` and
@@ -136,10 +158,12 @@ codec/gRPC artifacts are regenerated.
 
 ## Review Questions
 
-1. Is the in-process Gateway-to-User shortcut acceptable until codec/gRPC is regenerated, or should service boundaries be enforced earlier?
-2. Should the remaining Gateway-to-Message WebSocket/online delivery work continue the direct in-process pattern first, or should codec/gRPC regeneration happen before that delivery work?
-3. Is the ODB-only persistence decision still correct, or should a lighter SQL option be available for developers who cannot build ODB 2.5.0?
-4. Should any future repository adopt `PgSqlConnection`, or should service repositories keep the direct `odb::pgsql::database` pattern?
-5. Should the next distributed-service slice wire Gateway to remote User first,
-   or create a standalone `user_server` process before changing Gateway call
-   sites?
+1. Should Friend gRPC be split into request/respond/list/pending methods that
+   mirror `FriendService`, or should it expose a coarser command-style API?
+2. Should Friend/Group gRPC boundaries call remote User directly for existence
+   checks, or should they keep receiving a local UserService-compatible facade
+   until all service processes are split?
+3. Is the ODB-only persistence decision still correct, or should a lighter SQL
+   option be available for developers who cannot build ODB 2.5.0?
+4. Should any future repository adopt `PgSqlConnection`, or should service
+   repositories keep the direct `odb::pgsql::database` pattern?

@@ -2,11 +2,10 @@
 
 #include <string>
 
-#include "../../services/message/message_service.hpp"
+#include "../http/message_client.hpp"
 
 namespace im::gateway {
 
-using im::service::message::MessageService;
 using im::service::push::FanoutPolicy;
 using im::service::push::PushSessionInfo;
 
@@ -14,10 +13,10 @@ using im::service::push::PushSessionInfo;
 
 PushService::PushService(ConnectionManager* conn_mgr,
                          im::network::WebSocketServer* ws_server,
-                         std::shared_ptr<MessageService> msg_service)
+                         std::shared_ptr<MessageClient> msg_client)
     : conn_mgr_(conn_mgr)
     , ws_server_(ws_server)
-    , msg_service_(std::move(msg_service))
+    , msg_client_(std::move(msg_client))
     , runtime_(this, this, this)
 {}
 
@@ -71,10 +70,10 @@ bool PushService::send_payload(const std::string& session_id,
 }
 
 bool PushService::mark_delivered(uint64_t msg_id, int64_t delivered_time) {
-    if (!msg_service_) {
+    if (!msg_client_) {
         return false;
     }
-    return msg_service_->mark_delivered(msg_id, delivered_time);
+    return msg_client_->mark_delivered(msg_id, delivered_time);
 }
 
 } // namespace im::gateway

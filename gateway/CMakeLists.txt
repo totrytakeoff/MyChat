@@ -37,7 +37,10 @@ add_library(im::gateway_core ALIAS im_gateway_core)
 
 # User HTTP Controller — 仅当 User Service 可用时编译和链接
 if(TARGET im::user_service)
-    target_sources(im_gateway_core PRIVATE http/user_http_controller.cpp)
+    target_sources(im_gateway_core PRIVATE
+        http/user_client.cpp
+        http/user_http_controller.cpp
+    )
     target_link_libraries(im_gateway_core PUBLIC im::user_service)
     target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_USER_HTTP)
     message(STATUS "User HTTP controller enabled (im::user_service available)")
@@ -45,14 +48,37 @@ else()
     message(STATUS "User HTTP controller disabled (im::user_service not available)")
 endif()
 
+# Remote User client — explicit gRPC path only.
+if(TARGET im::user_grpc_service)
+    target_sources(im_gateway_core PRIVATE http/remote_user_client.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::user_grpc_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_REMOTE_USER_CLIENT)
+    message(STATUS "Remote User client enabled (im::user_grpc_service available)")
+else()
+    message(STATUS "Remote User client disabled (im::user_grpc_service not available)")
+endif()
+
 # Message HTTP Controller — 仅当 Message Service 可用时编译和链接
 if(TARGET im::message_service)
-    target_sources(im_gateway_core PRIVATE http/message_http_controller.cpp)
+    target_sources(im_gateway_core PRIVATE
+        http/message_client.cpp
+        http/message_http_controller.cpp
+    )
     target_link_libraries(im_gateway_core PUBLIC im::message_service)
     target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_MESSAGE_HTTP)
     message(STATUS "Message HTTP controller enabled (im::message_service available)")
 else()
     message(STATUS "Message HTTP controller disabled (im::message_service not available)")
+endif()
+
+# Remote Message client — explicit gRPC path only.
+if(TARGET im::message_grpc_service)
+    target_sources(im_gateway_core PRIVATE http/remote_message_client.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::message_grpc_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_REMOTE_MESSAGE_CLIENT)
+    message(STATUS "Remote Message client enabled (im::message_grpc_service available)")
+else()
+    message(STATUS "Remote Message client disabled (im::message_grpc_service not available)")
 endif()
 
 # PushService — requires Message Service plus the service-owned Push boundary.

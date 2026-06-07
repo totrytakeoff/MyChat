@@ -9,16 +9,13 @@
 #include "../../common/utils/http_utils.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
-#include "../../services/user/password_hasher.hpp"
-#include "../../services/user/user_service.hpp"
+#include "user_client.hpp"
 
 namespace im::gateway {
 
 using json = nlohmann::json;
-using im::service::user::PasswordHasher;
 using im::service::user::RegisterRequest;
 using im::service::user::UserProfile;
-using im::service::user::UserService;
 using im::utils::HttpUtils;
 using im::utils::LogManager;
 
@@ -47,9 +44,9 @@ int64_t now_ms() {
 } // anonymous namespace
 
 UserHttpController::UserHttpController(
-    std::shared_ptr<UserService> user_service,
+    std::shared_ptr<UserClient> user_client,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr)
-    : user_service_(std::move(user_service))
+    : user_client_(std::move(user_client))
     , auth_mgr_(std::move(auth_mgr))
 {
     LogManager::SetLogToFile("user_http_controller", "logs/user_http_controller.log");
@@ -84,7 +81,7 @@ void UserHttpController::handle_register(const httplib::Request& req, httplib::R
         reg_req.nickname = nickname.empty() ? account : nickname;
         reg_req.now_ms = now_ms();
 
-        auto result = user_service_->register_user(reg_req);
+        auto result = user_client_->register_user(reg_req);
 
         if (!result.ok) {
             if (result.error_code == "DUPLICATE_ACCOUNT") {
@@ -135,7 +132,7 @@ void UserHttpController::handle_login(const httplib::Request& req, httplib::Resp
             return;
         }
 
-        auto result = user_service_->login_by_account(account, password, now_ms());
+        auto result = user_client_->login_by_account(account, password, now_ms());
 
         if (!result.ok) {
             if (result.error_code == "WRONG_PASSWORD" || result.error_code == "INVALID_ACCOUNT") {
@@ -181,7 +178,7 @@ void UserHttpController::handle_profile(const httplib::Request& req, httplib::Re
             return;
         }
 
-        auto profile = user_service_->get_profile_by_uid(user_info.user_id);
+        auto profile = user_client_->get_profile_by_uid(user_info.user_id);
         if (!profile.has_value()) {
             HttpUtils::buildResponse(res, 404, "",
                 "User profile not found");

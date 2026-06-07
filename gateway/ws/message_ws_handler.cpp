@@ -7,14 +7,13 @@
 #include "../../common/utils/log_manager.hpp"
 #include "../../common/utils/service_identity.hpp"
 #include "../../services/push/push_notifier.hpp"
-#include "../../services/message/message_service.hpp"
+#include "../http/message_client.hpp"
 #include "../../services/odb/message.hpp"
 
 namespace im::gateway {
 
 using im::base::ErrorCode;
 using im::network::ProtobufCodec;
-using im::service::message::MessageService;
 using im::service::message::SendRequest;
 using im::utils::LogManager;
 using im::utils::ServiceIdentityManager;
@@ -54,10 +53,10 @@ std::string encode_error_response(const im::base::IMHeader& request_header,
 } // anonymous namespace
 
 MessageWsHandler::MessageWsHandler(
-    std::shared_ptr<MessageService> msg_service,
+    std::shared_ptr<MessageClient> msg_client,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
     im::service::push::PushNotifier* push_notifier)
-    : msg_service_(std::move(msg_service))
+    : msg_client_(std::move(msg_client))
     , auth_mgr_(std::move(auth_mgr))
     , push_notifier_(push_notifier)
 {
@@ -158,7 +157,7 @@ ProcessorResult MessageWsHandler::handle_send(const UnifiedMessage& msg) {
         store_req.msg_type = im::service::message::MessageType::TEXT;
         store_req.now_ms = now_ms();
 
-        auto result = msg_service_->send_text_message(store_req);
+        auto result = msg_client_->send_text_message(store_req);
         if (!result.ok) {
             logger_->warn("Persistence failed: {} ({})", result.message, result.error_code);
             std::string error_pb = encode_error_response(

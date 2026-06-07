@@ -18,6 +18,7 @@
 
 #include <database/redis/redis_mgr.hpp>
 
+#include <gateway/http/message_client.hpp>
 #include <gateway/http/message_http_controller.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <message_service.hpp>
@@ -37,6 +38,7 @@ using json = nlohmann::json;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::MessageHttpController;
+using im::gateway::LocalMessageClient;
 using im::gateway::MultiPlatformAuthManager;
 using im::service::message::MessageService;
 using im::utils::LogManager;
@@ -76,7 +78,8 @@ protected:
         auth_mgr_ = std::make_shared<MultiPlatformAuthManager>(
             "test_secret_key_for_gateway_message_http_tests", config_path());
         msg_service_ = std::make_shared<MessageService>(db_);
-        controller_ = std::make_unique<MessageHttpController>(msg_service_, auth_mgr_);
+        msg_client_ = std::make_shared<LocalMessageClient>(msg_service_);
+        controller_ = std::make_unique<MessageHttpController>(msg_client_, auth_mgr_);
     }
 
     void TearDown() override {
@@ -107,6 +110,7 @@ protected:
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<MessageService> msg_service_;
+    std::shared_ptr<LocalMessageClient> msg_client_;
     std::unique_ptr<MessageHttpController> controller_;
 };
 
