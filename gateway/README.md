@@ -4,7 +4,7 @@ Date: 2026-06-04
 
 The Gateway is the client-facing process. It owns HTTP route registration,
 WebSocket message handling, online connection state, authentication integration,
-and PushNotifier composition for local in-process or explicit remote push.
+and local/remote service facade composition.
 
 ## Directory Map
 
@@ -13,6 +13,8 @@ and PushNotifier composition for local in-process or explicit remote push.
   registration.
 - `http/` - REST controllers. These translate HTTP JSON requests into service
   DTO calls, enforce Bearer access-token identity, and format HTTP responses.
+  User, Message, Friend, and Group controllers call Gateway client facades so
+  local in-process and explicit remote gRPC modes share the same HTTP contract.
 - `ws/` - WebSocket command handlers. These consume `UnifiedMessage` values
   parsed from protobuf envelopes and return `ProcessorResult` responses.
 - `push/` - push notifier implementations. `PushService` is the local
@@ -55,6 +57,9 @@ features are added only when their service targets exist:
 - `GatewayServer` defaults to local push via `push.mode = "local"` and only
   selects `RemotePushNotifier` when an explicit gRPC build provides it and
   `push.mode = "remote"` is configured.
+- `GatewayServer` also defaults User, Message, Friend, and Group to local mode.
+  Explicit remote mode requires the corresponding gRPC build switch and remote
+  endpoint config for that service.
 - In `push.mode = "remote"`, Gateway still owns WebSocket sessions. It exposes
   `GatewayPushDeliveryService` on `push.gateway_delivery_listen_address` so
   `push_server` can call back for session lookup, payload send, and delivered
@@ -163,3 +168,14 @@ Or use the wrapper that starts both local processes and stops them together:
 ```bash
 scripts/dev/run_remote_push_stack.sh
 ```
+
+Full local remote-service startup:
+
+```bash
+scripts/dev/run_remote_services_stack.sh
+```
+
+This uses `config/dev.remote-all.json` to run User, Message, Friend, Group,
+Push, and Gateway as separate local processes. See
+`docs/devlog/phase18_remote_runtime_runbook.md` for the endpoint map and
+troubleshooting notes.

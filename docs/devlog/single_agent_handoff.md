@@ -2,11 +2,11 @@
 
 Date: 2026-06-04
 
-Updated: 2026-06-06
+Updated: 2026-06-07
 
 ## Status Summary
 
-MyChat is ready for the next single coding agent.
+MyChat is in final stabilization and regression closure.
 
 Continue as a manual single agent unless the human explicitly asks for a
 different workflow.
@@ -16,6 +16,35 @@ next task was "Finalize Friend Service MVP contract/docs, then start Group MVP";
 that work has now been completed and verified.
 
 Latest reliable baseline after this handoff update:
+
+- Phase 18 stabilization is now the active workstream:
+  `docs/devlog/phase18_stabilization.md` records the final regression entry
+  points, serial ODB test rule, current verification snapshot, and remaining
+  stabilization tasks.
+- `scripts/ci/remote_push_odb.sh` keeps its historical name, but now enables
+  all active remote service gRPC boundaries: User, Message, Friend, Group, and
+  Push. Treat it as the heavy remote-services ODB/gRPC regression entrypoint.
+- Do not reintroduce hosted GitHub CI during this pass unless the human
+  explicitly asks for it. Local regression scripts are the source of truth.
+- Preserve default local mode and gRPC-off builds. Remote service behavior must
+  stay behind explicit build/config switches.
+- Final stabilization verification passed locally on 2026-06-07:
+  `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh` (2/2), Push-focused
+  remote tests (10/10), and the full `build/remote-push-odb` CTest suite
+  (40/40). The heavy script initially exposed a stale test-only constructor path
+  in `RemotePushGatewayEntrypointsTest`; it was fixed to use
+  `LocalMessageClient` and `LocalGroupClient`, matching production facade
+  assembly.
+- Full remote local runtime assets are now present: `config/dev.remote-all.json`
+  sets all active services to remote mode, `scripts/dev/run_remote_services_stack.sh`
+  starts User/Message/Friend/Group/Push/Gateway in order, and
+  `docs/devlog/phase18_remote_runtime_runbook.md` documents endpoint ownership,
+  health smoke, and troubleshooting.
+- ODB-backed heavy regression is serial by policy. `scripts/ci/remote_push_odb.sh`
+  passes `--parallel 1` to CTest; `MYCHAT_CI_JOBS` only controls build
+  parallelism.
+- After encoding the serial policy, focused remote Gateway smokes passed 6/6
+  with `--parallel 1`, and `scripts/ci/default_regression.sh` passed 2/2.
 
 - CI/CD local scripts verified on 2026-06-05:
   `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and

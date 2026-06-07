@@ -66,7 +66,9 @@ Gateway Service
   |-- Message parser / protobuf codec
   |-- Router manager
   |
-  | service calls (in-process for MVP)
+  | service calls
+  | default: local/in-process facades
+  | explicit gRPC builds: remote service processes
   v
 +----------------+     +------------------+
 | User Service   |     | Message Service  |
@@ -85,7 +87,15 @@ Shared dependencies:
   Protobuf/gRPC contracts
 ```
 
-> **MVP Decision (2026-06-03):** All backend services are linked as static libraries directly into the gateway binary. Inter-service calls are in-process function calls, not network RPC. This was chosen deliberately to ship working MVP features without blocking on gRPC/codec extraction. Extraction into separate processes with gRPC boundaries is deferred until a concrete scalability need arises. The codec gRPC target (`MYCHAT_BUILD_CODEC_SERVICE`) remains OFF by default; active generated outputs are canonical under `common/proto`.
+> **MVP Decision (updated 2026-06-07):** Repository defaults still favor a
+> fast local topology: service modules are linked into Gateway through local
+> facades unless an explicit gRPC build switch is enabled. The distributed
+> direction is no longer deferred, though: User, Message, Friend, Group, and
+> Push now have generated gRPC service boundaries, standalone server apps, and
+> Gateway remote facades behind explicit build/config switches. The codec gRPC
+> target (`MYCHAT_BUILD_CODEC_SERVICE`) remains OFF by default; active generated
+> outputs are canonical under `common/proto` and must be regenerated through
+> CMake `generate_proto`.
 
 ## Service MVP Boundaries
 
@@ -149,12 +159,13 @@ Shared dependencies:
 
 ## Current Runtime Entry
 
-Development runtime currently starts Redis/PostgreSQL through Docker and starts
-Gateway from one config file:
+Default development runtime starts Redis/PostgreSQL through Docker and starts
+Gateway from one local-mode config file:
 
 ```bash
 docker compose up -d redis postgres
-/tmp/mychat-phase1/gateway/gateway_server --config config/dev.json
+scripts/dev/prepare_runtime.sh
+build/remote-push-odb/gateway/gateway_server --config config/dev.json
 ```
 
 Default development ports:
@@ -186,38 +197,44 @@ Completed baseline:
 - User, Message, Friend, and Group service MVPs are implemented as
   independently tested service libraries and integrated through Gateway HTTP
   and WebSocket paths.
-- Push has crossed the first real service boundary: the service-owned
-  `PushNotifier`/`PushRuntime` contract, gRPC `PushService.NotifyUser`,
-  standalone `push_server`, Gateway `RemotePushNotifier`, and Gateway delivery
-  callback channel are present behind explicit gRPC builds.
+- User, Message, Friend, Group, and Push have explicit gRPC service
+  boundaries, standalone service-server apps, and Gateway remote facades behind
+  explicit gRPC builds.
+- Push owns the service `PushNotifier`/`PushRuntime` contract, gRPC
+  `PushService.NotifyUser`, standalone `push_server`, Gateway
+  `RemotePushNotifier`, and Gateway delivery callback channel.
 - `config/dev.remote-push.json` documents the local two-process Gateway/Push
   development topology. Default `config/dev.json` remains local in-process
   Push for fast development.
 - Local regression scripts exist under `scripts/ci/`; hosted GitHub CI is
   intentionally paused during fast feature development.
 
-Not complete yet:
+Final stabilization scope:
 
-- User, Message, Friend, and Group are still linked in-process into Gateway for
-  the MVP. Their public service boundaries are preserved, but they are not yet
-  independent gRPC service processes.
-- Push is the first partially extracted service process; endpoint/config
-  hardening now has required remote endpoint validation and a two-process
-  development config, but broader operational policy is still being tightened.
+- Default local mode and explicit remote mode both need broader end-to-end
+  regression before the project can be considered stable.
+- User, Message, Friend, Group, and Push remote paths exist, but remote
+  multi-process developer documentation and startup-order guidance still need
+  to be made more complete.
+- Push remote endpoint/config hardening has required endpoint validation and a
+  two-process development config; broader operational policy is still being
+  tightened.
 - PostgreSQL schema migration baseline exists through
   `db/migrations/001_core_schema.sql` and `scripts/db/migrate_postgres.sh`;
   local development uses `scripts/dev/prepare_runtime.sh` as the explicit
   pre-start hook while service binaries avoid implicit migrations.
-- Redis is still a mutex-serialized single-connection wrapper, not a
-  production connection pool.
+- Redis now uses a hiredis connection pool with focused concurrency and
+  reconnect coverage; realistic pool sizing still needs a dedicated load pass.
 - Inactive duplicate generated files under `services/codec` have been removed;
   active builds use canonical outputs from `common/proto`.
 
 ## Known Technical Debt
 
-- Redis wrapper is a minimal hiredis adapter, not a production connection pool.
+- Redis pool defaults are not load-tested yet.
 - ODB 2.5.0 runtime must be built from source; not yet available in vcpkg.
-- `pgsql_conn.hpp` RAII wrapper has string-ID and shared-ptr issues.
+- `PgSqlConnection` has focused coverage, but service repositories still use
+  direct `odb::pgsql::database` and should not be migrated wholesale without a
+  separate repository-boundary plan.
 - Several old test suites still reflect `redis-plus-plus` or experimental
   Gateway APIs.
 - Hosted CI is deferred until the service/process boundaries stabilize.

@@ -19,7 +19,9 @@
 
 #include <database/redis/redis_mgr.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
+#include <gateway/http/group_client.hpp>
 #include <gateway/http/group_message_http_controller.hpp>
+#include <gateway/http/message_client.hpp>
 #include <gateway/push/gateway_push_delivery_service.hpp>
 #include <gateway/push/remote_push_notifier.hpp>
 #include <gateway/ws/message_ws_handler.hpp>
@@ -46,6 +48,8 @@ using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::GatewayPushDeliveryService;
 using im::gateway::GroupMessageHttpController;
+using im::gateway::LocalGroupClient;
+using im::gateway::LocalMessageClient;
 using im::gateway::MessageWsHandler;
 using im::gateway::MultiPlatformAuthManager;
 using im::gateway::ProcessorResult;
@@ -193,6 +197,8 @@ protected:
         msg_svc_ = std::make_shared<im::service::message::MessageService>(db_);
         group_svc_ = std::make_shared<GroupService>(db_, user_svc_);
         group_msg_svc_ = std::make_shared<GroupMessageService>(db_, user_svc_, group_svc_);
+        message_client_ = std::make_shared<LocalMessageClient>(msg_svc_);
+        group_client_ = std::make_shared<LocalGroupClient>(group_svc_, group_msg_svc_);
 
         gateway_endpoint_ = std::make_unique<GatewayDeliveryEndpoint>(
             &sessions_, &payload_sender_, &delivery_marker_);
@@ -219,6 +225,8 @@ protected:
         push_server_.reset();
         gateway_endpoint_.reset();
         CleanupTestData();
+        group_client_.reset();
+        message_client_.reset();
         group_msg_svc_.reset();
         group_svc_.reset();
         msg_svc_.reset();
@@ -335,6 +343,8 @@ protected:
     std::shared_ptr<im::service::message::MessageService> msg_svc_;
     std::shared_ptr<GroupService> group_svc_;
     std::shared_ptr<GroupMessageService> group_msg_svc_;
+    std::shared_ptr<LocalMessageClient> message_client_;
+    std::shared_ptr<LocalGroupClient> group_client_;
     RecordingSessionProvider sessions_;
     RecordingPayloadSender payload_sender_;
     RecordingDeliveryMarker delivery_marker_;
@@ -348,7 +358,7 @@ TEST_F(RemotePushGatewayEntrypointsTest, DirectMessageWsUsesRemotePushPath) {
     const std::string receiver = "remote-push-entry-direct-receiver";
     sessions_.add_session(receiver, "direct-session-1");
 
-    MessageWsHandler handler(msg_svc_, auth_mgr_, remote_notifier_.get());
+    MessageWsHandler handler(message_client_, auth_mgr_, remote_notifier_.get());
     auto msg = make_send_message(
         make_token(sender), sender, receiver, "direct remote payload");
 
@@ -392,7 +402,7 @@ TEST_F(RemotePushGatewayEntrypointsTest, GroupMessageHttpUsesRemotePushForMember
     sessions_.add_session(owner, "owner-should-not-receive");
 
     GroupMessageHttpController controller(
-        group_svc_, group_msg_svc_, auth_mgr_, remote_notifier_.get());
+        group_client_, auth_mgr_, remote_notifier_.get());
 
     httplib::Request request;
     request.method = "POST";

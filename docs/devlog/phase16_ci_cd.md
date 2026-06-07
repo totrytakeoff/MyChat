@@ -6,7 +6,7 @@ Date: 2026-06-05
 
 Promote the current local regression commands into reusable CI entrypoints
 without changing project runtime behavior. The first CI/CD slice is split into
-a lightweight default path and a heavier remote Push ODB/gRPC path.
+a lightweight default path and a heavier remote-services ODB/gRPC path.
 
 ## Current Decision
 
@@ -50,10 +50,13 @@ New local CI scripts:
   - Configures `build/ci-remote-push-odb`.
   - Uses `vcpkg_installed/remote-push-odb` by default so the heavier manifest
     feature install can be cached without causing default CI dependency churn.
+  - The script name is historical. As of Phase 18 it covers the active
+    User/Message/Friend/Group/Push remote service boundaries, not only Push.
   - Removes stale checked-in protobuf/gRPC outputs and regenerates them with
     the configured vcpkg toolchain before compiling.
   - Enables `pgsql-odb` and `codec-grpc` manifest features.
-  - Enables services, Gateway, Push gRPC, and PostgreSQL/ODB.
+  - Enables services, Gateway, User/Message/Friend/Group/Push gRPC, and
+    PostgreSQL/ODB.
   - Starts Redis/PostgreSQL through `docker compose` when Docker is available.
   - Applies PostgreSQL schema migrations through
     `scripts/db/migrate_postgres.sh` before configuring/building the ODB/gRPC
@@ -63,7 +66,10 @@ New local CI scripts:
     `MYCHAT_CI_BUILD_ODB_RUNTIME=ON`.
   - Builds `test_remote_push_gateway_server_smoke`, runs the process-level
     remote Push smoke, builds the full test set, then runs Push-focused tests
-    and the full suite.
+    and the full suite. The final full-suite pass covers all registered remote
+    service tests in that build.
+  - Runs CTest with `--parallel 1` because ODB-backed tests share the same
+    Docker PostgreSQL instance and still use overlapping cleanup prefixes.
 
 Hosted workflow state:
 
@@ -84,11 +90,15 @@ MYCHAT_BUILD_CODEC_SERVICE=OFF
 MYCHAT_BUILD_PGSQL_ODB=OFF
 ```
 
-The heavier remote Push job is the only first-slice CI path that enables:
+The heavier remote-services job is the only local CI path that enables:
 
 ```text
 VCPKG_MANIFEST_FEATURES=pgsql-odb;codec-grpc
 MYCHAT_BUILD_SERVICES=ON
+MYCHAT_BUILD_USER_GRPC_SERVICE=ON
+MYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON
+MYCHAT_BUILD_FRIEND_GRPC_SERVICE=ON
+MYCHAT_BUILD_GROUP_GRPC_SERVICE=ON
 MYCHAT_BUILD_PUSH_GRPC_SERVICE=ON
 MYCHAT_BUILD_PGSQL_ODB=ON
 ```
@@ -118,7 +128,7 @@ scripts/ci/checks.sh
 scripts/ci/default_regression.sh
 ```
 
-Remote Push ODB/gRPC regression:
+Remote-services ODB/gRPC regression:
 
 ```bash
 scripts/build_odb_runtime_2_5.sh
@@ -141,6 +151,9 @@ MYCHAT_CI_VCPKG_INSTALLED_DIR=/path/to/vcpkg_installed_slice scripts/ci/default_
 MYCHAT_CI_START_REDIS=OFF scripts/ci/default_regression.sh
 MYCHAT_ODB_ROOT=/path/to/odb-2.5.0 scripts/ci/remote_push_odb.sh
 ```
+
+`MYCHAT_CI_JOBS` controls CMake build parallelism only. The heavy
+remote-services ODB/gRPC script keeps CTest serial by policy.
 
 ## Remaining Work
 
@@ -175,6 +188,18 @@ Results:
   - process-level `RemotePushGatewayServerSmokeTest`: 1/1 test;
   - Push-focused tests: 10/10 tests;
   - full ODB + Gateway + Push gRPC suite: 23/23 tests.
+
+Phase 18 update on 2026-06-07:
+
+- `scripts/ci/remote_push_odb.sh` now enables User, Message, Friend, Group,
+  and Push gRPC service boundaries. The script name remains historical for
+  compatibility with existing local paths.
+- The expanded remote-services ODB/gRPC build passed after updating
+  `RemotePushGatewayEntrypointsTest` to use Gateway local facades instead of
+  stale direct service constructor calls.
+- Focused Push tests passed 10/10.
+- Full `build/remote-push-odb` CTest passed 40/40.
+- The script now passes `--parallel 1` to all heavy CTest invocations.
 
 Note: the first sandboxed default-regression run failed because local CMake
 uses `/home/myself/pkgs/vcpkg` and vcpkg could not take its filesystem lock

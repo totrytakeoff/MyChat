@@ -10,6 +10,7 @@ build_type="${MYCHAT_CI_BUILD_TYPE:-Debug}"
 odb_root="${MYCHAT_ODB_ROOT:-${repo_root}/.odb/installed}"
 build_odb_runtime="${MYCHAT_CI_BUILD_ODB_RUNTIME:-OFF}"
 vcpkg_installed_dir="${MYCHAT_CI_VCPKG_INSTALLED_DIR:-${repo_root}/vcpkg_installed/remote-push-odb}"
+ctest_args=(--output-on-failure --parallel 1)
 
 regenerate_proto() {
   echo "==> Removing stale protobuf/gRPC outputs"
@@ -22,6 +23,10 @@ regenerate_proto() {
     common/proto/message.pb.cc common/proto/message.pb.h \
     common/proto/push.pb.cc common/proto/push.pb.h \
     common/proto/codec_service.pb.cc common/proto/codec_service.pb.h \
+    common/proto/user.grpc.pb.cc common/proto/user.grpc.pb.h \
+    common/proto/friend.grpc.pb.cc common/proto/friend.grpc.pb.h \
+    common/proto/group.grpc.pb.cc common/proto/group.grpc.pb.h \
+    common/proto/message.grpc.pb.cc common/proto/message.grpc.pb.h \
     common/proto/push.grpc.pb.cc common/proto/push.grpc.pb.h \
     common/proto/codec_service.grpc.pb.cc common/proto/codec_service.grpc.pb.h
 
@@ -41,7 +46,7 @@ if [[ ! -f "${odb_root}/lib/libodb.a" ]]; then
 ODB 2.5.0 runtime was not found at:
   ${odb_root}
 
-Build it before running the remote Push ODB/gRPC CI slice:
+Build it before running the remote services ODB/gRPC CI slice:
   scripts/build_odb_runtime_2_5.sh
 
 Or provide an existing install prefix:
@@ -81,13 +86,17 @@ fi
 echo "==> Applying PostgreSQL schema migrations"
 scripts/db/migrate_postgres.sh
 
-echo "==> Configuring remote Push ODB/gRPC build: ${build_dir}"
+echo "==> Configuring remote services ODB/gRPC build: ${build_dir}"
 cmake -S . -B "${build_dir}" \
   -DVCPKG_INSTALLED_DIR="${vcpkg_installed_dir}" \
   -DVCPKG_MANIFEST_FEATURES="pgsql-odb;codec-grpc" \
   -DMYCHAT_BUILD_TESTS=ON \
   -DMYCHAT_BUILD_GATEWAY=ON \
   -DMYCHAT_BUILD_SERVICES=ON \
+  -DMYCHAT_BUILD_USER_GRPC_SERVICE=ON \
+  -DMYCHAT_BUILD_MESSAGE_GRPC_SERVICE=ON \
+  -DMYCHAT_BUILD_FRIEND_GRPC_SERVICE=ON \
+  -DMYCHAT_BUILD_GROUP_GRPC_SERVICE=ON \
   -DMYCHAT_BUILD_PUSH_GRPC_SERVICE=ON \
   -DMYCHAT_BUILD_PGSQL_ODB=ON \
   -DMYCHAT_ODB_ROOT="${odb_root}" \
@@ -99,15 +108,15 @@ echo "==> Building full remote Push Gateway smoke target"
 cmake --build "${build_dir}" --target test_remote_push_gateway_server_smoke -j"${jobs}"
 
 echo "==> Running full Gateway-server remote Push smoke"
-ctest --test-dir "${build_dir}" -R RemotePushGatewayServerSmokeTest --output-on-failure
+ctest --test-dir "${build_dir}" -R RemotePushGatewayServerSmokeTest "${ctest_args[@]}"
 
-echo "==> Building all registered remote Push ODB/gRPC test targets"
+echo "==> Building all registered remote services ODB/gRPC test targets"
 cmake --build "${build_dir}" -j"${jobs}"
 
-echo "==> Running Push-focused tests"
-ctest --test-dir "${build_dir}" -R Push --output-on-failure
+echo "==> Running Push-focused tests serially"
+ctest --test-dir "${build_dir}" -R Push "${ctest_args[@]}"
 
-echo "==> Running full remote Push ODB/gRPC test suite"
-ctest --test-dir "${build_dir}" --output-on-failure
+echo "==> Running full remote services ODB/gRPC test suite serially"
+ctest --test-dir "${build_dir}" "${ctest_args[@]}"
 
-echo "==> Remote Push ODB/gRPC CI passed"
+echo "==> Remote services ODB/gRPC CI passed"

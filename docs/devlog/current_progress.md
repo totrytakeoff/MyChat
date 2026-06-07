@@ -419,16 +419,30 @@ Known working:
   HTTP tests. The process smoke starts a real `GroupServerApp`, starts a real
   `GatewayServer` with `group.mode=remote`, and verifies create/join/list/
   members/send/history over HTTP.
+- Phase 18 stabilization first pass is green locally. `scripts/ci/checks.sh`
+  passed; `scripts/ci/default_regression.sh` passed 2/2 tests; the heavy
+  remote-services ODB/gRPC build passed after updating
+  `RemotePushGatewayEntrypointsTest` to use `LocalMessageClient` and
+  `LocalGroupClient` facades. Focused Push tests passed 10/10 and the full
+  `build/remote-push-odb` CTest suite passed 40/40.
+- Full local remote runtime assets are present:
+  `config/dev.remote-all.json` sets User, Message, Friend, Group, and Push to
+  remote mode; `scripts/dev/run_remote_services_stack.sh` starts all service
+  servers plus Gateway; `docs/devlog/phase18_remote_runtime_runbook.md`
+  documents startup order, endpoints, health smoke, and troubleshooting.
+- Serial ODB test policy is now encoded in `scripts/ci/remote_push_odb.sh`.
+  Focused remote Gateway smokes passed 6/6 with `--parallel 1`, and default
+  no-ODB/no-gRPC regression passed 2/2 after the policy update.
 
 ## Next Immediate Tasks
 
-1. Re-run broader remote ODB regression now that User, Message, Push, Friend,
-   and Group remote paths all have focused gateway coverage.
-2. Start distributed-service stabilization: check config defaults, startup
-   ordering, failure-mode behavior, and process-level smoke gaps across all
-   remote services.
-3. Keep service repositories on the direct `odb::pgsql::database` pattern
+1. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.
+2. Keep ODB-backed full-suite regression serial. `scripts/ci/remote_push_odb.sh`
+   enforces `--parallel 1`; do not remove that until test data isolation is
+   strengthened enough for parallel CTest.
+3. Revisit hosted CI only after local heavy regression and runtime startup stay
+   boring for several iterations.
 
 ## Risks
 
@@ -517,6 +531,9 @@ Known working:
 - Friend Service MVP: `docs/devlog/phase12_friend_service_mvp.md`
 - Group Service MVP: `docs/devlog/phase13_group_service_mvp.md`
 - CI/CD engineering baseline: `docs/devlog/phase16_ci_cd.md`
+- Schema migration baseline: `docs/devlog/phase17_schema_migration_baseline.md`
+- Final stabilization: `docs/devlog/phase18_stabilization.md`
+- Remote runtime runbook: `docs/devlog/phase18_remote_runtime_runbook.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
 - Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`

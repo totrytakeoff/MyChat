@@ -33,7 +33,7 @@ Exit criteria:
 
 ## Phase B: Gateway Service MVP Hardening
 
-Status: in progress.
+Status: functionally complete; final stabilization in progress.
 
 Scope:
 
@@ -138,7 +138,7 @@ Exit criteria:
 
 ## Phase F: Message Service MVP
 
-Status: nearly complete.
+Status: complete for MVP behavior; final stabilization in progress.
 
 Scope:
 
@@ -164,7 +164,7 @@ Exit criteria:
 
 ## Phase G: Friend/Group/Push MVPs
 
-Status: Friend and Group complete; Push boundary/service extraction in progress.
+Status: complete for MVP behavior; final stabilization in progress.
 
 Scope:
 
@@ -175,9 +175,32 @@ Scope:
 Exit criteria:
 
 - Friend and Group have their own tests and documented Gateway API.
-- Push has service-owned fanout/runtime code, a gRPC boundary, and a standalone
-  process slice. It is not yet treated as a fully productionized independent
-  service.
+- Push has service-owned fanout/runtime code, a gRPC boundary, standalone
+  process slice, Gateway delivery callback path, and process-level remote
+  smokes. It is not yet treated as a fully productionized independent service.
+
+## Phase H: Distributed Service Boundary Stabilization
+
+Status: in progress.
+
+Scope:
+
+- Keep default builds local/gRPC-off for fast development.
+- Keep explicit gRPC builds for User, Message, Friend, Group, and Push.
+- Verify Gateway local and remote facades preserve the same HTTP/WS external
+  contracts.
+- Keep schema migration and Redis/PostgreSQL startup explicit through local
+  scripts.
+- Make heavy ODB/gRPC regression repeatable and document serial test rules.
+
+Exit criteria:
+
+- `scripts/ci/checks.sh` passes.
+- `scripts/ci/default_regression.sh` passes.
+- `scripts/ci/remote_push_odb.sh` passes serially as the heavy remote-services
+  ODB/gRPC regression.
+- Runtime/config docs clearly distinguish default local mode from explicit
+  remote service mode.
 
 ## Build/Test Gate
 

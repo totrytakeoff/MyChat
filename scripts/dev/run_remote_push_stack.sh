@@ -55,7 +55,7 @@ shutdown() {
   wait "${push_pid}" 2>/dev/null || true
 }
 
-trap shutdown EXIT INT TERM
+trap shutdown EXIT HUP INT TERM
 
 echo "==> Starting push_server with ${config_file}"
 "${push_server_bin}" --config "${config_file}" >"${push_log}" 2>&1 &
