@@ -209,16 +209,14 @@ Completed baseline:
 - Local regression scripts exist under `scripts/ci/`; hosted GitHub CI is
   intentionally paused during fast feature development.
 
-Final stabilization scope:
+Final stabilization status:
 
-- Default local mode and explicit remote mode both need broader end-to-end
-  regression before the project can be considered stable.
-- User, Message, Friend, Group, and Push remote paths exist, but remote
-  multi-process developer documentation and startup-order guidance still need
-  to be made more complete.
-- Push remote endpoint/config hardening has required endpoint validation and a
-  two-process development config; broader operational policy is still being
-  tightened.
+- Default local mode and explicit remote mode both have local regression
+  coverage.
+- User, Message, Friend, Group, and Push remote paths exist, with a full local
+  multi-process remote config and runbook.
+- Push remote endpoint/config hardening has required endpoint validation, a
+  two-process development config, and a full all-service local remote config.
 - PostgreSQL schema migration baseline exists through
   `db/migrations/001_core_schema.sql` and `scripts/db/migrate_postgres.sh`;
   local development uses `scripts/dev/prepare_runtime.sh` as the explicit
@@ -237,6 +235,7 @@ Final stabilization scope:
   separate repository-boundary plan.
 - Several old test suites still reflect `redis-plus-plus` or experimental
   Gateway APIs.
-- Hosted CI is deferred until the service/process boundaries stabilize.
+- Hosted CI is deferred until local release-candidate behavior stays stable
+  enough to justify CI hardening work.
 - TLS certificate paths are development defaults; production certificate/secret
   handling is still open.

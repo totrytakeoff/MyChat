@@ -138,7 +138,7 @@ Exit criteria:
 
 ## Phase F: Message Service MVP
 
-Status: complete for MVP behavior; final stabilization in progress.
+Status: complete for MVP behavior; local stabilization passed.
 
 Scope:
 
@@ -159,12 +159,12 @@ Exit criteria:
 - Push fanout, `PushRuntime`, remote Push gRPC, standalone `push_server`, and
   Gateway callback delivery have focused tests and process-level smoke
   coverage.
-- Remaining Phase F work is runtime hardening, schema migration preparation,
-  and final cleanup rather than new user-facing message features.
+- Remaining Phase F-adjacent work is operational hardening rather than new
+  user-facing message features.
 
 ## Phase G: Friend/Group/Push MVPs
 
-Status: complete for MVP behavior; final stabilization in progress.
+Status: complete for MVP behavior; local stabilization passed.
 
 Scope:
 
@@ -181,7 +181,7 @@ Exit criteria:
 
 ## Phase H: Distributed Service Boundary Stabilization
 
-Status: in progress.
+Status: locally stable; release hardening remains.
 
 Scope:
 
@@ -201,6 +201,10 @@ Exit criteria:
   ODB/gRPC regression.
 - Runtime/config docs clearly distinguish default local mode from explicit
   remote service mode.
+
+Current status: exit criteria are met locally. Remaining work is release
+hardening: hosted CI, production secrets/TLS, packaging, and stronger ODB test
+data isolation for future parallel CI.
 
 ## Build/Test Gate
 

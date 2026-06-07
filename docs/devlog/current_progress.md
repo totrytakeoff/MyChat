@@ -474,17 +474,16 @@ Known working:
   live Redis client connection with `CLIENT KILL ID` and successfully issuing
   the next command. More realistic pool sizing still needs a dedicated
   load/benchmark harness if the project wants quantified defaults.
-- Full Phase F is not complete: migration adoption in runtime, inactive
-  generated-file cleanup, and final hosted CI reintroduction remain future
-  hardening work.
-  PushService with
-  pluggable FanoutPolicy, service-owned production fanout policies, group
-  multi-recipient fanout, PushNotifier boundary/tests, PushRuntime core
-  extraction, codec/gRPC generation cleanup, the Push gRPC contract/adapter,
-  Gateway remote PushNotifier client wiring, the standalone `push_server`
-  process target, the first Gateway delivery callback channel, a real
-  gRPC-link remote Push smoke, Gateway handler/controller entrypoint remote
-  Push smoke, and full `GatewayServer` WS remote Push smoke are complete.
+- Phase F user-facing MVP behavior is complete. Remaining Phase F-adjacent
+  hardening is operational: hosted CI reintroduction, production packaging, and
+  stronger test/data isolation. PushService with pluggable FanoutPolicy,
+  service-owned production fanout policies, group multi-recipient fanout,
+  PushNotifier boundary/tests, PushRuntime core extraction, codec/gRPC
+  generation cleanup, the Push gRPC contract/adapter, Gateway remote
+  PushNotifier client wiring, standalone `push_server`, Gateway delivery
+  callback channel, real gRPC-link remote Push smoke, Gateway handler/controller
+  entrypoint remote Push smoke, and full `GatewayServer` WS remote Push smoke
+  are complete.
 - `SendRequest::msg_type` is caller-supplied even though the method is named
   `send_text_message`; defaulting it to `MessageType::TEXT` is a future cleanup.
 - `AuthTokenTest.IndependentExpiryPerRefreshToken` showed a timing-sensitive
@@ -534,6 +533,7 @@ Known working:
 - Schema migration baseline: `docs/devlog/phase17_schema_migration_baseline.md`
 - Final stabilization: `docs/devlog/phase18_stabilization.md`
 - Remote runtime runbook: `docs/devlog/phase18_remote_runtime_runbook.md`
+- Release closure checklist: `docs/devlog/phase18_release_closure_checklist.md`
 - Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
 - Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
 - Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`

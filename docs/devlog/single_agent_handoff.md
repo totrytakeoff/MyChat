@@ -45,6 +45,9 @@ Latest reliable baseline after this handoff update:
   parallelism.
 - After encoding the serial policy, focused remote Gateway smokes passed 6/6
   with `--parallel 1`, and `scripts/ci/default_regression.sh` passed 2/2.
+- Release closure checklist is available at
+  `docs/devlog/phase18_release_closure_checklist.md`. Use it as the concise
+  source of truth for what is supported now and what remains deferred.
 
 - CI/CD local scripts verified on 2026-06-05:
   `scripts/ci/checks.sh`, `scripts/ci/default_regression.sh`, and
