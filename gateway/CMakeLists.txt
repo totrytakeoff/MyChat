@@ -138,12 +138,25 @@ endif()
 
 # Group HTTP Controller — 仅当 Group Service 可用时编译和链接
 if(TARGET im::group_service)
-    target_sources(im_gateway_core PRIVATE http/group_http_controller.cpp)
+    target_sources(im_gateway_core PRIVATE
+        http/group_client.cpp
+        http/group_http_controller.cpp
+    )
     target_link_libraries(im_gateway_core PUBLIC im::group_service)
     target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_GROUP_HTTP)
     message(STATUS "Group HTTP controller enabled (im::group_service available)")
 else()
     message(STATUS "Group HTTP controller disabled (im::group_service not available)")
+endif()
+
+# Remote Group client — explicit gRPC path only.
+if(TARGET im::group_grpc_service)
+    target_sources(im_gateway_core PRIVATE http/remote_group_client.cpp)
+    target_link_libraries(im_gateway_core PUBLIC im::group_grpc_service)
+    target_compile_definitions(im_gateway_core PUBLIC IM_ENABLE_REMOTE_GROUP_CLIENT)
+    message(STATUS "Remote Group client enabled (im::group_grpc_service available)")
+else()
+    message(STATUS "Remote Group client disabled (im::group_grpc_service not available)")
 endif()
 
 # Group Message HTTP Controller — requires Group/Message services plus PushNotifier boundary.

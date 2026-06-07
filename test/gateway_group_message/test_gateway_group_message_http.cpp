@@ -21,6 +21,7 @@
 #include <database/redis/redis_mgr.hpp>
 
 #include <gateway/http/group_message_http_controller.hpp>
+#include <gateway/http/group_client.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <push_notifier.hpp>
 #include <group_message_service.hpp>
@@ -42,6 +43,7 @@ using json = nlohmann::json;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::GroupMessageHttpController;
+using im::gateway::LocalGroupClient;
 using im::gateway::MultiPlatformAuthManager;
 using im::service::group::GroupService;
 using im::service::group::GroupMessageService;
@@ -109,9 +111,10 @@ protected:
         user_svc_ = std::make_shared<UserService>(db_, std::move(hasher));
         group_svc_ = std::make_shared<GroupService>(db_, user_svc_);
         group_msg_svc_ = std::make_shared<GroupMessageService>(db_, user_svc_, group_svc_);
+        group_client_ = std::make_shared<LocalGroupClient>(group_svc_, group_msg_svc_);
         // PushService is null in tests — fanout is tested separately
         controller_ = std::make_unique<GroupMessageHttpController>(
-            group_svc_, group_msg_svc_, auth_mgr_, nullptr);
+            group_client_, auth_mgr_, nullptr);
     }
 
     void TearDown() override {
@@ -183,6 +186,7 @@ protected:
     std::shared_ptr<UserService> user_svc_;
     std::shared_ptr<GroupService> group_svc_;
     std::shared_ptr<GroupMessageService> group_msg_svc_;
+    std::shared_ptr<im::gateway::GroupClient> group_client_;
     std::unique_ptr<GroupMessageHttpController> controller_;
     RecordingPushNotifier recording_notifier_;
 };

@@ -122,6 +122,13 @@ TEST_F(GroupGrpcServiceTest, CreateJoinListSendHistoryAndLeave) {
     EXPECT_EQ(create.group().owner_uid(), owner);
     EXPECT_EQ(create.group().member_count(), 1);
 
+    im::group::GroupExistsRequest exists_request;
+    exists_request.set_group_id(create.group_id());
+    im::group::GroupExistsResponse exists_response;
+    grpc_->GroupExists(nullptr, &exists_request, &exists_response);
+    ASSERT_EQ(exists_response.base().error_code(), im::base::SUCCESS);
+    EXPECT_TRUE(exists_response.exists());
+
     im::group::JoinGroupRequest join_request;
     join_request.mutable_header()->set_from_uid(member);
     join_request.mutable_header()->set_timestamp(static_cast<uint64_t>(kNowMs + 1));

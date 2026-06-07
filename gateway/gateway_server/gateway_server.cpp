@@ -174,8 +174,13 @@ void register_friend_http_routes_on_server(httplib::Server& server,
 #include "../http/remote_friend_client.hpp"
 #endif
 
+#ifdef IM_ENABLE_REMOTE_GROUP_CLIENT
+#include "../http/remote_group_client.hpp"
+#endif
+
 #ifdef IM_ENABLE_GROUP_HTTP
 #include "../http/group_http_controller.hpp"
+#include "../http/group_client.hpp"
 #include "../../services/group/group_service.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
@@ -232,7 +237,7 @@ namespace gateway {
 
 namespace {
 
-#if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_FRIEND_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
+#if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_FRIEND_CLIENT) || defined(IM_ENABLE_REMOTE_GROUP_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
 bool is_blank(const std::string& value) {
     return value.find_first_not_of(" \t\n\r\f\v") == std::string::npos;
 }
@@ -728,10 +733,50 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
 #ifdef IM_ENABLE_GROUP_HTTP
         try {
-            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
-            auto group_svc = std::make_shared<im::service::group::GroupService>(odb_db_, user_svc);
-            group_http_controller_ = std::make_unique<GroupHttpController>(group_svc, auth_mgr_);
+            ConfigManager group_cfg(config_path_);
+            const std::string group_mode =
+                group_cfg.get<std::string>("group.mode", "local");
+
+#ifdef IM_ENABLE_REMOTE_GROUP_CLIENT
+            if (group_mode == "remote") {
+                const int group_timeout_ms =
+                    group_cfg.get<int>("group.timeout_ms", 200);
+                const std::string endpoint =
+                    require_non_blank_config(group_cfg,
+                                             "group.remote_endpoint",
+                                             "group.mode=remote");
+                group_client_ = std::make_shared<RemoteGroupClient>(
+                    endpoint, std::chrono::milliseconds(group_timeout_ms));
+                server_logger->info(
+                    "Remote Group client initialized for endpoint {} with timeout {} ms",
+                    endpoint, group_timeout_ms);
+            }
+#else
+            if (group_mode == "remote") {
+                server_logger->warn(
+                    "group.mode=remote requested but RemoteGroupClient is not compiled; "
+                    "falling back to local GroupService");
+            }
+#endif
+
+            if (!group_client_) {
+                if (group_mode != "local" && group_mode != "remote") {
+                    server_logger->warn(
+                        "Unknown group.mode='{}'; falling back to local GroupService",
+                        group_mode);
+                }
+                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+                auto user_svc = std::make_shared<im::service::user::UserService>(
+                    odb_db_, std::move(hasher));
+                auto group_svc = std::make_shared<im::service::group::GroupService>(
+                    odb_db_, user_svc);
+                auto group_msg_svc = std::make_shared<im::service::group::GroupMessageService>(
+                    odb_db_, user_svc, group_svc);
+                group_client_ = std::make_shared<LocalGroupClient>(group_svc, group_msg_svc);
+                server_logger->info("Local Group client initialized");
+            }
+            group_http_controller_ = std::make_unique<GroupHttpController>(
+                group_client_, auth_mgr_);
             server_logger->info("Group HTTP controller initialized");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Group HTTP controller: {}", e.what());
@@ -741,12 +786,47 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 
 #ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
         try {
-            auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-            auto user_svc = std::make_shared<im::service::user::UserService>(odb_db_, std::move(hasher));
-            auto group_svc = std::make_shared<im::service::group::GroupService>(odb_db_, user_svc);
-            auto group_msg_svc = std::make_shared<im::service::group::GroupMessageService>(odb_db_, user_svc, group_svc);
+            if (!group_client_) {
+                ConfigManager group_cfg(config_path_);
+                const std::string group_mode =
+                    group_cfg.get<std::string>("group.mode", "local");
+
+#ifdef IM_ENABLE_REMOTE_GROUP_CLIENT
+                if (group_mode == "remote") {
+                    const int group_timeout_ms =
+                        group_cfg.get<int>("group.timeout_ms", 200);
+                    const std::string endpoint =
+                        require_non_blank_config(group_cfg,
+                                                 "group.remote_endpoint",
+                                                 "group.mode=remote");
+                    group_client_ = std::make_shared<RemoteGroupClient>(
+                        endpoint, std::chrono::milliseconds(group_timeout_ms));
+                    server_logger->info(
+                        "Remote Group client initialized for endpoint {} with timeout {} ms",
+                        endpoint, group_timeout_ms);
+                }
+#else
+                if (group_mode == "remote") {
+                    server_logger->warn(
+                        "group.mode=remote requested but RemoteGroupClient is not compiled; "
+                        "falling back to local GroupService");
+                }
+#endif
+            }
+
+            if (!group_client_) {
+                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+                auto user_svc = std::make_shared<im::service::user::UserService>(
+                    odb_db_, std::move(hasher));
+                auto group_svc = std::make_shared<im::service::group::GroupService>(
+                    odb_db_, user_svc);
+                auto group_msg_svc = std::make_shared<im::service::group::GroupMessageService>(
+                    odb_db_, user_svc, group_svc);
+                group_client_ = std::make_shared<LocalGroupClient>(group_svc, group_msg_svc);
+                server_logger->info("Local Group client initialized");
+            }
             group_message_http_controller_ = std::make_unique<GroupMessageHttpController>(
-                group_svc, group_msg_svc, auth_mgr_);
+                group_client_, auth_mgr_);
             server_logger->info("Group Message HTTP controller initialized");
         } catch (const std::exception& e) {
             server_logger->error("Failed to initialize Group Message HTTP controller: {}", e.what());

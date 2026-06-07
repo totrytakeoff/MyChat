@@ -26,6 +26,7 @@ static const char* GroupService_method_names[] = {
   "/im.group.GroupService/CreateGroup",
   "/im.group.GroupService/JoinGroup",
   "/im.group.GroupService/LeaveGroup",
+  "/im.group.GroupService/GroupExists",
   "/im.group.GroupService/ListMyGroups",
   "/im.group.GroupService/ListMembers",
   "/im.group.GroupService/SendGroupMessage",
@@ -42,10 +43,11 @@ GroupService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& chann
   : channel_(channel), rpcmethod_CreateGroup_(GroupService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_JoinGroup_(GroupService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_LeaveGroup_(GroupService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ListMyGroups_(GroupService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ListMembers_(GroupService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SendGroupMessage_(GroupService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetGroupMessages_(GroupService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GroupExists_(GroupService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ListMyGroups_(GroupService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ListMembers_(GroupService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendGroupMessage_(GroupService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetGroupMessages_(GroupService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status GroupService::Stub::CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::im::group::CreateGroupResponse* response) {
@@ -113,6 +115,29 @@ void GroupService::Stub::async::LeaveGroup(::grpc::ClientContext* context, const
 ::grpc::ClientAsyncResponseReader< ::im::group::GroupActionResponse>* GroupService::Stub::AsyncLeaveGroupRaw(::grpc::ClientContext* context, const ::im::group::LeaveGroupRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncLeaveGroupRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status GroupService::Stub::GroupExists(::grpc::ClientContext* context, const ::im::group::GroupExistsRequest& request, ::im::group::GroupExistsResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GroupExists_, context, request, response);
+}
+
+void GroupService::Stub::async::GroupExists(::grpc::ClientContext* context, const ::im::group::GroupExistsRequest* request, ::im::group::GroupExistsResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GroupExists_, context, request, response, std::move(f));
+}
+
+void GroupService::Stub::async::GroupExists(::grpc::ClientContext* context, const ::im::group::GroupExistsRequest* request, ::im::group::GroupExistsResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GroupExists_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::group::GroupExistsResponse>* GroupService::Stub::PrepareAsyncGroupExistsRaw(::grpc::ClientContext* context, const ::im::group::GroupExistsRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::group::GroupExistsResponse, ::im::group::GroupExistsRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GroupExists_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::group::GroupExistsResponse>* GroupService::Stub::AsyncGroupExistsRaw(::grpc::ClientContext* context, const ::im::group::GroupExistsRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGroupExistsRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -243,6 +268,16 @@ GroupService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       GroupService_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](GroupService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::group::GroupExistsRequest* req,
+             ::im::group::GroupExistsResponse* resp) {
+               return service->GroupExists(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      GroupService_method_names[4],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GetGroupListRequest, ::im::group::GetGroupListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -251,7 +286,7 @@ GroupService::Service::Service() {
                return service->ListMyGroups(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[4],
+      GroupService_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GetGroupMembersRequest, ::im::group::GetGroupMembersResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -261,7 +296,7 @@ GroupService::Service::Service() {
                return service->ListMembers(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[5],
+      GroupService_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::SendGroupMessageRequest, ::im::group::SendGroupMessageResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -271,7 +306,7 @@ GroupService::Service::Service() {
                return service->SendGroupMessage(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[6],
+      GroupService_method_names[7],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GetGroupMessagesRequest, ::im::group::GetGroupMessagesResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -306,6 +341,13 @@ GroupService::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
+::grpc::Status GroupService::Service::GroupExists(::grpc::ServerContext* context, const ::im::group::GroupExistsRequest* request, ::im::group::GroupExistsResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
 ::grpc::Status GroupService::Service::ListMyGroups(::grpc::ServerContext* context, const ::im::group::GetGroupListRequest* request, ::im::group::GetGroupListResponse* response) {
   (void) context;
   (void) request;
@@ -333,7 +375,6 @@ GroupService::Service::~Service() {
   (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
-
 
 }  // namespace im
 }  // namespace group

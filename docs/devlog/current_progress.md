@@ -401,20 +401,32 @@ Known working:
   PushService are all passing.
 - Group gRPC boundary and standalone server slice is complete behind explicit
   gRPC builds: `common/proto/group.proto` now defines
-  `im.group.GroupService` for create/join/leave/list, member listing, group
-  message send, and group message history; `common/proto/group.pb.*` and
+  `im.group.GroupService` for create/join/leave/existence/list, member listing,
+  group message send, and group message history; `common/proto/group.pb.*` and
   `common/proto/group.grpc.pb.*` were regenerated through CMake
   `generate_proto`. `services/group/GroupGrpcService` adapts generated gRPC
   calls to the existing ODB-backed `GroupService` and `GroupMessageService`
   semantics, and `services/group/group_server` hosts that adapter as a
   standalone process on `group.listen_address` (default `0.0.0.0:9004`).
+- Gateway remote Group facade slice is complete behind explicit gRPC builds.
+  `gateway/http/GroupClient` now fronts both Group HTTP and Group Message HTTP
+  controllers; `LocalGroupClient` preserves the current local service path and
+  `RemoteGroupClient` wraps generated `im.group.GroupService::Stub`.
+  `GatewayServer` selects the facade through `group.mode`, `group.remote_endpoint`,
+  and `group.timeout_ms`, defaulting to local. Focused coverage now includes
+  `RemoteGroupClientTest`, `RemoteGroupGatewayServerSmokeTest`, direct
+  `GroupExists` gRPC coverage, and the existing Gateway Group/Group Message
+  HTTP tests. The process smoke starts a real `GroupServerApp`, starts a real
+  `GatewayServer` with `group.mode=remote`, and verifies create/join/list/
+  members/send/history over HTTP.
 
 ## Next Immediate Tasks
 
-1. Add Gateway remote Group client facades around `GroupGrpcService` and
-   `group_server`, preserving current Group and Group Message HTTP external
-   contracts.
-2. Re-run a broader remote ODB regression after Group remote wiring lands.
+1. Re-run broader remote ODB regression now that User, Message, Push, Friend,
+   and Group remote paths all have focused gateway coverage.
+2. Start distributed-service stabilization: check config defaults, startup
+   ordering, failure-mode behavior, and process-level smoke gaps across all
+   remote services.
 3. Keep service repositories on the direct `odb::pgsql::database` pattern
    unless a new slice explicitly chooses to adopt `PgSqlConnection`.
 

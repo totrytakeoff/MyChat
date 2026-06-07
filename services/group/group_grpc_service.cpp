@@ -242,6 +242,29 @@ GroupGrpcService::GroupGrpcService(GroupService* group_service,
     }
 }
 
+::grpc::Status GroupGrpcService::GroupExists(
+    ::grpc::ServerContext* /*context*/,
+    const im::group::GroupExistsRequest* request,
+    im::group::GroupExistsResponse* response) {
+    if (!require_group_service(group_service_, response)) {
+        return ::grpc::Status::OK;
+    }
+    if (!request || request->group_id() == 0) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR,
+                 "group_id is required");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        set_base(response->mutable_base(), im::base::SUCCESS);
+        response->set_exists(group_service_->group_exists(request->group_id()));
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
+
 ::grpc::Status GroupGrpcService::ListMyGroups(
     ::grpc::ServerContext* /*context*/,
     const im::group::GetGroupListRequest* request,

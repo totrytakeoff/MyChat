@@ -9,6 +9,7 @@
 #include "../../common/utils/http_utils.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
+#include "group_client.hpp"
 #include "../../services/push/push_notifier.hpp"
 #include "../../services/group/group_message_service.hpp"
 #include "../../services/group/group_service.hpp"
@@ -17,8 +18,6 @@ namespace im {
 namespace gateway {
 
 using json = nlohmann::json;
-using im::service::group::GroupService;
-using im::service::group::GroupMessageService;
 using im::service::group::GroupMessageDTO;
 using im::utils::HttpUtils;
 using im::utils::LogManager;
@@ -34,12 +33,10 @@ int64_t now_ms() {
 } // anonymous namespace
 
 GroupMessageHttpController::GroupMessageHttpController(
-    std::shared_ptr<GroupService> group_service,
-    std::shared_ptr<GroupMessageService> group_msg_service,
+    std::shared_ptr<GroupClient> group_client,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
     im::service::push::PushNotifier* push_notifier)
-    : group_service_(std::move(group_service))
-    , group_msg_service_(std::move(group_msg_service))
+    : group_client_(std::move(group_client))
     , auth_mgr_(std::move(auth_mgr))
     , push_notifier_(push_notifier)
 {
@@ -84,13 +81,13 @@ void GroupMessageHttpController::handle_send_message(
             return;
         }
 
-        if (!group_service_->group_exists(group_id)) {
+        if (!group_client_->group_exists(group_id)) {
             HttpUtils::buildResponse(res, 404, "", "Group not found");
             return;
         }
 
         // Verify caller is a member and get member list for fanout
-        auto members = group_service_->list_members(group_id, user_info.user_id);
+        auto members = group_client_->list_members(group_id, user_info.user_id);
         if (members.empty()) {
             HttpUtils::buildResponse(res, 403, "", "Not a member of this group");
             return;
@@ -98,7 +95,7 @@ void GroupMessageHttpController::handle_send_message(
 
         // Store the message (service also validates, defense in depth)
         int64_t send_time = now_ms();
-        auto store_result = group_msg_service_->send_message(
+        auto store_result = group_client_->send_message(
             group_id, user_info.user_id, content, send_time);
 
         if (!store_result.ok) {
@@ -161,13 +158,13 @@ void GroupMessageHttpController::handle_get_history(
             return;
         }
 
-        if (!group_service_->group_exists(group_id)) {
+        if (!group_client_->group_exists(group_id)) {
             HttpUtils::buildResponse(res, 404, "", "Group not found");
             return;
         }
 
         // Verify caller is a member
-        auto members = group_service_->list_members(group_id, user_info.user_id);
+        auto members = group_client_->list_members(group_id, user_info.user_id);
         if (members.empty()) {
             HttpUtils::buildResponse(res, 403, "", "Not a member of this group");
             return;
@@ -197,7 +194,8 @@ void GroupMessageHttpController::handle_get_history(
         if (limit < 1) limit = 1;
         if (limit > 200) limit = 200;
 
-        auto history = group_msg_service_->get_history(group_id, before_time, limit);
+        auto history = group_client_->get_history(group_id, user_info.user_id,
+                                                  before_time, limit);
 
         json history_array = json::array();
         for (const auto& m : history) {

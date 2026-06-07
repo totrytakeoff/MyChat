@@ -11,6 +11,7 @@ service GroupService {
     rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
     rpc JoinGroup(JoinGroupRequest) returns (GroupActionResponse);
     rpc LeaveGroup(LeaveGroupRequest) returns (GroupActionResponse);
+    rpc GroupExists(GroupExistsRequest) returns (GroupExistsResponse);
     rpc ListMyGroups(GetGroupListRequest) returns (GetGroupListResponse);
     rpc ListMembers(GetGroupMembersRequest) returns (GetGroupMembersResponse);
     rpc SendGroupMessage(SendGroupMessageRequest) returns (SendGroupMessageResponse);
@@ -87,6 +88,16 @@ message LeaveGroupRequest {
 // 通用群操作响应
 message GroupActionResponse {
     im.base.BaseResponse base = 1;
+}
+
+// 检查群是否存在，不校验调用者成员身份。
+message GroupExistsRequest {
+    uint64 group_id = 1;
+}
+
+message GroupExistsResponse {
+    im.base.BaseResponse base = 1;
+    bool exists = 2;
 }
 
 // 获取群信息请求

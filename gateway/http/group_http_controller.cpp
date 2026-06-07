@@ -9,6 +9,7 @@
 #include "../../common/utils/http_utils.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
+#include "group_client.hpp"
 #include "../../services/group/group_service.hpp"
 
 namespace im {
@@ -16,7 +17,6 @@ namespace gateway {
 
 using json = nlohmann::json;
 using im::service::group::CreateGroupRequest;
-using im::service::group::GroupService;
 using im::service::group::GroupInfoDTO;
 using im::service::group::MemberInfoDTO;
 using im::service::group::GroupRole;
@@ -54,9 +54,9 @@ json member_info_to_json(const MemberInfoDTO& info) {
 } // anonymous namespace
 
 GroupHttpController::GroupHttpController(
-    std::shared_ptr<GroupService> group_service,
+    std::shared_ptr<GroupClient> group_client,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr)
-    : group_service_(std::move(group_service))
+    : group_client_(std::move(group_client))
     , auth_mgr_(std::move(auth_mgr))
 {
     LogManager::SetLogToFile("group_http_controller", "logs/group_http_controller.log");
@@ -98,7 +98,7 @@ void GroupHttpController::handle_create_group(
         request.creator_uid = user_info.user_id;
         request.now_ms = now_ms();
 
-        auto result = group_service_->create_group(request);
+        auto result = group_client_->create_group(request);
 
         if (!result.ok) {
             int status = 400;
@@ -152,7 +152,7 @@ void GroupHttpController::handle_join_group(
             return;
         }
 
-        auto result = group_service_->join_group(group_id, user_info.user_id, now_ms());
+        auto result = group_client_->join_group(group_id, user_info.user_id, now_ms());
 
         if (!result.ok) {
             int status = 400;
@@ -206,7 +206,7 @@ void GroupHttpController::handle_leave_group(
             return;
         }
 
-        auto result = group_service_->leave_group(group_id, user_info.user_id);
+        auto result = group_client_->leave_group(group_id, user_info.user_id);
 
         if (!result.ok) {
             int status = 400;
@@ -246,7 +246,7 @@ void GroupHttpController::handle_list_groups(
             return;
         }
 
-        auto groups = group_service_->list_my_groups(user_info.user_id);
+        auto groups = group_client_->list_my_groups(user_info.user_id);
 
         json groups_array = json::array();
         for (const auto& g : groups) {
@@ -294,12 +294,12 @@ void GroupHttpController::handle_list_members(
             return;
         }
 
-        if (!group_service_->group_exists(group_id)) {
+        if (!group_client_->group_exists(group_id)) {
             HttpUtils::buildResponse(res, 404, "", "Group not found");
             return;
         }
 
-        auto members = group_service_->list_members(group_id, user_info.user_id);
+        auto members = group_client_->list_members(group_id, user_info.user_id);
         if (members.empty()) {
             HttpUtils::buildResponse(res, 403, "", "Not a member of this group");
             return;

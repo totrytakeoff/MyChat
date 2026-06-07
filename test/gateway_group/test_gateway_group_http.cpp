@@ -19,6 +19,7 @@
 #include <database/redis/redis_mgr.hpp>
 
 #include <gateway/http/group_http_controller.hpp>
+#include <gateway/http/group_client.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <group_service.hpp>
 #include <user_service.hpp>
@@ -38,6 +39,7 @@ using json = nlohmann::json;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::GroupHttpController;
+using im::gateway::LocalGroupClient;
 using im::gateway::MultiPlatformAuthManager;
 using im::service::group::GroupService;
 using im::service::group::CreateGroupRequest;
@@ -87,7 +89,8 @@ protected:
         auto hasher = std::make_unique<PasswordHasher>();
         auto user_svc = std::make_shared<UserService>(db_, std::move(hasher));
         group_svc_ = std::make_shared<GroupService>(db_, user_svc);
-        controller_ = std::make_unique<GroupHttpController>(group_svc_, auth_mgr_);
+        group_client_ = std::make_shared<LocalGroupClient>(group_svc_, nullptr);
+        controller_ = std::make_unique<GroupHttpController>(group_client_, auth_mgr_);
     }
 
     void TearDown() override {
@@ -140,6 +143,7 @@ protected:
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<GroupService> group_svc_;
+    std::shared_ptr<im::gateway::GroupClient> group_client_;
     std::unique_ptr<GroupHttpController> controller_;
 };
 

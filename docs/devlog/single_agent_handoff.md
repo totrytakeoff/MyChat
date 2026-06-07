@@ -868,19 +868,28 @@ Current reliable state:
 - Group gRPC boundary/server process compile, link, and pass focused tests.
 - Group Service/Gateway Group HTTP and Group Message HTTP compile, link, and
   pass focused tests.
+- Gateway remote Group facade wiring compiles, links, and passes focused tests.
+  `GroupClient` now fronts both Group HTTP and Group Message HTTP controllers;
+  `LocalGroupClient` preserves the local service path and `RemoteGroupClient`
+  wraps the generated `im.group.GroupService::Stub`. `group.proto` includes a
+  narrow `GroupExists` RPC so remote HTTP keeps the current 404-vs-403
+  behavior instead of inferring existence from membership checks.
+- Real remote Group process smoke is complete. `RemoteGroupGatewayServerSmokeTest`
+  starts `GroupServerApp`, starts `GatewayServer` with `group.mode=remote`,
+  creates users/tokens locally, then verifies Group HTTP and Group Message HTTP
+  create/join/list/members/send/history through the remote Group service.
 - The latest Push/gRPC cleanup may be uncommitted in the working tree. Do not
   delete any nested fanout_policies.cpp.cpp... souvenir file if one appears.
 
 Recommended next task:
 Continue formal distributed-service work from the now-pinned User, Message,
-Push, Friend, and Group server-side remote paths. The next clean slice is
-Gateway remote Group client wiring: add local/remote facades for the existing
-Group HTTP and Group Message HTTP controllers, wrap the generated
-`im.group.GroupService::Stub`, and let `GatewayServer` select local vs. remote
-through `group.mode`, defaulting to local. Preserve current Group and Group
-Message HTTP external contracts. Keep service repositories on direct
-`odb::pgsql::database` unless a future task explicitly adopts `PgSqlConnection`.
-Keep hosted CI paused unless the human explicitly asks to resume CI work.
+Push, Friend, and Group remote paths. The next clean slice is broader remote
+ODB regression and distributed-service stabilization: confirm local/remote
+config defaults, startup ordering, failure-mode behavior, and process-level
+smoke gaps across all remote services. Preserve current external HTTP/WS
+contracts and keep service repositories on direct `odb::pgsql::database`
+unless a future task explicitly adopts `PgSqlConnection`. Keep hosted CI
+paused unless the human explicitly asks to resume CI work.
 
 Constraints:
 - Do not redo Friend or Group MVP work.

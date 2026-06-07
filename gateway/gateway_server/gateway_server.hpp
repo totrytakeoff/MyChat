@@ -77,6 +77,7 @@ namespace im::gateway { class FriendHttpController; }
 
 #ifdef IM_ENABLE_GROUP_HTTP
 namespace im::service::group { class GroupService; }
+namespace im::gateway { class GroupClient; }
 namespace im::gateway { class GroupHttpController; }
 #endif
 
@@ -253,6 +254,7 @@ private:
 #endif
 
 #ifdef IM_ENABLE_GROUP_HTTP
+    std::shared_ptr<GroupClient> group_client_;
     std::unique_ptr<GroupHttpController> group_http_controller_;
 #endif
 
