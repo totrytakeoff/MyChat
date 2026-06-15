@@ -234,6 +234,78 @@ Known working:
   stabilization/release hardening.
 - vcpkg root is configured for `/home/myself/pkgs/vcpkg`.
 
+## MVP Review State (2026-06-09)
+
+The project is now treated as a complete practical MVP for review, manual
+testing, and interview preparation. The next workstream should not keep
+expanding the feature surface as if every production IM feature is blocking.
+Instead, it should make the existing system easy to run, verify, explain, and
+demonstrate as a distributed IM backend plus validation Web client.
+
+Current user-facing MVP capabilities:
+
+- Account registration, login, token-backed profile lookup, and profile update.
+- Editable profile fields include nickname, gender, signature, and avatar.
+  Avatar is currently stored in the existing `avatar` text field and accepts
+  either a URL or a browser-generated base64 data URL. A dedicated upload/file
+  storage service is a future extension, not an MVP blocker.
+- Direct one-to-one message send, history query, offline pull, WebSocket
+  send/ack, and online push.
+- Friend search by account/nickname, friend request, pending request view,
+  respond/accept/reject, and friend list.
+- Group creation, search, info view, join/leave, member list, group message
+  send/history, and online group fanout.
+- A Chinese Web validation client under `clients/web` that follows a normal IM
+  workflow: auth screen, left navigation, conversation/contact/group lists,
+  centered profile/group detail views, unread badges, configurable send
+  shortcut, profile editing, and a developer/debug drawer kept out of the main
+  user flow.
+
+Current distributed architecture state:
+
+- Gateway exposes the external HTTP and WebSocket contracts.
+- User, Message, Friend, Group, and Push have local service logic, gRPC service
+  adapters, standalone server processes, and Gateway local/remote facades.
+- `common/proto` is the canonical protobuf/gRPC source tree, and
+  `generate_proto` is the aggregate generation target.
+- Redis is used for auth/session-related state through a hiredis RAII
+  connection pool.
+- PostgreSQL plus ODB is used for durable user/message/friend/group data.
+- Local all-remote runtime is available through
+  `scripts/dev/run_remote_services_stack.sh`; one-command full local startup
+  for backend plus Web testing is available through
+  `scripts/dev/run_full_stack.sh`.
+
+Recent validation baseline:
+
+- Focused backend and remote-service smoke tests have covered the Gateway
+  local/remote facade behavior, remote Push callback topology, WebSocket direct
+  push, and group HTTP fanout.
+- Web runtime validation covered two browser contexts, register/login,
+  account search before friend request, friend request/accept, direct realtime
+  push without manual refresh, group create/search/join, group message history,
+  group realtime push, profile editing, and profile/group/contact detail
+  layout corrections.
+- For documentation-only changes, `git diff --check` is sufficient. Re-run
+  backend/Web builds only when implementation files change.
+
+Resume/interview framing:
+
+- The project should be presented as a C++ distributed IM backend with Gateway,
+  service boundaries, gRPC-based internal RPC, Redis-backed auth/session
+  state, PostgreSQL/ODB persistence, WebSocket realtime delivery, and a Web
+  validation client.
+- The strongest talking points are not "a chat UI exists"; they are the
+  service-boundary migration, Gateway local/remote facade strategy, protobuf
+  contract ownership, Push fanout/runtime split, remote callback path for
+  Gateway-owned WebSocket sessions, schema migration baseline, and the ability
+  to validate flows through both automated tests and an actual Web client.
+- Production-grade items such as rich media upload, blacklist/privacy,
+  message recall/edit/delete, group administration, hosted CI, deployment
+  packaging, production TLS/secret management, and load benchmarking should be
+  listed as planned extensions unless a later phase explicitly prioritizes
+  them.
+
 ## Completed Work
 
 - Root CMake staged options were added:
@@ -428,7 +500,7 @@ Known working:
 - Full local remote runtime assets are present:
   `config/dev.remote-all.json` sets User, Message, Friend, Group, and Push to
   remote mode; `scripts/dev/run_remote_services_stack.sh` starts all service
-  servers plus Gateway; `docs/devlog/phase18_remote_runtime_runbook.md`
+  servers plus Gateway; `docs/history/devlog/phase18_remote_runtime_runbook.md`
   documents startup order, endpoints, health smoke, and troubleshooting.
 - Serial ODB test policy is now encoded in `scripts/ci/remote_push_odb.sh`.
   Focused remote Gateway smokes passed 6/6 with `--parallel 1`, and default
@@ -511,30 +583,14 @@ Known working:
 
 ## Documentation Index
 
-- Architecture: `docs/architecture/mvp_architecture.md`
-- Roadmap: `docs/architecture/service_mvp_roadmap.md`
-- Build cleanup log: `docs/devlog/phase0_build_cleanup.md`
-- Gateway/Auth baseline log: `docs/devlog/phase1_gateway_auth_baseline.md`
-- Current progress: `docs/devlog/current_progress.md`
-- ODB toolchain status: `docs/devlog/phase2_odb_toolchain.md`
-- ODB user persistence: `docs/devlog/phase3_odb_user_persistence.md`
-- User Service core: `docs/devlog/phase4_user_service_core.md`
-- Build gating and test hygiene: `docs/devlog/phase5_build_gating.md`
-- Gateway-user HTTP integration: `docs/devlog/phase6_gateway_user_integration.md`
-- Message Service persistence core: `docs/devlog/phase6_message_service_core.md`
-- Gateway Message HTTP integration: `docs/devlog/phase7_gateway_message_http.md`
-- Gateway WebSocket send/ack: `docs/devlog/phase8_gateway_message_ws_ack.md`
-- Gateway online message delivery: `docs/devlog/phase9_gateway_online_delivery.md`
-- PushService with FanoutPolicy: `docs/devlog/phase10_push_service_fanout.md`
-- Fanout policies: `docs/devlog/phase11_fanout_policies.md`
-- Friend Service MVP: `docs/devlog/phase12_friend_service_mvp.md`
-- Group Service MVP: `docs/devlog/phase13_group_service_mvp.md`
-- CI/CD engineering baseline: `docs/devlog/phase16_ci_cd.md`
-- Schema migration baseline: `docs/devlog/phase17_schema_migration_baseline.md`
-- Final stabilization: `docs/devlog/phase18_stabilization.md`
-- Remote runtime runbook: `docs/devlog/phase18_remote_runtime_runbook.md`
-- Release closure checklist: `docs/devlog/phase18_release_closure_checklist.md`
-- Agent context: `docs/agent_context/project_context.md`, `architecture_analysis.md`, `roadmap.md`, `todo.md`
-- Codgent task001 final record: `docs/agent_context/tasks/task001/final.md`
-- Codgent task003 final record: `docs/agent_context/tasks/task003/final.md`
-- Codgent task004 final record: `docs/agent_context/tasks/task004/final.md`
+- Docs index: `docs/README.md`
+- Final summary docs: `docs/final_sum_docs/`
+- Architecture: `docs/project/architecture/mvp_architecture.md`
+- Roadmap: `docs/project/roadmap/service_mvp_roadmap.md`
+- Current progress: `docs/project/roadmap/current_progress.md`
+- Runtime entry: `docs/project/runtime/README.md`
+- Interview/review plan:
+  `docs/project/architecture/interview_review_plan.md`
+- Historical devlogs: `docs/history/devlog/`
+- Historical codgent records: `docs/history/codgent/`
+- Historical agent context: `docs/history/agent_context/`

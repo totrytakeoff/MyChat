@@ -111,7 +111,8 @@ Exit criteria (all met):
 - Register/login/profile workflows pass at service level.
 - Password hashing is tested (hash differs from plaintext, format verified).
 - Default no-ODB config still clean (2/2 tests pass).
-- Service API contract documented in `docs/devlog/phase4_user_service_core.md`.
+- Service API contract documented in
+  `docs/history/devlog/phase4_user_service_core.md`.
 
 ## Phase E: Gateway + User Service Integration
 
@@ -205,6 +206,96 @@ Exit criteria:
 Current status: exit criteria are met locally. Remaining work is release
 hardening: hosted CI, production secrets/TLS, packaging, and stronger ODB test
 data isolation for future parallel CI.
+
+## Phase I: Web Validation Client
+
+Status: first Web client slice implemented and runtime-validated against the
+remote-all local stack.
+
+Scope:
+
+- Build a Web desktop-style IM validation client under `clients/web`.
+- Reference QQ and Telegram Desktop interaction patterns:
+  left rail, conversation list, main chat surface, and optional debug drawer.
+- Keep the first client focused on backend validation, not final product polish.
+- Validate the current Gateway HTTP and WebSocket contracts through real user
+  workflows:
+  - register/login/profile;
+  - direct message send/history/offline pull;
+  - WebSocket direct-message send and online push receive;
+  - friend request/respond/list/pending;
+  - group create/join/leave/list/member list;
+  - group message send/history and online group fanout.
+- Keep backend local/remote mode transparent to the UI. The Web client talks to
+  Gateway only; Gateway decides local facades vs. remote gRPC services.
+- Document and preserve the API adapter shape so future Qt and Electron
+  clients can reuse the same interaction model.
+
+Reference design document:
+
+```text
+docs/project/architecture/web_validation_client_plan.md
+```
+
+Exit criteria:
+
+- `clients/web` starts locally with configurable HTTP/WS endpoints.
+- A developer can register or login two users and keep separate sessions.
+- Direct HTTP message send, history, and offline pull are usable.
+- WebSocket realtime send/ack/push can be verified with two browser sessions.
+- Friend and group MVP flows are usable from the UI.
+- A debug drawer shows endpoint settings, current user, token state,
+  connection state, last HTTP responses, and recent WebSocket events.
+
+Current status: exit criteria are met locally. Playwright two-context
+validation on 2026-06-08 covered register/login, per-tab device IDs, friend
+search/request/accept, contact/group tab switching, direct online push without
+manual refresh, group create/join, group message history, and group online push
+routed by push metadata. Remaining work is enhancement-level: add richer
+display metadata such as sender nickname in push payloads, and decide later
+whether browser protobuf bindings should replace the current minimal wire
+adapter.
+
+## Phase J: Interview and Portfolio Review
+
+Status: current active phase.
+
+Scope:
+
+- Treat the current system as a complete practical MVP, not an endlessly
+  unfinished product.
+- Build documentation that explains the project as an interview-ready C++
+  distributed IM backend:
+  - architecture overview;
+  - module responsibilities;
+  - auth/profile flow;
+  - direct-message flow;
+  - friend flow;
+  - group-message flow;
+  - Push/fanout flow;
+  - local vs. remote service mode;
+  - persistence, Redis, schema migration, and test strategy.
+- Guide manual validation through the Web client while tying each action back
+  to backend interfaces and service boundaries.
+- Prepare a later multi-machine validation pass for the remote-all topology.
+- Separate MVP-complete capabilities from future production extensions so the
+  resume and interview story stay accurate.
+
+Exit criteria:
+
+- A developer can explain the system from Gateway entrypoint to service,
+  storage, push, and Web client behavior.
+- A manual checklist can validate the current MVP end to end.
+- A multi-machine runbook documents required config/ports/startup order and
+  Push callback topology.
+- Common interview questions and tradeoff answers are recorded per module.
+- Resume bullets describe the implemented system honestly and concretely.
+
+Reference plan:
+
+```text
+docs/project/architecture/interview_review_plan.md
+```
 
 ## Build/Test Gate
 

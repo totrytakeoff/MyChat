@@ -8,6 +8,51 @@ updated_by: coder
 
 ## Completed
 
+- [x] Web validation client first slice - `clients/web` now contains a Vite +
+  React + TypeScript desktop-style validation client with a dedicated
+  login/register auth screen, Telegram-like IM workspace, configurable
+  endpoints, auth/profile flows, direct-message HTTP send/history/offline pull,
+  friend request/respond/list/pending panels, group create/join/leave/list/
+  members/message history panels, a WebSocket connection/event debug surface,
+  binary `CMD_SEND_MESSAGE` encode, `SendMessageResponse`/`PushRequest` decode,
+  and a collapsible debug drawer for HTTP/WS events. `npm run build` passes
+  locally.
+- [x] Web validation client IM UX correction - normal user flows no longer
+  expose device code, platform, endpoint settings, direct UID entry, or direct
+  group ID join/leave controls. Contact flow is search by account/nickname ->
+  user profile card -> friend request. Group flow is search by group name/group
+  number -> group profile card -> join; leave and member list are only shown
+  from joined group info. Settings now exposes Enter vs. Ctrl+Enter message
+  send shortcut. Chat list and message rail display unread red badges, and
+  avatars use profile avatar URLs with initial fallbacks.
+- [x] User/group search remote boundary completion - User gRPC/Gateway search
+  supports fuzzy account/nickname search, Group gRPC/Gateway exposes group
+  search and group info, generated proto outputs were refreshed through
+  `generate_proto`, and remote user/group client fake tests now cover the new
+  RPC methods.
+- [x] Web validation client runtime validation - Playwright two-tab validation
+  passed against `scripts/dev/run_remote_services_stack.sh` and Vite
+  `http://127.0.0.1:5173/`. Verified separate per-tab `deviceId`, register/
+  login, account search before friend request, friend request/accept/list,
+  tab-specific message/contact/group sidebars, view-aware top header, direct
+  online push without manual refresh, group create/join/member list, group
+  message send/history, and online group push routed by push metadata.
+- [x] Profile update backend and Web profile editing - User proto/service,
+  repository, gRPC adapter, Gateway local/remote client, Gateway HTTP profile
+  route, and Web profile editor now support updating nickname, gender,
+  signature, and avatar. Avatar currently uses the existing text field and
+  supports either a URL or a browser-generated base64 data URL.
+- [x] Web profile/group/contact detail refinement - Personal profile opens
+  from the user avatar and shows editable centered profile content. Contact
+  and group tabs use the middle list for navigation, while the right main area
+  shows the selected person or group detail view instead of duplicating the
+  list. Group detail uses a functional member/info/settings layout suitable
+  for validating group search, join, membership, leave, and message entry.
+- [x] Push routing metadata for Web validation - direct and group push now
+  carry `sender_uid`, `conversation_type`, and `conversation_id` through
+  `NotifyUserRequest` and `PushRequest.body.ext`. Gateway HTTP direct send,
+  Gateway WS direct send, and Group Message HTTP fanout all provide this
+  context; the Web client refreshes the correct conversation/group on push.
 - [x] Group Service MVP - ODB schema (group + group_member), GroupRepository,
   GroupService + GroupMessageService, 17 service-level tests (14 GroupServiceTest
   cases + 3 GroupMessageServiceTest cases), Gateway HTTP controller + 23
@@ -15,6 +60,14 @@ updated_by: coder
   controller (send/history) + 15 tests (GatewayGroupMessageHttpTest),
   multi-recipient group message fanout via PushService. Latest full ODB +
   Gateway + Push gRPC baseline: 23/23 suites.
+- [x] Gateway remote Group client facades - Group HTTP and Group Message HTTP
+  now use local/remote Gateway client facades, `GatewayServer` selects through
+  `group.mode`, and remote Group Gateway smoke coverage preserves the existing
+  external HTTP contracts.
+- [x] Local release-candidate backend baseline - User, Message, Friend, Group,
+  and Push MVPs have local service logic, gRPC service boundaries, standalone
+  server processes, Gateway local/remote facades, focused tests, and local
+  remote runtime documentation.
 
 ## Completed (Previous)
 
@@ -203,21 +256,55 @@ updated_by: coder
   `GroupGrpcServiceTest` plus `GroupServerAppTest` pin the service/server
   behavior against Docker PostgreSQL.
 
-## Current
-
-- [ ] Gateway remote Group client facades - add local/remote abstractions for
-  Group HTTP and Group Message HTTP, wire `GatewayServer` through `group.mode`,
-  and preserve existing external HTTP contracts.
-
 ## Next
 
-- [ ] Re-run the remote ODB regression after Group remote wiring lands.
-- [ ] Extend remote Push/Message real-server coverage only where it adds new
-      signal.
-- [ ] Decide whether Redis pool sizing needs a dedicated load/benchmark
-      harness beyond the current live remote Push smoke coverage.
-- [ ] Decide whether any future repository should adopt `PgSqlConnection`;
-      current services remain on direct `odb::pgsql::database`.
+- [ ] Write the interview-oriented architecture walkthrough: one top-level
+      story, module responsibilities, request-flow diagrams, and the tradeoffs
+      behind Gateway, service facades, gRPC, Redis, PostgreSQL/ODB, WebSocket,
+      and Push.
+- [ ] Produce a manual MVP validation checklist for the user-led review phase:
+      auth/profile, direct chat, offline pull, friend flow, group flow,
+      realtime push, error handling, restart behavior, and Web client UX.
+- [ ] Produce a multi-machine distributed runbook based on the existing
+      remote-all topology: required ports, config changes, startup order,
+      network reachability checks, Gateway callback address rules for Push,
+      and failure scenarios to test.
+- [ ] Prepare interview Q&A notes per module, including likely follow-up
+      questions about consistency, offline messages, fanout policy,
+      Gateway-owned WebSocket sessions, Redis token/session state, schema
+      migration, and local-vs-remote service modes.
+- [ ] Draft resume bullets that accurately describe the current MVP without
+      overstating production readiness.
+- [ ] Add optional display metadata to push payloads, especially sender
+      nickname and group name, so clients can render notifications before
+      refreshing history.
+- [ ] Add generated browser protobuf bindings only if the explicit
+      `protobufjs/minimal` adapter becomes hard to maintain.
+- [ ] Decide whether the Web client should gain automated Playwright tests in
+      the repo after backend/UI APIs stabilize further.
+
+## Future Extension Pool
+
+- [ ] Message delete, recall, and edit.
+- [ ] Rich media messages: image, file, audio, video, and upload/storage
+      integration.
+- [ ] Blacklist and privacy rules.
+- [ ] Group owner transfer, administrator management, invite, kick, and mute.
+- [ ] First-class read receipt UI and delivery/read status visualization.
+- [ ] Message search.
+- [ ] Notification settings.
+- [ ] Offline push queue visibility and retry diagnostics.
+- [ ] Multi-device session management UI.
+- [ ] Electron desktop shell reusing the Web app.
+- [ ] Qt desktop client reusing the same Gateway HTTP/WebSocket interaction
+      model.
+- [ ] Redis pool sizing/load benchmark.
+- [ ] Hosted CI reintroduction after feature and UI validation stabilize.
+- [ ] Production TLS/certificate/secret management.
+- [ ] Deployment packaging and process management.
+- [ ] Stronger ODB test data isolation for future parallel CI.
+- [ ] Dedicated repository-boundary review before any service migrates from
+      direct `odb::pgsql::database` to `PgSqlConnection`.
 
 ## Blocked
 
