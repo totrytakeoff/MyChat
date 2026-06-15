@@ -10,6 +10,13 @@
 namespace im::gateway {
 class MultiPlatformAuthManager;
 class MessageClient;
+}
+
+namespace im::service::push {
+class PushNotifier;
+}
+
+namespace im::gateway {
 
 // REST adapter for one-to-one message workflows.
 //
@@ -20,8 +27,13 @@ class MessageHttpController {
 public:
     MessageHttpController(
         std::shared_ptr<MessageClient> msg_client,
-        std::shared_ptr<MultiPlatformAuthManager> auth_mgr
+        std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
+        im::service::push::PushNotifier* push_notifier = nullptr
     );
+
+    void set_push_notifier(im::service::push::PushNotifier* notifier) {
+        push_notifier_ = notifier;
+    }
 
     void handle_send(const httplib::Request& req, httplib::Response& res);
     void handle_history(const httplib::Request& req, httplib::Response& res);
@@ -32,6 +44,7 @@ private:
 
     std::shared_ptr<MessageClient> msg_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
+    im::service::push::PushNotifier* push_notifier_;
     std::shared_ptr<spdlog::logger> logger_;
 };
 

@@ -1,9 +1,11 @@
 #ifndef IM_SERVICE_USER_USER_SERVICE_HPP
 #define IM_SERVICE_USER_USER_SERVICE_HPP
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace odb {
 namespace pgsql {
@@ -50,6 +52,21 @@ struct LoginResult {
     UserProfile profile;
 };
 
+struct UpdateProfileRequest {
+    std::string uid;
+    std::string nickname;
+    std::string avatar;
+    Gender gender;
+    std::string signature;
+};
+
+struct UpdateProfileResult {
+    bool ok = false;
+    std::string error_code;
+    std::string message;
+    UserProfile profile;
+};
+
 class UserRepository;
 class PasswordHasher;
 
@@ -65,6 +82,9 @@ public:
                                  int64_t now_ms);
     std::optional<UserProfile> get_profile_by_uid(const std::string& uid);
     std::optional<UserProfile> get_profile_by_account(const std::string& account);
+    std::vector<UserProfile> search_profiles(const std::string& keyword,
+                                             std::size_t limit = 20);
+    UpdateProfileResult update_profile(const UpdateProfileRequest& request);
 
 private:
     UserProfile to_profile(const class User& user) const;

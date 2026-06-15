@@ -33,6 +33,17 @@ std::vector<im::service::group::GroupInfoDTO> LocalGroupClient::list_my_groups(
     return group_service_->list_my_groups(user_uid);
 }
 
+std::optional<im::service::group::GroupInfoDTO> LocalGroupClient::get_group_info(
+    uint64_t group_id) {
+    return group_service_->get_group_info(group_id);
+}
+
+std::vector<im::service::group::GroupInfoDTO> LocalGroupClient::search_groups(
+    const std::string& keyword,
+    std::size_t limit) {
+    return group_service_->search_groups(keyword, limit);
+}
+
 bool LocalGroupClient::group_exists(uint64_t group_id) {
     return group_service_->group_exists(group_id);
 }

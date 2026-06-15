@@ -2,7 +2,9 @@
 #define GATEWAY_HTTP_REMOTE_GROUP_CLIENT_HPP
 
 #include <chrono>
+#include <cstddef>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -36,6 +38,16 @@ public:
         ::grpc::ClientContext* context,
         const im::group::LeaveGroupRequest& request,
         im::group::GroupActionResponse* response) = 0;
+
+    virtual ::grpc::Status get_group_info(
+        ::grpc::ClientContext* context,
+        const im::group::GetGroupInfoRequest& request,
+        im::group::GetGroupInfoResponse* response) = 0;
+
+    virtual ::grpc::Status search_groups(
+        ::grpc::ClientContext* context,
+        const im::group::SearchGroupsRequest& request,
+        im::group::SearchGroupsResponse* response) = 0;
 
     virtual ::grpc::Status group_exists(
         ::grpc::ClientContext* context,
@@ -87,6 +99,13 @@ public:
 
     std::vector<im::service::group::GroupInfoDTO> list_my_groups(
         const std::string& user_uid) override;
+
+    std::optional<im::service::group::GroupInfoDTO> get_group_info(
+        uint64_t group_id) override;
+
+    std::vector<im::service::group::GroupInfoDTO> search_groups(
+        const std::string& keyword,
+        std::size_t limit) override;
 
     bool group_exists(uint64_t group_id) override;
 

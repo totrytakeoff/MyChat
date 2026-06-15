@@ -230,6 +230,115 @@ void GroupHttpController::handle_leave_group(
     }
 }
 
+void GroupHttpController::handle_group_info(
+    const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::string token = extract_bearer_token(req);
+        if (token.empty()) {
+            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            return;
+        }
+
+        UserTokenInfo user_info;
+        if (!auth_mgr_->verify_access_token(token, user_info)) {
+            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            return;
+        }
+
+        std::string group_id_str = req.get_param_value("group_id");
+        if (group_id_str.empty()) {
+            HttpUtils::buildResponse(res, 400, "", "Missing query parameter: group_id");
+            return;
+        }
+
+        uint64_t group_id = 0;
+        try {
+            group_id = std::stoull(group_id_str);
+        } catch (...) {
+            HttpUtils::buildResponse(res, 400, "", "Invalid group_id");
+            return;
+        }
+
+        auto group = group_client_->get_group_info(group_id);
+        if (!group.has_value()) {
+            HttpUtils::buildResponse(res, 404, "", "Group not found");
+            return;
+        }
+
+        auto members = group_client_->list_members(group_id, user_info.user_id);
+        json response_body;
+        response_body["group"] = group_info_to_json(*group);
+        response_body["joined"] = !members.empty();
+        response_body["members"] = json::array();
+        for (const auto& member : members) {
+            response_body["members"].push_back(member_info_to_json(member));
+        }
+
+        res.status = 200;
+        res.set_content(response_body.dump(), "application/json");
+    } catch (const std::exception& e) {
+        logger_->error("Exception in handle_group_info: {}", e.what());
+        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+    }
+}
+
+void GroupHttpController::handle_search_groups(
+    const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        std::string token = extract_bearer_token(req);
+        if (token.empty()) {
+            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            return;
+        }
+
+        UserTokenInfo user_info;
+        if (!auth_mgr_->verify_access_token(token, user_info)) {
+            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            return;
+        }
+
+        std::string query = req.has_param("q") ? req.get_param_value("q") : "";
+        if (query.empty() && req.has_param("keyword")) {
+            query = req.get_param_value("keyword");
+        }
+        if (query.empty()) {
+            HttpUtils::buildResponse(res, 400, "", "Missing required query parameter: q");
+            return;
+        }
+
+        auto groups = group_client_->search_groups(query, 20);
+        auto my_groups = group_client_->list_my_groups(user_info.user_id);
+
+        json groups_array = json::array();
+        for (const auto& group : groups) {
+            auto item = group_info_to_json(group);
+            bool joined = false;
+            for (const auto& mine : my_groups) {
+                if (mine.group_id == group.group_id) {
+                    joined = true;
+                    break;
+                }
+            }
+            item["joined"] = joined;
+            groups_array.push_back(item);
+        }
+
+        json response_body;
+        response_body["groups"] = groups_array;
+        if (!groups.empty()) {
+            response_body["group"] = group_info_to_json(groups.front());
+        }
+
+        res.status = 200;
+        res.set_content(response_body.dump(), "application/json");
+    } catch (const std::exception& e) {
+        logger_->error("Exception in handle_search_groups: {}", e.what());
+        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+    }
+}
+
 void GroupHttpController::handle_list_groups(
     const httplib::Request& req, httplib::Response& res)
 {

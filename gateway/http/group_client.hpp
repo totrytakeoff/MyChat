@@ -1,8 +1,10 @@
 #ifndef GATEWAY_HTTP_GROUP_CLIENT_HPP
 #define GATEWAY_HTTP_GROUP_CLIENT_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -29,6 +31,13 @@ public:
 
     virtual std::vector<im::service::group::GroupInfoDTO> list_my_groups(
         const std::string& user_uid) = 0;
+
+    virtual std::optional<im::service::group::GroupInfoDTO> get_group_info(
+        uint64_t group_id) = 0;
+
+    virtual std::vector<im::service::group::GroupInfoDTO> search_groups(
+        const std::string& keyword,
+        std::size_t limit) = 0;
 
     virtual bool group_exists(uint64_t group_id) = 0;
 
@@ -68,6 +77,13 @@ public:
 
     std::vector<im::service::group::GroupInfoDTO> list_my_groups(
         const std::string& user_uid) override;
+
+    std::optional<im::service::group::GroupInfoDTO> get_group_info(
+        uint64_t group_id) override;
+
+    std::vector<im::service::group::GroupInfoDTO> search_groups(
+        const std::string& keyword,
+        std::size_t limit) override;
 
     bool group_exists(uint64_t group_id) override;
 

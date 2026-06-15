@@ -74,6 +74,7 @@ void fill_friend_request(const FriendInfoDTO& dto, im::friend_::FriendRequest* r
     request->set_from_uid(dto.friend_uid);
     request->set_status(to_proto_status(dto.status));
     request->set_create_time(dto.created_at);
+    request->set_nickname(dto.nickname);
 }
 
 template <typename Response>

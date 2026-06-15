@@ -152,6 +152,61 @@ struct UpdateUserInfoRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateUserInfoRequestDefaultTypeInternal _UpdateUserInfoRequest_default_instance_;
 
+inline constexpr SearchUsersResponse::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        users_{},
+        base_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR SearchUsersResponse::SearchUsersResponse(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct SearchUsersResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SearchUsersResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SearchUsersResponseDefaultTypeInternal() {}
+  union {
+    SearchUsersResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SearchUsersResponseDefaultTypeInternal _SearchUsersResponse_default_instance_;
+
+inline constexpr SearchUsersRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        keyword_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        header_{nullptr},
+        limit_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR SearchUsersRequest::SearchUsersRequest(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct SearchUsersRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR SearchUsersRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~SearchUsersRequestDefaultTypeInternal() {}
+  union {
+    SearchUsersRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SearchUsersRequestDefaultTypeInternal _SearchUsersRequest_default_instance_;
+
 inline constexpr RegisterResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -476,6 +531,32 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::user::GetUserInfoResponse, _impl_.user_),
         0,
         1,
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersRequest, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersRequest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersRequest, _impl_.header_),
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersRequest, _impl_.keyword_),
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersRequest, _impl_.limit_),
+        0,
+        ~0u,
+        ~0u,
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersResponse, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersResponse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersResponse, _impl_.base_),
+        PROTOBUF_FIELD_OFFSET(::im::user::SearchUsersResponse, _impl_.users_),
+        0,
+        ~0u,
         PROTOBUF_FIELD_OFFSET(::im::user::UpdateUserInfoRequest, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::user::UpdateUserInfoRequest, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -511,8 +592,10 @@ static const ::_pbi::MigrationSchema
         {85, 95, -1, sizeof(::im::user::LoginResponse)},
         {97, 108, -1, sizeof(::im::user::GetUserInfoRequest)},
         {111, 121, -1, sizeof(::im::user::GetUserInfoResponse)},
-        {123, 133, -1, sizeof(::im::user::UpdateUserInfoRequest)},
-        {135, 145, -1, sizeof(::im::user::UpdateUserInfoResponse)},
+        {123, 134, -1, sizeof(::im::user::SearchUsersRequest)},
+        {137, 147, -1, sizeof(::im::user::SearchUsersResponse)},
+        {149, 159, -1, sizeof(::im::user::UpdateUserInfoRequest)},
+        {161, 171, -1, sizeof(::im::user::UpdateUserInfoResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::im::user::_UserInfo_default_instance_._instance,
@@ -522,6 +605,8 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::im::user::_LoginResponse_default_instance_._instance,
     &::im::user::_GetUserInfoRequest_default_instance_._instance,
     &::im::user::_GetUserInfoResponse_default_instance_._instance,
+    &::im::user::_SearchUsersRequest_default_instance_._instance,
+    &::im::user::_SearchUsersResponse_default_instance_._instance,
     &::im::user::_UpdateUserInfoRequest_default_instance_._instance,
     &::im::user::_UpdateUserInfoResponse_default_instance_._instance,
 };
@@ -555,22 +640,31 @@ const char descriptor_table_protodef_user_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIA
     "\022\017\n\007account\030\002 \001(\t\022\013\n\003uid\030\003 \001(\t\"[\n\023GetUse"
     "rInfoResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Ba"
     "seResponse\022\037\n\004user\030\002 \001(\0132\021.im.user.UserI"
-    "nfo\"[\n\025UpdateUserInfoRequest\022!\n\006header\030\001"
-    " \001(\0132\021.im.base.IMHeader\022\037\n\004user\030\002 \001(\0132\021."
-    "im.user.UserInfo\"^\n\026UpdateUserInfoRespon"
-    "se\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\022"
-    "\037\n\004user\030\002 \001(\0132\021.im.user.UserInfo*L\n\014Regi"
-    "sterType\022\024\n\020REGISTER_UNKNOWN\020\000\022\022\n\016REGIST"
-    "ER_PHONE\020\001\022\022\n\016REGISTER_EMAIL\020\002*6\n\006Gender"
-    "\022\013\n\007UNKNOWN\020\000\022\010\n\004MALE\020\001\022\n\n\006FEMALE\020\002\022\t\n\005O"
-    "THER\020\003*S\n\tLoginType\022\021\n\rLOGIN_UNKNOWN\020\000\022\021"
-    "\n\rLOGIN_ACCOUNT\020\001\022\017\n\013LOGIN_PHONE\020\002\022\017\n\013LO"
-    "GIN_EMAIL\020\0032\320\001\n\013UserService\022\?\n\010Register\022"
-    "\030.im.user.RegisterRequest\032\031.im.user.Regi"
-    "sterResponse\0226\n\005Login\022\025.im.user.LoginReq"
-    "uest\032\026.im.user.LoginResponse\022H\n\013GetUserI"
-    "nfo\022\033.im.user.GetUserInfoRequest\032\034.im.us"
-    "er.GetUserInfoResponseb\006proto3"
+    "nfo\"W\n\022SearchUsersRequest\022!\n\006header\030\001 \001("
+    "\0132\021.im.base.IMHeader\022\017\n\007keyword\030\002 \001(\t\022\r\n"
+    "\005limit\030\003 \001(\005\"\\\n\023SearchUsersResponse\022#\n\004b"
+    "ase\030\001 \001(\0132\025.im.base.BaseResponse\022 \n\005user"
+    "s\030\002 \003(\0132\021.im.user.UserInfo\"[\n\025UpdateUser"
+    "InfoRequest\022!\n\006header\030\001 \001(\0132\021.im.base.IM"
+    "Header\022\037\n\004user\030\002 \001(\0132\021.im.user.UserInfo\""
+    "^\n\026UpdateUserInfoResponse\022#\n\004base\030\001 \001(\0132"
+    "\025.im.base.BaseResponse\022\037\n\004user\030\002 \001(\0132\021.i"
+    "m.user.UserInfo*L\n\014RegisterType\022\024\n\020REGIS"
+    "TER_UNKNOWN\020\000\022\022\n\016REGISTER_PHONE\020\001\022\022\n\016REG"
+    "ISTER_EMAIL\020\002*6\n\006Gender\022\013\n\007UNKNOWN\020\000\022\010\n\004"
+    "MALE\020\001\022\n\n\006FEMALE\020\002\022\t\n\005OTHER\020\003*S\n\tLoginTy"
+    "pe\022\021\n\rLOGIN_UNKNOWN\020\000\022\021\n\rLOGIN_ACCOUNT\020\001"
+    "\022\017\n\013LOGIN_PHONE\020\002\022\017\n\013LOGIN_EMAIL\020\0032\355\002\n\013U"
+    "serService\022\?\n\010Register\022\030.im.user.Registe"
+    "rRequest\032\031.im.user.RegisterResponse\0226\n\005L"
+    "ogin\022\025.im.user.LoginRequest\032\026.im.user.Lo"
+    "ginResponse\022H\n\013GetUserInfo\022\033.im.user.Get"
+    "UserInfoRequest\032\034.im.user.GetUserInfoRes"
+    "ponse\022H\n\013SearchUsers\022\033.im.user.SearchUse"
+    "rsRequest\032\034.im.user.SearchUsersResponse\022"
+    "Q\n\016UpdateUserInfo\022\036.im.user.UpdateUserIn"
+    "foRequest\032\037.im.user.UpdateUserInfoRespon"
+    "seb\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_user_2eproto_deps[1] =
     {
@@ -580,13 +674,13 @@ static ::absl::once_flag descriptor_table_user_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_user_2eproto = {
     false,
     false,
-    1750,
+    2090,
     descriptor_table_protodef_user_2eproto,
     "user.proto",
     &descriptor_table_user_2eproto_once,
     descriptor_table_user_2eproto_deps,
     1,
-    9,
+    11,
     schemas,
     file_default_instances,
     TableStruct_user_2eproto::offsets,
@@ -3510,6 +3604,633 @@ void GetUserInfoResponse::InternalSwap(GetUserInfoResponse* PROTOBUF_RESTRICT ot
 }
 
 ::google::protobuf::Metadata GetUserInfoResponse::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class SearchUsersRequest::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<SearchUsersRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_._has_bits_);
+};
+
+void SearchUsersRequest::clear_header() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.header_ != nullptr) _impl_.header_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+SearchUsersRequest::SearchUsersRequest(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.user.SearchUsersRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE SearchUsersRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::user::SearchUsersRequest& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        keyword_(arena, from.keyword_) {}
+
+SearchUsersRequest::SearchUsersRequest(
+    ::google::protobuf::Arena* arena,
+    const SearchUsersRequest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SearchUsersRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.header_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(
+                              arena, *from._impl_.header_)
+                        : nullptr;
+  _impl_.limit_ = from._impl_.limit_;
+
+  // @@protoc_insertion_point(copy_constructor:im.user.SearchUsersRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE SearchUsersRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        keyword_(arena) {}
+
+inline void SearchUsersRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, header_),
+           0,
+           offsetof(Impl_, limit_) -
+               offsetof(Impl_, header_) +
+               sizeof(Impl_::limit_));
+}
+SearchUsersRequest::~SearchUsersRequest() {
+  // @@protoc_insertion_point(destructor:im.user.SearchUsersRequest)
+  SharedDtor(*this);
+}
+inline void SearchUsersRequest::SharedDtor(MessageLite& self) {
+  SearchUsersRequest& this_ = static_cast<SearchUsersRequest&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.keyword_.Destroy();
+  delete this_._impl_.header_;
+  this_._impl_.~Impl_();
+}
+
+inline void* SearchUsersRequest::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) SearchUsersRequest(arena);
+}
+constexpr auto SearchUsersRequest::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(SearchUsersRequest),
+                                            alignof(SearchUsersRequest));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull SearchUsersRequest::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_SearchUsersRequest_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &SearchUsersRequest::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<SearchUsersRequest>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &SearchUsersRequest::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<SearchUsersRequest>(), &SearchUsersRequest::ByteSizeLong,
+            &SearchUsersRequest::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_._cached_size_),
+        false,
+    },
+    &SearchUsersRequest::kDescriptorMethods,
+    &descriptor_table_user_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* SearchUsersRequest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 3, 1, 42, 2> SearchUsersRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    3, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967288,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    3,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::user::SearchUsersRequest>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // .im.base.IMHeader header = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.header_)}},
+    // string keyword = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.keyword_)}},
+    // int32 limit = 3;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(SearchUsersRequest, _impl_.limit_), 63>(),
+     {24, 63, 0, PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.limit_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.IMHeader header = 1;
+    {PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.header_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // string keyword = 2;
+    {PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.keyword_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // int32 limit = 3;
+    {PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.limit_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
+  }}, {{
+    "\32\0\7\0\0\0\0\0"
+    "im.user.SearchUsersRequest"
+    "keyword"
+  }},
+};
+
+PROTOBUF_NOINLINE void SearchUsersRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.user.SearchUsersRequest)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.keyword_.ClearToEmpty();
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.header_ != nullptr);
+    _impl_.header_->Clear();
+  }
+  _impl_.limit_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* SearchUsersRequest::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const SearchUsersRequest& this_ = static_cast<const SearchUsersRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* SearchUsersRequest::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const SearchUsersRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.user.SearchUsersRequest)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.IMHeader header = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.header_, this_._impl_.header_->GetCachedSize(), target,
+                stream);
+          }
+
+          // string keyword = 2;
+          if (!this_._internal_keyword().empty()) {
+            const std::string& _s = this_._internal_keyword();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.user.SearchUsersRequest.keyword");
+            target = stream->WriteStringMaybeAliased(2, _s, target);
+          }
+
+          // int32 limit = 3;
+          if (this_._internal_limit() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<3>(
+                    stream, this_._internal_limit(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.user.SearchUsersRequest)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t SearchUsersRequest::ByteSizeLong(const MessageLite& base) {
+          const SearchUsersRequest& this_ = static_cast<const SearchUsersRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t SearchUsersRequest::ByteSizeLong() const {
+          const SearchUsersRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.user.SearchUsersRequest)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // string keyword = 2;
+            if (!this_._internal_keyword().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_keyword());
+            }
+          }
+           {
+            // .im.base.IMHeader header = 1;
+            cached_has_bits = this_._impl_._has_bits_[0];
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.header_);
+            }
+          }
+           {
+            // int32 limit = 3;
+            if (this_._internal_limit() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_limit());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void SearchUsersRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<SearchUsersRequest*>(&to_msg);
+  auto& from = static_cast<const SearchUsersRequest&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.user.SearchUsersRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_keyword().empty()) {
+    _this->_internal_set_keyword(from._internal_keyword());
+  }
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(from._impl_.header_ != nullptr);
+    if (_this->_impl_.header_ == nullptr) {
+      _this->_impl_.header_ =
+          ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(arena, *from._impl_.header_);
+    } else {
+      _this->_impl_.header_->MergeFrom(*from._impl_.header_);
+    }
+  }
+  if (from._internal_limit() != 0) {
+    _this->_impl_.limit_ = from._impl_.limit_;
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SearchUsersRequest::CopyFrom(const SearchUsersRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.user.SearchUsersRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void SearchUsersRequest::InternalSwap(SearchUsersRequest* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.keyword_, &other->_impl_.keyword_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.limit_)
+      + sizeof(SearchUsersRequest::_impl_.limit_)
+      - PROTOBUF_FIELD_OFFSET(SearchUsersRequest, _impl_.header_)>(
+          reinterpret_cast<char*>(&_impl_.header_),
+          reinterpret_cast<char*>(&other->_impl_.header_));
+}
+
+::google::protobuf::Metadata SearchUsersRequest::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class SearchUsersResponse::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<SearchUsersResponse>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_._has_bits_);
+};
+
+void SearchUsersResponse::clear_base() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.base_ != nullptr) _impl_.base_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+SearchUsersResponse::SearchUsersResponse(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.user.SearchUsersResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE SearchUsersResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::user::SearchUsersResponse& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        users_{visibility, arena, from.users_} {}
+
+SearchUsersResponse::SearchUsersResponse(
+    ::google::protobuf::Arena* arena,
+    const SearchUsersResponse& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SearchUsersResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.base_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(
+                              arena, *from._impl_.base_)
+                        : nullptr;
+
+  // @@protoc_insertion_point(copy_constructor:im.user.SearchUsersResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE SearchUsersResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        users_{visibility, arena} {}
+
+inline void SearchUsersResponse::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.base_ = {};
+}
+SearchUsersResponse::~SearchUsersResponse() {
+  // @@protoc_insertion_point(destructor:im.user.SearchUsersResponse)
+  SharedDtor(*this);
+}
+inline void SearchUsersResponse::SharedDtor(MessageLite& self) {
+  SearchUsersResponse& this_ = static_cast<SearchUsersResponse&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  delete this_._impl_.base_;
+  this_._impl_.~Impl_();
+}
+
+inline void* SearchUsersResponse::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) SearchUsersResponse(arena);
+}
+constexpr auto SearchUsersResponse::InternalNewImpl_() {
+  constexpr auto arena_bits = ::google::protobuf::internal::EncodePlacementArenaOffsets({
+      PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_.users_) +
+          decltype(SearchUsersResponse::_impl_.users_)::
+              InternalGetArenaOffset(
+                  ::google::protobuf::Message::internal_visibility()),
+  });
+  if (arena_bits.has_value()) {
+    return ::google::protobuf::internal::MessageCreator::ZeroInit(
+        sizeof(SearchUsersResponse), alignof(SearchUsersResponse), *arena_bits);
+  } else {
+    return ::google::protobuf::internal::MessageCreator(&SearchUsersResponse::PlacementNew_,
+                                 sizeof(SearchUsersResponse),
+                                 alignof(SearchUsersResponse));
+  }
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull SearchUsersResponse::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_SearchUsersResponse_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &SearchUsersResponse::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<SearchUsersResponse>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &SearchUsersResponse::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<SearchUsersResponse>(), &SearchUsersResponse::ByteSizeLong,
+            &SearchUsersResponse::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_._cached_size_),
+        false,
+    },
+    &SearchUsersResponse::kDescriptorMethods,
+    &descriptor_table_user_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* SearchUsersResponse::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 2, 0, 2> SearchUsersResponse::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::user::SearchUsersResponse>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // repeated .im.user.UserInfo users = 2;
+    {::_pbi::TcParser::FastMtR1,
+     {18, 63, 1, PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_.users_)}},
+    // .im.base.BaseResponse base = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_.base_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.BaseResponse base = 1;
+    {PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_.base_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // repeated .im.user.UserInfo users = 2;
+    {PROTOBUF_FIELD_OFFSET(SearchUsersResponse, _impl_.users_), -1, 1,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::BaseResponse>()},
+    {::_pbi::TcParser::GetTable<::im::user::UserInfo>()},
+  }}, {{
+  }},
+};
+
+PROTOBUF_NOINLINE void SearchUsersResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.user.SearchUsersResponse)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.users_.Clear();
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.base_ != nullptr);
+    _impl_.base_->Clear();
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* SearchUsersResponse::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const SearchUsersResponse& this_ = static_cast<const SearchUsersResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* SearchUsersResponse::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const SearchUsersResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.user.SearchUsersResponse)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.BaseResponse base = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.base_, this_._impl_.base_->GetCachedSize(), target,
+                stream);
+          }
+
+          // repeated .im.user.UserInfo users = 2;
+          for (unsigned i = 0, n = static_cast<unsigned>(
+                                   this_._internal_users_size());
+               i < n; i++) {
+            const auto& repfield = this_._internal_users().Get(i);
+            target =
+                ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                    2, repfield, repfield.GetCachedSize(),
+                    target, stream);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.user.SearchUsersResponse)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t SearchUsersResponse::ByteSizeLong(const MessageLite& base) {
+          const SearchUsersResponse& this_ = static_cast<const SearchUsersResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t SearchUsersResponse::ByteSizeLong() const {
+          const SearchUsersResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.user.SearchUsersResponse)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // repeated .im.user.UserInfo users = 2;
+            {
+              total_size += 1UL * this_._internal_users_size();
+              for (const auto& msg : this_._internal_users()) {
+                total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
+              }
+            }
+          }
+           {
+            // .im.base.BaseResponse base = 1;
+            cached_has_bits = this_._impl_._has_bits_[0];
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.base_);
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void SearchUsersResponse::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<SearchUsersResponse*>(&to_msg);
+  auto& from = static_cast<const SearchUsersResponse&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.user.SearchUsersResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_internal_mutable_users()->MergeFrom(
+      from._internal_users());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(from._impl_.base_ != nullptr);
+    if (_this->_impl_.base_ == nullptr) {
+      _this->_impl_.base_ =
+          ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(arena, *from._impl_.base_);
+    } else {
+      _this->_impl_.base_->MergeFrom(*from._impl_.base_);
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void SearchUsersResponse::CopyFrom(const SearchUsersResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.user.SearchUsersResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void SearchUsersResponse::InternalSwap(SearchUsersResponse* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  _impl_.users_.InternalSwap(&other->_impl_.users_);
+  swap(_impl_.base_, other->_impl_.base_);
+}
+
+::google::protobuf::Metadata SearchUsersResponse::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================

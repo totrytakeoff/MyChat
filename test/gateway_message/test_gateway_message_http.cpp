@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
@@ -23,6 +24,7 @@
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <message_service.hpp>
 #include <message_repository.hpp>
+#include <push_notifier.hpp>
 #include <utils/log_manager.hpp>
 
 #include "../support/postgres_schema.hpp"
@@ -59,6 +61,25 @@ RedisConfig test_redis_config() {
 std::string config_path() {
     return (std::filesystem::path(MYCHAT_SOURCE_DIR) / "config/dev.json").string();
 }
+
+struct PushCall {
+    std::string receiver_uid;
+    uint64_t msg_id = 0;
+    std::string content;
+    im::service::push::PushContext context;
+};
+
+class RecordingPushNotifier : public im::service::push::PushNotifier {
+public:
+    void notify_user(const std::string& receiver_uid,
+                     uint64_t msg_id,
+                     const std::string& content,
+                     const im::service::push::PushContext& context) override {
+        calls.push_back({receiver_uid, msg_id, content, context});
+    }
+
+    std::vector<PushCall> calls;
+};
 
 class GatewayMessageHttpTest : public ::testing::Test {
 protected:
@@ -112,6 +133,7 @@ protected:
     std::shared_ptr<MessageService> msg_service_;
     std::shared_ptr<LocalMessageClient> msg_client_;
     std::unique_ptr<MessageHttpController> controller_;
+    RecordingPushNotifier recording_notifier_;
 };
 
 json parse_body(const httplib::Response& res) {
@@ -141,6 +163,36 @@ TEST_F(GatewayMessageHttpTest, SendMessageWithValidTokenReturns201) {
     EXPECT_EQ(j["message"]["receiver_uid"], receiver_uid);
     EXPECT_EQ(j["message"]["content"], "Hello from test!");
     EXPECT_GT(j["message"]["msg_id"].get<uint64_t>(), 0);
+}
+
+TEST_F(GatewayMessageHttpTest, SendMessageNotifiesReceiverThroughBoundary) {
+    std::string sender_uid = "task4-test-http-push-sender";
+    std::string receiver_uid = "task4-test-http-push-receiver";
+    std::string token = make_token_for(*auth_mgr_, sender_uid);
+    controller_->set_push_notifier(&recording_notifier_);
+
+    httplib::Request req;
+    req.method = "POST";
+    req.set_header("Authorization", "Bearer " + token);
+    req.body = json{
+        {"receiver_uid", receiver_uid},
+        {"content", "HTTP push boundary"}
+    }.dump();
+
+    httplib::Response res;
+    controller_->handle_send(req, res);
+
+    EXPECT_EQ(res.status, 201) << "Body: " << res.body;
+    json j = parse_body(res);
+    const auto msg_id = j["message"]["msg_id"].get<uint64_t>();
+
+    ASSERT_EQ(recording_notifier_.calls.size(), 1u);
+    EXPECT_EQ(recording_notifier_.calls[0].receiver_uid, receiver_uid);
+    EXPECT_EQ(recording_notifier_.calls[0].msg_id, msg_id);
+    EXPECT_EQ(recording_notifier_.calls[0].content, "HTTP push boundary");
+    EXPECT_EQ(recording_notifier_.calls[0].context.sender_uid, sender_uid);
+    EXPECT_EQ(recording_notifier_.calls[0].context.conversation_type, "direct");
+    EXPECT_EQ(recording_notifier_.calls[0].context.conversation_id, sender_uid);
 }
 
 TEST_F(GatewayMessageHttpTest, SendMessageMissingTokenReturns401) {

@@ -195,7 +195,11 @@ ProcessorResult MessageWsHandler::handle_send(const UnifiedMessage& msg) {
 
         // 10. Delegate push through the boundary (best-effort, does not affect ack).
         if (push_notifier_) {
-            push_notifier_->notify_user(receiver_uid, result.data.msg_id, content);
+            im::service::push::PushContext context;
+            context.sender_uid = token_user.user_id;
+            context.conversation_type = "direct";
+            context.conversation_id = token_user.user_id;
+            push_notifier_->notify_user(receiver_uid, result.data.msg_id, content, context);
         }
 
         return ProcessorResult(0, "", protobuf_response, "");

@@ -1,8 +1,10 @@
 #ifndef IM_SERVICE_GROUP_GROUP_SERVICE_HPP
 #define IM_SERVICE_GROUP_GROUP_SERVICE_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -64,6 +66,9 @@ public:
                            int64_t now_ms = 0);
     GroupResult leave_group(uint64_t group_id, const std::string& user_uid);
     std::vector<GroupInfoDTO> list_my_groups(const std::string& user_uid);
+    std::optional<GroupInfoDTO> get_group_info(uint64_t group_id);
+    std::vector<GroupInfoDTO> search_groups(const std::string& keyword,
+                                            std::size_t limit = 20);
     bool group_exists(uint64_t group_id);
     std::vector<MemberInfoDTO> list_members(uint64_t group_id,
                                             const std::string& caller_uid);

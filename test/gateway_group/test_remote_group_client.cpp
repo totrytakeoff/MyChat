@@ -51,6 +51,39 @@ public:
         return leave_status;
     }
 
+    ::grpc::Status get_group_info(::grpc::ClientContext* /*context*/,
+                                  const im::group::GetGroupInfoRequest& request,
+                                  im::group::GetGroupInfoResponse* response) override {
+        info_requests.push_back(request);
+        response->mutable_base()->set_error_code(info_base_code);
+        response->mutable_base()->set_error_message(info_base_message);
+        if (info_base_code == im::base::SUCCESS) {
+            response->mutable_group()->set_group_record_id(request.group_record_id());
+            response->mutable_group()->set_name("remote-group-info");
+            response->mutable_group()->set_owner_uid("owner");
+            response->mutable_group()->set_create_time(1234);
+            response->mutable_group()->set_member_count(3);
+        }
+        return info_status;
+    }
+
+    ::grpc::Status search_groups(::grpc::ClientContext* /*context*/,
+                                 const im::group::SearchGroupsRequest& request,
+                                 im::group::SearchGroupsResponse* response) override {
+        search_requests.push_back(request);
+        response->mutable_base()->set_error_code(search_base_code);
+        response->mutable_base()->set_error_message(search_base_message);
+        if (search_base_code == im::base::SUCCESS) {
+            auto* group = response->add_groups();
+            group->set_group_record_id(47);
+            group->set_name("remote-search-group");
+            group->set_owner_uid("owner");
+            group->set_create_time(1234);
+            group->set_member_count(4);
+        }
+        return search_status;
+    }
+
     ::grpc::Status group_exists(::grpc::ClientContext* /*context*/,
                                 const im::group::GroupExistsRequest& request,
                                 im::group::GroupExistsResponse* response) override {
@@ -125,6 +158,8 @@ public:
     ::grpc::Status create_status = ::grpc::Status::OK;
     ::grpc::Status join_status = ::grpc::Status::OK;
     ::grpc::Status leave_status = ::grpc::Status::OK;
+    ::grpc::Status info_status = ::grpc::Status::OK;
+    ::grpc::Status search_status = ::grpc::Status::OK;
     ::grpc::Status exists_status = ::grpc::Status::OK;
     ::grpc::Status list_status = ::grpc::Status::OK;
     ::grpc::Status members_status = ::grpc::Status::OK;
@@ -133,6 +168,8 @@ public:
     im::base::ErrorCode create_base_code = im::base::SUCCESS;
     im::base::ErrorCode join_base_code = im::base::SUCCESS;
     im::base::ErrorCode leave_base_code = im::base::SUCCESS;
+    im::base::ErrorCode info_base_code = im::base::SUCCESS;
+    im::base::ErrorCode search_base_code = im::base::SUCCESS;
     im::base::ErrorCode exists_base_code = im::base::SUCCESS;
     im::base::ErrorCode list_base_code = im::base::SUCCESS;
     im::base::ErrorCode members_base_code = im::base::SUCCESS;
@@ -141,11 +178,15 @@ public:
     std::string create_base_message;
     std::string join_base_message;
     std::string leave_base_message;
+    std::string info_base_message;
+    std::string search_base_message;
     std::string send_base_message;
     bool exists_value = true;
     std::vector<im::group::CreateGroupRequest> create_requests;
     std::vector<im::group::JoinGroupRequest> join_requests;
     std::vector<im::group::LeaveGroupRequest> leave_requests;
+    std::vector<im::group::GetGroupInfoRequest> info_requests;
+    std::vector<im::group::SearchGroupsRequest> search_requests;
     std::vector<im::group::GroupExistsRequest> exists_requests;
     std::vector<im::group::GetGroupListRequest> list_requests;
     std::vector<im::group::GetGroupMembersRequest> members_requests;
@@ -197,6 +238,21 @@ TEST(RemoteGroupClientTest, QueriesAndMessagesMapResults) {
     EXPECT_EQ(groups[0].group_id, 43u);
     EXPECT_EQ(groups[0].name, "remote-group");
     EXPECT_EQ(groups[0].creator_uid, "owner");
+
+    auto group_info = client.get_group_info(42);
+    ASSERT_TRUE(group_info.has_value());
+    EXPECT_EQ(group_info->group_id, 42u);
+    EXPECT_EQ(group_info->name, "remote-group-info");
+    ASSERT_EQ(raw->info_requests.size(), 1u);
+    EXPECT_EQ(raw->info_requests[0].group_record_id(), 42u);
+
+    auto search = client.search_groups("remote", 10);
+    ASSERT_EQ(search.size(), 1u);
+    EXPECT_EQ(search[0].group_id, 47u);
+    EXPECT_EQ(search[0].name, "remote-search-group");
+    ASSERT_EQ(raw->search_requests.size(), 1u);
+    EXPECT_EQ(raw->search_requests[0].keyword(), "remote");
+    EXPECT_EQ(raw->search_requests[0].limit(), 10);
 
     auto members = client.list_members(42, "owner");
     ASSERT_EQ(members.size(), 1u);

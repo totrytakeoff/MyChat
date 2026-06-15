@@ -50,7 +50,8 @@ RemotePushNotifier::RemotePushNotifier(std::unique_ptr<PushRpcClient> client,
 
 void RemotePushNotifier::notify_user(const std::string& receiver_uid,
                                      uint64_t msg_id,
-                                     const std::string& content) {
+                                     const std::string& content,
+                                     const im::service::push::PushContext& push_context) {
     if (!client_) {
         logger_->warn("Remote push skipped: RPC client is not configured");
         return;
@@ -60,6 +61,9 @@ void RemotePushNotifier::notify_user(const std::string& receiver_uid,
     request.set_receiver_uid(receiver_uid);
     request.set_msg_id(msg_id);
     request.set_content(content);
+    request.set_sender_uid(push_context.sender_uid);
+    request.set_conversation_type(push_context.conversation_type);
+    request.set_conversation_id(push_context.conversation_id);
 
     im::push::NotifyUserResponse response;
     ::grpc::ClientContext context;

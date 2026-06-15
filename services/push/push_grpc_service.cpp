@@ -37,9 +37,14 @@ PushGrpcService::PushGrpcService(PushNotifier* notifier)
     }
 
     try {
+        PushContext context;
+        context.sender_uid = request->sender_uid();
+        context.conversation_type = request->conversation_type();
+        context.conversation_id = request->conversation_id();
         notifier_->notify_user(request->receiver_uid(),
                                request->msg_id(),
-                               request->content());
+                               request->content(),
+                               context);
         base->set_error_code(im::base::SUCCESS);
         base->set_error_message("");
         return ::grpc::Status::OK;

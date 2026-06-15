@@ -26,14 +26,16 @@ void PushService::set_fanout_policy(std::unique_ptr<FanoutPolicy> policy) {
 
 void PushService::push_to_user(const std::string& receiver_uid,
                                uint64_t msg_id,
-                               const std::string& content) {
-    runtime_.notify_user(receiver_uid, msg_id, content);
+                               const std::string& content,
+                               const im::service::push::PushContext& context) {
+    runtime_.notify_user(receiver_uid, msg_id, content, context);
 }
 
 void PushService::notify_user(const std::string& receiver_uid,
                               uint64_t msg_id,
-                              const std::string& content) {
-    push_to_user(receiver_uid, msg_id, content);
+                              const std::string& content,
+                              const im::service::push::PushContext& context) {
+    push_to_user(receiver_uid, msg_id, content, context);
 }
 
 std::vector<PushSessionInfo> PushService::get_sessions(const std::string& receiver_uid) {

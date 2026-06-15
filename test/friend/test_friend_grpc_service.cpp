@@ -114,6 +114,7 @@ TEST_F(FriendGrpcServiceTest, SendPendingRespondAndListFriends) {
     ASSERT_EQ(pending_response.requests_size(), 1);
     EXPECT_EQ(pending_response.requests(0).from_uid(), uid_a);
     EXPECT_EQ(pending_response.requests(0).to_uid(), uid_b);
+    EXPECT_EQ(pending_response.requests(0).nickname(), "grpc-friend-test-flow-a-nickname");
 
     im::friend_::HandleFriendRequest accept_request;
     accept_request.mutable_header()->set_from_uid(uid_b);

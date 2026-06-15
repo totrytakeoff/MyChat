@@ -337,6 +337,7 @@ class FriendRequest final : public ::google::protobuf::Message
     kFromUidFieldNumber = 2,
     kToUidFieldNumber = 3,
     kMessageFieldNumber = 4,
+    kNicknameFieldNumber = 8,
     kCreateTimeFieldNumber = 6,
     kFriendIdFieldNumber = 7,
     kStatusFieldNumber = 5,
@@ -405,6 +406,22 @@ class FriendRequest final : public ::google::protobuf::Message
   std::string* _internal_mutable_message();
 
   public:
+  // string nickname = 8;
+  void clear_nickname() ;
+  const std::string& nickname() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_nickname(Arg_&& arg, Args_... args);
+  std::string* mutable_nickname();
+  PROTOBUF_NODISCARD std::string* release_nickname();
+  void set_allocated_nickname(std::string* value);
+
+  private:
+  const std::string& _internal_nickname() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_nickname(
+      const std::string& value);
+  std::string* _internal_mutable_nickname();
+
+  public:
   // int64 create_time = 6;
   void clear_create_time() ;
   ::int64_t create_time() const;
@@ -440,8 +457,8 @@ class FriendRequest final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      3, 7, 0,
-      64, 2>
+      3, 8, 0,
+      80, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -462,6 +479,7 @@ class FriendRequest final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr from_uid_;
     ::google::protobuf::internal::ArenaStringPtr to_uid_;
     ::google::protobuf::internal::ArenaStringPtr message_;
+    ::google::protobuf::internal::ArenaStringPtr nickname_;
     ::int64_t create_time_;
     ::uint64_t friend_id_;
     int status_;
@@ -4218,6 +4236,54 @@ inline ::uint64_t FriendRequest::_internal_friend_id() const {
 inline void FriendRequest::_internal_set_friend_id(::uint64_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.friend_id_ = value;
+}
+
+// string nickname = 8;
+inline void FriendRequest::clear_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.ClearToEmpty();
+}
+inline const std::string& FriendRequest::nickname() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.friend_.FriendRequest.nickname)
+  return _internal_nickname();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void FriendRequest::set_nickname(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.friend_.FriendRequest.nickname)
+}
+inline std::string* FriendRequest::mutable_nickname() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_nickname();
+  // @@protoc_insertion_point(field_mutable:im.friend_.FriendRequest.nickname)
+  return _s;
+}
+inline const std::string& FriendRequest::_internal_nickname() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.nickname_.Get();
+}
+inline void FriendRequest::_internal_set_nickname(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.Set(value, GetArena());
+}
+inline std::string* FriendRequest::_internal_mutable_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.nickname_.Mutable( GetArena());
+}
+inline std::string* FriendRequest::release_nickname() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.friend_.FriendRequest.nickname)
+  return _impl_.nickname_.Release();
+}
+inline void FriendRequest::set_allocated_nickname(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.nickname_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.nickname_.IsDefault()) {
+    _impl_.nickname_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.friend_.FriendRequest.nickname)
 }
 
 // -------------------------------------------------------------------

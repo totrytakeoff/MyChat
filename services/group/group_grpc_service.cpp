@@ -242,6 +242,73 @@ GroupGrpcService::GroupGrpcService(GroupService* group_service,
     }
 }
 
+::grpc::Status GroupGrpcService::GetGroupInfo(
+    ::grpc::ServerContext* /*context*/,
+    const im::group::GetGroupInfoRequest* request,
+    im::group::GetGroupInfoResponse* response) {
+    if (!require_group_service(group_service_, response)) {
+        return ::grpc::Status::OK;
+    }
+    const uint64_t group_id = request
+        ? group_id_from(request->group_id(), request->group_record_id())
+        : 0;
+    if (!request || group_id == 0) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR,
+                 "group_id is required");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        auto group = group_service_->get_group_info(group_id);
+        if (!group.has_value()) {
+            set_base(response->mutable_base(), im::base::NOT_FOUND, "Group not found");
+            return ::grpc::Status::OK;
+        }
+        set_base(response->mutable_base(), im::base::SUCCESS);
+        fill_group_info(*group, response->mutable_group());
+
+        if (!request->header().from_uid().empty()) {
+            const auto members = group_service_->list_members(
+                group_id, request->header().from_uid());
+            response->set_joined(!members.empty());
+            for (const auto& member : members) {
+                fill_member_info(member, response->add_members());
+            }
+        }
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
+
+::grpc::Status GroupGrpcService::SearchGroups(
+    ::grpc::ServerContext* /*context*/,
+    const im::group::SearchGroupsRequest* request,
+    im::group::SearchGroupsResponse* response) {
+    if (!require_group_service(group_service_, response)) {
+        return ::grpc::Status::OK;
+    }
+    if (!request || request->keyword().empty()) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR,
+                 "keyword is required");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        const auto limit = request->limit() > 0 ? static_cast<std::size_t>(request->limit()) : 20u;
+        const auto groups = group_service_->search_groups(request->keyword(), limit);
+        set_base(response->mutable_base(), im::base::SUCCESS);
+        for (const auto& group : groups) {
+            fill_group_info(group, response->add_groups());
+        }
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
+
 ::grpc::Status GroupGrpcService::GroupExists(
     ::grpc::ServerContext* /*context*/,
     const im::group::GroupExistsRequest* request,

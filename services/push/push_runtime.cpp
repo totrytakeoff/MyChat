@@ -1,6 +1,7 @@
 #include "push_runtime.hpp"
 
 #include <chrono>
+#include <sstream>
 #include <utility>
 
 #include "../../common/network/protobuf_codec.hpp"
@@ -23,6 +24,54 @@ int64_t now_ms() {
     ).count();
 }
 
+std::string json_escape(const std::string& value) {
+    std::ostringstream out;
+    for (const char ch : value) {
+        switch (ch) {
+        case '\\':
+            out << "\\\\";
+            break;
+        case '"':
+            out << "\\\"";
+            break;
+        case '\n':
+            out << "\\n";
+            break;
+        case '\r':
+            out << "\\r";
+            break;
+        case '\t':
+            out << "\\t";
+            break;
+        default:
+            out << ch;
+            break;
+        }
+    }
+    return out.str();
+}
+
+std::string build_context_ext(const PushContext& context) {
+    std::ostringstream out;
+    out << "{";
+    bool needs_comma = false;
+    auto append = [&](const char* key, const std::string& value) {
+        if (value.empty()) {
+            return;
+        }
+        if (needs_comma) {
+            out << ",";
+        }
+        out << "\"" << key << "\":\"" << json_escape(value) << "\"";
+        needs_comma = true;
+    };
+    append("sender_uid", context.sender_uid);
+    append("conversation_type", context.conversation_type);
+    append("conversation_id", context.conversation_id);
+    out << "}";
+    return needs_comma ? out.str() : "";
+}
+
 } // anonymous namespace
 
 PushRuntime::PushRuntime(PushSessionProvider* session_provider,
@@ -43,7 +92,8 @@ void PushRuntime::set_fanout_policy(std::unique_ptr<FanoutPolicy> policy) {
 
 void PushRuntime::notify_user(const std::string& receiver_uid,
                               uint64_t msg_id,
-                              const std::string& content) {
+                              const std::string& content,
+                              const PushContext& context) {
     if (!session_provider_ || !payload_sender_ || !delivery_marker_ || !fanout_policy_) {
         logger_->debug("Push skipped: one or more runtime deps are null");
         return;
@@ -63,7 +113,7 @@ void PushRuntime::notify_user(const std::string& receiver_uid,
             return;
         }
 
-        auto payload = build_payload(receiver_uid, msg_id, content);
+        auto payload = build_payload(receiver_uid, msg_id, content, context);
         if (payload.empty()) {
             logger_->warn("Failed to encode push message for receiver {}", receiver_uid);
             return;
@@ -95,11 +145,14 @@ void PushRuntime::notify_user(const std::string& receiver_uid,
 
 std::string PushRuntime::build_payload(const std::string& receiver_uid,
                                        uint64_t msg_id,
-                                       const std::string& content) const {
+                                       const std::string& content,
+                                       const PushContext& context) const {
     im::base::IMHeader push_header;
     push_header.set_version("1.0");
     push_header.set_cmd_id(im::command::CMD_PUSH_MESSAGE);
-    push_header.set_from_uid(ServiceIdentityManager::getInstance().getDeviceId());
+    push_header.set_from_uid(context.sender_uid.empty()
+        ? ServiceIdentityManager::getInstance().getDeviceId()
+        : context.sender_uid);
     push_header.set_to_uid(receiver_uid);
     push_header.set_timestamp(static_cast<uint64_t>(now_ms()));
 
@@ -108,6 +161,10 @@ std::string PushRuntime::build_payload(const std::string& receiver_uid,
     push_body->set_type(im::push::PUSH_MESSAGE);
     push_body->set_content(content);
     push_body->set_related_message_id(std::to_string(msg_id));
+    const auto ext = build_context_ext(context);
+    if (!ext.empty()) {
+        push_body->set_ext(ext);
+    }
 
     std::string encoded;
     if (!ProtobufCodec::encode(push_header, push_req, encoded)) {

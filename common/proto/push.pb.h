@@ -991,6 +991,9 @@ class NotifyUserRequest final : public ::google::protobuf::Message
   enum : int {
     kReceiverUidFieldNumber = 1,
     kContentFieldNumber = 3,
+    kSenderUidFieldNumber = 4,
+    kConversationTypeFieldNumber = 5,
+    kConversationIdFieldNumber = 6,
     kMsgIdFieldNumber = 2,
   };
   // string receiver_uid = 1;
@@ -1025,6 +1028,54 @@ class NotifyUserRequest final : public ::google::protobuf::Message
   std::string* _internal_mutable_content();
 
   public:
+  // string sender_uid = 4;
+  void clear_sender_uid() ;
+  const std::string& sender_uid() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_sender_uid(Arg_&& arg, Args_... args);
+  std::string* mutable_sender_uid();
+  PROTOBUF_NODISCARD std::string* release_sender_uid();
+  void set_allocated_sender_uid(std::string* value);
+
+  private:
+  const std::string& _internal_sender_uid() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_sender_uid(
+      const std::string& value);
+  std::string* _internal_mutable_sender_uid();
+
+  public:
+  // string conversation_type = 5;
+  void clear_conversation_type() ;
+  const std::string& conversation_type() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_conversation_type(Arg_&& arg, Args_... args);
+  std::string* mutable_conversation_type();
+  PROTOBUF_NODISCARD std::string* release_conversation_type();
+  void set_allocated_conversation_type(std::string* value);
+
+  private:
+  const std::string& _internal_conversation_type() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_conversation_type(
+      const std::string& value);
+  std::string* _internal_mutable_conversation_type();
+
+  public:
+  // string conversation_id = 6;
+  void clear_conversation_id() ;
+  const std::string& conversation_id() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_conversation_id(Arg_&& arg, Args_... args);
+  std::string* mutable_conversation_id();
+  PROTOBUF_NODISCARD std::string* release_conversation_id();
+  void set_allocated_conversation_id(std::string* value);
+
+  private:
+  const std::string& _internal_conversation_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_conversation_id(
+      const std::string& value);
+  std::string* _internal_mutable_conversation_id();
+
+  public:
   // uint64 msg_id = 2;
   void clear_msg_id() ;
   ::uint64_t msg_id() const;
@@ -1040,8 +1091,8 @@ class NotifyUserRequest final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      2, 3, 0,
-      53, 2>
+      3, 6, 0,
+      95, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -1060,6 +1111,9 @@ class NotifyUserRequest final : public ::google::protobuf::Message
                           const NotifyUserRequest& from_msg);
     ::google::protobuf::internal::ArenaStringPtr receiver_uid_;
     ::google::protobuf::internal::ArenaStringPtr content_;
+    ::google::protobuf::internal::ArenaStringPtr sender_uid_;
+    ::google::protobuf::internal::ArenaStringPtr conversation_type_;
+    ::google::protobuf::internal::ArenaStringPtr conversation_id_;
     ::uint64_t msg_id_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
@@ -3338,6 +3392,150 @@ inline void NotifyUserRequest::set_allocated_content(std::string* value) {
     _impl_.content_.Set("", GetArena());
   }
   // @@protoc_insertion_point(field_set_allocated:im.push.NotifyUserRequest.content)
+}
+
+// string sender_uid = 4;
+inline void NotifyUserRequest::clear_sender_uid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.sender_uid_.ClearToEmpty();
+}
+inline const std::string& NotifyUserRequest::sender_uid() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.push.NotifyUserRequest.sender_uid)
+  return _internal_sender_uid();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void NotifyUserRequest::set_sender_uid(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.sender_uid_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.push.NotifyUserRequest.sender_uid)
+}
+inline std::string* NotifyUserRequest::mutable_sender_uid() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_sender_uid();
+  // @@protoc_insertion_point(field_mutable:im.push.NotifyUserRequest.sender_uid)
+  return _s;
+}
+inline const std::string& NotifyUserRequest::_internal_sender_uid() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.sender_uid_.Get();
+}
+inline void NotifyUserRequest::_internal_set_sender_uid(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.sender_uid_.Set(value, GetArena());
+}
+inline std::string* NotifyUserRequest::_internal_mutable_sender_uid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.sender_uid_.Mutable( GetArena());
+}
+inline std::string* NotifyUserRequest::release_sender_uid() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.push.NotifyUserRequest.sender_uid)
+  return _impl_.sender_uid_.Release();
+}
+inline void NotifyUserRequest::set_allocated_sender_uid(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.sender_uid_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.sender_uid_.IsDefault()) {
+    _impl_.sender_uid_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.push.NotifyUserRequest.sender_uid)
+}
+
+// string conversation_type = 5;
+inline void NotifyUserRequest::clear_conversation_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_type_.ClearToEmpty();
+}
+inline const std::string& NotifyUserRequest::conversation_type() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.push.NotifyUserRequest.conversation_type)
+  return _internal_conversation_type();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void NotifyUserRequest::set_conversation_type(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_type_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.push.NotifyUserRequest.conversation_type)
+}
+inline std::string* NotifyUserRequest::mutable_conversation_type() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_conversation_type();
+  // @@protoc_insertion_point(field_mutable:im.push.NotifyUserRequest.conversation_type)
+  return _s;
+}
+inline const std::string& NotifyUserRequest::_internal_conversation_type() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.conversation_type_.Get();
+}
+inline void NotifyUserRequest::_internal_set_conversation_type(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_type_.Set(value, GetArena());
+}
+inline std::string* NotifyUserRequest::_internal_mutable_conversation_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.conversation_type_.Mutable( GetArena());
+}
+inline std::string* NotifyUserRequest::release_conversation_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.push.NotifyUserRequest.conversation_type)
+  return _impl_.conversation_type_.Release();
+}
+inline void NotifyUserRequest::set_allocated_conversation_type(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_type_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.conversation_type_.IsDefault()) {
+    _impl_.conversation_type_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.push.NotifyUserRequest.conversation_type)
+}
+
+// string conversation_id = 6;
+inline void NotifyUserRequest::clear_conversation_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_id_.ClearToEmpty();
+}
+inline const std::string& NotifyUserRequest::conversation_id() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:im.push.NotifyUserRequest.conversation_id)
+  return _internal_conversation_id();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void NotifyUserRequest::set_conversation_id(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_id_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:im.push.NotifyUserRequest.conversation_id)
+}
+inline std::string* NotifyUserRequest::mutable_conversation_id() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_conversation_id();
+  // @@protoc_insertion_point(field_mutable:im.push.NotifyUserRequest.conversation_id)
+  return _s;
+}
+inline const std::string& NotifyUserRequest::_internal_conversation_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.conversation_id_.Get();
+}
+inline void NotifyUserRequest::_internal_set_conversation_id(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_id_.Set(value, GetArena());
+}
+inline std::string* NotifyUserRequest::_internal_mutable_conversation_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.conversation_id_.Mutable( GetArena());
+}
+inline std::string* NotifyUserRequest::release_conversation_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:im.push.NotifyUserRequest.conversation_id)
+  return _impl_.conversation_id_.Release();
+}
+inline void NotifyUserRequest::set_allocated_conversation_id(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.conversation_id_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.conversation_id_.IsDefault()) {
+    _impl_.conversation_id_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:im.push.NotifyUserRequest.conversation_id)
 }
 
 // -------------------------------------------------------------------

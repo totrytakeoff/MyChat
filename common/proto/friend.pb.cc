@@ -41,6 +41,9 @@ inline constexpr FriendRequest::Impl_::Impl_(
         message_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        nickname_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         create_time_{::int64_t{0}},
         friend_id_{::uint64_t{0u}},
         status_{static_cast< ::im::friend_::FriendRequestStatus >(0)},
@@ -511,6 +514,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::friend_::FriendRequest, _impl_.status_),
         PROTOBUF_FIELD_OFFSET(::im::friend_::FriendRequest, _impl_.create_time_),
         PROTOBUF_FIELD_OFFSET(::im::friend_::FriendRequest, _impl_.friend_id_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendRequest, _impl_.nickname_),
         PROTOBUF_FIELD_OFFSET(::im::friend_::AddFriendRequest, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::friend_::AddFriendRequest, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -677,20 +681,20 @@ static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::im::friend_::FriendInfo)},
         {15, -1, -1, sizeof(::im::friend_::FriendRequest)},
-        {30, 41, -1, sizeof(::im::friend_::AddFriendRequest)},
-        {44, 54, -1, sizeof(::im::friend_::AddFriendResponse)},
-        {56, 67, -1, sizeof(::im::friend_::HandleFriendRequest)},
-        {70, 79, -1, sizeof(::im::friend_::HandleFriendResponse)},
-        {80, 89, -1, sizeof(::im::friend_::GetFriendListRequest)},
-        {90, 100, -1, sizeof(::im::friend_::GetFriendListResponse)},
-        {102, 111, -1, sizeof(::im::friend_::GetFriendRequestsRequest)},
-        {112, 122, -1, sizeof(::im::friend_::GetFriendRequestsResponse)},
-        {124, 134, -1, sizeof(::im::friend_::AddToBlacklistRequest)},
-        {136, 145, -1, sizeof(::im::friend_::AddToBlacklistResponse)},
-        {146, 156, -1, sizeof(::im::friend_::RemoveFromBlacklistRequest)},
-        {158, 167, -1, sizeof(::im::friend_::RemoveFromBlacklistResponse)},
-        {168, 177, -1, sizeof(::im::friend_::GetBlacklistRequest)},
-        {178, 188, -1, sizeof(::im::friend_::GetBlacklistResponse)},
+        {31, 42, -1, sizeof(::im::friend_::AddFriendRequest)},
+        {45, 55, -1, sizeof(::im::friend_::AddFriendResponse)},
+        {57, 68, -1, sizeof(::im::friend_::HandleFriendRequest)},
+        {71, 80, -1, sizeof(::im::friend_::HandleFriendResponse)},
+        {81, 90, -1, sizeof(::im::friend_::GetFriendListRequest)},
+        {91, 101, -1, sizeof(::im::friend_::GetFriendListResponse)},
+        {103, 112, -1, sizeof(::im::friend_::GetFriendRequestsRequest)},
+        {113, 123, -1, sizeof(::im::friend_::GetFriendRequestsResponse)},
+        {125, 135, -1, sizeof(::im::friend_::AddToBlacklistRequest)},
+        {137, 146, -1, sizeof(::im::friend_::AddToBlacklistResponse)},
+        {147, 157, -1, sizeof(::im::friend_::RemoveFromBlacklistRequest)},
+        {159, 168, -1, sizeof(::im::friend_::RemoveFromBlacklistResponse)},
+        {169, 178, -1, sizeof(::im::friend_::GetBlacklistRequest)},
+        {179, 189, -1, sizeof(::im::friend_::GetBlacklistResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::im::friend_::_FriendInfo_default_instance_._instance,
@@ -717,52 +721,53 @@ const char descriptor_table_protodef_friend_2eproto[] ABSL_ATTRIBUTE_SECTION_VAR
     "(\t\022\020\n\010add_time\030\003 \001(\003\0221\n\013permissions\030\004 \003("
     "\0162\034.im.friend_.FriendPermission\022\021\n\tfrien"
     "d_id\030\005 \001(\004\022\020\n\010nickname\030\006 \001(\t\022/\n\006status\030\007"
-    " \001(\0162\037.im.friend_.FriendRequestStatus\"\257\001"
+    " \001(\0162\037.im.friend_.FriendRequestStatus\"\301\001"
     "\n\rFriendRequest\022\022\n\nrequest_id\030\001 \001(\t\022\020\n\010f"
     "rom_uid\030\002 \001(\t\022\016\n\006to_uid\030\003 \001(\t\022\017\n\007message"
     "\030\004 \001(\t\022/\n\006status\030\005 \001(\0162\037.im.friend_.Frie"
     "ndRequestStatus\022\023\n\013create_time\030\006 \001(\003\022\021\n\t"
-    "friend_id\030\007 \001(\004\"V\n\020AddFriendRequest\022!\n\006h"
-    "eader\030\001 \001(\0132\021.im.base.IMHeader\022\016\n\006to_uid"
-    "\030\002 \001(\t\022\017\n\007message\030\003 \001(\t\"d\n\021AddFriendResp"
-    "onse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRespons"
-    "e\022*\n\007request\030\002 \001(\0132\031.im.friend_.FriendRe"
-    "quest\"\\\n\023HandleFriendRequest\022!\n\006header\030\001"
-    " \001(\0132\021.im.base.IMHeader\022\022\n\nrequest_id\030\002 "
-    "\001(\t\022\016\n\006accept\030\003 \001(\010\";\n\024HandleFriendRespo"
-    "nse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse"
-    "\"9\n\024GetFriendListRequest\022!\n\006header\030\001 \001(\013"
-    "2\021.im.base.IMHeader\"e\n\025GetFriendListResp"
-    "onse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRespons"
-    "e\022\'\n\007friends\030\002 \003(\0132\026.im.friend_.FriendIn"
-    "fo\"=\n\030GetFriendRequestsRequest\022!\n\006header"
-    "\030\001 \001(\0132\021.im.base.IMHeader\"m\n\031GetFriendRe"
-    "questsResponse\022#\n\004base\030\001 \001(\0132\025.im.base.B"
-    "aseResponse\022+\n\010requests\030\002 \003(\0132\031.im.frien"
-    "d_.FriendRequest\"N\n\025AddToBlacklistReques"
-    "t\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeader\022\022\n\n"
-    "target_uid\030\002 \001(\t\"=\n\026AddToBlacklistRespon"
-    "se\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\""
-    "S\n\032RemoveFromBlacklistRequest\022!\n\006header\030"
-    "\001 \001(\0132\021.im.base.IMHeader\022\022\n\ntarget_uid\030\002"
-    " \001(\t\"B\n\033RemoveFromBlacklistResponse\022#\n\004b"
-    "ase\030\001 \001(\0132\025.im.base.BaseResponse\"8\n\023GetB"
-    "lacklistRequest\022!\n\006header\030\001 \001(\0132\021.im.bas"
-    "e.IMHeader\"O\n\024GetBlacklistResponse\022#\n\004ba"
-    "se\030\001 \001(\0132\025.im.base.BaseResponse\022\022\n\nblack"
-    "_uids\030\002 \003(\t*>\n\023FriendRequestStatus\022\013\n\007PE"
-    "NDING\020\000\022\014\n\010ACCEPTED\020\001\022\014\n\010REJECTED\020\002*D\n\020F"
-    "riendPermission\022\n\n\006NORMAL\020\000\022\013\n\007NO_CHAT\020\001"
-    "\022\r\n\tNO_MOMENT\020\002\022\010\n\004STAR\020\0032\350\002\n\rFriendServ"
-    "ice\022J\n\013SendRequest\022\034.im.friend_.AddFrien"
-    "dRequest\032\035.im.friend_.AddFriendResponse\022"
-    "U\n\020RespondToRequest\022\037.im.friend_.HandleF"
-    "riendRequest\032 .im.friend_.HandleFriendRe"
-    "sponse\022Q\n\nGetFriends\022 .im.friend_.GetFri"
-    "endListRequest\032!.im.friend_.GetFriendLis"
-    "tResponse\022a\n\022GetPendingRequests\022$.im.fri"
-    "end_.GetFriendRequestsRequest\032%.im.frien"
-    "d_.GetFriendRequestsResponseb\006proto3"
+    "friend_id\030\007 \001(\004\022\020\n\010nickname\030\010 \001(\t\"V\n\020Add"
+    "FriendRequest\022!\n\006header\030\001 \001(\0132\021.im.base."
+    "IMHeader\022\016\n\006to_uid\030\002 \001(\t\022\017\n\007message\030\003 \001("
+    "\t\"d\n\021AddFriendResponse\022#\n\004base\030\001 \001(\0132\025.i"
+    "m.base.BaseResponse\022*\n\007request\030\002 \001(\0132\031.i"
+    "m.friend_.FriendRequest\"\\\n\023HandleFriendR"
+    "equest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeade"
+    "r\022\022\n\nrequest_id\030\002 \001(\t\022\016\n\006accept\030\003 \001(\010\";\n"
+    "\024HandleFriendResponse\022#\n\004base\030\001 \001(\0132\025.im"
+    ".base.BaseResponse\"9\n\024GetFriendListReque"
+    "st\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeader\"e\n"
+    "\025GetFriendListResponse\022#\n\004base\030\001 \001(\0132\025.i"
+    "m.base.BaseResponse\022\'\n\007friends\030\002 \003(\0132\026.i"
+    "m.friend_.FriendInfo\"=\n\030GetFriendRequest"
+    "sRequest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHea"
+    "der\"m\n\031GetFriendRequestsResponse\022#\n\004base"
+    "\030\001 \001(\0132\025.im.base.BaseResponse\022+\n\010request"
+    "s\030\002 \003(\0132\031.im.friend_.FriendRequest\"N\n\025Ad"
+    "dToBlacklistRequest\022!\n\006header\030\001 \001(\0132\021.im"
+    ".base.IMHeader\022\022\n\ntarget_uid\030\002 \001(\t\"=\n\026Ad"
+    "dToBlacklistResponse\022#\n\004base\030\001 \001(\0132\025.im."
+    "base.BaseResponse\"S\n\032RemoveFromBlacklist"
+    "Request\022!\n\006header\030\001 \001(\0132\021.im.base.IMHead"
+    "er\022\022\n\ntarget_uid\030\002 \001(\t\"B\n\033RemoveFromBlac"
+    "klistResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Ba"
+    "seResponse\"8\n\023GetBlacklistRequest\022!\n\006hea"
+    "der\030\001 \001(\0132\021.im.base.IMHeader\"O\n\024GetBlack"
+    "listResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Bas"
+    "eResponse\022\022\n\nblack_uids\030\002 \003(\t*>\n\023FriendR"
+    "equestStatus\022\013\n\007PENDING\020\000\022\014\n\010ACCEPTED\020\001\022"
+    "\014\n\010REJECTED\020\002*D\n\020FriendPermission\022\n\n\006NOR"
+    "MAL\020\000\022\013\n\007NO_CHAT\020\001\022\r\n\tNO_MOMENT\020\002\022\010\n\004STA"
+    "R\020\0032\350\002\n\rFriendService\022J\n\013SendRequest\022\034.i"
+    "m.friend_.AddFriendRequest\032\035.im.friend_."
+    "AddFriendResponse\022U\n\020RespondToRequest\022\037."
+    "im.friend_.HandleFriendRequest\032 .im.frie"
+    "nd_.HandleFriendResponse\022Q\n\nGetFriends\022 "
+    ".im.friend_.GetFriendListRequest\032!.im.fr"
+    "iend_.GetFriendListResponse\022a\n\022GetPendin"
+    "gRequests\022$.im.friend_.GetFriendRequests"
+    "Request\032%.im.friend_.GetFriendRequestsRe"
+    "sponseb\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_friend_2eproto_deps[1] =
     {
@@ -772,7 +777,7 @@ static ::absl::once_flag descriptor_table_friend_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_friend_2eproto = {
     false,
     false,
-    2036,
+    2054,
     descriptor_table_protodef_friend_2eproto,
     "friend.proto",
     &descriptor_table_friend_2eproto_once,
@@ -1243,6 +1248,7 @@ inline PROTOBUF_NDEBUG_INLINE FriendRequest::Impl_::Impl_(
         from_uid_(arena, from.from_uid_),
         to_uid_(arena, from.to_uid_),
         message_(arena, from.message_),
+        nickname_(arena, from.nickname_),
         _cached_size_{0} {}
 
 FriendRequest::FriendRequest(
@@ -1275,6 +1281,7 @@ inline PROTOBUF_NDEBUG_INLINE FriendRequest::Impl_::Impl_(
         from_uid_(arena),
         to_uid_(arena),
         message_(arena),
+        nickname_(arena),
         _cached_size_{0} {}
 
 inline void FriendRequest::SharedCtor(::_pb::Arena* arena) {
@@ -1298,6 +1305,7 @@ inline void FriendRequest::SharedDtor(MessageLite& self) {
   this_._impl_.from_uid_.Destroy();
   this_._impl_.to_uid_.Destroy();
   this_._impl_.message_.Destroy();
+  this_._impl_.nickname_.Destroy();
   this_._impl_.~Impl_();
 }
 
@@ -1337,15 +1345,15 @@ const ::google::protobuf::internal::ClassData* FriendRequest::GetClassData() con
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<3, 7, 0, 64, 2> FriendRequest::_table_ = {
+const ::_pbi::TcParseTable<3, 8, 0, 80, 2> FriendRequest::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    7, 56,  // max_field_number, fast_idx_mask
+    8, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967168,  // skipmap
+    4294967040,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    7,  // num_field_entries
+    8,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -1355,7 +1363,9 @@ const ::_pbi::TcParseTable<3, 7, 0, 64, 2> FriendRequest::_table_ = {
     ::_pbi::TcParser::GetTable<::im::friend_::FriendRequest>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    {::_pbi::TcParser::MiniParse, {}},
+    // string nickname = 8;
+    {::_pbi::TcParser::FastUS1,
+     {66, 63, 0, PROTOBUF_FIELD_OFFSET(FriendRequest, _impl_.nickname_)}},
     // string request_id = 1;
     {::_pbi::TcParser::FastUS1,
      {10, 63, 0, PROTOBUF_FIELD_OFFSET(FriendRequest, _impl_.request_id_)}},
@@ -1401,15 +1411,19 @@ const ::_pbi::TcParseTable<3, 7, 0, 64, 2> FriendRequest::_table_ = {
     // uint64 friend_id = 7;
     {PROTOBUF_FIELD_OFFSET(FriendRequest, _impl_.friend_id_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUInt64)},
+    // string nickname = 8;
+    {PROTOBUF_FIELD_OFFSET(FriendRequest, _impl_.nickname_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }},
   // no aux_entries
   {{
-    "\30\12\10\6\7\0\0\0"
+    "\30\12\10\6\7\0\0\0\10\0\0\0\0\0\0\0"
     "im.friend_.FriendRequest"
     "request_id"
     "from_uid"
     "to_uid"
     "message"
+    "nickname"
   }},
 };
 
@@ -1424,6 +1438,7 @@ PROTOBUF_NOINLINE void FriendRequest::Clear() {
   _impl_.from_uid_.ClearToEmpty();
   _impl_.to_uid_.ClearToEmpty();
   _impl_.message_.ClearToEmpty();
+  _impl_.nickname_.ClearToEmpty();
   ::memset(&_impl_.create_time_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.status_) -
       reinterpret_cast<char*>(&_impl_.create_time_)) + sizeof(_impl_.status_));
@@ -1498,6 +1513,14 @@ PROTOBUF_NOINLINE void FriendRequest::Clear() {
                 7, this_._internal_friend_id(), target);
           }
 
+          // string nickname = 8;
+          if (!this_._internal_nickname().empty()) {
+            const std::string& _s = this_._internal_nickname();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.friend_.FriendRequest.nickname");
+            target = stream->WriteStringMaybeAliased(8, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -1543,6 +1566,11 @@ PROTOBUF_NOINLINE void FriendRequest::Clear() {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_message());
             }
+            // string nickname = 8;
+            if (!this_._internal_nickname().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_nickname());
+            }
             // int64 create_time = 6;
             if (this_._internal_create_time() != 0) {
               total_size += ::_pbi::WireFormatLite::Int64SizePlusOne(
@@ -1583,6 +1611,9 @@ void FriendRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::g
   if (!from._internal_message().empty()) {
     _this->_internal_set_message(from._internal_message());
   }
+  if (!from._internal_nickname().empty()) {
+    _this->_internal_set_nickname(from._internal_nickname());
+  }
   if (from._internal_create_time() != 0) {
     _this->_impl_.create_time_ = from._impl_.create_time_;
   }
@@ -1612,6 +1643,7 @@ void FriendRequest::InternalSwap(FriendRequest* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.from_uid_, &other->_impl_.from_uid_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.to_uid_, &other->_impl_.to_uid_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.message_, &other->_impl_.message_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.nickname_, &other->_impl_.nickname_, arena);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(FriendRequest, _impl_.status_)
       + sizeof(FriendRequest::_impl_.status_)

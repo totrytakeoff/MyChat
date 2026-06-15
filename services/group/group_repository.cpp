@@ -84,6 +84,40 @@ std::vector<Group> GroupRepository::find_groups_by_user(
     return result;
 }
 
+std::vector<Group> GroupRepository::search_groups(const std::string& keyword,
+                                                  std::size_t limit) {
+    std::vector<Group> groups;
+    if (keyword.empty() || limit == 0) {
+        return groups;
+    }
+
+    try {
+        auto by_id = find_group_by_id(static_cast<uint64_t>(std::stoull(keyword)));
+        if (by_id.has_value()) {
+            groups.push_back(*by_id);
+            return groups;
+        }
+    } catch (...) {
+    }
+
+    try {
+        odb::transaction t(db_->begin());
+        const std::string pattern = "%" + keyword + "%";
+        odb::query<Group> q(odb::query<Group>::name.like(pattern));
+        odb::result<Group> r(db_->query<Group>(q));
+        for (const auto& group : r) {
+            groups.push_back(group);
+            if (groups.size() >= limit) {
+                break;
+            }
+        }
+        t.commit();
+    } catch (const odb::exception&) {
+        return {};
+    }
+    return groups;
+}
+
 // === Member operations ===
 
 bool GroupRepository::add_member(GroupMember m) {

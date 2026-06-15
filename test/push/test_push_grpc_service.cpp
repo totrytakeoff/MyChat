@@ -19,8 +19,9 @@ class FakePushNotifier : public PushNotifier {
 public:
     void notify_user(const std::string& receiver_uid,
                      uint64_t msg_id,
-                     const std::string& content) override {
-        calls.push_back({receiver_uid, msg_id, content});
+                     const std::string& content,
+                     const im::service::push::PushContext& context) override {
+        calls.push_back({receiver_uid, msg_id, content, context});
         if (throw_on_notify) {
             throw std::runtime_error("push failed");
         }
@@ -30,6 +31,7 @@ public:
         std::string receiver_uid;
         uint64_t msg_id = 0;
         std::string content;
+        im::service::push::PushContext context;
     };
 
     bool throw_on_notify = false;
@@ -44,6 +46,9 @@ TEST(PushGrpcServiceTest, NotifyUserDelegatesToPushNotifier) {
     request.set_receiver_uid("receiver-1");
     request.set_msg_id(42);
     request.set_content("hello");
+    request.set_sender_uid("sender-1");
+    request.set_conversation_type("direct");
+    request.set_conversation_id("sender-1");
 
     auto status = service.NotifyUser(nullptr, &request, &response);
 
@@ -52,6 +57,9 @@ TEST(PushGrpcServiceTest, NotifyUserDelegatesToPushNotifier) {
     EXPECT_EQ(notifier.calls[0].receiver_uid, "receiver-1");
     EXPECT_EQ(notifier.calls[0].msg_id, 42u);
     EXPECT_EQ(notifier.calls[0].content, "hello");
+    EXPECT_EQ(notifier.calls[0].context.sender_uid, "sender-1");
+    EXPECT_EQ(notifier.calls[0].context.conversation_type, "direct");
+    EXPECT_EQ(notifier.calls[0].context.conversation_id, "sender-1");
     EXPECT_EQ(response.base().error_code(), im::base::SUCCESS);
     EXPECT_TRUE(response.base().error_message().empty());
 }

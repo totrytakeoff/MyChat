@@ -81,6 +81,7 @@ im::service::friend_::FriendInfoDTO to_info(const im::friend_::FriendRequest& re
     im::service::friend_::FriendInfoDTO dto;
     dto.friend_id = request.friend_id();
     dto.friend_uid = request.from_uid();
+    dto.nickname = request.nickname();
     dto.status = to_service_status(request.status());
     dto.created_at = request.create_time();
     return dto;

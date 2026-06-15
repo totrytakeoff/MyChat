@@ -1,6 +1,7 @@
 #ifndef IM_SERVICE_GROUP_GROUP_REPOSITORY_HPP
 #define IM_SERVICE_GROUP_GROUP_REPOSITORY_HPP
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -30,6 +31,8 @@ public:
     bool create_group_with_owner(Group& g, GroupMember& owner);
     std::optional<Group> find_group_by_id(uint64_t group_id);
     std::vector<Group> find_groups_by_user(const std::string& user_uid);
+    std::vector<Group> search_groups(const std::string& keyword,
+                                     std::size_t limit);
 
     // Member operations
     bool add_member(GroupMember m);

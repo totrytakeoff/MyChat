@@ -60,6 +60,34 @@ std::optional<User> UserRepository::find_by_account(const std::string& account) 
     }
 }
 
+std::vector<User> UserRepository::search_by_account_or_nickname(
+    const std::string& keyword,
+    std::size_t limit) {
+    std::vector<User> users;
+    if (keyword.empty() || limit == 0) {
+        return users;
+    }
+
+    try {
+        odb::transaction t(db_->begin());
+        const std::string pattern = "%" + keyword + "%";
+        odb::query<User> q(
+            odb::query<User>::account.like(pattern) ||
+            odb::query<User>::nickname.like(pattern));
+        odb::result<User> r(db_->query<User>(q));
+        for (const auto& user : r) {
+            users.push_back(user);
+            if (users.size() >= limit) {
+                break;
+            }
+        }
+        t.commit();
+    } catch (const odb::exception&) {
+        return {};
+    }
+    return users;
+}
+
 bool UserRepository::account_exists(const std::string& account) {
     return find_by_account(account).has_value();
 }
@@ -75,6 +103,31 @@ bool UserRepository::update_last_login(const std::string& uid, int64_t last_logi
         return true;
     } catch (const odb::exception&) {
         return false;
+    }
+}
+
+std::optional<User> UserRepository::update_profile(const std::string& uid,
+                                                   const std::string& nickname,
+                                                   const std::string& avatar,
+                                                   Gender gender,
+                                                   const std::string& signature) {
+    try {
+        odb::transaction t(db_->begin());
+        std::unique_ptr<User> user(db_->load<User>(uid));
+        if (!user) {
+            t.commit();
+            return std::nullopt;
+        }
+        user->nickname(nickname);
+        user->avatar(avatar);
+        user->gender(gender);
+        user->signature(signature);
+        db_->update(*user);
+        User updated = *user;
+        t.commit();
+        return updated;
+    } catch (const odb::exception&) {
+        return std::nullopt;
     }
 }
 

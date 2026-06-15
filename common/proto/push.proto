@@ -51,6 +51,9 @@ message NotifyUserRequest {
     string receiver_uid = 1; // 接收者用户ID
     uint64 msg_id = 2;       // 已持久化的消息ID
     string content = 3;      // 推送内容
+    string sender_uid = 4;   // 原始发送者用户ID
+    string conversation_type = 5; // direct/group/system
+    string conversation_id = 6;   // 单聊对端UID或群ID
 }
 
 // 服务间推送通知响应。当前 PushRuntime 是 best-effort 语义，成功仅表示请求已被接收。

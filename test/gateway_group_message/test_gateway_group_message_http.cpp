@@ -77,14 +77,16 @@ struct PushCall {
     std::string receiver_uid;
     uint64_t msg_id;
     std::string content;
+    im::service::push::PushContext context;
 };
 
 class RecordingPushNotifier : public im::service::push::PushNotifier {
 public:
     void notify_user(const std::string& receiver_uid,
                      uint64_t msg_id,
-                     const std::string& content) override {
-        calls.push_back({receiver_uid, msg_id, content});
+                     const std::string& content,
+                     const im::service::push::PushContext& context) override {
+        calls.push_back({receiver_uid, msg_id, content, context});
     }
 
     std::vector<PushCall> calls;
@@ -265,6 +267,9 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageFansOutToOtherMembersOnly) {
     for (const auto& call : recording_notifier_.calls) {
         EXPECT_EQ(call.msg_id, msg_id);
         EXPECT_EQ(call.content, "Fanout group!");
+        EXPECT_EQ(call.context.sender_uid, owner);
+        EXPECT_EQ(call.context.conversation_type, "group");
+        EXPECT_EQ(call.context.conversation_id, std::to_string(gid));
     }
 }
 

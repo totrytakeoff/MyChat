@@ -133,6 +133,15 @@ inline constexpr NotifyUserRequest::Impl_::Impl_(
         content_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        sender_uid_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        conversation_type_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        conversation_id_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         msg_id_{::uint64_t{0u}},
         _cached_size_{0} {}
 
@@ -416,6 +425,9 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserRequest, _impl_.receiver_uid_),
         PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserRequest, _impl_.msg_id_),
         PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserRequest, _impl_.content_),
+        PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserRequest, _impl_.sender_uid_),
+        PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserRequest, _impl_.conversation_type_),
+        PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserRequest, _impl_.conversation_id_),
         PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserResponse, _impl_._has_bits_),
         PROTOBUF_FIELD_OFFSET(::im::push::NotifyUserResponse, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -510,14 +522,14 @@ static const ::_pbi::MigrationSchema
         {13, 23, -1, sizeof(::im::push::PushRequest)},
         {25, 34, -1, sizeof(::im::push::PushResponse)},
         {35, -1, -1, sizeof(::im::push::NotifyUserRequest)},
-        {46, 55, -1, sizeof(::im::push::NotifyUserResponse)},
-        {56, -1, -1, sizeof(::im::push::PushSession)},
-        {67, -1, -1, sizeof(::im::push::ListUserSessionsRequest)},
-        {76, 86, -1, sizeof(::im::push::ListUserSessionsResponse)},
-        {88, -1, -1, sizeof(::im::push::SendSessionPayloadRequest)},
-        {98, 108, -1, sizeof(::im::push::SendSessionPayloadResponse)},
-        {110, -1, -1, sizeof(::im::push::MarkMessageDeliveredRequest)},
-        {120, 130, -1, sizeof(::im::push::MarkMessageDeliveredResponse)},
+        {49, 58, -1, sizeof(::im::push::NotifyUserResponse)},
+        {59, -1, -1, sizeof(::im::push::PushSession)},
+        {70, -1, -1, sizeof(::im::push::ListUserSessionsRequest)},
+        {79, 89, -1, sizeof(::im::push::ListUserSessionsResponse)},
+        {91, -1, -1, sizeof(::im::push::SendSessionPayloadRequest)},
+        {101, 111, -1, sizeof(::im::push::SendSessionPayloadResponse)},
+        {113, -1, -1, sizeof(::im::push::MarkMessageDeliveredRequest)},
+        {123, 133, -1, sizeof(::im::push::MarkMessageDeliveredResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::im::push::_PushMessageBody_default_instance_._instance,
@@ -542,37 +554,38 @@ const char descriptor_table_protodef_push_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIA
     "\"X\n\013PushRequest\022!\n\006header\030\001 \001(\0132\021.im.bas"
     "e.IMHeader\022&\n\004body\030\002 \001(\0132\030.im.push.PushM"
     "essageBody\"3\n\014PushResponse\022#\n\004base\030\001 \001(\013"
-    "2\025.im.base.BaseResponse\"J\n\021NotifyUserReq"
-    "uest\022\024\n\014receiver_uid\030\001 \001(\t\022\016\n\006msg_id\030\002 \001"
-    "(\004\022\017\n\007content\030\003 \001(\t\"9\n\022NotifyUserRespons"
-    "e\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\"L"
-    "\n\013PushSession\022\022\n\nsession_id\030\001 \001(\t\022\020\n\010pla"
-    "tform\030\002 \001(\t\022\027\n\017connect_time_ms\030\003 \001(\003\"/\n\027"
-    "ListUserSessionsRequest\022\024\n\014receiver_uid\030"
-    "\001 \001(\t\"g\n\030ListUserSessionsResponse\022#\n\004bas"
-    "e\030\001 \001(\0132\025.im.base.BaseResponse\022&\n\010sessio"
-    "ns\030\002 \003(\0132\024.im.push.PushSession\"@\n\031SendSe"
-    "ssionPayloadRequest\022\022\n\nsession_id\030\001 \001(\t\022"
-    "\017\n\007payload\030\002 \001(\014\"S\n\032SendSessionPayloadRe"
-    "sponse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRespo"
-    "nse\022\020\n\010accepted\030\002 \001(\010\"E\n\033MarkMessageDeli"
-    "veredRequest\022\016\n\006msg_id\030\001 \001(\004\022\026\n\016delivere"
-    "d_time\030\002 \001(\003\"S\n\034MarkMessageDeliveredResp"
-    "onse\022#\n\004base\030\001 \001(\0132\025.im.base.BaseRespons"
-    "e\022\016\n\006marked\030\002 \001(\010*V\n\010PushType\022\020\n\014PUSH_ME"
-    "SSAGE\020\000\022\025\n\021PUSH_NOTIFICATION\020\001\022\017\n\013PUSH_S"
-    "YSTEM\020\002\022\020\n\014PUSH_OFFLINE\020\0032V\n\013PushService"
-    "\022G\n\nNotifyUser\022\032.im.push.NotifyUserReque"
-    "st\032\033.im.push.NotifyUserResponse\"\0002\277\002\n\032Ga"
-    "tewayPushDeliveryService\022Y\n\020ListUserSess"
-    "ions\022 .im.push.ListUserSessionsRequest\032!"
-    ".im.push.ListUserSessionsResponse\"\000\022_\n\022S"
-    "endSessionPayload\022\".im.push.SendSessionP"
-    "ayloadRequest\032#.im.push.SendSessionPaylo"
-    "adResponse\"\000\022e\n\024MarkMessageDelivered\022$.i"
-    "m.push.MarkMessageDeliveredRequest\032%.im."
-    "push.MarkMessageDeliveredResponse\"\000b\006pro"
-    "to3"
+    "2\025.im.base.BaseResponse\"\222\001\n\021NotifyUserRe"
+    "quest\022\024\n\014receiver_uid\030\001 \001(\t\022\016\n\006msg_id\030\002 "
+    "\001(\004\022\017\n\007content\030\003 \001(\t\022\022\n\nsender_uid\030\004 \001(\t"
+    "\022\031\n\021conversation_type\030\005 \001(\t\022\027\n\017conversat"
+    "ion_id\030\006 \001(\t\"9\n\022NotifyUserResponse\022#\n\004ba"
+    "se\030\001 \001(\0132\025.im.base.BaseResponse\"L\n\013PushS"
+    "ession\022\022\n\nsession_id\030\001 \001(\t\022\020\n\010platform\030\002"
+    " \001(\t\022\027\n\017connect_time_ms\030\003 \001(\003\"/\n\027ListUse"
+    "rSessionsRequest\022\024\n\014receiver_uid\030\001 \001(\t\"g"
+    "\n\030ListUserSessionsResponse\022#\n\004base\030\001 \001(\013"
+    "2\025.im.base.BaseResponse\022&\n\010sessions\030\002 \003("
+    "\0132\024.im.push.PushSession\"@\n\031SendSessionPa"
+    "yloadRequest\022\022\n\nsession_id\030\001 \001(\t\022\017\n\007payl"
+    "oad\030\002 \001(\014\"S\n\032SendSessionPayloadResponse\022"
+    "#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\022\020\n\010"
+    "accepted\030\002 \001(\010\"E\n\033MarkMessageDeliveredRe"
+    "quest\022\016\n\006msg_id\030\001 \001(\004\022\026\n\016delivered_time\030"
+    "\002 \001(\003\"S\n\034MarkMessageDeliveredResponse\022#\n"
+    "\004base\030\001 \001(\0132\025.im.base.BaseResponse\022\016\n\006ma"
+    "rked\030\002 \001(\010*V\n\010PushType\022\020\n\014PUSH_MESSAGE\020\000"
+    "\022\025\n\021PUSH_NOTIFICATION\020\001\022\017\n\013PUSH_SYSTEM\020\002"
+    "\022\020\n\014PUSH_OFFLINE\020\0032V\n\013PushService\022G\n\nNot"
+    "ifyUser\022\032.im.push.NotifyUserRequest\032\033.im"
+    ".push.NotifyUserResponse\"\0002\277\002\n\032GatewayPu"
+    "shDeliveryService\022Y\n\020ListUserSessions\022 ."
+    "im.push.ListUserSessionsRequest\032!.im.pus"
+    "h.ListUserSessionsResponse\"\000\022_\n\022SendSess"
+    "ionPayload\022\".im.push.SendSessionPayloadR"
+    "equest\032#.im.push.SendSessionPayloadRespo"
+    "nse\"\000\022e\n\024MarkMessageDelivered\022$.im.push."
+    "MarkMessageDeliveredRequest\032%.im.push.Ma"
+    "rkMessageDeliveredResponse\"\000b\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_push_2eproto_deps[1] =
     {
@@ -582,7 +595,7 @@ static ::absl::once_flag descriptor_table_push_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_push_2eproto = {
     false,
     false,
-    1483,
+    1556,
     descriptor_table_protodef_push_2eproto,
     "push.proto",
     &descriptor_table_push_2eproto_once,
@@ -1531,6 +1544,9 @@ inline PROTOBUF_NDEBUG_INLINE NotifyUserRequest::Impl_::Impl_(
     const Impl_& from, const ::im::push::NotifyUserRequest& from_msg)
       : receiver_uid_(arena, from.receiver_uid_),
         content_(arena, from.content_),
+        sender_uid_(arena, from.sender_uid_),
+        conversation_type_(arena, from.conversation_type_),
+        conversation_id_(arena, from.conversation_id_),
         _cached_size_{0} {}
 
 NotifyUserRequest::NotifyUserRequest(
@@ -1555,6 +1571,9 @@ inline PROTOBUF_NDEBUG_INLINE NotifyUserRequest::Impl_::Impl_(
     ::google::protobuf::Arena* arena)
       : receiver_uid_(arena),
         content_(arena),
+        sender_uid_(arena),
+        conversation_type_(arena),
+        conversation_id_(arena),
         _cached_size_{0} {}
 
 inline void NotifyUserRequest::SharedCtor(::_pb::Arena* arena) {
@@ -1571,6 +1590,9 @@ inline void NotifyUserRequest::SharedDtor(MessageLite& self) {
   ABSL_DCHECK(this_.GetArena() == nullptr);
   this_._impl_.receiver_uid_.Destroy();
   this_._impl_.content_.Destroy();
+  this_._impl_.sender_uid_.Destroy();
+  this_._impl_.conversation_type_.Destroy();
+  this_._impl_.conversation_id_.Destroy();
   this_._impl_.~Impl_();
 }
 
@@ -1610,15 +1632,15 @@ const ::google::protobuf::internal::ClassData* NotifyUserRequest::GetClassData()
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<2, 3, 0, 53, 2> NotifyUserRequest::_table_ = {
+const ::_pbi::TcParseTable<3, 6, 0, 95, 2> NotifyUserRequest::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    3, 24,  // max_field_number, fast_idx_mask
+    6, 56,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294967288,  // skipmap
+    4294967232,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    3,  // num_field_entries
+    6,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -1638,6 +1660,16 @@ const ::_pbi::TcParseTable<2, 3, 0, 53, 2> NotifyUserRequest::_table_ = {
     // string content = 3;
     {::_pbi::TcParser::FastUS1,
      {26, 63, 0, PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.content_)}},
+    // string sender_uid = 4;
+    {::_pbi::TcParser::FastUS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.sender_uid_)}},
+    // string conversation_type = 5;
+    {::_pbi::TcParser::FastUS1,
+     {42, 63, 0, PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.conversation_type_)}},
+    // string conversation_id = 6;
+    {::_pbi::TcParser::FastUS1,
+     {50, 63, 0, PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.conversation_id_)}},
+    {::_pbi::TcParser::MiniParse, {}},
   }}, {{
     65535, 65535
   }}, {{
@@ -1650,13 +1682,25 @@ const ::_pbi::TcParseTable<2, 3, 0, 53, 2> NotifyUserRequest::_table_ = {
     // string content = 3;
     {PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.content_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string sender_uid = 4;
+    {PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.sender_uid_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string conversation_type = 5;
+    {PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.conversation_type_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string conversation_id = 6;
+    {PROTOBUF_FIELD_OFFSET(NotifyUserRequest, _impl_.conversation_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }},
   // no aux_entries
   {{
-    "\31\14\0\7\0\0\0\0"
+    "\31\14\0\7\12\21\17\0"
     "im.push.NotifyUserRequest"
     "receiver_uid"
     "content"
+    "sender_uid"
+    "conversation_type"
+    "conversation_id"
   }},
 };
 
@@ -1669,6 +1713,9 @@ PROTOBUF_NOINLINE void NotifyUserRequest::Clear() {
 
   _impl_.receiver_uid_.ClearToEmpty();
   _impl_.content_.ClearToEmpty();
+  _impl_.sender_uid_.ClearToEmpty();
+  _impl_.conversation_type_.ClearToEmpty();
+  _impl_.conversation_id_.ClearToEmpty();
   _impl_.msg_id_ = ::uint64_t{0u};
   _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
@@ -1711,6 +1758,30 @@ PROTOBUF_NOINLINE void NotifyUserRequest::Clear() {
             target = stream->WriteStringMaybeAliased(3, _s, target);
           }
 
+          // string sender_uid = 4;
+          if (!this_._internal_sender_uid().empty()) {
+            const std::string& _s = this_._internal_sender_uid();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.push.NotifyUserRequest.sender_uid");
+            target = stream->WriteStringMaybeAliased(4, _s, target);
+          }
+
+          // string conversation_type = 5;
+          if (!this_._internal_conversation_type().empty()) {
+            const std::string& _s = this_._internal_conversation_type();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.push.NotifyUserRequest.conversation_type");
+            target = stream->WriteStringMaybeAliased(5, _s, target);
+          }
+
+          // string conversation_id = 6;
+          if (!this_._internal_conversation_id().empty()) {
+            const std::string& _s = this_._internal_conversation_id();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.push.NotifyUserRequest.conversation_id");
+            target = stream->WriteStringMaybeAliased(6, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -1746,6 +1817,21 @@ PROTOBUF_NOINLINE void NotifyUserRequest::Clear() {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_content());
             }
+            // string sender_uid = 4;
+            if (!this_._internal_sender_uid().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_sender_uid());
+            }
+            // string conversation_type = 5;
+            if (!this_._internal_conversation_type().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_conversation_type());
+            }
+            // string conversation_id = 6;
+            if (!this_._internal_conversation_id().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_conversation_id());
+            }
             // uint64 msg_id = 2;
             if (this_._internal_msg_id() != 0) {
               total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(
@@ -1770,6 +1856,15 @@ void NotifyUserRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const
   if (!from._internal_content().empty()) {
     _this->_internal_set_content(from._internal_content());
   }
+  if (!from._internal_sender_uid().empty()) {
+    _this->_internal_set_sender_uid(from._internal_sender_uid());
+  }
+  if (!from._internal_conversation_type().empty()) {
+    _this->_internal_set_conversation_type(from._internal_conversation_type());
+  }
+  if (!from._internal_conversation_id().empty()) {
+    _this->_internal_set_conversation_id(from._internal_conversation_id());
+  }
   if (from._internal_msg_id() != 0) {
     _this->_impl_.msg_id_ = from._impl_.msg_id_;
   }
@@ -1791,6 +1886,9 @@ void NotifyUserRequest::InternalSwap(NotifyUserRequest* PROTOBUF_RESTRICT other)
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.receiver_uid_, &other->_impl_.receiver_uid_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.content_, &other->_impl_.content_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.sender_uid_, &other->_impl_.sender_uid_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.conversation_type_, &other->_impl_.conversation_type_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.conversation_id_, &other->_impl_.conversation_id_, arena);
         swap(_impl_.msg_id_, other->_impl_.msg_id_);
 }
 

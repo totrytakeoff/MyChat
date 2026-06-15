@@ -42,6 +42,18 @@ public:
         return stub_->LeaveGroup(context, request, response);
     }
 
+    ::grpc::Status get_group_info(::grpc::ClientContext* context,
+                                  const im::group::GetGroupInfoRequest& request,
+                                  im::group::GetGroupInfoResponse* response) override {
+        return stub_->GetGroupInfo(context, request, response);
+    }
+
+    ::grpc::Status search_groups(::grpc::ClientContext* context,
+                                 const im::group::SearchGroupsRequest& request,
+                                 im::group::SearchGroupsResponse* response) override {
+        return stub_->SearchGroups(context, request, response);
+    }
+
     ::grpc::Status group_exists(::grpc::ClientContext* context,
                                 const im::group::GroupExistsRequest& request,
                                 im::group::GroupExistsResponse* response) override {
@@ -291,6 +303,47 @@ std::vector<im::service::group::GroupInfoDTO> RemoteGroupClient::list_my_groups(
     }
     std::vector<im::service::group::GroupInfoDTO> groups;
     groups.reserve(static_cast<size_t>(rpc_response.groups_size()));
+    for (const auto& group : rpc_response.groups()) {
+        groups.push_back(to_group_info(group));
+    }
+    return groups;
+}
+
+std::optional<im::service::group::GroupInfoDTO> RemoteGroupClient::get_group_info(
+    uint64_t group_id) {
+    if (!client_ || group_id == 0) {
+        return std::nullopt;
+    }
+    im::group::GetGroupInfoRequest rpc_request;
+    rpc_request.set_group_record_id(group_id);
+    im::group::GetGroupInfoResponse rpc_response;
+    ::grpc::ClientContext context;
+    apply_deadline(context);
+    auto status = client_->get_group_info(&context, rpc_request, &rpc_response);
+    if (!status.ok() || rpc_response.base().error_code() != im::base::SUCCESS) {
+        return std::nullopt;
+    }
+    return to_group_info(rpc_response.group());
+}
+
+std::vector<im::service::group::GroupInfoDTO> RemoteGroupClient::search_groups(
+    const std::string& keyword,
+    std::size_t limit) {
+    std::vector<im::service::group::GroupInfoDTO> groups;
+    if (!client_ || keyword.empty() || limit == 0) {
+        return groups;
+    }
+    im::group::SearchGroupsRequest rpc_request;
+    rpc_request.set_keyword(keyword);
+    rpc_request.set_limit(static_cast<int32_t>(limit));
+    im::group::SearchGroupsResponse rpc_response;
+    ::grpc::ClientContext context;
+    apply_deadline(context);
+    auto status = client_->search_groups(&context, rpc_request, &rpc_response);
+    if (!status.ok() || rpc_response.base().error_code() != im::base::SUCCESS) {
+        return groups;
+    }
+    groups.reserve(static_cast<std::size_t>(rpc_response.groups_size()));
     for (const auto& group : rpc_response.groups()) {
         groups.push_back(to_group_info(group));
     }

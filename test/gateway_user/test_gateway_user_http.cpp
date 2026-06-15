@@ -251,6 +251,135 @@ TEST_F(GatewayUserHttpTest, ProfileNonExistentUidReturns404) {
     EXPECT_EQ(res.status, 404) << "Body: " << res.body;
 }
 
+TEST_F(GatewayUserHttpTest, UpdateProfileRequiresAuthAndPersistsEditableFields) {
+    auto reg = do_register(*controller_, "task6-test-profile-update", "pass789", "Before");
+    ASSERT_EQ(reg.status, 201);
+    json reg_j = parse_body(reg);
+    std::string access_token = reg_j["access_token"];
+
+    httplib::Request missing_auth_req;
+    missing_auth_req.method = "POST";
+    missing_auth_req.body = R"({"nickname":"NoAuth"})";
+    httplib::Response missing_auth_res;
+    controller_->handle_update_profile(missing_auth_req, missing_auth_res);
+    EXPECT_EQ(missing_auth_res.status, 401) << "Body: " << missing_auth_res.body;
+
+    httplib::Request update_req;
+    update_req.method = "POST";
+    update_req.set_header("Authorization", "Bearer " + access_token);
+    json update_body;
+    update_body["nickname"] = "After";
+    update_body["avatar"] = "https://example.test/avatar.png";
+    update_body["gender"] = 2;
+    update_body["signature"] = "profile updated";
+    update_req.body = update_body.dump();
+
+    httplib::Response update_res;
+    controller_->handle_update_profile(update_req, update_res);
+    ASSERT_EQ(update_res.status, 200) << "Body: " << update_res.body;
+    json update_j = parse_body(update_res);
+    EXPECT_EQ(update_j["profile"]["account"], "task6-test-profile-update");
+    EXPECT_EQ(update_j["profile"]["nickname"], "After");
+    EXPECT_EQ(update_j["profile"]["avatar"], "https://example.test/avatar.png");
+    EXPECT_EQ(update_j["profile"]["gender"], 2);
+    EXPECT_EQ(update_j["profile"]["signature"], "profile updated");
+
+    httplib::Request profile_req;
+    profile_req.method = "GET";
+    profile_req.set_header("Authorization", "Bearer " + access_token);
+    httplib::Response profile_res;
+    controller_->handle_profile(profile_req, profile_res);
+    ASSERT_EQ(profile_res.status, 200) << "Body: " << profile_res.body;
+    json profile_j = parse_body(profile_res);
+    EXPECT_EQ(profile_j["profile"]["nickname"], "After");
+    EXPECT_EQ(profile_j["profile"]["signature"], "profile updated");
+}
+
+TEST_F(GatewayUserHttpTest, SearchUserFindsByUidAndAccount) {
+    auto alice = do_register(*controller_, "task6-test-search-alice", "pass789", "Alice");
+    ASSERT_EQ(alice.status, 201);
+    auto bob = do_register(*controller_, "task6-test-search-bob", "pass789", "Bob");
+    ASSERT_EQ(bob.status, 201);
+
+    json alice_j = parse_body(alice);
+    json bob_j = parse_body(bob);
+    std::string access_token = alice_j["access_token"];
+    std::string bob_uid = bob_j["profile"]["uid"];
+
+    httplib::Request by_uid_req;
+    by_uid_req.method = "GET";
+    by_uid_req.set_header("Authorization", "Bearer " + access_token);
+    by_uid_req.params.emplace("q", bob_uid);
+
+    httplib::Response by_uid_res;
+    controller_->handle_search_user(by_uid_req, by_uid_res);
+    ASSERT_EQ(by_uid_res.status, 200) << "Body: " << by_uid_res.body;
+    auto by_uid_j = parse_body(by_uid_res);
+    EXPECT_EQ(by_uid_j["profile"]["uid"], bob_uid);
+    EXPECT_EQ(by_uid_j["profile"]["account"], "task6-test-search-bob");
+
+    httplib::Request by_account_req;
+    by_account_req.method = "GET";
+    by_account_req.set_header("Authorization", "Bearer " + access_token);
+    by_account_req.params.emplace("q", "task6-test-search-bob");
+
+    httplib::Response by_account_res;
+    controller_->handle_search_user(by_account_req, by_account_res);
+    ASSERT_EQ(by_account_res.status, 200) << "Body: " << by_account_res.body;
+    auto by_account_j = parse_body(by_account_res);
+    EXPECT_EQ(by_account_j["profile"]["uid"], bob_uid);
+    EXPECT_EQ(by_account_j["profile"]["nickname"], "Bob");
+    ASSERT_TRUE(by_account_j.contains("users"));
+    ASSERT_GE(by_account_j["users"].size(), 1);
+}
+
+TEST_F(GatewayUserHttpTest, SearchUserFindsByNicknameAndReturnsList) {
+    auto alice = do_register(*controller_, "task6-test-search-nick-a", "pass789", "小明一号");
+    ASSERT_EQ(alice.status, 201);
+    auto bob = do_register(*controller_, "task6-test-search-nick-b", "pass789", "小明二号");
+    ASSERT_EQ(bob.status, 201);
+
+    json alice_j = parse_body(alice);
+    std::string access_token = alice_j["access_token"];
+
+    httplib::Request req;
+    req.method = "GET";
+    req.set_header("Authorization", "Bearer " + access_token);
+    req.params.emplace("q", "小明");
+
+    httplib::Response res;
+    controller_->handle_search_user(req, res);
+
+    ASSERT_EQ(res.status, 200) << "Body: " << res.body;
+    auto body = parse_body(res);
+    ASSERT_TRUE(body.contains("users"));
+    EXPECT_GE(body["users"].size(), 2);
+}
+
+TEST_F(GatewayUserHttpTest, SearchUserRejectsMissingTokenOrUnknownQuery) {
+    auto reg = do_register(*controller_, "task6-test-search-auth", "pass789");
+    ASSERT_EQ(reg.status, 201);
+    std::string access_token = parse_body(reg)["access_token"];
+
+    httplib::Request missing_token;
+    missing_token.method = "GET";
+    missing_token.params.emplace("q", "task6-test-search-auth");
+
+    httplib::Response missing_token_res;
+    controller_->handle_search_user(missing_token, missing_token_res);
+    EXPECT_EQ(missing_token_res.status, 401) << "Body: " << missing_token_res.body;
+
+    httplib::Request unknown;
+    unknown.method = "GET";
+    unknown.set_header("Authorization", "Bearer " + access_token);
+    unknown.params.emplace("q", "task6-test-search-missing");
+
+    httplib::Response unknown_res;
+    controller_->handle_search_user(unknown, unknown_res);
+    EXPECT_EQ(unknown_res.status, 200) << "Body: " << unknown_res.body;
+    EXPECT_TRUE(parse_body(unknown_res)["users"].empty());
+}
+
 TEST_F(GatewayUserHttpTest, RoutesAreRegisteredAndHandleRequests) {
     httplib::Server svr;
     register_user_http_routes_on_server(svr, *controller_);
@@ -308,17 +437,34 @@ TEST_F(GatewayUserHttpTest, RoutesAreRegisteredAndHandleRequests) {
     ASSERT_TRUE(profile_j.contains("profile"));
     EXPECT_EQ(profile_j["profile"]["account"], "task6-route-reg");
 
-    // 4) Profile without token → 401
+    // 4) Update profile with valid token
+    json update_body;
+    update_body["nickname"] = "Route Updated";
+    auto update_res = cli.Post("/api/v1/auth/profile", headers, update_body.dump(), "application/json");
+    ASSERT_TRUE(update_res);
+    EXPECT_EQ(update_res->status, 200);
+    json update_j = json::parse(update_res->body);
+    EXPECT_EQ(update_j["profile"]["nickname"], "Route Updated");
+
+    // 5) Search user by account with valid token
+    auto search_res = cli.Get("/api/v1/users/search?q=task6-route-reg", headers);
+    ASSERT_TRUE(search_res);
+    EXPECT_EQ(search_res->status, 200);
+    json search_j = json::parse(search_res->body);
+    ASSERT_TRUE(search_j.contains("profile"));
+    EXPECT_EQ(search_j["profile"]["account"], "task6-route-reg");
+
+    // 6) Profile without token -> 401
     auto unauth_res = cli.Get("/api/v1/auth/info");
     ASSERT_TRUE(unauth_res);
     EXPECT_EQ(unauth_res->status, 401);
 
-    // 5) Duplicate register → 409
+    // 7) Duplicate register -> 409
     auto dup_res = cli.Post("/api/v1/auth/register", reg_body.dump(), "application/json");
     ASSERT_TRUE(dup_res);
     EXPECT_EQ(dup_res->status, 409);
 
-    // 6) Wrong password → 401
+    // 8) Wrong password -> 401
     json bad_login;
     bad_login["account"] = "task6-route-reg";
     bad_login["password"] = "wrongRoutePass";
@@ -326,7 +472,7 @@ TEST_F(GatewayUserHttpTest, RoutesAreRegisteredAndHandleRequests) {
     ASSERT_TRUE(bad_res);
     EXPECT_EQ(bad_res->status, 401);
 
-    // 7) Missing account → 400
+    // 9) Missing account -> 400
     json missing;
     missing["password"] = "pass";
     auto missing_res = cli.Post("/api/v1/auth/register", missing.dump(), "application/json");

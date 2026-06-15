@@ -32,6 +32,8 @@ public:
     void handle_register(const httplib::Request& req, httplib::Response& res);
     void handle_login(const httplib::Request& req, httplib::Response& res);
     void handle_profile(const httplib::Request& req, httplib::Response& res);
+    void handle_update_profile(const httplib::Request& req, httplib::Response& res);
+    void handle_search_user(const httplib::Request& req, httplib::Response& res);
 
 private:
     std::string extract_bearer_token(const httplib::Request& req) const;

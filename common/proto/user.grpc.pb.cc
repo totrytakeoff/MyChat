@@ -26,6 +26,8 @@ static const char* UserService_method_names[] = {
   "/im.user.UserService/Register",
   "/im.user.UserService/Login",
   "/im.user.UserService/GetUserInfo",
+  "/im.user.UserService/SearchUsers",
+  "/im.user.UserService/UpdateUserInfo",
 };
 
 std::unique_ptr< UserService::Stub> UserService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
@@ -38,6 +40,8 @@ UserService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channe
   : channel_(channel), rpcmethod_Register_(UserService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_Login_(UserService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_GetUserInfo_(UserService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SearchUsers_(UserService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UpdateUserInfo_(UserService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status UserService::Stub::Register(::grpc::ClientContext* context, const ::im::user::RegisterRequest& request, ::im::user::RegisterResponse* response) {
@@ -109,6 +113,52 @@ void UserService::Stub::async::GetUserInfo(::grpc::ClientContext* context, const
   return result;
 }
 
+::grpc::Status UserService::Stub::SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::im::user::SearchUsersResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SearchUsers_, context, request, response);
+}
+
+void UserService::Stub::async::SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SearchUsers_, context, request, response, std::move(f));
+}
+
+void UserService::Stub::async::SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_SearchUsers_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>* UserService::Stub::PrepareAsyncSearchUsersRaw(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::user::SearchUsersResponse, ::im::user::SearchUsersRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_SearchUsers_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>* UserService::Stub::AsyncSearchUsersRaw(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncSearchUsersRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status UserService::Stub::UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::im::user::UpdateUserInfoResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_UpdateUserInfo_, context, request, response);
+}
+
+void UserService::Stub::async::UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdateUserInfo_, context, request, response, std::move(f));
+}
+
+void UserService::Stub::async::UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_UpdateUserInfo_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>* UserService::Stub::PrepareAsyncUpdateUserInfoRaw(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::user::UpdateUserInfoResponse, ::im::user::UpdateUserInfoRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_UpdateUserInfo_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>* UserService::Stub::AsyncUpdateUserInfoRaw(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncUpdateUserInfoRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 UserService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       UserService_method_names[0],
@@ -140,6 +190,26 @@ UserService::Service::Service() {
              ::im::user::GetUserInfoResponse* resp) {
                return service->GetUserInfo(ctx, req, resp);
              }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      UserService_method_names[3],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](UserService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::user::SearchUsersRequest* req,
+             ::im::user::SearchUsersResponse* resp) {
+               return service->SearchUsers(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      UserService_method_names[4],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](UserService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::user::UpdateUserInfoRequest* req,
+             ::im::user::UpdateUserInfoResponse* resp) {
+               return service->UpdateUserInfo(ctx, req, resp);
+             }, this)));
 }
 
 UserService::Service::~Service() {
@@ -160,6 +230,20 @@ UserService::Service::~Service() {
 }
 
 ::grpc::Status UserService::Service::GetUserInfo(::grpc::ServerContext* context, const ::im::user::GetUserInfoRequest* request, ::im::user::GetUserInfoResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status UserService::Service::SearchUsers(::grpc::ServerContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status UserService::Service::UpdateUserInfo(::grpc::ServerContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response) {
   (void) context;
   (void) request;
   (void) response;

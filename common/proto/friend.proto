@@ -49,6 +49,7 @@ message FriendRequest {
     FriendRequestStatus status = 5;// 请求状态
     int64 create_time = 6;        // 请求时间
     uint64 friend_id = 7;         // 关系记录ID
+    string nickname = 8;          // 申请人昵称
 }
 
 // 添加好友请求

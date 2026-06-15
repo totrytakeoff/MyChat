@@ -30,6 +30,8 @@ public:
     void handle_create_group(const httplib::Request& req, httplib::Response& res);
     void handle_join_group(const httplib::Request& req, httplib::Response& res);
     void handle_leave_group(const httplib::Request& req, httplib::Response& res);
+    void handle_group_info(const httplib::Request& req, httplib::Response& res);
+    void handle_search_groups(const httplib::Request& req, httplib::Response& res);
     void handle_list_groups(const httplib::Request& req, httplib::Response& res);
     void handle_list_members(const httplib::Request& req, httplib::Response& res);
 

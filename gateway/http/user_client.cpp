@@ -30,4 +30,20 @@ std::optional<im::service::user::UserProfile> LocalUserClient::get_profile_by_ui
     return user_service_->get_profile_by_uid(uid);
 }
 
+std::optional<im::service::user::UserProfile> LocalUserClient::get_profile_by_account(
+    const std::string& account) {
+    return user_service_->get_profile_by_account(account);
+}
+
+std::vector<im::service::user::UserProfile> LocalUserClient::search_profiles(
+    const std::string& keyword,
+    std::size_t limit) {
+    return user_service_->search_profiles(keyword, limit);
+}
+
+im::service::user::UpdateProfileResult LocalUserClient::update_profile(
+    const im::service::user::UpdateProfileRequest& request) {
+    return user_service_->update_profile(request);
+}
+
 }  // namespace im::gateway

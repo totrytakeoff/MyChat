@@ -98,10 +98,21 @@ message GetUserInfoResponse {
     UserInfo user = 2;
 }
 
+message SearchUsersRequest {
+    im.base.IMHeader header = 1;
+    string keyword = 2;
+    int32 limit = 3;
+}
+
+message SearchUsersResponse {
+    im.base.BaseResponse base = 1;
+    repeated UserInfo users = 2;
+}
+
 // 更新用户信息请求
 message UpdateUserInfoRequest {
-    im.base.IMHeader header = 1;   // 通用消息头
-    UserInfo user = 2;             // 新的用户信息（需包含 account 字段）
+    im.base.IMHeader header = 1;   // 通用消息头，from_uid 为被更新用户
+    UserInfo user = 2;             // 新的用户资料，仅 nickname/avatar/gender/signature 可更新
 }
 
 // 更新用户信息响应
@@ -118,4 +129,6 @@ service UserService {
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse);
+    rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+    rpc UpdateUserInfo(UpdateUserInfoRequest) returns (UpdateUserInfoResponse);
 }

@@ -5,11 +5,21 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include <push_runtime.hpp>
+
+#include "../../common/network/protobuf_codec.hpp"
+#include "../../common/proto/base.pb.h"
+#include "../../common/proto/command.pb.h"
+#include "../../common/proto/push.pb.h"
 
 namespace {
 
+using json = nlohmann::json;
+using im::network::ProtobufCodec;
 using im::service::push::PlatformFilterFanoutPolicy;
+using im::service::push::PushContext;
 using im::service::push::PushDeliveryMarker;
 using im::service::push::PushPayloadSender;
 using im::service::push::PushRuntime;
@@ -100,6 +110,42 @@ TEST(PushRuntimeTest, SendsSelectedSessionsAndMarksDeliveredOnSuccess) {
     EXPECT_TRUE(marker.marked);
     EXPECT_EQ(marker.marked_msg_id, 1001u);
     EXPECT_GT(marker.marked_time, 0);
+}
+
+TEST(PushRuntimeTest, EncodesConversationContextInPayload) {
+    FakeSessionProvider provider;
+    FakePayloadSender sender;
+    FakeDeliveryMarker marker;
+    PushRuntime runtime(&provider, &sender, &marker);
+    provider.sessions = {
+        make_session("web-1", "web", std::chrono::system_clock::now()),
+    };
+
+    PushContext context;
+    context.sender_uid = "sender-1";
+    context.conversation_type = "direct";
+    context.conversation_id = "sender-1";
+
+    runtime.notify_user("receiver-1", 1004, "hello push", context);
+
+    ASSERT_EQ(sender.sent_payloads.size(), 1u);
+
+    im::base::IMHeader header;
+    im::push::PushRequest request;
+    ASSERT_TRUE(ProtobufCodec::decode(sender.sent_payloads[0], header, request));
+
+    EXPECT_EQ(header.cmd_id(), im::command::CMD_PUSH_MESSAGE);
+    EXPECT_EQ(header.from_uid(), "sender-1");
+    EXPECT_EQ(header.to_uid(), "receiver-1");
+    EXPECT_EQ(request.body().type(), im::push::PUSH_MESSAGE);
+    EXPECT_EQ(request.body().content(), "hello push");
+    EXPECT_EQ(request.body().related_message_id(), "1004");
+
+    ASSERT_FALSE(request.body().ext().empty());
+    const auto ext = json::parse(request.body().ext());
+    EXPECT_EQ(ext.at("sender_uid").get<std::string>(), "sender-1");
+    EXPECT_EQ(ext.at("conversation_type").get<std::string>(), "direct");
+    EXPECT_EQ(ext.at("conversation_id").get<std::string>(), "sender-1");
 }
 
 TEST(PushRuntimeTest, FailedSendsDoNotMarkDelivered) {

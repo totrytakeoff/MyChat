@@ -15,6 +15,7 @@ namespace im::gateway {
 
 using json = nlohmann::json;
 using im::service::user::RegisterRequest;
+using im::service::user::UpdateProfileRequest;
 using im::service::user::UserProfile;
 using im::utils::HttpUtils;
 using im::utils::LogManager;
@@ -39,6 +40,20 @@ int64_t now_ms() {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()
     ).count();
+}
+
+im::service::user::Gender parse_gender(int gender) {
+    switch (gender) {
+    case 1:
+        return static_cast<im::service::user::Gender>(1);
+    case 2:
+        return static_cast<im::service::user::Gender>(2);
+    case 3:
+        return static_cast<im::service::user::Gender>(3);
+    case 0:
+    default:
+        return static_cast<im::service::user::Gender>(0);
+    }
 }
 
 } // anonymous namespace
@@ -192,6 +207,121 @@ void UserHttpController::handle_profile(const httplib::Request& req, httplib::Re
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_profile: {}", e.what());
+        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+    }
+}
+
+void UserHttpController::handle_update_profile(const httplib::Request& req, httplib::Response& res) {
+    try {
+        std::string token = extract_bearer_token(req);
+        if (token.empty()) {
+            HttpUtils::buildResponse(res, 401, "",
+                "Missing or invalid Authorization header");
+            return;
+        }
+
+        UserTokenInfo user_info;
+        if (!auth_mgr_->verify_access_token(token, user_info)) {
+            HttpUtils::buildResponse(res, 401, "",
+                "Invalid or expired access token");
+            return;
+        }
+
+        json body;
+        try {
+            body = json::parse(req.body);
+        } catch (...) {
+            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            return;
+        }
+
+        auto current = user_client_->get_profile_by_uid(user_info.user_id);
+        if (!current.has_value()) {
+            HttpUtils::buildResponse(res, 404, "", "User profile not found");
+            return;
+        }
+
+        UpdateProfileRequest update;
+        update.uid = user_info.user_id;
+        update.nickname = body.value("nickname", current->nickname);
+        update.avatar = body.value("avatar", current->avatar);
+        update.signature = body.value("signature", current->signature);
+        update.gender = current->gender;
+        if (body.contains("gender") && body["gender"].is_number_integer()) {
+            update.gender = parse_gender(body["gender"].get<int>());
+        }
+
+        if (update.nickname.empty()) {
+            HttpUtils::buildResponse(res, 400, "", "Nickname must not be empty");
+            return;
+        }
+
+        auto result = user_client_->update_profile(update);
+        if (!result.ok) {
+            if (result.error_code == "EMPTY_UID" || result.error_code == "EMPTY_NICKNAME" ||
+                result.error_code == "PARAM_ERROR") {
+                HttpUtils::buildResponse(res, 400, "", result.message);
+            } else if (result.error_code == "USER_NOT_FOUND") {
+                HttpUtils::buildResponse(res, 404, "", result.message);
+            } else {
+                HttpUtils::buildResponse(res, 500, "", result.message);
+            }
+            logger_->warn("Update profile failed for {}: {} ({})",
+                          user_info.user_id, result.message, result.error_code);
+            return;
+        }
+
+        json response_body;
+        response_body["profile"] = profile_to_json(result.profile);
+        res.status = 200;
+        res.set_content(response_body.dump(), "application/json");
+    } catch (const std::exception& e) {
+        logger_->error("Exception in handle_update_profile: {}", e.what());
+        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+    }
+}
+
+void UserHttpController::handle_search_user(const httplib::Request& req, httplib::Response& res) {
+    try {
+        std::string token = extract_bearer_token(req);
+        if (token.empty()) {
+            HttpUtils::buildResponse(res, 401, "",
+                "Missing or invalid Authorization header");
+            return;
+        }
+
+        UserTokenInfo user_info;
+        if (!auth_mgr_->verify_access_token(token, user_info)) {
+            HttpUtils::buildResponse(res, 401, "",
+                "Invalid or expired access token");
+            return;
+        }
+
+        std::string query = req.has_param("q") ? req.get_param_value("q") : "";
+        if (query.empty() && req.has_param("keyword")) {
+            query = req.get_param_value("keyword");
+        }
+        if (query.empty()) {
+            HttpUtils::buildResponse(res, 400, "",
+                "Missing required query parameter: q");
+            return;
+        }
+
+        const auto profiles = user_client_->search_profiles(query, 20);
+
+        json response_body;
+        response_body["users"] = json::array();
+        for (const auto& profile : profiles) {
+            response_body["users"].push_back(profile_to_json(profile));
+        }
+        if (!profiles.empty()) {
+            response_body["profile"] = profile_to_json(profiles.front());
+        }
+
+        res.status = 200;
+        res.set_content(response_body.dump(), "application/json");
+    } catch (const std::exception& e) {
+        logger_->error("Exception in handle_search_user: {}", e.what());
         HttpUtils::buildResponse(res, 500, "", "Internal server error");
     }
 }

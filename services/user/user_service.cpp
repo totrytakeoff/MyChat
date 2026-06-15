@@ -133,6 +133,56 @@ std::optional<UserProfile> UserService::get_profile_by_account(const std::string
     return to_profile(opt_user.value());
 }
 
+std::vector<UserProfile> UserService::search_profiles(const std::string& keyword,
+                                                      std::size_t limit) {
+    std::vector<UserProfile> profiles;
+    if (keyword.empty() || limit == 0) {
+        return profiles;
+    }
+
+    if (auto by_uid = get_profile_by_uid(keyword)) {
+        profiles.push_back(*by_uid);
+        return profiles;
+    }
+
+    auto users = repo_->search_by_account_or_nickname(keyword, limit);
+    profiles.reserve(users.size());
+    for (const auto& user : users) {
+        profiles.push_back(to_profile(user));
+    }
+    return profiles;
+}
+
+UpdateProfileResult UserService::update_profile(const UpdateProfileRequest& request) {
+    UpdateProfileResult result;
+    if (request.uid.empty()) {
+        result.error_code = "EMPTY_UID";
+        result.message = "User uid must not be empty";
+        return result;
+    }
+    if (request.nickname.empty()) {
+        result.error_code = "EMPTY_NICKNAME";
+        result.message = "Nickname must not be empty";
+        return result;
+    }
+
+    auto updated = repo_->update_profile(
+        request.uid,
+        request.nickname,
+        request.avatar,
+        request.gender,
+        request.signature);
+    if (!updated.has_value()) {
+        result.error_code = "USER_NOT_FOUND";
+        result.message = "User profile not found";
+        return result;
+    }
+
+    result.ok = true;
+    result.profile = to_profile(*updated);
+    return result;
+}
+
 UserProfile UserService::to_profile(const User& user) const {
     UserProfile profile;
     profile.uid = user.uid();

@@ -31,6 +31,14 @@ public:
                               const im::group::LeaveGroupRequest* request,
                               im::group::GroupActionResponse* response) override;
 
+    ::grpc::Status GetGroupInfo(::grpc::ServerContext* context,
+                                const im::group::GetGroupInfoRequest* request,
+                                im::group::GetGroupInfoResponse* response) override;
+
+    ::grpc::Status SearchGroups(::grpc::ServerContext* context,
+                                const im::group::SearchGroupsRequest* request,
+                                im::group::SearchGroupsResponse* response) override;
+
     ::grpc::Status GroupExists(::grpc::ServerContext* context,
                                const im::group::GroupExistsRequest* request,
                                im::group::GroupExistsResponse* response) override;

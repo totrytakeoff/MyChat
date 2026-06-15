@@ -29,6 +29,14 @@ public:
                                const im::user::GetUserInfoRequest* request,
                                im::user::GetUserInfoResponse* response) override;
 
+    ::grpc::Status SearchUsers(::grpc::ServerContext* context,
+                               const im::user::SearchUsersRequest* request,
+                               im::user::SearchUsersResponse* response) override;
+
+    ::grpc::Status UpdateUserInfo(::grpc::ServerContext* context,
+                                  const im::user::UpdateUserInfoRequest* request,
+                                  im::user::UpdateUserInfoResponse* response) override;
+
 private:
     UserService* user_service_;
 };

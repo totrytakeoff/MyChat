@@ -11,6 +11,7 @@
 #include "../auth/multi_platform_auth.hpp"
 #include "message_client.hpp"
 #include "../../services/odb/message.hpp"
+#include "../../services/push/push_notifier.hpp"
 
 namespace im::gateway {
 
@@ -46,9 +47,11 @@ json message_data_to_json(const MessageData& d) {
 
 MessageHttpController::MessageHttpController(
     std::shared_ptr<MessageClient> msg_client,
-    std::shared_ptr<MultiPlatformAuthManager> auth_mgr)
+    std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
+    im::service::push::PushNotifier* push_notifier)
     : msg_client_(std::move(msg_client))
     , auth_mgr_(std::move(auth_mgr))
+    , push_notifier_(push_notifier)
 {
     LogManager::SetLogToFile("message_http_controller", "logs/message_http_controller.log");
     logger_ = LogManager::GetLogger("message_http_controller");
@@ -104,6 +107,14 @@ void MessageHttpController::handle_send(const httplib::Request& req, httplib::Re
 
         json response_body;
         response_body["message"] = message_data_to_json(result.data);
+
+        if (push_notifier_) {
+            im::service::push::PushContext context;
+            context.sender_uid = user_info.user_id;
+            context.conversation_type = "direct";
+            context.conversation_id = user_info.user_id;
+            push_notifier_->notify_user(receiver_uid, result.data.msg_id, content, context);
+        }
 
         res.status = 201;
         res.set_content(response_body.dump(), "application/json");

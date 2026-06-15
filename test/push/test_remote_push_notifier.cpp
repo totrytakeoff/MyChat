@@ -37,12 +37,19 @@ TEST(RemotePushNotifierTest, NotifyUserSendsExpectedRpcRequest) {
     auto* raw = fake.get();
     RemotePushNotifier notifier(std::move(fake));
 
-    notifier.notify_user("receiver-1", 42, "hello");
+    im::service::push::PushContext context;
+    context.sender_uid = "sender-1";
+    context.conversation_type = "direct";
+    context.conversation_id = "sender-1";
+    notifier.notify_user("receiver-1", 42, "hello", context);
 
     ASSERT_EQ(raw->requests.size(), 1u);
     EXPECT_EQ(raw->requests[0].receiver_uid(), "receiver-1");
     EXPECT_EQ(raw->requests[0].msg_id(), 42u);
     EXPECT_EQ(raw->requests[0].content(), "hello");
+    EXPECT_EQ(raw->requests[0].sender_uid(), "sender-1");
+    EXPECT_EQ(raw->requests[0].conversation_type(), "direct");
+    EXPECT_EQ(raw->requests[0].conversation_id(), "sender-1");
 }
 
 TEST(RemotePushNotifierTest, RpcFailureDoesNotThrow) {

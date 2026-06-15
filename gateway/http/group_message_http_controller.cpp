@@ -108,8 +108,14 @@ void GroupMessageHttpController::handle_send_message(
         if (push_notifier_) {
             for (const auto& member : members) {
                 if (member.user_uid != user_info.user_id) {
+                    im::service::push::PushContext context;
+                    context.sender_uid = user_info.user_id;
+                    context.conversation_type = "group";
+                    context.conversation_id = std::to_string(group_id);
                     push_notifier_->notify_user(member.user_uid,
-                                                store_result.msg_id, content);
+                                                store_result.msg_id,
+                                                content,
+                                                context);
                 }
             }
         }

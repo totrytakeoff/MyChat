@@ -11,6 +11,8 @@ service GroupService {
     rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
     rpc JoinGroup(JoinGroupRequest) returns (GroupActionResponse);
     rpc LeaveGroup(LeaveGroupRequest) returns (GroupActionResponse);
+    rpc GetGroupInfo(GetGroupInfoRequest) returns (GetGroupInfoResponse);
+    rpc SearchGroups(SearchGroupsRequest) returns (SearchGroupsResponse);
     rpc GroupExists(GroupExistsRequest) returns (GroupExistsResponse);
     rpc ListMyGroups(GetGroupListRequest) returns (GetGroupListResponse);
     rpc ListMembers(GetGroupMembersRequest) returns (GetGroupMembersResponse);
@@ -104,6 +106,7 @@ message GroupExistsResponse {
 message GetGroupInfoRequest {
     im.base.IMHeader header = 1;
     string group_id = 2;
+    uint64 group_record_id = 3;
 }
 
 // 获取群信息响应
@@ -111,6 +114,18 @@ message GetGroupInfoResponse {
     im.base.BaseResponse base = 1;
     GroupInfo group = 2;
     repeated GroupMember members = 3;
+    bool joined = 4;
+}
+
+message SearchGroupsRequest {
+    im.base.IMHeader header = 1;
+    string keyword = 2;
+    int32 limit = 3;
+}
+
+message SearchGroupsResponse {
+    im.base.BaseResponse base = 1;
+    repeated GroupInfo groups = 2;
 }
 
 // 获取群列表请求

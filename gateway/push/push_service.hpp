@@ -36,11 +36,15 @@ public:
     //   encoded push payload.
     void push_to_user(const std::string& receiver_uid,
                       uint64_t msg_id,
-                      const std::string& content);
+                      const std::string& content,
+                      const im::service::push::PushContext& context =
+                          im::service::push::PushContext{});
 
     void notify_user(const std::string& receiver_uid,
                      uint64_t msg_id,
-                     const std::string& content) override;
+                     const std::string& content,
+                     const im::service::push::PushContext& context =
+                         im::service::push::PushContext{}) override;
 
     std::vector<im::service::push::PushSessionInfo> get_sessions(
         const std::string& receiver_uid) override;

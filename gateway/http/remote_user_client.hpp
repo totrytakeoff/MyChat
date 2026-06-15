@@ -2,9 +2,11 @@
 #define GATEWAY_HTTP_REMOTE_USER_CLIENT_HPP
 
 #include <chrono>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <grpcpp/support/status.h>
 #include <spdlog/logger.h>
@@ -36,6 +38,16 @@ public:
         ::grpc::ClientContext* context,
         const im::user::GetUserInfoRequest& request,
         im::user::GetUserInfoResponse* response) = 0;
+
+    virtual ::grpc::Status search_users(
+        ::grpc::ClientContext* context,
+        const im::user::SearchUsersRequest& request,
+        im::user::SearchUsersResponse* response) = 0;
+
+    virtual ::grpc::Status update_user_info(
+        ::grpc::ClientContext* context,
+        const im::user::UpdateUserInfoRequest& request,
+        im::user::UpdateUserInfoResponse* response) = 0;
 };
 
 class RemoteUserClient final : public UserClient {
@@ -58,6 +70,16 @@ public:
 
     std::optional<im::service::user::UserProfile> get_profile_by_uid(
         const std::string& uid) override;
+
+    std::optional<im::service::user::UserProfile> get_profile_by_account(
+        const std::string& account) override;
+
+    std::vector<im::service::user::UserProfile> search_profiles(
+        const std::string& keyword,
+        std::size_t limit) override;
+
+    im::service::user::UpdateProfileResult update_profile(
+        const im::service::user::UpdateProfileRequest& request) override;
 
 private:
     void apply_deadline(::grpc::ClientContext& context) const;

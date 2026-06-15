@@ -89,6 +89,14 @@ void register_user_http_routes_on_server(httplib::Server& server,
         [&](const httplib::Request& req, httplib::Response& res) {
             controller.handle_profile(req, res);
         });
+    server.Post("/api/v1/auth/profile",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_update_profile(req, res);
+        });
+    server.Get("/api/v1/users/search",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_search_user(req, res);
+        });
 }
 #endif
 
@@ -198,6 +206,14 @@ void register_group_http_routes_on_server(httplib::Server& server,
     server.Post("/api/v1/groups/leave",
         [&](const httplib::Request& req, httplib::Response& res) {
             controller.handle_leave_group(req, res);
+        });
+    server.Get("/api/v1/groups/info",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_group_info(req, res);
+        });
+    server.Get("/api/v1/groups/search",
+        [&](const httplib::Request& req, httplib::Response& res) {
+            controller.handle_search_groups(req, res);
         });
     server.Get("/api/v1/groups",
         [&](const httplib::Request& req, httplib::Response& res) {
@@ -917,6 +933,11 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
             group_message_http_controller_->set_push_notifier(push_notifier_);
         }
 #endif
+#ifdef IM_ENABLE_MESSAGE_HTTP
+        if (message_http_controller_) {
+            message_http_controller_->set_push_notifier(push_notifier_);
+        }
+#endif
 
         // 步骤7: 注册消息处理器
         register_message_handlers();
@@ -1381,7 +1402,7 @@ void GatewayServer::register_user_http_routes() {
     }
     register_user_http_routes_on_server(*http_server_, *user_http_controller_);
     server_logger->info("User HTTP endpoints registered "
-        "(/api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/info)");
+        "(/api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/info, /api/v1/users/search)");
 }
 #endif
 

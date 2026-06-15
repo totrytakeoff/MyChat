@@ -168,6 +168,37 @@ std::vector<GroupInfoDTO> GroupService::list_my_groups(
     return result;
 }
 
+std::optional<GroupInfoDTO> GroupService::get_group_info(uint64_t group_id) {
+    auto group = repo_->find_group_by_id(group_id);
+    if (!group.has_value()) {
+        return std::nullopt;
+    }
+    GroupInfoDTO dto;
+    dto.group_id = group->group_id();
+    dto.name = group->name();
+    dto.creator_uid = group->creator_uid();
+    dto.created_at = group->created_at();
+    dto.member_count = static_cast<int>(repo_->find_members(group->group_id()).size());
+    return dto;
+}
+
+std::vector<GroupInfoDTO> GroupService::search_groups(const std::string& keyword,
+                                                      std::size_t limit) {
+    std::vector<GroupInfoDTO> result;
+    auto groups = repo_->search_groups(keyword, limit);
+    result.reserve(groups.size());
+    for (const auto& g : groups) {
+        GroupInfoDTO dto;
+        dto.group_id = g.group_id();
+        dto.name = g.name();
+        dto.creator_uid = g.creator_uid();
+        dto.created_at = g.created_at();
+        dto.member_count = static_cast<int>(repo_->find_members(g.group_id()).size());
+        result.push_back(dto);
+    }
+    return result;
+}
+
 bool GroupService::group_exists(uint64_t group_id) {
     return repo_->find_group_by_id(group_id).has_value();
 }

@@ -47,12 +47,14 @@ public:
 
     void notify_user(const std::string& receiver_uid,
                      uint64_t msg_id,
-                     const std::string& content) override;
+                     const std::string& content,
+                     const PushContext& context = PushContext{}) override;
 
 private:
     std::string build_payload(const std::string& receiver_uid,
                               uint64_t msg_id,
-                              const std::string& content) const;
+                              const std::string& content,
+                              const PushContext& context) const;
 
     PushSessionProvider* session_provider_;
     PushPayloadSender* payload_sender_;

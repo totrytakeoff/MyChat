@@ -79,14 +79,16 @@ struct PushCall {
     std::string receiver_uid;
     uint64_t msg_id;
     std::string content;
+    im::service::push::PushContext context;
 };
 
 class RecordingPushNotifier : public im::service::push::PushNotifier {
 public:
     void notify_user(const std::string& receiver_uid,
                      uint64_t msg_id,
-                     const std::string& content) override {
-        calls.push_back({receiver_uid, msg_id, content});
+                     const std::string& content,
+                     const im::service::push::PushContext& context) override {
+        calls.push_back({receiver_uid, msg_id, content, context});
     }
 
     std::vector<PushCall> calls;
@@ -266,6 +268,9 @@ TEST_F(GatewayMessageWsTest, SuccessfulSendNotifiesReceiverThroughBoundary) {
     EXPECT_EQ(recording_notifier_.calls[0].msg_id,
               std::stoull(resp.message().message_id()));
     EXPECT_EQ(recording_notifier_.calls[0].content, "Notify receiver");
+    EXPECT_EQ(recording_notifier_.calls[0].context.sender_uid, sender);
+    EXPECT_EQ(recording_notifier_.calls[0].context.conversation_type, "direct");
+    EXPECT_EQ(recording_notifier_.calls[0].context.conversation_id, sender);
 }
 
 TEST_F(GatewayMessageWsTest, SenderIdentityFromTokenNotHeader) {

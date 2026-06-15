@@ -62,6 +62,20 @@ class UserService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::GetUserInfoResponse>> PrepareAsyncGetUserInfo(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::GetUserInfoResponse>>(PrepareAsyncGetUserInfoRaw(context, request, cq));
     }
+    virtual ::grpc::Status SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::im::user::SearchUsersResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::SearchUsersResponse>> AsyncSearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::SearchUsersResponse>>(AsyncSearchUsersRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::SearchUsersResponse>> PrepareAsyncSearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::SearchUsersResponse>>(PrepareAsyncSearchUsersRaw(context, request, cq));
+    }
+    virtual ::grpc::Status UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::im::user::UpdateUserInfoResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::UpdateUserInfoResponse>> AsyncUpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::UpdateUserInfoResponse>>(AsyncUpdateUserInfoRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::UpdateUserInfoResponse>> PrepareAsyncUpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::user::UpdateUserInfoResponse>>(PrepareAsyncUpdateUserInfoRaw(context, request, cq));
+    }
     class async_interface {
      public:
       virtual ~async_interface() {}
@@ -71,6 +85,10 @@ class UserService final {
       virtual void Login(::grpc::ClientContext* context, const ::im::user::LoginRequest* request, ::im::user::LoginResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetUserInfo(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest* request, ::im::user::GetUserInfoResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void GetUserInfo(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest* request, ::im::user::GetUserInfoResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -82,6 +100,10 @@ class UserService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::user::LoginResponse>* PrepareAsyncLoginRaw(::grpc::ClientContext* context, const ::im::user::LoginRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::user::GetUserInfoResponse>* AsyncGetUserInfoRaw(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::user::GetUserInfoResponse>* PrepareAsyncGetUserInfoRaw(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::user::SearchUsersResponse>* AsyncSearchUsersRaw(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::user::SearchUsersResponse>* PrepareAsyncSearchUsersRaw(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::user::UpdateUserInfoResponse>* AsyncUpdateUserInfoRaw(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::user::UpdateUserInfoResponse>* PrepareAsyncUpdateUserInfoRaw(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -107,6 +129,20 @@ class UserService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::GetUserInfoResponse>> PrepareAsyncGetUserInfo(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::GetUserInfoResponse>>(PrepareAsyncGetUserInfoRaw(context, request, cq));
     }
+    ::grpc::Status SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::im::user::SearchUsersResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>> AsyncSearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>>(AsyncSearchUsersRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>> PrepareAsyncSearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>>(PrepareAsyncSearchUsersRaw(context, request, cq));
+    }
+    ::grpc::Status UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::im::user::UpdateUserInfoResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>> AsyncUpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>>(AsyncUpdateUserInfoRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>> PrepareAsyncUpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>>(PrepareAsyncUpdateUserInfoRaw(context, request, cq));
+    }
     class async final :
       public StubInterface::async_interface {
      public:
@@ -116,6 +152,10 @@ class UserService final {
       void Login(::grpc::ClientContext* context, const ::im::user::LoginRequest* request, ::im::user::LoginResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetUserInfo(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest* request, ::im::user::GetUserInfoResponse* response, std::function<void(::grpc::Status)>) override;
       void GetUserInfo(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest* request, ::im::user::GetUserInfoResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response, std::function<void(::grpc::Status)>) override;
+      void SearchUsers(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response, std::function<void(::grpc::Status)>) override;
+      void UpdateUserInfo(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -133,9 +173,15 @@ class UserService final {
     ::grpc::ClientAsyncResponseReader< ::im::user::LoginResponse>* PrepareAsyncLoginRaw(::grpc::ClientContext* context, const ::im::user::LoginRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::user::GetUserInfoResponse>* AsyncGetUserInfoRaw(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::user::GetUserInfoResponse>* PrepareAsyncGetUserInfoRaw(::grpc::ClientContext* context, const ::im::user::GetUserInfoRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>* AsyncSearchUsersRaw(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::user::SearchUsersResponse>* PrepareAsyncSearchUsersRaw(::grpc::ClientContext* context, const ::im::user::SearchUsersRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>* AsyncUpdateUserInfoRaw(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::user::UpdateUserInfoResponse>* PrepareAsyncUpdateUserInfoRaw(::grpc::ClientContext* context, const ::im::user::UpdateUserInfoRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_Register_;
     const ::grpc::internal::RpcMethod rpcmethod_Login_;
     const ::grpc::internal::RpcMethod rpcmethod_GetUserInfo_;
+    const ::grpc::internal::RpcMethod rpcmethod_SearchUsers_;
+    const ::grpc::internal::RpcMethod rpcmethod_UpdateUserInfo_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -146,6 +192,8 @@ class UserService final {
     virtual ::grpc::Status Register(::grpc::ServerContext* context, const ::im::user::RegisterRequest* request, ::im::user::RegisterResponse* response);
     virtual ::grpc::Status Login(::grpc::ServerContext* context, const ::im::user::LoginRequest* request, ::im::user::LoginResponse* response);
     virtual ::grpc::Status GetUserInfo(::grpc::ServerContext* context, const ::im::user::GetUserInfoRequest* request, ::im::user::GetUserInfoResponse* response);
+    virtual ::grpc::Status SearchUsers(::grpc::ServerContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response);
+    virtual ::grpc::Status UpdateUserInfo(::grpc::ServerContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_Register : public BaseClass {
@@ -207,7 +255,47 @@ class UserService final {
       ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_Register<WithAsyncMethod_Login<WithAsyncMethod_GetUserInfo<Service > > > AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_SearchUsers : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_SearchUsers() {
+      ::grpc::Service::MarkMethodAsync(3);
+    }
+    ~WithAsyncMethod_SearchUsers() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SearchUsers(::grpc::ServerContext* /*context*/, const ::im::user::SearchUsersRequest* /*request*/, ::im::user::SearchUsersResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestSearchUsers(::grpc::ServerContext* context, ::im::user::SearchUsersRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::user::SearchUsersResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_UpdateUserInfo : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_UpdateUserInfo() {
+      ::grpc::Service::MarkMethodAsync(4);
+    }
+    ~WithAsyncMethod_UpdateUserInfo() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status UpdateUserInfo(::grpc::ServerContext* /*context*/, const ::im::user::UpdateUserInfoRequest* /*request*/, ::im::user::UpdateUserInfoResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestUpdateUserInfo(::grpc::ServerContext* context, ::im::user::UpdateUserInfoRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::user::UpdateUserInfoResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_Register<WithAsyncMethod_Login<WithAsyncMethod_GetUserInfo<WithAsyncMethod_SearchUsers<WithAsyncMethod_UpdateUserInfo<Service > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_Register : public BaseClass {
    private:
@@ -289,7 +377,61 @@ class UserService final {
     virtual ::grpc::ServerUnaryReactor* GetUserInfo(
       ::grpc::CallbackServerContext* /*context*/, const ::im::user::GetUserInfoRequest* /*request*/, ::im::user::GetUserInfoResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_Register<WithCallbackMethod_Login<WithCallbackMethod_GetUserInfo<Service > > > CallbackService;
+  template <class BaseClass>
+  class WithCallbackMethod_SearchUsers : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_SearchUsers() {
+      ::grpc::Service::MarkMethodCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::user::SearchUsersRequest* request, ::im::user::SearchUsersResponse* response) { return this->SearchUsers(context, request, response); }));}
+    void SetMessageAllocatorFor_SearchUsers(
+        ::grpc::MessageAllocator< ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_SearchUsers() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SearchUsers(::grpc::ServerContext* /*context*/, const ::im::user::SearchUsersRequest* /*request*/, ::im::user::SearchUsersResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* SearchUsers(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::user::SearchUsersRequest* /*request*/, ::im::user::SearchUsersResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithCallbackMethod_UpdateUserInfo : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_UpdateUserInfo() {
+      ::grpc::Service::MarkMethodCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::user::UpdateUserInfoRequest* request, ::im::user::UpdateUserInfoResponse* response) { return this->UpdateUserInfo(context, request, response); }));}
+    void SetMessageAllocatorFor_UpdateUserInfo(
+        ::grpc::MessageAllocator< ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_UpdateUserInfo() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status UpdateUserInfo(::grpc::ServerContext* /*context*/, const ::im::user::UpdateUserInfoRequest* /*request*/, ::im::user::UpdateUserInfoResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* UpdateUserInfo(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::user::UpdateUserInfoRequest* /*request*/, ::im::user::UpdateUserInfoResponse* /*response*/)  { return nullptr; }
+  };
+  typedef WithCallbackMethod_Register<WithCallbackMethod_Login<WithCallbackMethod_GetUserInfo<WithCallbackMethod_SearchUsers<WithCallbackMethod_UpdateUserInfo<Service > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_Register : public BaseClass {
@@ -338,6 +480,40 @@ class UserService final {
     }
     // disable synchronous version of this method
     ::grpc::Status GetUserInfo(::grpc::ServerContext* /*context*/, const ::im::user::GetUserInfoRequest* /*request*/, ::im::user::GetUserInfoResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_SearchUsers : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_SearchUsers() {
+      ::grpc::Service::MarkMethodGeneric(3);
+    }
+    ~WithGenericMethod_SearchUsers() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SearchUsers(::grpc::ServerContext* /*context*/, const ::im::user::SearchUsersRequest* /*request*/, ::im::user::SearchUsersResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
+  class WithGenericMethod_UpdateUserInfo : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_UpdateUserInfo() {
+      ::grpc::Service::MarkMethodGeneric(4);
+    }
+    ~WithGenericMethod_UpdateUserInfo() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status UpdateUserInfo(::grpc::ServerContext* /*context*/, const ::im::user::UpdateUserInfoRequest* /*request*/, ::im::user::UpdateUserInfoResponse* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -400,6 +576,46 @@ class UserService final {
     }
     void RequestGetUserInfo(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_SearchUsers : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_SearchUsers() {
+      ::grpc::Service::MarkMethodRaw(3);
+    }
+    ~WithRawMethod_SearchUsers() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SearchUsers(::grpc::ServerContext* /*context*/, const ::im::user::SearchUsersRequest* /*request*/, ::im::user::SearchUsersResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestSearchUsers(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_UpdateUserInfo : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_UpdateUserInfo() {
+      ::grpc::Service::MarkMethodRaw(4);
+    }
+    ~WithRawMethod_UpdateUserInfo() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status UpdateUserInfo(::grpc::ServerContext* /*context*/, const ::im::user::UpdateUserInfoRequest* /*request*/, ::im::user::UpdateUserInfoResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestUpdateUserInfo(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -466,6 +682,50 @@ class UserService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* GetUserInfo(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_SearchUsers : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_SearchUsers() {
+      ::grpc::Service::MarkMethodRawCallback(3,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SearchUsers(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_SearchUsers() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status SearchUsers(::grpc::ServerContext* /*context*/, const ::im::user::SearchUsersRequest* /*request*/, ::im::user::SearchUsersResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* SearchUsers(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_UpdateUserInfo : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_UpdateUserInfo() {
+      ::grpc::Service::MarkMethodRawCallback(4,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->UpdateUserInfo(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_UpdateUserInfo() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status UpdateUserInfo(::grpc::ServerContext* /*context*/, const ::im::user::UpdateUserInfoRequest* /*request*/, ::im::user::UpdateUserInfoResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* UpdateUserInfo(
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
@@ -549,9 +809,63 @@ class UserService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedGetUserInfo(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::user::GetUserInfoRequest,::im::user::GetUserInfoResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_Register<WithStreamedUnaryMethod_Login<WithStreamedUnaryMethod_GetUserInfo<Service > > > StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_SearchUsers : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_SearchUsers() {
+      ::grpc::Service::MarkMethodStreamed(3,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse>* streamer) {
+                       return this->StreamedSearchUsers(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_SearchUsers() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status SearchUsers(::grpc::ServerContext* /*context*/, const ::im::user::SearchUsersRequest* /*request*/, ::im::user::SearchUsersResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedSearchUsers(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::user::SearchUsersRequest,::im::user::SearchUsersResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_UpdateUserInfo : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_UpdateUserInfo() {
+      ::grpc::Service::MarkMethodStreamed(4,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse>* streamer) {
+                       return this->StreamedUpdateUserInfo(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_UpdateUserInfo() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status UpdateUserInfo(::grpc::ServerContext* /*context*/, const ::im::user::UpdateUserInfoRequest* /*request*/, ::im::user::UpdateUserInfoResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedUpdateUserInfo(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::user::UpdateUserInfoRequest,::im::user::UpdateUserInfoResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_Register<WithStreamedUnaryMethod_Login<WithStreamedUnaryMethod_GetUserInfo<WithStreamedUnaryMethod_SearchUsers<WithStreamedUnaryMethod_UpdateUserInfo<Service > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_Register<WithStreamedUnaryMethod_Login<WithStreamedUnaryMethod_GetUserInfo<Service > > > StreamedService;
+  typedef WithStreamedUnaryMethod_Register<WithStreamedUnaryMethod_Login<WithStreamedUnaryMethod_GetUserInfo<WithStreamedUnaryMethod_SearchUsers<WithStreamedUnaryMethod_UpdateUserInfo<Service > > > > > StreamedService;
 };
 
 }  // namespace user

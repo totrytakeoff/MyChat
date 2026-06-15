@@ -40,7 +40,9 @@ public:
 
     void notify_user(const std::string& receiver_uid,
                      uint64_t msg_id,
-                     const std::string& content) override;
+                     const std::string& content,
+                     const im::service::push::PushContext& context =
+                         im::service::push::PushContext{}) override;
 
 private:
     std::unique_ptr<PushRpcClient> client_;

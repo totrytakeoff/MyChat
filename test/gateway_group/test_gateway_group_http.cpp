@@ -483,6 +483,76 @@ TEST_F(GatewayGroupHttpTest, ListGroupsEmptyForNewUser) {
     EXPECT_TRUE(body["groups"].empty());
 }
 
+TEST_F(GatewayGroupHttpTest, SearchGroupsByNameAndInfoBeforeJoin) {
+    std::string uid_owner = create_user("group-http-test-search-owner");
+    std::string uid_member = create_user("group-http-test-search-member");
+    std::string token = make_token(uid_member);
+
+    CreateGroupRequest creq;
+    creq.name = "group-http-test-search-target";
+    creq.creator_uid = uid_owner;
+    creq.now_ms = kNowMs;
+    auto cres = group_svc_->create_group(creq);
+    ASSERT_TRUE(cres.ok);
+
+    httplib::Request search_req;
+    search_req.method = "GET";
+    search_req.headers.emplace("Authorization", "Bearer " + token);
+    search_req.params.emplace("q", "search-target");
+
+    httplib::Response search_res;
+    controller_->handle_search_groups(search_req, search_res);
+
+    ASSERT_EQ(search_res.status, 200) << "Body: " << search_res.body;
+    auto search_body = parse_body(search_res);
+    ASSERT_TRUE(search_body.contains("groups"));
+    ASSERT_EQ(search_body["groups"].size(), 1);
+    EXPECT_EQ(search_body["groups"][0]["group_id"], cres.group_id);
+    EXPECT_EQ(search_body["groups"][0]["joined"], false);
+
+    httplib::Request info_req;
+    info_req.method = "GET";
+    info_req.headers.emplace("Authorization", "Bearer " + token);
+    info_req.params.emplace("group_id", std::to_string(cres.group_id));
+
+    httplib::Response info_res;
+    controller_->handle_group_info(info_req, info_res);
+
+    ASSERT_EQ(info_res.status, 200) << "Body: " << info_res.body;
+    auto info_body = parse_body(info_res);
+    EXPECT_EQ(info_body["group"]["name"], "group-http-test-search-target");
+    EXPECT_EQ(info_body["joined"], false);
+    EXPECT_TRUE(info_body["members"].empty());
+}
+
+TEST_F(GatewayGroupHttpTest, GroupInfoIncludesMembersAfterJoin) {
+    std::string uid_owner = create_user("group-http-test-info-owner");
+    std::string uid_member = create_user("group-http-test-info-member");
+    std::string token = make_token(uid_member);
+
+    CreateGroupRequest creq;
+    creq.name = "group-http-test-info-group";
+    creq.creator_uid = uid_owner;
+    creq.now_ms = kNowMs;
+    auto cres = group_svc_->create_group(creq);
+    ASSERT_TRUE(cres.ok);
+    ASSERT_TRUE(group_svc_->join_group(cres.group_id, uid_member, kNowMs).ok);
+
+    httplib::Request req;
+    req.method = "GET";
+    req.headers.emplace("Authorization", "Bearer " + token);
+    req.params.emplace("group_id", std::to_string(cres.group_id));
+
+    httplib::Response res;
+    controller_->handle_group_info(req, res);
+
+    ASSERT_EQ(res.status, 200) << "Body: " << res.body;
+    auto body = parse_body(res);
+    EXPECT_EQ(body["joined"], true);
+    ASSERT_TRUE(body.contains("members"));
+    EXPECT_EQ(body["members"].size(), 2);
+}
+
 // ==================== List Members Tests ====================
 
 TEST_F(GatewayGroupHttpTest, ListMembersRequiresAuth) {

@@ -46,6 +46,16 @@ im::base::ErrorCode login_error_code(const std::string& error_code) {
     return im::base::SERVER_ERROR;
 }
 
+im::base::ErrorCode update_error_code(const std::string& error_code) {
+    if (error_code == "EMPTY_UID" || error_code == "EMPTY_NICKNAME") {
+        return im::base::PARAM_ERROR;
+    }
+    if (error_code == "USER_NOT_FOUND") {
+        return im::base::NOT_FOUND;
+    }
+    return im::base::SERVER_ERROR;
+}
+
 im::user::Gender to_proto_gender(Gender gender) {
     switch (gender) {
     case Gender::MALE:
@@ -57,6 +67,20 @@ im::user::Gender to_proto_gender(Gender gender) {
     case Gender::UNKNOWN:
     default:
         return im::user::UNKNOWN;
+    }
+}
+
+Gender to_service_gender(im::user::Gender gender) {
+    switch (gender) {
+    case im::user::MALE:
+        return Gender::MALE;
+    case im::user::FEMALE:
+        return Gender::FEMALE;
+    case im::user::OTHER:
+        return Gender::OTHER;
+    case im::user::UNKNOWN:
+    default:
+        return Gender::UNKNOWN;
     }
 }
 
@@ -200,6 +224,77 @@ UserGrpcService::UserGrpcService(UserService* user_service)
 
         set_base(response->mutable_base(), im::base::SUCCESS);
         fill_user_info(*profile, response->mutable_user());
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
+
+::grpc::Status UserGrpcService::SearchUsers(::grpc::ServerContext* /*context*/,
+                                            const im::user::SearchUsersRequest* request,
+                                            im::user::SearchUsersResponse* response) {
+    if (!response) {
+        return ::grpc::Status::OK;
+    }
+    if (!user_service_) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, "UserService is not available");
+        return ::grpc::Status::OK;
+    }
+    if (!request || request->keyword().empty()) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR,
+                 "Missing required field: keyword");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        const auto limit = request->limit() > 0 ? static_cast<std::size_t>(request->limit()) : 20u;
+        const auto profiles = user_service_->search_profiles(request->keyword(), limit);
+        set_base(response->mutable_base(), im::base::SUCCESS);
+        for (const auto& profile : profiles) {
+            fill_user_info(profile, response->add_users());
+        }
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
+
+::grpc::Status UserGrpcService::UpdateUserInfo(::grpc::ServerContext* /*context*/,
+                                               const im::user::UpdateUserInfoRequest* request,
+                                               im::user::UpdateUserInfoResponse* response) {
+    if (!response) {
+        return ::grpc::Status::OK;
+    }
+    if (!user_service_) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, "UserService is not available");
+        return ::grpc::Status::OK;
+    }
+    if (!request) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR, "UpdateUserInfo request is null");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        UpdateProfileRequest service_request;
+        service_request.uid = request->header().from_uid();
+        if (service_request.uid.empty()) {
+            service_request.uid = request->user().uid();
+        }
+        service_request.nickname = request->user().nickname();
+        service_request.avatar = request->user().avatar();
+        service_request.gender = to_service_gender(request->user().gender());
+        service_request.signature = request->user().signature();
+
+        const auto result = user_service_->update_profile(service_request);
+        if (!result.ok) {
+            set_base(response->mutable_base(), update_error_code(result.error_code), result.message);
+            return ::grpc::Status::OK;
+        }
+
+        set_base(response->mutable_base(), im::base::SUCCESS);
+        fill_user_info(result.profile, response->mutable_user());
         return ::grpc::Status::OK;
     } catch (const std::exception& e) {
         set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());

@@ -25,7 +25,7 @@ public:
         response->mutable_base()->set_error_message(send_base_message);
         if (send_base_code == im::base::SUCCESS) {
             fill_request(response->mutable_request(), "42", request.header().from_uid(),
-                         request.to_uid(), im::friend_::PENDING);
+                         request.to_uid(), "Requester Nick", im::friend_::PENDING);
         }
         return send_status;
     }
@@ -64,7 +64,7 @@ public:
         response->mutable_base()->set_error_code(pending_base_code);
         if (pending_base_code == im::base::SUCCESS) {
             fill_request(response->add_requests(), "44", "requester-uid",
-                         request.header().from_uid(), im::friend_::PENDING);
+                         request.header().from_uid(), "Requester Nick", im::friend_::PENDING);
         }
         return pending_status;
     }
@@ -73,11 +73,13 @@ public:
                              const std::string& id,
                              const std::string& from_uid,
                              const std::string& to_uid,
+                             const std::string& nickname,
                              im::friend_::FriendRequestStatus status) {
         request->set_request_id(id);
         request->set_friend_id(std::stoull(id));
         request->set_from_uid(from_uid);
         request->set_to_uid(to_uid);
+        request->set_nickname(nickname);
         request->set_status(status);
         request->set_create_time(1234);
     }
@@ -162,6 +164,7 @@ TEST(RemoteFriendClientTest, RespondAndQueriesMapResults) {
     ASSERT_EQ(pending.size(), 1u);
     EXPECT_EQ(pending[0].friend_id, 44u);
     EXPECT_EQ(pending[0].friend_uid, "requester-uid");
+    EXPECT_EQ(pending[0].nickname, "Requester Nick");
     EXPECT_EQ(pending[0].status, im::service::friend_::FriendStatus::PENDING);
 }
 
