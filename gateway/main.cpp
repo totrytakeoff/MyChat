@@ -99,6 +99,8 @@ void shutdown_gateway(int, const std::string&) {
 
 int main(int argc, char** argv) {
     try {
+
+        // 初始化命令行参数解析器并执行对应参数的解析
         im::utils::CLIParser parser("gateway_server", "MyChat gateway server");
         configure_cli(parser);
 
@@ -113,6 +115,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
+        // 初始化配置解析器并加载相关配置
         im::utils::ConfigManager config(g_config.config_file);
         g_config.websocket_port = read_port(config, "gateway.websocket_port",
                                             "MYCHAT_GATEWAY_WS_PORT", g_config.websocket_port);
@@ -122,22 +125,30 @@ int main(int argc, char** argv) {
                 config.getWithEnv<std::string>("gateway.log_level", "MYCHAT_LOG_LEVEL",
                                                g_config.log_level);
 
+        // 启动全局日志系统
         im::utils::LogManager::SetLogLevel(g_config.log_level);
+
+        // 启动redis管理器
         if (!initialize_redis(config)) {
             return 1;
         }
 
+
+        // 创建 GatewayServer 实例对象
         auto server = std::make_shared<im::gateway::GatewayServer>(
                 g_config.config_file, g_config.config_file, g_config.websocket_port,
                 g_config.http_port);
         g_server = server.get();
 
+        // 注册优雅退出回调
         auto& signal_handler = im::utils::SignalHandler::getInstance();
         signal_handler.registerGracefulShutdown(shutdown_gateway);
 
+        // 启动GatewayServer
         server->start();
         std::cout << "Gateway server started. WebSocket port: " << g_config.websocket_port
                   << ", HTTP port: " << g_config.http_port << std::endl;
+
         signal_handler.waitForShutdown("Press Ctrl+C to shutdown gateway_server...");
         signal_handler.cleanup();
         if (server->is_running()) {
@@ -146,6 +157,7 @@ int main(int argc, char** argv) {
         g_server = nullptr;
         server.reset();
         return 0;
+
     } catch (const std::exception& e) {
         std::cerr << "gateway_server failed: " << e.what() << std::endl;
         im::utils::SignalHandler::getInstance().cleanup();

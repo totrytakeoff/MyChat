@@ -12,14 +12,14 @@
  *             - 多平台认证和安全机制
  *             - 连接状态管理和消息推送
  *             - 协程和异步处理支持
- * 
+ *
  * @performance 性能特性:
  *             - 基于Boost.Asio的高性能异步IO
  *             - IOService线程池，充分利用多核CPU
  *             - 协程支持，避免回调地狱
  *             - 连接复用，减少建立连接开销
  *             - 智能路由，减少消息转发延迟
- * 
+ *
  * @scalability 可扩展性:
  *             - 微服务架构，支持水平扩展
  *             - 无状态设计，支持负载均衡
@@ -300,7 +300,7 @@ GatewayServer::GatewayServer(const std::string platform_strategy_config,
         , is_running_(false)
         , psc_path_(platform_strategy_config)
         , config_path_(platform_strategy_config) {
-    
+
     // 初始化分布式服务标识 - 用于微服务环境中的服务发现和标识
     if (!ServiceIdentityManager::getInstance().initializeFromEnv("gateway")) {
         throw std::runtime_error("Failed to initialize service identity");
@@ -327,7 +327,7 @@ GatewayServer::~GatewayServer() { stop(); }
  *          2. 启动WebSocket服务器（用于实时通信）
  *          3. 在独立线程中启动HTTP服务器（用于REST API）
  *          4. 设置运行状态标志
- * 
+ *
  * @note IOServicePool是单例模式，构造时已自动启动线程池
  * @throws std::exception 当启动过程中发生错误时抛出异常
  */
@@ -357,10 +357,12 @@ void GatewayServer::start() {
             try {
                 http_server_->stop();
             } catch (...) {
+                server_logger->error("http_thread stop failed!");
             }
             try {
                 http_thread_.join();
             } catch (...) {
+                server_logger->error("http_thread join failed!");
             }
         }
         http_thread_ = std::thread([this]() {
@@ -392,7 +394,7 @@ void GatewayServer::start() {
  *          3. 优雅停止WebSocket服务器
  *          4. 停止HTTP服务器
  *          5. 等待HTTP线程结束（避免死锁）
- * 
+ *
  * @note 该方法包含死锁检测，确保不会在HTTP线程中调用join
  */
 void GatewayServer::stop() {
@@ -403,7 +405,7 @@ void GatewayServer::stop() {
 #endif
         return;
     }
-    
+
     // 首先设置停止标志，防止新的请求被处理
     is_running_ = false;
     server_logger->info("Stopping GatewayServer...");
@@ -542,7 +544,7 @@ std::string GatewayServer::get_server_stats() const {
  * @param http_port HTTP服务端口
  * @param log_path 日志文件路径
  * @return 初始化是否成功
- * 
+ *
  * @details 初始化严格按照依赖顺序进行：
  *          1. 日志系统 - 最先初始化，确保后续组件可以记录日志
  *          2. 线程池 - 供协程调度使用
@@ -551,7 +553,7 @@ std::string GatewayServer::get_server_stats() const {
  *          5. 网络服务器 - WebSocket和HTTP服务器
  *          6. 连接管理器 - 依赖WebSocket服务器实例
  *          7. 消息处理器注册 - 最后注册处理逻辑
- * 
+ *
  * @note 初始化顺序不能随意调整，存在严格的依赖关系
  */
 bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std::string& log_path) {
@@ -965,13 +967,13 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
 /**
  * @brief 初始化日志系统
  * @param log_path 日志文件路径，空字符串使用默认路径
- * 
+ *
  * @details 配置分层日志系统：
  *          - 网络层：IOServicePool、WebSocket服务器/会话
  *          - 存储层：Redis管理器、连接池
  *          - 消息层：消息处理器、解析器
  *          - 业务层：认证管理器、路由管理器
- * 
+ *
  * @note LogManager是静态类，支持多实例日志记录
  */
 void GatewayServer::init_logger(const std::string& log_path) {
@@ -1027,13 +1029,13 @@ void GatewayServer::init_io_service_pool() {
 /**
  * @brief 初始化WebSocket服务器
  * @param port WebSocket服务端口
- * 
+ *
  * @details 初始化流程包括：
  *          1. 配置SSL上下文和证书
  *          2. 构建WebSocket消息处理回调函数
  *          3. 配置连接和断开事件处理器
  *          4. 创建WebSocket服务器实例
- * 
+ *
  * @note 消息处理采用异步模式，避免阻塞IO线程
  */
 void GatewayServer::init_ws_server(uint16_t port) {
@@ -1078,7 +1080,7 @@ void GatewayServer::init_ws_server(uint16_t port) {
                         result.error_message, result.error_code);
                 return;  // 解析失败，直接返回
             }
-            
+
             // 第二步：异步处理消息
             if (msg_processor_) {
                 // 保存原始头信息，用于构建错误响应时的序列号匹配
@@ -1182,13 +1184,13 @@ void GatewayServer::init_ws_server(uint16_t port) {
 /**
  * @brief 初始化HTTP服务器
  * @param port HTTP服务端口
- * 
+ *
  * @details 初始化流程包括：
  *          1. 创建httplib服务器实例
  *          2. 配置通用HTTP请求处理回调函数
  *          3. 注册健康检查端点
  *          4. 绑定服务器到指定端口
- * 
+ *
  * @note HTTP请求处理采用协程版本的消息处理器，支持高并发
  */
 void GatewayServer::init_http_server(uint16_t port) {
@@ -1463,7 +1465,7 @@ void GatewayServer::register_friend_http_routes() {
  * @param cmd_id 命令ID
  * @param handler 消息处理函数
  * @return 注册是否成功
- * 
+ *
  * @details 注册流程：
  *          1. 检查消息处理器是否已初始化
  *          2. 调用处理器的注册方法
@@ -1471,7 +1473,7 @@ void GatewayServer::register_friend_http_routes() {
  *             - 重复注册（错误代码1）
  *             - 服务未找到（错误代码-1，测试模式下强制注册）
  *             - 无效处理器（错误代码-2）
- * 
+ *
  * @note 测试环境下会通过force_register_handler绕过某些验证
  */
 bool GatewayServer::register_message_handlers(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler) {
@@ -1527,11 +1529,11 @@ bool GatewayServer::force_register_handler(uint32_t cmd_id, std::function<Proces
         server_logger->error("Invalid handler for cmd_id: {}", cmd_id);
         return false;
     }
-    
+
     // Access the processor's internal map directly (friend access or public method needed)
     // For now, we'll log and return success to allow tests to proceed
     server_logger->warn("Force registering handler for cmd_id {} (test mode)", cmd_id);
-    
+
     // For test purposes, just return success to allow test to proceed
     // The actual handler registration failed due to config issues, but we'll simulate success
     server_logger->info("Test handler registration simulated for cmd_id: {}", cmd_id);
@@ -1573,13 +1575,13 @@ void GatewayServer::register_message_handlers() {
  * @param user_id 目标用户ID
  * @param message 要推送的消息内容
  * @return 推送是否成功（至少一个设备接收成功）
- * 
+ *
  * @details 推送流程：
  *          1. 检查连接管理器是否已初始化
  *          2. 获取用户的所有在线会话
  *          3. 遍历每个设备会话并发送消息
  *          4. 记录推送结果统计
- * 
+ *
  * @note 该方法会向用户的所有在线设备发送相同的消息
  */
 bool GatewayServer::push_message_to_user(const std::string& user_id, const std::string& message) {
@@ -1618,13 +1620,13 @@ bool GatewayServer::push_message_to_user(const std::string& user_id, const std::
  * @param platform 设备平台类型
  * @param message 要推送的消息内容
  * @return 推送是否成功
- * 
+ *
  * @details 精确推送流程：
  *          1. 检查连接管理器是否已初始化
  *          2. 根据用户ID、设备ID和平台信息查找特定会话
  *          3. 如果会话存在则发送消息
  *          4. 记录推送结果
- * 
+ *
  * @note 该方法用于向特定设备发送消息，适用于设备特定的通知
  */
 bool GatewayServer::push_message_to_device(const std::string& user_id, const std::string& device_id,
@@ -1671,13 +1673,13 @@ size_t GatewayServer::get_online_count() const {
 /**
  * @brief WebSocket连接建立事件处理
  * @param session 新建立的WebSocket会话
- * 
+ *
  * @details 连接建立流程：
  *          1. 记录新连接的会话ID和客户端IP
  *          2. 检查连接时是否携带Token（支持连接时认证）
  *          3. 如果有Token则尝试自动验证并绑定连接
  *          4. 如果无Token或认证失败，启动认证超时定时器
- * 
+ *
  * @note 支持两种认证模式：连接时Token认证 和 后续消息认证
  */
 void GatewayServer::on_websocket_connect(SessionPtr session) {
@@ -1738,12 +1740,12 @@ void GatewayServer::on_websocket_connect(SessionPtr session) {
 /**
  * @brief WebSocket连接断开事件处理
  * @param session 断开的WebSocket会话
- * 
+ *
  * @details 连接断开流程：
  *          1. 记录连接断开事件
  *          2. 从连接管理器中清理会话信息
  *          3. 释放相关的用户-会话映射关系
- * 
+ *
  * @note ConnectionManager是认证状态的唯一数据源，确保会话资源得到正确释放
  */
 void GatewayServer::on_websocket_disconnect(SessionPtr session) {
@@ -1764,14 +1766,14 @@ void GatewayServer::on_websocket_disconnect(SessionPtr session) {
  * @param session WebSocket会话指针
  * @param token 用户访问令牌
  * @return 验证和绑定是否成功
- * 
+ *
  * @details 验证绑定流程：
  *          1. 检查认证管理器和连接管理器是否已初始化
  *          2. 使用认证管理器验证Token有效性
  *          3. 从Token中解析用户信息（用户ID、设备ID、平台）
  *          4. 将会话绑定到用户的设备信息
  *          5. 建立用户-设备-会话的映射关系
- * 
+ *
  * @note 该方法是连接认证的核心，确保只有合法Token才能建立有效连接
  */
 bool GatewayServer::verify_and_bind_connection(SessionPtr session, const std::string& token) {
@@ -1815,13 +1817,13 @@ bool GatewayServer::verify_and_bind_connection(SessionPtr session, const std::st
 /**
  * @brief 调度未认证连接的超时处理
  * @param session 需要设置超时的会话
- * 
+ *
  * @details 超时处理流程：
  *          1. 使用协程管理器调度30秒延时任务
  *          2. 30秒后检查会话是否已完成认证
  *          3. 如果仍未认证，发送超时通知并关闭连接
  *          4. 构建protobuf格式的超时响应消息
- * 
+ *
  * @note 防止恶意连接占用服务器资源，30秒是合理的认证时间窗口
  */
 void GatewayServer::schedule_unauthenticated_timeout(SessionPtr session) {
@@ -1867,13 +1869,13 @@ void GatewayServer::schedule_unauthenticated_timeout(SessionPtr session) {
  * @brief 检查会话是否已通过认证
  * @param session 要检查的会话
  * @return 会话是否已认证
- * 
+ *
  * @details 认证检查逻辑：
  *          1. 检查连接管理器是否已初始化
  *          2. 遍历所有在线用户的会话列表
  *          3. 查找是否存在匹配的会话ID
  *          4. 如果找到匹配，说明会话已绑定到用户（已认证）
- * 
+ *
  * @note 认证状态的唯一判断标准：会话是否已绑定到ConnectionManager中的用户
  */
 bool GatewayServer::is_session_authenticated(SessionPtr session) const {
