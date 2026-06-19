@@ -126,6 +126,54 @@ WebSocket binary frame
 - 发送成功以“消息持久化成功”为主，Push 是 best-effort。
 - Push 失败时消息仍可通过离线拉取补偿。
 
+## WebSocket 调度与流控
+
+当前 WSS 业务消息采用受控线程池调度：
+
+```text
+WSS binary frame
+-> MessageParser::parse_websocket_message_enhanced
+-> GatewayServer inflight limit check
+-> ThreadPool::Enqueue(one business task)
+-> MessageProcessor::process_message_sync
+-> MessageWsHandler::handle_send
+-> SendMessageResponse / error protobuf response
+```
+
+核心约束：
+
+- 正常 WSS 消息路径不再为每条消息创建 `std::async` 独立任务和
+  `std::thread(...).detach()` 等待线程。
+- `MessageProcessor::process_message()` 是异步入口，统一投递到全局
+  `ThreadPool`。
+- `MessageProcessor::process_message_sync()` 是同步处理核心，供已经处在
+  受控执行器中的 WSS 路径直接调用。
+- `gateway.max_ws_inflight_messages` 控制 WSS 排队中和执行中的消息数量，
+  默认值为 `4096`。
+- 超过 inflight 上限时，Gateway 直接返回 overload 响应：
+  `Gateway is busy, please retry later.`。
+- 认证失败和认证超时的延迟关闭通过 `schedule_delayed_close()` 投递到
+  线程池，不再创建 detached 线程。
+
+Token 校验职责：
+
+- HTTP 消息由通用 `MessageProcessor` 做统一 token 校验。
+- WebSocket 消息由具体 WS handler 校验。当前
+  `MessageWsHandler::handle_send()` 会校验 token，并从 token 中推导真实
+  sender。
+
+可观测统计：
+
+```text
+ws.inflight_messages
+ws.max_inflight_messages
+thread_pool.threads
+thread_pool.queued_or_running_tasks
+```
+
+当前流控是 inflight cap，还不是独立业务 executor 的严格 bounded queue。
+后续压测专项可以继续拆出 Gateway 专用 executor、拒绝计数、处理耗时分位数。
+
 ## Local/Remote Facade
 
 Gateway 对每个服务使用客户端 facade：

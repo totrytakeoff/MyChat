@@ -208,5 +208,6 @@ FriendService::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
+
 }  // namespace im
 }  // namespace friend_

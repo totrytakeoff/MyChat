@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <sys/resource.h>
 
 namespace {
 
@@ -19,6 +20,7 @@ struct GatewayRuntimeConfig {
     uint16_t websocket_port = 8080;
     uint16_t http_port = 8081;
     std::string log_level = "info";
+    int max_open_files = 65535;
 };
 
 GatewayRuntimeConfig g_config;
@@ -58,6 +60,12 @@ void configure_cli(im::utils::CLIParser& parser) {
                            g_config.log_level = value;
                            return true;
                        });
+    parser.addArgument("max-open-files", '\0', im::utils::ArgumentType::INTEGER, false,
+                       "Gateway process soft RLIMIT_NOFILE target", "", "Runtime",
+                       [](const std::string& value) {
+                           g_config.max_open_files = std::stoi(value);
+                           return true;
+                       });
 }
 
 im::db::RedisConfig load_redis_config(const im::utils::ConfigManager& config) {
@@ -86,6 +94,42 @@ bool initialize_redis(const im::utils::ConfigManager& config) {
         return false;
     }
     return true;
+}
+
+// 提高 ulimit -n (控制一个进程最多能同时打开多少个文件描述符)
+void raise_open_file_limit(int target) {
+    if (target <= 0) {
+        return;
+    }
+
+    rlimit limit{};
+    if (getrlimit(RLIMIT_NOFILE, &limit) != 0) {
+        std::cerr << "Warning: failed to read RLIMIT_NOFILE" << std::endl;
+        return;
+    }
+
+    const auto requested = static_cast<rlim_t>(target);
+    if (limit.rlim_cur >= requested) {
+        return;
+    }
+
+    rlimit updated = limit;
+    updated.rlim_cur = requested;
+    if (updated.rlim_cur > updated.rlim_max) {
+        updated.rlim_cur = updated.rlim_max;
+    }
+
+    if (setrlimit(RLIMIT_NOFILE, &updated) != 0) {
+        std::cerr << "Warning: failed to raise RLIMIT_NOFILE from " << limit.rlim_cur
+                  << " to " << requested << " (hard limit " << limit.rlim_max << ")"
+                  << std::endl;
+        return;
+    }
+
+    if (updated.rlim_cur < requested) {
+        std::cerr << "Warning: RLIMIT_NOFILE raised only to " << updated.rlim_cur
+                  << " because hard limit is " << limit.rlim_max << std::endl;
+    }
 }
 
 void shutdown_gateway(int, const std::string&) {
@@ -124,6 +168,11 @@ int main(int argc, char** argv) {
         g_config.log_level =
                 config.getWithEnv<std::string>("gateway.log_level", "MYCHAT_LOG_LEVEL",
                                                g_config.log_level);
+        g_config.max_open_files = config.getWithEnv<int>(
+                "gateway.max_open_files", "MYCHAT_GATEWAY_MAX_OPEN_FILES",
+                g_config.max_open_files);
+
+        raise_open_file_limit(g_config.max_open_files);
 
         // 启动全局日志系统
         im::utils::LogManager::SetLogLevel(g_config.log_level);

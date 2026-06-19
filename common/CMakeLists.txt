@@ -115,15 +115,13 @@ else()
 endif()
 
 # Protobuf库
+set_source_files_properties(
+    ${MYCHAT_COMMON_PROTO_GENERATED_CC}
+    ${MYCHAT_COMMON_PROTO_GENERATED_H}
+    PROPERTIES GENERATED TRUE)
+
 add_library(im_proto STATIC
-    proto/base.pb.cc
-    proto/command.pb.cc
-    proto/user.pb.cc
-    proto/friend.pb.cc
-    proto/group.pb.cc
-    proto/message.pb.cc
-    proto/push.pb.cc
-    proto/codec_service.pb.cc
+    ${MYCHAT_COMMON_PROTO_GENERATED_CC}
 )
 
 add_dependencies(im_proto generate_common_proto)

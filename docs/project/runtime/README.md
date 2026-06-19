@@ -12,6 +12,10 @@
 
 ## 当前本地验证入口
 
+Proto/gRPC 生成链路：
+
+- [proto_generation.md](proto_generation.md)
+
 远程服务全栈：
 
 ```bash

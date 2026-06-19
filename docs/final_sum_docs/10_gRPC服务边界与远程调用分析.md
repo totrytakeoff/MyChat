@@ -593,3 +593,17 @@ scripts/dev/run_remote_services_stack.sh
 | gRPC server 怎么复用 service | `*GrpcService` 调 `*Service` |
 | Push 为什么特殊 | `RemotePushNotifier` + `GatewayPushDeliveryService` |
 | remote-all 怎么跑 | `scripts/dev/run_remote_services_stack.sh` |
+
+## I. Proto 生成链路怎么保证一致
+
+这类 C++ 项目里，protobuf 生成文件和 protobuf headers/runtime 必须来自兼容版本。MyChat 当前把 proto 源文件和 checked-in 生成文件都收敛在 `common/proto/`，并通过 CMake target `generate_proto` 统一生成：
+
+```bash
+cmake --build build/remote-push-odb --target generate_proto -j2
+```
+
+根 `CMakeLists.txt` 会优先从 active vcpkg installed tree 选择 `tools/protobuf/protoc` 和 `tools/grpc/grpc_cpp_plugin`，避免系统 `protoc` 混入。这个约束的价值在于：服务边界不是只写 `.proto`，还要保证生成链路可重复，否则 CI、本地和远程部署很容易因为 protobuf 版本不一致而编译失败。
+
+面试中可以这样讲：
+
+> 我没有依赖开发机 PATH 中的 protoc，而是通过 CMake 绑定 vcpkg 管理的 protoc 和 grpc_cpp_plugin，并把 `generate_proto` 作为唯一生成入口。这样 proto 契约、gRPC stub 和链接时的 protobuf runtime 保持一致，避免生成文件与运行库版本错配。

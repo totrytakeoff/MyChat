@@ -16,6 +16,7 @@
 
 #include <memory>
 #include "../../common/utils/log_manager.hpp"
+#include "../../common/utils/thread_pool.hpp"
 #include "message_processor.hpp"
 
 namespace im::gateway {
@@ -96,54 +97,62 @@ int MessageProcessor::register_processor(
 
 /**
  * @brief 异步处理消息的实现
- * @details 在独立线程中执行完整的消息处理流程，包括认证验证、处理函数查找和执行
+ * @details 将完整消息处理流程投递到全局线程池，避免为每条消息创建独立线程
  */
 std::future<ProcessorResult> MessageProcessor::process_message(
         std::unique_ptr<UnifiedMessage> message) {
-    return std::async(
-            std::launch::async, [this, message = std::move(message)]() mutable -> ProcessorResult {
-                try {
-                    // 1. 验证消息有效性
-                    if (!message) {
-                        LogManager::GetLogger("message_processor")
-                                ->error("MessageProcessor::process_message: null message");
-                        return ProcessorResult(ErrorCode::INVALID_REQUEST, "Invalid message");
-                    }
+    auto& thread_pool = im::utils::ThreadPool::GetInstance();
+    if (thread_pool.GetThreadCount() == 0 || thread_pool.IsShutdown()) {
+        thread_pool.Init();
+    }
 
-                    // 2. token 验证
-                    if (!verify_access_token(*message.get())) {
-                        return ProcessorResult(ErrorCode::AUTH_FAILED, " AUTH_FAILED!");
-                    }
-
-                    // 3. 查找对应的处理函数（可使用C++20的contains方法优化）
-                    uint32_t cmd_id = message->get_cmd_id();
-                    auto processor_it = processor_map_.find(cmd_id);
-
-                    if (processor_it == processor_map_.end()) {
-                        LogManager::GetLogger("message_processor")
-                                ->error("MessageProcessor::process_message: no processor for "
-                                        "cmd_id: {}",
-                                        cmd_id);
-                        return ProcessorResult(ErrorCode::NOT_FOUND,
-                                               "Unknown command: " + std::to_string(cmd_id));
-                    }
-
-                    // 4. 执行注册的处理函数
-                    LogManager::GetLogger("message_processor")
-                            ->debug("MessageProcessor::process_message: executing processor for "
-                                    "cmd_id: {}",
-                                    cmd_id);
-                    return processor_it->second(*message);
-
-                } catch (const std::exception& e) {
-                    // 5. 异常处理和日志记录
-                    LogManager::GetLogger("message_processor")
-                            ->error("MessageProcessor::process_message: exception occurred: {}",
-                                    e.what());
-                    return ProcessorResult(ErrorCode::SERVER_ERROR,
-                                           std::string("Exception: ") + e.what());
-                }
+    return thread_pool.Enqueue(
+            [this, message = std::move(message)]() mutable -> ProcessorResult {
+                return process_message_sync(std::move(message));
             });
+}
+
+ProcessorResult MessageProcessor::process_message_sync(std::unique_ptr<UnifiedMessage> message) {
+    try {
+        // 1. 验证消息有效性
+        if (!message) {
+            LogManager::GetLogger("message_processor")
+                    ->error("MessageProcessor::process_message_sync: null message");
+            return ProcessorResult(ErrorCode::INVALID_REQUEST, "Invalid message");
+        }
+
+        // 2. HTTP 入口在通用处理器统一校验 token；WebSocket 命令由具体
+        //    WS handler 基于连接/业务语义校验，避免热路径重复验签。
+        if (message->is_http() && !verify_access_token(*message.get())) {
+            return ProcessorResult(ErrorCode::AUTH_FAILED, " AUTH_FAILED!");
+        }
+
+        // 3. 查找对应的处理函数
+        uint32_t cmd_id = message->get_cmd_id();
+        auto processor_it = processor_map_.find(cmd_id);
+
+        if (processor_it == processor_map_.end()) {
+            LogManager::GetLogger("message_processor")
+                    ->error("MessageProcessor::process_message_sync: no processor for cmd_id: {}",
+                            cmd_id);
+            return ProcessorResult(ErrorCode::NOT_FOUND,
+                                   "Unknown command: " + std::to_string(cmd_id));
+        }
+
+        // 4. 执行注册的处理函数
+        LogManager::GetLogger("message_processor")
+                ->debug("MessageProcessor::process_message_sync: executing processor for cmd_id: {}",
+                        cmd_id);
+        return processor_it->second(*message);
+
+    } catch (const std::exception& e) {
+        // 5. 异常处理和日志记录
+        LogManager::GetLogger("message_processor")
+                ->error("MessageProcessor::process_message_sync: exception occurred: {}",
+                        e.what());
+        return ProcessorResult(ErrorCode::SERVER_ERROR,
+                               std::string("Exception: ") + e.what());
+    }
 }
 
 bool MessageProcessor::verify_access_token(const UnifiedMessage& message) {

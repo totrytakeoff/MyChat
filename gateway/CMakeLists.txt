@@ -1,5 +1,9 @@
 # gateway/CMakeLists.txt
 
+# 提高 httplib 的 listen backlog(TCP 服务端 listen(fd, backlog) 里的连接排队长度)，适用于高并发场景
+set(MYCHAT_HTTP_LISTEN_BACKLOG 4096 CACHE STRING
+    "cpp-httplib listen backlog used by gateway HTTP server")
+
 add_library(im_gateway_core STATIC
     gateway_server/gateway_server.cpp
     connection_manager/connection_manager.cpp
@@ -18,6 +22,11 @@ target_link_libraries(im_gateway_core
         jwt-cpp::jwt-cpp
         httplib::httplib
         unofficial::UUID::uuid
+)
+
+target_compile_definitions(im_gateway_core
+    PUBLIC
+        CPPHTTPLIB_LISTEN_BACKLOG=${MYCHAT_HTTP_LISTEN_BACKLOG}
 )
 
 target_include_directories(im_gateway_core

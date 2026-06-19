@@ -3,6 +3,8 @@
     "host": "0.0.0.0",
     "websocket_port": 8101,
     "http_port": 8102,
+    "max_open_files": 65535,
+    "max_ws_inflight_messages": 4096,
     "cert_file": "/opt/mychat/certs/test_cert.pem",
     "key_file": "/opt/mychat/certs/test_key.pem"
   },

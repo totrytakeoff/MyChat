@@ -90,6 +90,7 @@ void MessageHttpController::handle_send(const httplib::Request& req, httplib::Re
             return;
         }
 
+        // sender_uid 从token解析得到，避免客户端伪造
         SendRequest send_req;
         send_req.sender_uid = user_info.user_id;
         send_req.receiver_uid = receiver_uid;

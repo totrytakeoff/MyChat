@@ -1,47 +1,47 @@
 #!/bin/bash
-set -e
-PVE_HOST=myself@192.168.1.185
-PVE_PASS=123123123
+# 部署压测工具到发压端
+# 使用前: source env.sh (复制 env.sh.example 并填入实际值)
 
-export DISPLAY=:0
-SSH_ASKPASS_REQUIRE=force
-SSH_ASKPASS=/tmp/sshpass.sh
+set -euo pipefail
 
-cat > /tmp/sshpass.sh << 'ASSEOF'
-#!/bin/bash
-echo "123123123"
-ASSEOF
-chmod +x /tmp/sshpass.sh
+: "${BENCH_PVE_USER:?需要设置 BENCH_PVE_USER}"
+: "${BENCH_PVE_HOST:?需要设置 BENCH_PVE_HOST}"
+: "${BENCH_PVE_PASS:?需要设置 BENCH_PVE_PASS}"
+: "${BENCH_PVE_TOOL_DIR:?需要设置 BENCH_PVE_TOOL_DIR}"
 
-BENCH_DIR=/home/myself/workspace/MyChat/test/benchmark
-BUILD_DIR=/home/myself/workspace/MyChat/build/benchmark
+PVE="${BENCH_PVE_USER}@${BENCH_PVE_HOST}"
+SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+SCP="sshpass -p ${BENCH_PVE_PASS} scp ${SSH_OPTS}"
+SSH="sshpass -p ${BENCH_PVE_PASS} ssh ${SSH_OPTS} ${PVE}"
 
-echo "=== Copying benchmark files to PVE host ==="
-scp -o StrictHostKeyChecking=no \
-  "$BUILD_DIR/bench_ws" \
-  "$BENCH_DIR/prep_users.py" \
-  "$BENCH_DIR/http_benchmark.js" \
-  "$BENCH_DIR/CMakeLists.txt" \
-  "$BENCH_DIR/bench_ws.cpp" \
-  "$BENCH_DIR/protobuf_codec.cpp" \
-  "$PVE_HOST:/tmp/benchmark/"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "=== Setting up PVE host ==="
-ssh -o StrictHostKeyChecking=no "$PVE_HOST" "
-set -e
-cd /tmp/benchmark
+echo "=== 部署到 ${PVE}:${BENCH_PVE_TOOL_DIR} ==="
 
-# Check k6
-which k6 || { echo 'k6 not found, installing...' && sudo apt-get update -qq && sudo apt-get install -y -qq k6 2>/dev/null || (curl -LO https://github.com/grafana/k6/releases/download/v0.54.0/k6-v0.54.0-linux-amd64.deb && sudo dpkg -i k6-v0.54.0-linux-amd64.deb); }
+# 1. 创建目录
+$SSH "mkdir -p ${BENCH_PVE_TOOL_DIR}"
 
-echo '=== Testing connectivity to cloud server ==='
-curl -s --connect-timeout 5 http://122.51.70.33:10002/api/v1/health
-echo ''
-echo '=== k6 version ==='
-k6 version
-echo '=== bench_ws binary ==='
-file ./bench_ws
-echo 'All set up!'
-"
+# 2. 上传 bench_ws
+$SCP "${SCRIPT_DIR}/build_deb12/bench_ws" "${PVE}:${BENCH_PVE_TOOL_DIR}/bench_ws"
+echo "  bench_ws ✓"
 
-rm -f /tmp/sshpass.sh
+# 3. 上传 k6 脚本
+$SCP "${SCRIPT_DIR}/http_benchmark.js" "${PVE}:${BENCH_PVE_TOOL_DIR}/"
+echo "  http_benchmark.js ✓"
+
+# 4. 上传 prep_users.py
+$SCP "${SCRIPT_DIR}/prep_users.py" "${PVE}:${BENCH_PVE_TOOL_DIR}/"
+echo "  prep_users.py ✓"
+
+# 5. 检查 k6 (需要单独安装)
+echo ""
+echo "如果 k6 未安装在 ${BENCH_PVE_TOOL_DIR}/k6, 请在发压端执行:"
+echo "  cp /usr/local/bin/k6 ${BENCH_PVE_TOOL_DIR}/k6"
+echo "  或"
+echo "  wget https://github.com/grafana/k6/releases/latest/download/k6-linux-amd64.tar.gz -O - | tar xz && mv k6 ${BENCH_PVE_TOOL_DIR}/k6"
+
+# 6. 验证
+echo ""
+$SSH "ls -lh ${BENCH_PVE_TOOL_DIR}/"
+echo ""
+echo "=== 部署完成 ==="

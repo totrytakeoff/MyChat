@@ -13,12 +13,26 @@ void ThreadPool::Init(size_t threadCount) {
     if (threadCount == 0) {
         threadCount = std::thread::hardware_concurrency();
     }
+    if (threadCount == 0) {
+        threadCount = 1;
+    }
 
-    m_shutdown = false;
-    m_tasksCount = 0;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (!m_threads.empty() && !m_shutdown.load()) {
+            if (LogManager::IsLoggingEnabled("thread_pool")) {
+                LogManager::GetLogger("thread_pool")
+                        ->warn("ThreadPool already initialized with {} threads", m_threads.size());
+            }
+            return;
+        }
 
-    for (size_t i = 0; i < threadCount; ++i) {
-        m_threads.emplace_back(&ThreadPool::WorkerThread, this);
+        m_shutdown = false;
+        m_tasksCount = m_tasks.size();
+
+        for (size_t i = 0; i < threadCount; ++i) {
+            m_threads.emplace_back(&ThreadPool::WorkerThread, this);
+        }
     }
     if (LogManager::IsLoggingEnabled("thread_pool"))
         LogManager::GetLogger("thread_pool")->info("ThreadPool initialized with {} threads", threadCount);

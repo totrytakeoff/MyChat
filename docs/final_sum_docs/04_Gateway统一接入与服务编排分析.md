@@ -157,6 +157,53 @@ WebSocket 处理在 `gateway_server.cpp` 中绑定：
 - 消息推送是否成功，和消息是否持久化是两件事。
 - 失败后仍应保留离线拉取能力。
 
+### 7.1 WebSocket 调度与背压修复
+
+压测后对 WSS 链路做过一次关键收口。修复前的路径是：
+
+```text
+WSS frame
+-> MessageProcessor::process_message
+-> std::async(std::launch::async)
+-> Gateway 再创建 std::thread(...).detach() 等待 future
+-> 发送响应
+```
+
+这个设计在低频场景下能工作，但高频消息下会带来大量线程创建、销毁和上下文切换。更严重的是，过载时没有明确的并发上限和拒绝策略，消息会持续堆积，最后表现为 RTT 秒级、错误数上升。
+
+当前修复后的路径是：
+
+```text
+WSS frame
+-> parse protobuf envelope
+-> Gateway inflight limit check
+-> ThreadPool::Enqueue(one business task)
+-> MessageProcessor::process_message_sync
+-> MessageWsHandler::handle_send
+-> protobuf ack / protobuf error response
+```
+
+对应代码点：
+
+- `gateway/gateway_server/gateway_server.cpp`：WSS 回调、`ws_inflight_messages_`、`max_ws_inflight_messages_`、`schedule_delayed_close()`。
+- `gateway/message_processor/message_processor.cpp`：`process_message()` 投递线程池，`process_message_sync()` 执行同步核心。
+- `config/dev.json` / `config/benchmark.json`：`gateway.max_ws_inflight_messages`。
+
+这里的设计取舍是：
+
+- 先把不可控的“每消息动态线程”改成固定线程池调度。
+- 先用 inflight cap 兜住排队中和执行中的消息数量。
+- 过载时快速返回 overload，而不是继续把请求堆到系统资源耗尽。
+- WebSocket token 校验放在具体 handler 中完成，因为 handler 需要从 token 中提取真实 sender；通用 processor 不再重复验签。
+
+这不是最终版性能架构。后续还应该把全局 `ThreadPool` 演进为 Gateway 专用业务 executor，并补充真正 bounded queue、拒绝计数和处理耗时分位数。但作为第一阶段修复，它已经把 WSS 主链路从不可控并发模型拉回了可控并发模型。
+
+面试里可以这样讲：
+
+```text
+我在压测后发现 WSS 高负载下 RTT 会进入秒级，不是因为某个算法特别慢，而是 Gateway 的调度模型有问题：每条消息先 std::async，再额外创建 detached thread 等待 future。后来我把这条链路收敛为固定线程池执行，并加入 max_ws_inflight_messages 做初步背压，超过上限直接返回 overload。这样系统在过载时会可控退化，而不是无限创建线程和堆积任务。
+```
+
 ## 8. Push 的双向链路
 
 远程 Push 是 Gateway 里最能体现分布式边界的一段。

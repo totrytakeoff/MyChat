@@ -1,0 +1,19 @@
+# Build artifacts
+build_deb12/
+build/
+*.o
+
+# Benchmark outputs
+*.json
+!env.json.example
+*.log
+logs/
+reports/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/

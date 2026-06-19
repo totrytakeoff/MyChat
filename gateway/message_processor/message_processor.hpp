@@ -163,12 +163,22 @@ public:
      * @details 处理流程：
      *          1. 对于HTTP协议消息，验证Access Token
      *          2. 根据cmd_id查找对应的处理函数
-     *          3. 在独立线程中执行处理函数
+     *          3. 投递到全局线程池执行处理函数
      *          4. 返回处理结果的future对象
      *
-     * @note WebSocket消息不在此处验证Token，假设在连接建立时已验证
+     * @note WebSocket消息不在此处做通用Token校验；具体WS handler需要
+     *       基于连接状态或命令语义校验身份，避免同一条消息重复验签。
      */
     std::future<ProcessorResult> process_message(std::unique_ptr<UnifiedMessage> message);
+
+    /**
+     * @brief 同步执行消息处理核心逻辑
+     *
+     * @details 供 Gateway WebSocket 路径在已受控的执行器任务中直接调用，
+     *          避免 process_message() future 之外再额外创建等待线程。
+     *          HTTP消息在这里统一校验Token，WebSocket消息由handler负责。
+     */
+    ProcessorResult process_message_sync(std::unique_ptr<UnifiedMessage> message);
 
     /**
      * @brief 获取已注册的处理函数数量
@@ -177,7 +187,7 @@ public:
     int get_callback_count() const { return processor_map_.size(); }
 
 private:
-        bool verify_access_token(const UnifiedMessage& message);
+    bool verify_access_token(const UnifiedMessage& message);
 
 private:
     /// 路由管理器，用于服务发现和cmd_id到服务的映射

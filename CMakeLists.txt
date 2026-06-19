@@ -43,19 +43,68 @@ option(MYCHAT_BUILD_PGSQL_ODB "Enable im_pgsql library target (requires ODB runt
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(DEFINED VCPKG_ROOT)
-    list(APPEND CMAKE_PREFIX_PATH "${VCPKG_ROOT}/installed/x64-linux")
-    file(GLOB MYCHAT_VCPKG_PROTOC_CANDIDATES
-        "${VCPKG_ROOT}/installed/x64-linux/tools/protobuf/protoc*")
-    list(SORT MYCHAT_VCPKG_PROTOC_CANDIDATES)
-    list(LENGTH MYCHAT_VCPKG_PROTOC_CANDIDATES MYCHAT_VCPKG_PROTOC_COUNT)
-    if(MYCHAT_VCPKG_PROTOC_COUNT GREATER 0)
-        list(GET MYCHAT_VCPKG_PROTOC_CANDIDATES 0 MYCHAT_VCPKG_PROTOC)
-        if(EXISTS "${MYCHAT_VCPKG_PROTOC}")
-            set(Protobuf_PROTOC_EXECUTABLE "${MYCHAT_VCPKG_PROTOC}" CACHE FILEPATH "Protobuf compiler")
-        endif()
-    endif()
+set(MYCHAT_VCPKG_TRIPLET "x64-linux")
+if(DEFINED VCPKG_TARGET_TRIPLET)
+    set(MYCHAT_VCPKG_TRIPLET "${VCPKG_TARGET_TRIPLET}")
 endif()
+
+set(MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES "")
+if(DEFINED VCPKG_INSTALLED_DIR)
+    list(APPEND MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES
+        "${VCPKG_INSTALLED_DIR}/${MYCHAT_VCPKG_TRIPLET}")
+endif()
+if(DEFINED _VCPKG_INSTALLED_DIR)
+    list(APPEND MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES
+        "${_VCPKG_INSTALLED_DIR}/${MYCHAT_VCPKG_TRIPLET}")
+endif()
+list(APPEND MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES
+    "${CMAKE_BINARY_DIR}/vcpkg_installed/${MYCHAT_VCPKG_TRIPLET}"
+    "${CMAKE_SOURCE_DIR}/vcpkg_installed/${MYCHAT_VCPKG_TRIPLET}")
+if(DEFINED VCPKG_ROOT)
+    list(APPEND MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES
+        "${VCPKG_ROOT}/installed/${MYCHAT_VCPKG_TRIPLET}")
+endif()
+
+foreach(_mychat_vcpkg_prefix IN LISTS MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES)
+    if(EXISTS "${_mychat_vcpkg_prefix}")
+        list(APPEND CMAKE_PREFIX_PATH "${_mychat_vcpkg_prefix}")
+    endif()
+endforeach()
+
+foreach(_mychat_vcpkg_prefix IN LISTS MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES)
+    set(_mychat_protoc "${_mychat_vcpkg_prefix}/tools/protobuf/protoc")
+    if(EXISTS "${_mychat_protoc}")
+        set(MYCHAT_ACTIVE_VCPKG_PREFIX "${_mychat_vcpkg_prefix}" CACHE PATH
+            "Active vcpkg installed prefix used by MyChat" FORCE)
+        set(Protobuf_PROTOC_EXECUTABLE "${_mychat_protoc}" CACHE FILEPATH
+            "Protobuf compiler selected from the active vcpkg installed tree" FORCE)
+        if(EXISTS "${MYCHAT_ACTIVE_VCPKG_PREFIX}/share/protobuf")
+            set(Protobuf_DIR "${MYCHAT_ACTIVE_VCPKG_PREFIX}/share/protobuf" CACHE PATH
+                "Protobuf CMake package from the active vcpkg installed tree" FORCE)
+        endif()
+        if(EXISTS "${MYCHAT_ACTIVE_VCPKG_PREFIX}/share/grpc")
+            set(gRPC_DIR "${MYCHAT_ACTIVE_VCPKG_PREFIX}/share/grpc" CACHE PATH
+                "gRPC CMake package from the active vcpkg installed tree" FORCE)
+        endif()
+        message(STATUS "Using vcpkg protoc: ${Protobuf_PROTOC_EXECUTABLE}")
+        break()
+    endif()
+endforeach()
+if(NOT MYCHAT_ACTIVE_VCPKG_PREFIX OR NOT EXISTS "${Protobuf_PROTOC_EXECUTABLE}")
+    message(FATAL_ERROR
+        "vcpkg-managed protoc was not found. MyChat does not support generating "
+        "common/proto/*.pb.* with a system protoc because the generated C++ code "
+        "must match the protobuf headers/runtime selected by vcpkg.")
+endif()
+string(FIND "${Protobuf_PROTOC_EXECUTABLE}" "${MYCHAT_ACTIVE_VCPKG_PREFIX}/" _mychat_protoc_prefix_pos)
+if(NOT _mychat_protoc_prefix_pos EQUAL 0)
+    message(FATAL_ERROR
+        "Protobuf_PROTOC_EXECUTABLE=${Protobuf_PROTOC_EXECUTABLE} is outside "
+        "MYCHAT_ACTIVE_VCPKG_PREFIX=${MYCHAT_ACTIVE_VCPKG_PREFIX}. Refusing to "
+        "generate proto files from mixed protobuf installations.")
+endif()
+unset(_mychat_protoc_prefix_pos)
+unset(_mychat_protoc)
 
 # 默认构建类型
 if(NOT CMAKE_BUILD_TYPE)
@@ -246,22 +295,27 @@ unset(_proto_h)
 
 add_custom_target(generate_common_proto
     DEPENDS ${MYCHAT_COMMON_PROTO_GENERATED_CC} ${MYCHAT_COMMON_PROTO_GENERATED_H})
+set_source_files_properties(
+    ${MYCHAT_COMMON_PROTO_GENERATED_CC}
+    ${MYCHAT_COMMON_PROTO_GENERATED_H}
+    PROPERTIES GENERATED TRUE)
 
 set(MYCHAT_GRPC_CPP_PLUGIN "")
-if(TARGET gRPC::grpc_cpp_plugin)
+foreach(_mychat_vcpkg_prefix IN LISTS MYCHAT_VCPKG_INSTALLED_PREFIX_CANDIDATES)
+    set(_mychat_grpc_cpp_plugin "${_mychat_vcpkg_prefix}/tools/grpc/grpc_cpp_plugin")
+    if(EXISTS "${_mychat_grpc_cpp_plugin}")
+        set(MYCHAT_GRPC_CPP_PLUGIN "${_mychat_grpc_cpp_plugin}")
+        break()
+    endif()
+endforeach()
+if(NOT MYCHAT_GRPC_CPP_PLUGIN AND TARGET gRPC::grpc_cpp_plugin)
     get_target_property(MYCHAT_GRPC_CPP_PLUGIN gRPC::grpc_cpp_plugin IMPORTED_LOCATION_RELEASE)
     if(NOT MYCHAT_GRPC_CPP_PLUGIN)
         get_target_property(MYCHAT_GRPC_CPP_PLUGIN gRPC::grpc_cpp_plugin IMPORTED_LOCATION)
     endif()
 endif()
-if(NOT MYCHAT_GRPC_CPP_PLUGIN AND DEFINED VCPKG_ROOT)
-    file(GLOB MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES
-        "${VCPKG_ROOT}/installed/x64-linux/tools/grpc/grpc_cpp_plugin*")
-    list(SORT MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES)
-    list(LENGTH MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES MYCHAT_GRPC_CPP_PLUGIN_COUNT)
-    if(MYCHAT_GRPC_CPP_PLUGIN_COUNT GREATER 0)
-        list(GET MYCHAT_GRPC_CPP_PLUGIN_CANDIDATES 0 MYCHAT_GRPC_CPP_PLUGIN)
-    endif()
+if(MYCHAT_GRPC_CPP_PLUGIN)
+    message(STATUS "Using vcpkg grpc_cpp_plugin: ${MYCHAT_GRPC_CPP_PLUGIN}")
 endif()
 
 set(MYCHAT_GRPC_PROTO_NAMES
@@ -312,6 +366,10 @@ if(MYCHAT_GRPC_CPP_PLUGIN)
     unset(_grpc_proto)
     unset(_grpc_cc)
     unset(_grpc_h)
+    set_source_files_properties(
+        ${MYCHAT_GRPC_GENERATED_CC}
+        ${MYCHAT_GRPC_GENERATED_H}
+        PROPERTIES GENERATED TRUE)
     add_custom_target(generate_codec_grpc
         DEPENDS generate_codec_service_grpc)
     set(MYCHAT_GENERATE_PROTO_DEPS generate_common_proto ${MYCHAT_GRPC_GENERATED_TARGETS})

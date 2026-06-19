@@ -47,6 +47,16 @@ Known working:
   `PushService` has a pluggable `FanoutPolicy` abstraction; the default
   `AllSessionsFanoutPolicy` pushes to all active sessions. `MessageWsHandler`
   delegates to `PushService` instead of owning the push loop directly.
+- Gateway WebSocket dispatch/backpressure first slice is complete. The WSS
+  normal message path no longer uses per-message `std::async` plus detached
+  waiting threads. `MessageProcessor::process_message()` now submits work to
+  the global `ThreadPool`, while the WSS path submits one controlled business
+  task and calls `process_message_sync()` inside it. Gateway reads
+  `gateway.max_ws_inflight_messages` and rejects overload with a protobuf
+  error response instead of allowing unlimited queue growth. Authentication
+  failure and unauthenticated timeout delayed closes also use the thread pool
+  instead of detached threads. `GatewayMessageWsTest` passes after starting the
+  Redis/PostgreSQL docker dependencies.
 - FanoutPolicy production implementations added: `PlatformFilterFanoutPolicy`
   selects sessions matching a set of allowed platforms (e.g., mobile-only);
   `NewestSessionFanoutPolicy` selects the single most recently connected

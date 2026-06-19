@@ -30,6 +30,7 @@
 #include <httplib.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -186,6 +187,7 @@ private:
 
     // 安全相关
     void schedule_unauthenticated_timeout(SessionPtr session);
+    void schedule_delayed_close(SessionPtr session, std::chrono::milliseconds delay);
     bool is_session_authenticated(SessionPtr session) const;
 
 
@@ -209,6 +211,8 @@ private:
     std::shared_ptr<spdlog::logger> server_logger;
 
     std::atomic<bool> is_running_;
+    std::atomic<size_t> ws_inflight_messages_{0};
+    size_t max_ws_inflight_messages_{4096};
     std::string psc_path_;     // platform_strategy_config_path_
     std::string config_path_;  // gateway/router/auth shared config path for the MVP
 

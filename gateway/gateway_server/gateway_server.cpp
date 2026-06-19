@@ -253,6 +253,30 @@ namespace gateway {
 
 namespace {
 
+class InflightMessageGuard {
+public:
+    explicit InflightMessageGuard(std::atomic<size_t>& counter) : counter_(counter), active_(true) {}
+    ~InflightMessageGuard() {
+        if (active_) {
+            counter_.fetch_sub(1, std::memory_order_acq_rel);
+        }
+    }
+
+    InflightMessageGuard(const InflightMessageGuard&) = delete;
+    InflightMessageGuard& operator=(const InflightMessageGuard&) = delete;
+
+    InflightMessageGuard(InflightMessageGuard&& other) noexcept
+            : counter_(other.counter_), active_(other.active_) {
+        other.active_ = false;
+    }
+
+    InflightMessageGuard& operator=(InflightMessageGuard&&) = delete;
+
+private:
+    std::atomic<size_t>& counter_;
+    bool active_;
+};
+
 #if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_FRIEND_CLIENT) || defined(IM_ENABLE_REMOTE_GROUP_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
 bool is_blank(const std::string& value) {
     return value.find_first_not_of(" \t\n\r\f\v") == std::string::npos;
@@ -300,6 +324,12 @@ GatewayServer::GatewayServer(const std::string platform_strategy_config,
         , is_running_(false)
         , psc_path_(platform_strategy_config)
         , config_path_(platform_strategy_config) {
+
+    ConfigManager config(platform_strategy_config);
+    max_ws_inflight_messages_ = config.get<size_t>("gateway.max_ws_inflight_messages", 4096);
+    if (max_ws_inflight_messages_ == 0) {
+        max_ws_inflight_messages_ = 4096;
+    }
 
     // 初始化分布式服务标识 - 用于微服务环境中的服务发现和标识
     if (!ServiceIdentityManager::getInstance().initializeFromEnv("gateway")) {
@@ -529,6 +559,12 @@ std::string GatewayServer::get_server_stats() const {
        << msg_parser_->get_stats().websocket_messages_parsed << std::endl;
     ss << " parse.decode failed count: " << msg_parser_->get_stats().decode_failures << std::endl;
     ss << " parse.routing failed count:" << msg_parser_->get_stats().routing_failures << std::endl;
+    ss << " ws.inflight_messages: " << ws_inflight_messages_.load() << std::endl;
+    ss << " ws.max_inflight_messages: " << max_ws_inflight_messages_ << std::endl;
+    ss << " thread_pool.threads: " << im::utils::ThreadPool::GetInstance().GetThreadCount()
+       << std::endl;
+    ss << " thread_pool.queued_or_running_tasks: "
+       << im::utils::ThreadPool::GetInstance().GetTaskCount() << std::endl;
     ss << " processor.coro_callback_count: " << coro_msg_processor_->get_coro_callback_count()
        << std::endl;
     ss << " processor.get_active_task_count:" << coro_msg_processor_->get_active_task_count()
@@ -1081,79 +1117,114 @@ void GatewayServer::init_ws_server(uint16_t port) {
                 return;  // 解析失败，直接返回
             }
 
-            // 第二步：异步处理消息
+            // 第二步：将消息处理投递到受控业务执行器
             if (msg_processor_) {
                 // 保存原始头信息，用于构建错误响应时的序列号匹配
                 base::IMHeader original_header = result.message->get_header();
 
-                // 使用普通消息处理器进行异步处理（避免协程开销）
-                auto future = this->msg_processor_->process_message(std::move(result.message));
-
-                // 第三步：在独立线程中等待处理结果并发送响应
-                std::thread([this, sessionPtr, original_header, fut = std::move(future)]() mutable {
-                    try {
-                        // 等待消息处理完成
-                        auto final_result = fut.get();
-                        this->server_logger->info(
-                                "WS processing completed: status_code={}, has_pb={}, has_json={}",
-                                final_result.status_code,
-                                !final_result.protobuf_message.empty(),
-                                !final_result.json_body.empty());
-
-                        // 第四步：根据处理结果发送响应或执行特殊操作
-
-                        if (final_result.status_code == base::ErrorCode::AUTH_FAILED) {
-                            this->server_logger->warn(
-                                    "Authentication failed for session {}, closing connection",
-                                    sessionPtr->get_session_id());
-
-                            base::IMHeader error_header = ProtobufCodec::returnHeaderBuilder(
-                                    original_header,
-                                    im::utils::ServiceId::getDeviceId(),
-                                    im::utils::ServiceId::getPlatformInfo());
-
-                            std::string protobuf_response = ProtobufCodec::buildAuthFailedResponse(
-                                    error_header,
-                                    "Token verification failed. Connection will be closed.");
-                            if (!protobuf_response.empty()) {
-                                sessionPtr->send(protobuf_response);
-                            }
-
-                            if (this->conn_mgr_) {
-                                this->conn_mgr_->remove_connection(sessionPtr);
-                                this->server_logger->debug(
-                                        "Removed session {} from ConnectionManager due to auth failure",
-                                        sessionPtr->get_session_id());
-                            }
-
-                            std::thread([sessionPtr]() {
-                                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                                sessionPtr->close();
-                            }).detach();
-                        } else if (final_result.status_code != 0) {
-                            this->server_logger->error("Message processing error: {} (code: {})",
-                                                       final_result.error_message, final_result.status_code);
-                            if (!final_result.protobuf_message.empty()) {
-                                sessionPtr->send(final_result.protobuf_message);
-                            } else if (!final_result.json_body.empty()) {
-                                sessionPtr->send(final_result.json_body);
-                            }
-                        } else {
-                            this->server_logger->info("WS success branch, sending response");
-                            if (!final_result.protobuf_message.empty()) {
-                                sessionPtr->send(final_result.protobuf_message);
-                            } else if (!final_result.json_body.empty()) {
-                                this->server_logger->warn(
-                                        "WebSocket sending JSON response, should use protobuf");
-                                sessionPtr->send(final_result.json_body);
-                            }
-                        }
-                    } catch (const std::exception& e) {
-                        this->server_logger->error(
-                                "MessageProcessor exception in gateway.ws_server callback: {}",
-                                e.what());
+                size_t current_inflight =
+                        ws_inflight_messages_.fetch_add(1, std::memory_order_acq_rel) + 1;
+                if (current_inflight > max_ws_inflight_messages_) {
+                    ws_inflight_messages_.fetch_sub(1, std::memory_order_acq_rel);
+                    server_logger->warn(
+                            "WS message rejected by inflight limit: current={}, limit={}",
+                            current_inflight, max_ws_inflight_messages_);
+                    std::string protobuf_response = ProtobufCodec::buildErrorResponse(
+                            original_header,
+                            base::ErrorCode::SERVER_ERROR,
+                            "Gateway is busy, please retry later.");
+                    if (!protobuf_response.empty()) {
+                        sessionPtr->send(protobuf_response);
                     }
-                }).detach();
+                    return;
+                }
+
+                try {
+                    im::utils::ThreadPool::GetInstance().Enqueue(
+                            [this,
+                             sessionPtr,
+                             original_header,
+                             message = std::move(result.message),
+                             guard = std::make_shared<InflightMessageGuard>(
+                                     ws_inflight_messages_)]() mutable {
+                                (void)guard;
+                                try {
+                                    // 业务任务已经位于全局线程池内，直接执行同步处理核心。
+                                    auto final_result =
+                                            this->msg_processor_->process_message_sync(
+                                                    std::move(message));
+                                    this->server_logger->info(
+                                            "WS processing completed: status_code={}, has_pb={}, has_json={}",
+                                            final_result.status_code,
+                                            !final_result.protobuf_message.empty(),
+                                            !final_result.json_body.empty());
+
+                                    // 第四步：根据处理结果发送响应或执行特殊操作
+                                    if (final_result.status_code == base::ErrorCode::AUTH_FAILED) {
+                                        this->server_logger->warn(
+                                                "Authentication failed for session {}, closing connection",
+                                                sessionPtr->get_session_id());
+
+                                        base::IMHeader error_header =
+                                                ProtobufCodec::returnHeaderBuilder(
+                                                        original_header,
+                                                        im::utils::ServiceId::getDeviceId(),
+                                                        im::utils::ServiceId::getPlatformInfo());
+
+                                        std::string protobuf_response =
+                                                ProtobufCodec::buildAuthFailedResponse(
+                                                        error_header,
+                                                        "Token verification failed. Connection will be closed.");
+                                        if (!protobuf_response.empty()) {
+                                            sessionPtr->send(protobuf_response);
+                                        }
+
+                                        if (this->conn_mgr_) {
+                                            this->conn_mgr_->remove_connection(sessionPtr);
+                                            this->server_logger->debug(
+                                                    "Removed session {} from ConnectionManager due to auth failure",
+                                                    sessionPtr->get_session_id());
+                                        }
+
+                                        this->schedule_delayed_close(
+                                                sessionPtr, std::chrono::milliseconds(100));
+                                    } else if (final_result.status_code != 0) {
+                                        this->server_logger->error(
+                                                "Message processing error: {} (code: {})",
+                                                final_result.error_message,
+                                                final_result.status_code);
+                                        if (!final_result.protobuf_message.empty()) {
+                                            sessionPtr->send(final_result.protobuf_message);
+                                        } else if (!final_result.json_body.empty()) {
+                                            sessionPtr->send(final_result.json_body);
+                                        }
+                                    } else {
+                                        this->server_logger->info("WS success branch, sending response");
+                                        if (!final_result.protobuf_message.empty()) {
+                                            sessionPtr->send(final_result.protobuf_message);
+                                        } else if (!final_result.json_body.empty()) {
+                                            this->server_logger->warn(
+                                                    "WebSocket sending JSON response, should use protobuf");
+                                            sessionPtr->send(final_result.json_body);
+                                        }
+                                    }
+                                } catch (const std::exception& e) {
+                                    this->server_logger->error(
+                                            "MessageProcessor exception in gateway.ws_server callback: {}",
+                                            e.what());
+                                }
+                            });
+                } catch (const std::exception& e) {
+                    ws_inflight_messages_.fetch_sub(1, std::memory_order_acq_rel);
+                    server_logger->error("Failed to enqueue WS message task: {}", e.what());
+                    std::string protobuf_response = ProtobufCodec::buildErrorResponse(
+                            original_header,
+                            base::ErrorCode::SERVER_ERROR,
+                            "Gateway is busy, please retry later.");
+                    if (!protobuf_response.empty()) {
+                        sessionPtr->send(protobuf_response);
+                    }
+                }
             } else {
                 server_logger->error("MessageProcessor is not initialized.");
                 init_msg_processor();
@@ -1718,10 +1789,7 @@ void GatewayServer::on_websocket_connect(SessionPtr session) {
             }
 
             // 延迟关闭连接，确保错误消息能发送出去
-            std::thread([session]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                session->close();
-            }).detach();
+            schedule_delayed_close(session, std::chrono::milliseconds(100));
         }
     } else {
         // 没有Token，给予30秒时间进行登录认证
@@ -1857,12 +1925,32 @@ void GatewayServer::schedule_unauthenticated_timeout(SessionPtr session) {
             }
 
             // 延迟100ms关闭连接，确保响应消息能够发送完成
-            std::thread([session]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                session->close();
-            }).detach();
+            schedule_delayed_close(session, std::chrono::milliseconds(100));
         }
     }());
+}
+
+void GatewayServer::schedule_delayed_close(SessionPtr session, std::chrono::milliseconds delay) {
+    if (!session) {
+        return;
+    }
+
+    try {
+        auto& thread_pool = im::utils::ThreadPool::GetInstance();
+        if (thread_pool.GetThreadCount() == 0 || thread_pool.IsShutdown()) {
+            thread_pool.Init();
+        }
+
+        thread_pool.Enqueue([session, delay]() {
+            std::this_thread::sleep_for(delay);
+            session->close();
+        });
+    } catch (const std::exception& e) {
+        if (server_logger) {
+            server_logger->warn("Failed to schedule delayed WebSocket close: {}", e.what());
+        }
+        session->close();
+    }
 }
 
 /**
