@@ -1,0 +1,40 @@
+===== users=300 rate=20 =====
+Users: 200 | Interval: 999999ms | Duration: 30s | Threads: 4 | Connect rate: 20/s
+Elapsed: 40.0s
+
+--- Results ---
+Connects OK:    125
+Connects FAIL:  75
+Connects total: 200
+Connect failures by stage:
+  resolve/tcp/ssl/ws/timeout: 0 / 0 / 0 / 0 / 75
+Post-connect errors: 0
+Messages sent:  0
+Messages recv:  0
+Errors:         0
+Bytes sent:     0
+Bytes recv:     0
+Duration:       39s
+Throughput:     0.0 msg/s  (0.00 KB/s)
+  Connect time:
+    count: 200
+    min/avg/max: 127.00 / 6915.43 / 15000.00 ms
+    p50/p90/p95/p99: 4238.00 / 15000.00 / 15000.00 / 15000.00 ms
+  Resolve:
+    count: 200
+    min/avg/max: 0.05 / 0.24 / 0.34 ms
+    p50/p90/p95/p99: 0.24 / 0.30 / 0.32 / 0.33 ms
+  TCP connect:
+    count: 125
+    min/avg/max: 27.67 / 1905.37 / 5204.48 ms
+    p50/p90/p95/p99: 1090.15 / 4167.91 / 5151.38 / 5186.97 ms
+  TLS handshake:
+    count: 125
+    min/avg/max: 59.79 / 113.24 / 418.65 ms
+    p50/p90/p95/p99: 73.53 / 259.49 / 306.35 / 374.49 ms
+  WS handshake:
+    count: 125
+    min/avg/max: 27.90 / 46.31 / 336.18 ms
+    p50/p90/p95/p99: 36.60 / 44.22 / 45.96 / 331.43 ms
+  RTT: no_samples
+Sun Jun 21 10:34:14 PM CST 2026

@@ -130,6 +130,9 @@ public:
     // bool register_message_handlers(uint32_t cmd_id, message_handler handler) { return msg_processor_->register_coro_processor(cmd_id, handler) == 0; }
     bool register_message_handlers(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler);
     bool force_register_handler(uint32_t cmd_id, std::function<ProcessorResult(const UnifiedMessage&)> handler);  // Test helper
+    static ProcessorResult handle_heartbeat_message(
+            const UnifiedMessage& msg,
+            const std::shared_ptr<MultiPlatformAuthManager>& auth_mgr);
 
     // 测试辅助：注册协程处理器（用于WebSocket路径）
     int register_coro_message_handler(uint32_t cmd_id, CoroProcessorFunction handler) {

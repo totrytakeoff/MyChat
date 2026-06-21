@@ -24,19 +24,56 @@
 - [ ] 继续抽象独立业务执行器与真正 bounded queue，使 Gateway 不直接依赖全局线程池。
 - [ ] 增加 WSS 单条消息处理耗时统计和分位数指标。
 
+## P0: WSS 连接生命周期与关闭清理
+
+背景:
+
+- 2026-06-21 完整压测报告: `docs/benchmark/benchmark_report_20260621_full/benchmark_report_20260621_full.md`
+- 压测结束后 gateway 仍存活，`ulimit=65535`、WSS/HTTP backlog 均为 `4096`，但 WSS 残留 `98 ESTAB + 21 CLOSE-WAIT`。
+- 已建立连接的 WSS 消息 RTT 基本为几十毫秒，当前首要问题是连接建不上、关不干净，而不是消息处理链路本身慢。
+
+修复项:
+
+- [x] 重构 `WebSocketSession::close()` 为幂等关闭流程，保证多次调用只清理一次。
+- [x] 所有 SSL/WebSocket/read/write/handshake 错误都触发统一 session 清理，不再只 log 后返回。
+- [x] graceful close 失败时仍强制 shutdown/close 底层 socket，并执行 `WebSocketServer::remove_session()`。
+- [x] `WebSocketServer::remove_session()` 触发 disconnect handler，ConnectionManager 和 Redis 在线映射继续沿现有断连回调清理。
+- [x] 增加 Beast WebSocket handshake timeout、idle timeout 与 keep-alive ping，避免半开连接长期占用 fd 和 session。
+- [x] 修复 `WebSocketServer::stop()` 持锁关闭 session 的潜在死锁风险。
+- [x] 注册 `CMD_HEARTBEAT` 业务心跳 handler，返回 protobuf `BaseResponse`，并校验 token/device。
+- [ ] 将认证失败/认证超时/踢号的延迟关闭从全局业务线程池 `sleep_for` 迁移到 Asio timer 或 session 内部 timer。
+
+验收标准:
+
+- [x] 跑完 `conn-50/100/200` 后，gateway 进程仍存活。
+- [x] 复测确认服务端 WSS `CLOSE-WAIT=0`。
+- [x] 无活跃客户端时，服务端 WSS `ESTAB` 在 idle timeout 后回落到 0。
+- [ ] `bench_ws` 不再出现退出挂起。
+- [ ] `conn-100/conn-200` 在干净状态下重新统计成功率和 connect p95，避免被上一轮残留连接污染。
+
 本轮验证：
 
 ```bash
 cmake --build build/remote-push-odb --target gateway_server -j2
+cmake --build build/remote-push-odb --target gateway_server test_gateway_message_ws -j2
 docker compose up -d redis postgres
 ctest --test-dir build/remote-push-odb -R GatewayMessageWsTest --output-on-failure
+./build/remote-push-odb/test/gateway_message/test_gateway_message_ws --gtest_filter='GatewayMessageWsTest.Heartbeat*'
 ```
 
-结果：`gateway_server` 构建通过，`GatewayMessageWsTest` 通过。
+结果：`gateway_server` 构建通过，`GatewayMessageWsTest` 通过，`GatewayMessageWsTest.Heartbeat*` 2 个业务心跳用例通过。
 
 本轮修复记录：
 
 - `docs/history/devlog/phase19_gateway_ws_backpressure.md`
+- `docs/history/devlog/phase20_gateway_ws_lifecycle_heartbeat.md`
+- `docs/benchmark/benchmark_report_20260621_ws_lifecycle_retest/benchmark_report_20260621_ws_lifecycle_retest.md`
+
+复测结论:
+
+- `conn-10/50/100` 全部成功，`conn-200` 为 `125/200`。
+- 压测结束并等待 idle timeout 后，WSS 端口只剩 `LISTEN`，无 `CLOSE-WAIT`，无 `ESTAB` 残留。
+- 当前 P0 生命周期问题视为通过；剩余问题转为 WSS 建连性能专项。
 
 ## P1: 消息持久化路径
 
@@ -54,14 +91,42 @@ ctest --test-dir build/remote-push-odb -R GatewayMessageWsTest --output-on-failu
 
 ## P2: 压测体系完善
 
-- [ ] WSS 指标拆分：连接耗时、ack RTT、push latency、业务持久化成功数。
+- [x] WSS 建连指标拆分：resolve、TCP connect、TLS handshake、WS handshake、失败阶段分类。
+- [x] Gateway WSS handshake 链路增加服务端观测：accept、TLS、HTTP upgrade、WS accept、session add。
+- [x] 增加 `GET /api/v1/stats` 只读观测入口，便于远端压测抓取 Gateway 内部状态。
+- [ ] WSS 消息指标拆分：ack RTT、push latency、业务持久化成功数。
 - [ ] HTTP 指标拆分：连接失败、HTTP 非 2xx、业务错误、请求超时。
 - [ ] 增加 `200u/400ms`、`200u/333ms`、`200u/250ms` 独立冷却复测。
 - [ ] HTTP ramp 拆分 `/health`、`/auth/info`、真实业务 API 三类场景。
 - [ ] 压测报告自动记录 commit hash、部署模式、配置文件、机器规格、冷却时间。
 
+## P1: WSS 公网建连专项
+
+背景:
+
+- 2026-06-21 WSS 建连观测专项报告: `docs/benchmark/benchmark_report_20260621_ws_observe/benchmark_report_20260621_ws_observe.md`
+
+当前结论:
+
+- PVE 公网发压 `100 users @ 20/s` 全成功。
+- PVE 公网发压 `150/200 users` 稳定只有 `125` 个连接成功，失败全部为 `connect_timeout`。
+- 发压机 `ulimit -n` 拉高到 `65535` 后，`150 users` 仍为 `125/150`，基本排除发压进程 fd 上限。
+- SUT 本机 loopback `150 users @ 20/s` 全成功，connect avg `2.80ms`，说明 Gateway 进程和 WSS 应用层不是当前 125 阈值的主因。
+- Gateway stats 显示进入应用层的连接 TLS/HTTP upgrade/WS accept/session_add 都能正常完成，瓶颈主要落在公网 TCP 建连路径或入口侧网络策略。
+
+待办:
+
+- [ ] 压测前后分别采集 `netstat -s`，记录 TCP/SYN/reset/retransmit 增量，而不是累计值。
+- [ ] 使用第二台公网机器或同云厂商内网机器作为发压端复测，排除当前 PVE 到云服务器链路限制。
+- [ ] SUT 使用 `tcpdump` 抓取 `tcp port 10001`，确认失败连接的 SYN/SYN-ACK/ACK 是否完整。
+- [ ] 将 SUT `net.ipv4.tcp_max_syn_backlog` 从 `512` 调整到 `4096/8192` 后复测公网建连。
+- [ ] 扩展 `--connect-rate 5/10/20/40` 矩阵，确认 125 阈值是否与突发连接速率或公网链路策略相关。
+- [ ] 将 `bench_ws --timeout` 临时提高到 `30s`，观察超时连接是否只是延迟成功。
+- [ ] benchmark 脚本支持自动抓取 `/api/v1/stats`、`ss`、`netstat -s`、`/proc/<pid>/limits` 并归档。
+
 ## 当前建议执行顺序
 
-1. 先处理 P0，避免继续被入口配置误导。
-2. 再处理 P1 中的线程模型和 DB 写入路径，因为它们是当前 WSS 过载的核心风险。
-3. P2 作为后续性能专项，不阻塞当前项目总结与面试准备。
+1. 优先完成 WSS 公网建连专项，明确 125 阈值来自公网链路、云侧策略还是 SUT TCP 参数。
+2. 然后专项处理 HTTP `/health` 高并发长尾问题。
+3. 再回到消息链路压测：ack RTT、push latency、DB 持久化耗时。
+4. 性能专项不阻塞当前项目总结与面试准备，但结论要写入最终面试材料：当前瓶颈定位方法和证据链比单纯 QPS 数字更重要。

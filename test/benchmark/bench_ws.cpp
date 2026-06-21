@@ -10,6 +10,7 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -24,11 +25,10 @@
 
 #include <google/protobuf/message.h>
 
-#include "common/network/protobuf_codec.hpp"
+#include "benchmark_codec.hpp"
 #include "common/proto/base.pb.h"
 #include "common/proto/command.pb.h"
 #include "common/proto/message.pb.h"
-#include "common/utils/log_manager.hpp"
 
 namespace net = boost::asio;
 namespace ssl = boost::asio::ssl;
@@ -80,6 +80,12 @@ struct SampleSink {
 struct BenchStats {
     std::atomic<int64_t> connects_ok{0};
     std::atomic<int64_t> connects_fail{0};
+    std::atomic<int64_t> resolve_fail{0};
+    std::atomic<int64_t> tcp_fail{0};
+    std::atomic<int64_t> ssl_fail{0};
+    std::atomic<int64_t> ws_fail{0};
+    std::atomic<int64_t> connect_timeout{0};
+    std::atomic<int64_t> post_connect_errors{0};
     std::atomic<int64_t> msgs_sent{0};
     std::atomic<int64_t> msgs_recv{0};
     std::atomic<int64_t> errors{0};
@@ -87,6 +93,10 @@ struct BenchStats {
     std::atomic<int64_t> bytes_recv{0};
     SampleSink rtt_ms;
     SampleSink connect_time_ms;
+    SampleSink resolve_ms;
+    SampleSink tcp_connect_ms;
+    SampleSink ssl_handshake_ms;
+    SampleSink ws_handshake_ms;
 };
 
 static BenchStats g_stats;
@@ -118,6 +128,7 @@ public:
     void start() {
         auto self = shared_from_this();
         connect_start_ = high_resolution_clock::now();
+        resolve_start_ = connect_start_;
 
         conn_timer_.expires_after(milliseconds(conn_timeout_ms_));
         conn_timer_.async_wait([self](beast::error_code ec) {
@@ -129,39 +140,58 @@ public:
         resolver_.async_resolve(
             host_, std::to_string(port_),
             [self](beast::error_code ec, tcp::resolver::results_type results) {
+                if (self->closed_.load()) return;
+                auto now = high_resolution_clock::now();
+                self->record_stage(self->resolve_start_, now, g_stats.resolve_ms);
                 if (ec) { self->fail("resolve", ec); return; }
-                self->on_resolve(results);
+                self->on_resolve(results, now);
             });
     }
 
 private:
-    void on_resolve(tcp::resolver::results_type results) {
+    void on_resolve(tcp::resolver::results_type results,
+                    high_resolution_clock::time_point resolved_at) {
+        if (closed_.load()) return;
         auto self = shared_from_this();
+        tcp_start_ = resolved_at;
         beast::get_lowest_layer(ws_).async_connect(
             results.begin()->endpoint(),
             [self](beast::error_code ec) {
+                if (self->closed_.load()) return;
+                auto now = high_resolution_clock::now();
+                self->record_stage(self->tcp_start_, now, g_stats.tcp_connect_ms);
                 if (ec) { self->fail("tcp", ec); return; }
+                self->ssl_start_ = now;
                 self->ws_.next_layer().async_handshake(
                     ssl::stream_base::client,
                     [self](beast::error_code ec) {
+                        if (self->closed_.load()) return;
+                        auto now = high_resolution_clock::now();
+                        self->record_stage(self->ssl_start_, now, g_stats.ssl_handshake_ms);
                         if (ec) { self->fail("ssl", ec); return; }
-                        self->on_ssl_handshake();
+                        self->on_ssl_handshake(now);
                     });
             });
     }
 
-    void on_ssl_handshake() {
+    void on_ssl_handshake(high_resolution_clock::time_point ssl_done_at) {
+        if (closed_.load()) return;
         auto self = shared_from_this();
+        ws_start_ = ssl_done_at;
         ws_.set_option(websocket::stream_base::decorator(
             [](auto& req) { req.set(http::field::user_agent, "MyChat-Bench/2.0"); }));
         ws_.async_handshake(host_, uri_,
             [self](beast::error_code ec) {
+                if (self->closed_.load()) return;
+                auto now = high_resolution_clock::now();
+                self->record_stage(self->ws_start_, now, g_stats.ws_handshake_ms);
                 if (ec) { self->fail("ws", ec); return; }
                 self->on_ws_handshake();
             });
     }
 
     void on_ws_handshake() {
+        if (closed_.load()) return;
         ws_.binary(true);
         conn_timer_.cancel();
         connected_.store(true);
@@ -175,18 +205,18 @@ private:
     }
 
     void schedule_send() {
-        if (g_stop.load() || !connected_.load()) return;
+        if (g_stop.load() || closed_.load() || !connected_.load()) return;
         auto self = shared_from_this();
         timer_.expires_after(milliseconds(interval_ms_));
         timer_.async_wait([self](beast::error_code ec) {
-            if (ec || g_stop.load()) return;
+            if (ec || g_stop.load() || self->closed_.load()) return;
             self->do_send();
             self->schedule_send();
         });
     }
 
     void do_send() {
-        if (!connected_.load()) return;
+        if (closed_.load() || !connected_.load()) return;
         auto self = shared_from_this();
 
         im::base::IMHeader hdr;
@@ -213,7 +243,7 @@ private:
         body->set_create_time(ts);
 
         std::string frame;
-        if (!im::network::ProtobufCodec::encode(hdr, send_req, frame)) {
+        if (!im::benchmark::BenchmarkCodec::encode(hdr, send_req, frame)) {
             g_stats.errors.fetch_add(1);
             return;
         }
@@ -228,12 +258,13 @@ private:
 
         ws_.async_write(net::buffer(frame),
             [self, seq](beast::error_code ec, size_t) {
+                if (self->closed_.load()) return;
                 if (ec) { self->fail("write", ec); }
             });
     }
 
     void do_read() {
-        if (!connected_.load()) return;
+        if (closed_.load() || !connected_.load()) return;
         auto self = shared_from_this();
         buffer_.clear();
         ws_.async_read(buffer_,
@@ -247,6 +278,7 @@ private:
     }
 
     void on_read() {
+        if (closed_.load()) return;
         g_stats.msgs_recv.fetch_add(1);
         g_stats.bytes_recv.fetch_add(buffer_.size());
 
@@ -255,7 +287,7 @@ private:
 
         im::base::IMHeader resp_hdr;
         std::string type_name, body_bytes;
-        if (im::network::ProtobufCodec::decodeEnvelope(data, resp_hdr, type_name, body_bytes)) {
+        if (im::benchmark::BenchmarkCodec::decodeEnvelope(data, resp_hdr, type_name, body_bytes)) {
             uint32_t seq = resp_hdr.seq();
             high_resolution_clock::time_point sent_ts;
             bool found = false;
@@ -280,23 +312,54 @@ private:
     }
 
     void fail(const char* op, beast::error_code ec) {
-        if (!connected_.load()) {
+        if (!fail_recorded_.exchange(true) && !connected_.load()) {
             auto ms = duration_cast<milliseconds>(high_resolution_clock::now() - connect_start_).count();
             g_stats.connect_time_ms.push(static_cast<double>(ms));
             g_stats.connects_fail.fetch_add(1);
-        } else {
+            record_connect_failure(op);
+        } else if (connected_.load()) {
             g_stats.errors.fetch_add(1);
+            g_stats.post_connect_errors.fetch_add(1);
         }
         close();
     }
 
+    void record_stage(high_resolution_clock::time_point begin,
+                      high_resolution_clock::time_point end,
+                      SampleSink& sink) {
+        if (begin.time_since_epoch().count() == 0) return;
+        sink.push(duration_cast<microseconds>(end - begin).count() / 1000.0);
+    }
+
+    void record_connect_failure(const char* op) {
+        const std::string_view stage(op ? op : "");
+        if (stage == "resolve") {
+            g_stats.resolve_fail.fetch_add(1);
+        } else if (stage == "tcp") {
+            g_stats.tcp_fail.fetch_add(1);
+        } else if (stage == "ssl") {
+            g_stats.ssl_fail.fetch_add(1);
+        } else if (stage == "ws") {
+            g_stats.ws_fail.fetch_add(1);
+        } else if (stage == "timeout") {
+            g_stats.connect_timeout.fetch_add(1);
+        }
+    }
+
     void close() {
-        bool was = connected_.exchange(false);
-        if (!was) return;
-        g_active_sessions.fetch_sub(1);
+        if (closed_.exchange(true)) return;
+        resolver_.cancel();
         conn_timer_.cancel();
         timer_.cancel();
-        try { ws_.close(websocket::close_code::normal); } catch (...) {}
+
+        if (connected_.exchange(false)) {
+            g_active_sessions.fetch_sub(1);
+        }
+
+        beast::error_code ignored;
+        beast::get_lowest_layer(ws_).cancel(ignored);
+        beast::get_lowest_layer(ws_).shutdown(tcp::socket::shutdown_both, ignored);
+        beast::get_lowest_layer(ws_).close(ignored);
     }
 
     std::string host_;
@@ -317,7 +380,13 @@ private:
     std::mutex pending_mutex_;
 
     high_resolution_clock::time_point connect_start_;
+    high_resolution_clock::time_point resolve_start_;
+    high_resolution_clock::time_point tcp_start_;
+    high_resolution_clock::time_point ssl_start_;
+    high_resolution_clock::time_point ws_start_;
     std::atomic<bool> connected_{false};
+    std::atomic<bool> closed_{false};
+    std::atomic<bool> fail_recorded_{false};
     std::string receiver_uid_;
 };
 
@@ -388,6 +457,12 @@ static void print_stats(bool csv, int duration_sec) {
         oss << "connects_ok," << ok << std::endl;
         oss << "connects_fail," << fail << std::endl;
         oss << "connects_attempted," << (ok + fail) << std::endl;
+        oss << "connect_fail_resolve," << g_stats.resolve_fail.load() << std::endl;
+        oss << "connect_fail_tcp," << g_stats.tcp_fail.load() << std::endl;
+        oss << "connect_fail_ssl," << g_stats.ssl_fail.load() << std::endl;
+        oss << "connect_fail_ws," << g_stats.ws_fail.load() << std::endl;
+        oss << "connect_timeout," << g_stats.connect_timeout.load() << std::endl;
+        oss << "post_connect_errors," << g_stats.post_connect_errors.load() << std::endl;
         oss << "messages_sent," << sent << std::endl;
         oss << "messages_recv," << recv << std::endl;
         oss << "errors," << g_stats.errors.load() << std::endl;
@@ -398,12 +473,24 @@ static void print_stats(bool csv, int duration_sec) {
         oss << "throughput_recv_s," << (double)recv / duration_sec << std::endl;
         oss << "throughput_kbps," << std::fixed << std::setprecision(2) << (g_stats.bytes_sent.load() / 1000.0) / duration_sec << std::endl;
         fmt_sample_sink(oss, "connect_time", g_stats.connect_time_ms, true);
+        fmt_sample_sink(oss, "resolve", g_stats.resolve_ms, true);
+        fmt_sample_sink(oss, "tcp_connect", g_stats.tcp_connect_ms, true);
+        fmt_sample_sink(oss, "ssl_handshake", g_stats.ssl_handshake_ms, true);
+        fmt_sample_sink(oss, "ws_handshake", g_stats.ws_handshake_ms, true);
         fmt_sample_sink(oss, "rtt", g_stats.rtt_ms, true);
     } else {
         oss << "\n======= Results =======" << std::endl;
         oss << "Connects OK:    " << ok << std::endl;
         oss << "Connects FAIL:  " << fail << std::endl;
         oss << "Connects total: " << (ok + fail) << std::endl;
+        oss << "Connect failures by stage:" << std::endl;
+        oss << "  resolve/tcp/ssl/ws/timeout: "
+            << g_stats.resolve_fail.load() << " / "
+            << g_stats.tcp_fail.load() << " / "
+            << g_stats.ssl_fail.load() << " / "
+            << g_stats.ws_fail.load() << " / "
+            << g_stats.connect_timeout.load() << std::endl;
+        oss << "Post-connect errors: " << g_stats.post_connect_errors.load() << std::endl;
         oss << "Messages sent:  " << sent << std::endl;
         oss << "Messages recv:  " << recv << std::endl;
         oss << "Errors:         " << g_stats.errors.load() << std::endl;
@@ -413,6 +500,10 @@ static void print_stats(bool csv, int duration_sec) {
         oss << "Throughput:     " << std::fixed << std::setprecision(1) << (double)sent / duration_sec << " msg/s";
         oss << "  (" << std::setprecision(2) << (g_stats.bytes_sent.load() / 1000.0) / duration_sec << " KB/s)" << std::endl;
         fmt_sample_sink(oss, "Connect time", g_stats.connect_time_ms, false);
+        fmt_sample_sink(oss, "Resolve", g_stats.resolve_ms, false);
+        fmt_sample_sink(oss, "TCP connect", g_stats.tcp_connect_ms, false);
+        fmt_sample_sink(oss, "TLS handshake", g_stats.ssl_handshake_ms, false);
+        fmt_sample_sink(oss, "WS handshake", g_stats.ws_handshake_ms, false);
         fmt_sample_sink(oss, "RTT", g_stats.rtt_ms, false);
     }
 
@@ -450,8 +541,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    im::utils::LogManager::SetLoggingEnabled("protobuf_codec", false);
-
     auto tokens = load_tokens(cfg.token_file);
     if (tokens.empty()) { std::cerr << "No tokens loaded." << std::endl; return 1; }
     if (cfg.max_users > 0 && static_cast<size_t>(cfg.max_users) < tokens.size())
@@ -486,21 +575,24 @@ int main(int argc, char* argv[]) {
     }
 
     auto start_ts = high_resolution_clock::now();
-    for (size_t i = 0; i < sessions.size(); ++i) {
-        sessions[i]->start();
-        if (stagger_us > 0 && i + 1 < sessions.size())
-            std::this_thread::sleep_for(microseconds(stagger_us));
-    }
-
+    auto work_guard = net::make_work_guard(ioc);
     std::vector<std::thread> workers;
     for (int i = 0; i < cfg.threads; ++i)
         workers.emplace_back([&ioc] { ioc.run(); });
+
+    for (size_t i = 0; i < sessions.size(); ++i) {
+        auto session = sessions[i];
+        net::post(ioc, [session] { session->start(); });
+        if (stagger_us > 0 && i + 1 < sessions.size())
+            std::this_thread::sleep_for(microseconds(stagger_us));
+    }
 
     std::this_thread::sleep_for(seconds(cfg.duration_sec));
 
     g_stop.store(true);
 
     for (auto& s : sessions) s->stop();
+    work_guard.reset();
     ioc.stop();
     for (auto& w : workers) {
         if (w.joinable()) w.join();

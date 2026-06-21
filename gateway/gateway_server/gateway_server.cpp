@@ -551,9 +551,32 @@ void GatewayServer::stop_gateway_push_delivery_server() {
  */
 std::string GatewayServer::get_server_stats() const {
     std::ostringstream ss;
+    const auto append_duration_stats =
+            [&ss](const std::string& prefix,
+                  const im::network::WebSocketDurationStats& stats) {
+                const double avg = stats.count == 0
+                                           ? 0.0
+                                           : static_cast<double>(stats.total_ms) /
+                                                     static_cast<double>(stats.count);
+                ss << " " << prefix << ".count: " << stats.count << std::endl;
+                ss << " " << prefix << ".avg_ms: " << avg << std::endl;
+                ss << " " << prefix << ".max_ms: " << stats.max_ms << std::endl;
+            };
+
     ss << "GatewayServer stats:" << std::endl;
     ss << "  Running: " << (is_running_ ? "true" : "false") << std::endl;
     ss << "online user count:" << conn_mgr_->get_online_count() << std::endl;
+    if (websocket_server_) {
+        const auto ws_stats = websocket_server_->get_stats();
+        ss << " ws.accept_ok: " << ws_stats.accept_ok << std::endl;
+        ss << " ws.accept_fail: " << ws_stats.accept_fail << std::endl;
+        ss << " ws.active_handshakes: " << ws_stats.active_handshakes << std::endl;
+        ss << " ws.current_sessions: " << ws_stats.current_sessions << std::endl;
+        append_duration_stats("ws.ssl_handshake", ws_stats.ssl_handshake);
+        append_duration_stats("ws.upgrade_read", ws_stats.upgrade_read);
+        append_duration_stats("ws.accept_handshake", ws_stats.ws_accept);
+        append_duration_stats("ws.session_add", ws_stats.session_add);
+    }
     ss << " processed message count:" << msg_parser_->get_stats().http_requests_parsed << std::endl;
     ss << "  processed websocket message count:"
        << msg_parser_->get_stats().websocket_messages_parsed << std::endl;
@@ -1399,6 +1422,12 @@ void GatewayServer::init_http_server(uint16_t port) {
             res.status = 200;
         });
 
+        // 压测/排障观测端点，必须早于 catch-all 注册，避免被通用业务路由吞掉。
+        http_server_->Get("/api/v1/stats", [this](const httplib::Request&, httplib::Response& res) {
+            res.set_content(this->get_server_stats(), "text/plain; charset=utf-8");
+            res.status = 200;
+        });
+
 #ifdef IM_ENABLE_USER_HTTP
         // 用户路由必须早于 catch-all 注册，否则 httplib 会先命中 ".*"。
         register_user_http_routes();
@@ -1610,9 +1639,70 @@ bool GatewayServer::force_register_handler(uint32_t cmd_id, std::function<Proces
     server_logger->info("Test handler registration simulated for cmd_id: {}", cmd_id);
     return true;
 }
+
+ProcessorResult GatewayServer::handle_heartbeat_message(
+        const UnifiedMessage& msg,
+        const std::shared_ptr<MultiPlatformAuthManager>& auth_mgr) {
+    const auto& header = msg.get_header();
+
+    auto build_heartbeat_response =
+            [](const im::base::IMHeader& request_header,
+               im::base::ErrorCode code,
+               const std::string& message) -> std::string {
+        im::base::BaseResponse response;
+        response.set_error_code(code);
+        response.set_error_message(message);
+
+        im::base::IMHeader response_header =
+                im::network::ProtobufCodec::returnHeaderBuilder(
+                        request_header,
+                        im::utils::ServiceIdentityManager::getInstance().getDeviceId(),
+                        im::utils::ServiceIdentityManager::getInstance().getPlatformInfo());
+        response_header.set_cmd_id(im::command::CMD_HEARTBEAT);
+
+        std::string encoded;
+        if (im::network::ProtobufCodec::encode(response_header, response, encoded)) {
+            return encoded;
+        }
+        return "";
+    };
+
+    UserTokenInfo token_user;
+    if (!auth_mgr || !auth_mgr->verify_access_token(header.token(), token_user)) {
+        std::string pb = build_heartbeat_response(
+                header,
+                im::base::ErrorCode::AUTH_FAILED,
+                "Invalid or expired access token");
+        return ProcessorResult(im::base::ErrorCode::AUTH_FAILED,
+                               "Invalid or expired access token",
+                               pb,
+                               "");
+    }
+
+    if (!header.device_id().empty() && header.device_id() != token_user.device_id) {
+        std::string pb = build_heartbeat_response(
+                header,
+                im::base::ErrorCode::AUTH_FAILED,
+                "Device ID mismatch");
+        return ProcessorResult(im::base::ErrorCode::AUTH_FAILED,
+                               "Device ID mismatch",
+                               pb,
+                               "");
+    }
+
+    std::string pb = build_heartbeat_response(header, im::base::ErrorCode::SUCCESS, "");
+    return ProcessorResult(0, "", pb, "");
+}
+
 void GatewayServer::register_message_handlers() {
     try {
         server_logger->info("Registering message handlers...");
+
+        register_message_handlers(im::command::CMD_HEARTBEAT,
+            [this](const UnifiedMessage& msg) -> ProcessorResult {
+                return GatewayServer::handle_heartbeat_message(msg, auth_mgr_);
+            });
+        server_logger->info("WebSocket heartbeat handler registered for CMD_HEARTBEAT");
 
 #ifdef IM_ENABLE_MESSAGE_WS
         if (message_ws_handler_) {

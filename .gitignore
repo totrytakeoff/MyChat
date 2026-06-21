@@ -39,3 +39,7 @@ docs/agent_context/image/
 
 # Local Playwright MCP inspection output
 .playwright-mcp/
+
+# Large local benchmark raw logs; keep summarized reports in git.
+docs/benchmark/benchmark_report_20260621/raw_logs/
+docs/benchmark/benchmark_report_20260621_full/raw_logs/

@@ -18,6 +18,7 @@
 #include <boost/beast/websocket/ssl.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -94,6 +95,12 @@ private:
 
     void do_write();
 
+    void fail_and_close(beast::error_code ec, const std::string& ec_msg);
+
+    void perform_close(bool graceful, beast::error_code ec, const std::string& ec_msg);
+
+    void finish_handshake_tracking();
+
     static std::string generate_id() {
         static std::atomic<size_t> counter{0};
         return "session_" + std::to_string(++counter);
@@ -110,6 +117,12 @@ private:
 
     std::string session_id_;
     std::string token_;  // 从握手请求中提取的Token
+    std::atomic_bool closed_{false};
+    std::atomic_bool registered_{false};
+    std::atomic_bool handshake_active_{false};
+    std::chrono::steady_clock::time_point ssl_handshake_start_;
+    std::chrono::steady_clock::time_point upgrade_read_start_;
+    std::chrono::steady_clock::time_point ws_accept_start_;
 };
 
 } // namespace network

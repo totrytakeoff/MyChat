@@ -1,0 +1,20 @@
+
+Users: 10 | Interval: 999999ms | Duration: 30s | Threads: 4 | Connect rate: 20/s
+Elapsed: 30.5s
+
+--- Results ---
+Connects OK:    10
+Connects FAIL:  0
+Connects total: 10
+Messages sent:  0
+Messages recv:  0
+Errors:         0
+Bytes sent:     0
+Bytes recv:     0
+Duration:       30s
+Throughput:     0.0 msg/s  (0.00 KB/s)
+  Connect time:
+    count: 10
+    min/avg/max: 151.00 / 372.60 / 603.00 ms
+    p50/p90/p95/p99: 402.00 / 603.00 / 603.00 / 603.00 ms
+  RTT: no_samples

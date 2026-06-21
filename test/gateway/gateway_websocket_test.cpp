@@ -420,6 +420,49 @@ TEST_F(GatewayWebSocketTest, EndToEnd_WebSocket_TLS_WithToken) {
 }
 
 /**
+ * @brief 端到端：验证WebSocket业务心跳 CMD_HEARTBEAT 可通过真实TLS链路回包
+ */
+TEST_F(GatewayWebSocketTest, EndToEnd_WebSocket_Heartbeat) {
+    if (test_token_.empty()) {
+        GTEST_SKIP() << "No valid test token available";
+    }
+
+    net::io_context ioc;
+    ssl::context client_ctx(ssl::context::tlsv12_client);
+    client_ctx.set_verify_mode(ssl::verify_none);
+    websocket::stream<ssl::stream<tcp::socket>> ws(ioc, client_ctx);
+
+    auto results = tcp::resolver{ioc}.resolve("127.0.0.1", std::to_string(ws_port_));
+    net::connect(boost::beast::get_lowest_layer(ws), results);
+    ws.next_layer().handshake(ssl::stream_base::client);
+
+    std::string target = std::string("/") + "?token=" + test_token_;
+    ws.handshake("127.0.0.1", target);
+
+    IMHeader header = create_test_header(CMD_HEARTBEAT, 778);
+    header.set_token(test_token_);
+
+    BaseRequest req;
+    std::string encoded;
+    ASSERT_TRUE(ProtobufCodec::encode(header, req, encoded));
+    ws.write(net::buffer(encoded));
+
+    beast::flat_buffer buf;
+    ws.read(buf);
+    std::string response_bin = beast::buffers_to_string(buf.data());
+
+    IMHeader response_header;
+    BaseResponse response;
+    ASSERT_TRUE(ProtobufCodec::decode(response_bin, response_header, response));
+    EXPECT_EQ(response_header.cmd_id(), static_cast<uint32_t>(CMD_HEARTBEAT));
+    EXPECT_EQ(response_header.seq(), 778U);
+    EXPECT_EQ(response.error_code(), SUCCESS);
+    EXPECT_TRUE(response.error_message().empty());
+
+    ws.close(websocket::close_code::normal);
+}
+
+/**
  * @brief 无网络的WebSocket闭环测试：构造protobuf -> 解析 -> 处理 -> 校验
  */
 TEST_F(GatewayWebSocketTest, WebSocketRoundTrip_NoSocket) {

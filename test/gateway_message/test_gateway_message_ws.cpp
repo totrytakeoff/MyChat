@@ -19,6 +19,7 @@
 #include <database/redis/redis_mgr.hpp>
 
 #include <gateway/http/message_client.hpp>
+#include <gateway/gateway_server/gateway_server.hpp>
 #include <gateway/ws/message_ws_handler.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
@@ -42,6 +43,7 @@ using im::base::ErrorCode;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::ConnectionManager;
+using im::gateway::GatewayServer;
 using im::gateway::LocalMessageClient;
 using im::gateway::MessageWsHandler;
 using im::gateway::MultiPlatformAuthManager;
@@ -198,6 +200,35 @@ protected:
         return msg;
     }
 
+    std::unique_ptr<UnifiedMessage> make_heartbeat_message(
+        const std::string& token,
+        const std::string& uid,
+        const std::string& device_id = "task8-device",
+        uint32_t seq = 9001)
+    {
+        auto msg = std::make_unique<UnifiedMessage>();
+
+        im::base::IMHeader header;
+        header.set_version("1.0");
+        header.set_seq(seq);
+        header.set_cmd_id(im::command::CMD_HEARTBEAT);
+        header.set_from_uid(uid);
+        header.set_to_uid(uid);
+        header.set_token(token);
+        header.set_device_id(device_id);
+        header.set_platform("web");
+        header.set_timestamp(static_cast<uint64_t>(now_ms()));
+        msg->set_header(std::move(header));
+
+        UnifiedMessage::SessionContext ctx;
+        ctx.protocol = UnifiedMessage::Protocol::WEBSOCKET;
+        ctx.session_id = "test-heartbeat-session";
+        ctx.receive_time = std::chrono::system_clock::now();
+        msg->set_session_context(std::move(ctx));
+
+        return msg;
+    }
+
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<MessageService> msg_service_;
@@ -209,6 +240,42 @@ protected:
 };
 
 // --- Existing Task 006 tests (constructor defaults nullptr for push params) ---
+
+TEST_F(GatewayMessageWsTest, HeartbeatWithValidTokenReturnsSuccess) {
+    std::string token_user = "task8-test-heartbeat";
+    std::string token = make_token(token_user, "task8-heartbeat-device");
+
+    auto msg = make_heartbeat_message(token, token_user, "task8-heartbeat-device", 9901);
+    ProcessorResult result = GatewayServer::handle_heartbeat_message(*msg, auth_mgr_);
+
+    EXPECT_EQ(result.status_code, 0) << result.error_message;
+    EXPECT_FALSE(result.protobuf_message.empty());
+
+    im::base::IMHeader resp_header;
+    im::base::BaseResponse resp;
+    ASSERT_TRUE(ProtobufCodec::decode(result.protobuf_message, resp_header, resp));
+    EXPECT_EQ(resp_header.cmd_id(), static_cast<uint32_t>(im::command::CMD_HEARTBEAT));
+    EXPECT_EQ(resp_header.seq(), 9901U);
+    EXPECT_EQ(resp.error_code(), im::base::SUCCESS);
+}
+
+TEST_F(GatewayMessageWsTest, HeartbeatDeviceMismatchReturnsAuthFailed) {
+    std::string token_user = "task8-test-heartbeat-device-mismatch";
+    std::string token = make_token(token_user, "token-device");
+
+    auto msg = make_heartbeat_message(token, token_user, "wrong-device", 9902);
+    ProcessorResult result = GatewayServer::handle_heartbeat_message(*msg, auth_mgr_);
+
+    EXPECT_EQ(result.status_code, im::base::AUTH_FAILED);
+    EXPECT_FALSE(result.protobuf_message.empty());
+
+    im::base::IMHeader resp_header;
+    im::base::BaseResponse resp;
+    ASSERT_TRUE(ProtobufCodec::decode(result.protobuf_message, resp_header, resp));
+    EXPECT_EQ(resp_header.cmd_id(), static_cast<uint32_t>(im::command::CMD_HEARTBEAT));
+    EXPECT_EQ(resp_header.seq(), 9902U);
+    EXPECT_EQ(resp.error_code(), im::base::AUTH_FAILED);
+}
 
 TEST_F(GatewayMessageWsTest, SendWithValidTokenPersistsAndReturnsResponse) {
     std::string token_user = "task8-test-valid-token-user";
