@@ -204,6 +204,24 @@ WSS frame
 我在压测后发现 WSS 高负载下 RTT 会进入秒级，不是因为某个算法特别慢，而是 Gateway 的调度模型有问题：每条消息先 std::async，再额外创建 detached thread 等待 future。后来我把这条链路收敛为固定线程池执行，并加入 max_ws_inflight_messages 做初步背压，超过上限直接返回 overload。这样系统在过载时会可控退化，而不是无限创建线程和堆积任务。
 ```
 
+### 7.2 当前 Gateway 压测基线
+
+最新可引用压测报告：
+
+```text
+docs/benchmark/benchmark_report_20260622_full_retest/benchmark_report_20260622_full_retest.md
+```
+
+| 场景 | 结果 | 说明 |
+| --- | ---: | --- |
+| HTTP ramp | 500 VU，46230 请求，失败率 0%，p95 5.81ms | HTTP 接入层修复后稳定 |
+| WSS 建连 | 200 连接，失败 0，connect p95 约 15ms | 200 连接规模内建连稳定 |
+| WSS 消息 | 200 用户 / 1s，RTT p95 12.60ms | 常规实时聊天压力稳定 |
+| WSS 消息 | 200 用户 / 500ms，RTT p95 21.92ms | 高频聊天仍保持低延迟 |
+| WSS 极限 | 200 用户 / 250ms，RTT p95 2628.05ms | 进入当前吞吐拐点 |
+
+这组数据的解读要克制：可以说当前 MVP 在 200 在线用户、0.5-1s 发一条消息的场景下实时链路体感流畅，也可以说 HTTP keep-alive worker 占用问题已经收敛；但不能说已经达到商业 IM 或百万连接能力。250ms 间隔极限场景暴露的不是建连或解码失败，而是消息处理、持久化、push 或写队列中的某个环节开始排队。
+
 ## 8. Push 的双向链路
 
 远程 Push 是 Gateway 里最能体现分布式边界的一段。

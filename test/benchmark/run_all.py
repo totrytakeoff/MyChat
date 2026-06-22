@@ -68,7 +68,7 @@ def pve(cmd, timeout=180):
     """在发压端执行命令。"""
     c = f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {PVE_SSH} '{cmd}'"
     child = pexpect.spawn(c, timeout=timeout, encoding='utf-8')
-    idx = child.expect_exact(["password: ", pexpect.EOF], timeout=10)
+    idx = child.expect_exact(["password: ", pexpect.EOF], timeout=timeout)
     if idx == 0:
         if not PVE_PASS:
             print("    [?] SSH 需要密码但 BENCH_PVE_PASS 为空")

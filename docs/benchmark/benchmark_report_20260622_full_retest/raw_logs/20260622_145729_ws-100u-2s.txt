@@ -1,0 +1,42 @@
+Warning: Permanently added '101.43.48.120' (ED25519) to the list of known hosts.
+Users: 100 | Interval: 2000ms | Duration: 60s | Threads: 4 | Connect rate: 20/s
+Elapsed: 65.0s
+
+======= Results =======
+Connects OK:    100
+Connects FAIL:  0
+Connects total: 100
+Connect failures by stage:
+  resolve/tcp/ssl/ws/timeout: 0 / 0 / 0 / 0 / 0
+Post-connect errors: 0
+Messages sent:  3077
+Messages recv:  6154
+Errors:         0
+Bytes sent:     3639191
+Bytes recv:     2812378
+Duration:       64s
+Throughput:     48.1 msg/s  (56.86 KB/s)
+  Connect time:
+    count: 100
+    min/avg/max: 11.00 / 12.33 / 27.00 ms
+    p50/p90/p95/p99: 12.00 / 13.00 / 14.00 / 27.00 ms
+  Resolve:
+    count: 100
+    min/avg/max: 0.04 / 0.07 / 0.73 ms
+    p50/p90/p95/p99: 0.06 / 0.08 / 0.10 / 0.73 ms
+  TCP connect:
+    count: 100
+    min/avg/max: 2.10 / 2.43 / 4.36 ms
+    p50/p90/p95/p99: 2.37 / 2.58 / 3.25 / 4.36 ms
+  TLS handshake:
+    count: 100
+    min/avg/max: 6.91 / 7.81 / 23.04 ms
+    p50/p90/p95/p99: 7.61 / 8.37 / 8.51 / 23.04 ms
+  WS handshake:
+    count: 100
+    min/avg/max: 2.22 / 2.53 / 5.00 ms
+    p50/p90/p95/p99: 2.49 / 2.68 / 2.84 / 5.00 ms
+  RTT:
+    count: 3077
+    min/avg/max: 5.69 / 7.65 / 19.41 ms
+    p50/p90/p95/p99: 7.33 / 9.05 / 10.14 / 14.00 ms

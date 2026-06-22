@@ -1,0 +1,5 @@
+15:13:32 up 5 days, 14:54,  2 users,  load average: 1.12, 1.09, 0.59
+               total        used        free      shared  buff/cache   available
+Mem:           7.5Gi       1.4Gi       463Mi       552Mi       6.5Gi       6.1Gi
+Swap:          2.0Gi       1.0Mi       2.0Gi
+root     3245408  8.2  0.8 2686024 66596 ?       Sl   14:34   3:13 /opt/mychat/bin/gateway_server -c /opt/mychat/config/benchmark.json -w 10001 -H 10002 -l info --max-open-files 65535
