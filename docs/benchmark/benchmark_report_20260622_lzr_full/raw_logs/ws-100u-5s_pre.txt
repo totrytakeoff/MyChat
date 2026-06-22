@@ -1,0 +1,76 @@
+=== ws-100u-5s_pre ===
+Mon Jun 22 12:45:15 PM CST 2026
+--- lzr host ---
+VM-4-10-debian
+65535
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+--- sut health ---
+{"status": "ok"}
+--- sut stats ---
+GatewayServer stats:
+  Running: true
+online user count:0
+ ws.accept_ok: 2927
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 2927
+ ws.ssl_handshake.avg_ms: 27.8801
+ ws.ssl_handshake.max_ms: 10126
+ ws.upgrade_read.count: 2902
+ ws.upgrade_read.avg_ms: 11.2808
+ ws.upgrade_read.max_ms: 341
+ ws.accept_handshake.count: 2902
+ ws.accept_handshake.avg_ms: 0.108546
+ ws.accept_handshake.max_ms: 13
+ ws.session_add.count: 2895
+ ws.session_add.avg_ms: 0.241105
+ ws.session_add.max_ms: 11
+ processed message count:0
+  processed websocket message count:0
+ parse.decode failed count: 0
+ parse.routing failed count:7
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0
+Users: 100 | Interval: 5000ms | Duration: 60s | Threads: 4 | Connect rate: 20/s
+Elapsed: 65.0s
+
+--- Results ---
+Connects OK:    100
+Connects FAIL:  0
+Connects total: 100
+Connect failures by stage:
+  resolve/tcp/ssl/ws/timeout: 0 / 0 / 0 / 0 / 0
+Post-connect errors: 0
+Messages sent:  0
+Messages recv:  100
+Errors:         0
+Bytes sent:     0
+Bytes recv:     9400
+Duration:       64s
+Throughput:     0.0 msg/s  (0.00 KB/s)
+  Connect time:
+    count: 100
+    min/avg/max: 11.00 / 13.22 / 20.00 ms
+    p50/p90/p95/p99: 12.00 / 17.00 / 18.00 / 20.00 ms
+  Resolve:
+    count: 100
+    min/avg/max: 0.03 / 0.06 / 0.26 ms
+    p50/p90/p95/p99: 0.05 / 0.07 / 0.07 / 0.26 ms
+  TCP connect:
+    count: 100
+    min/avg/max: 2.06 / 2.34 / 3.33 ms
+    p50/p90/p95/p99: 2.31 / 2.62 / 2.66 / 3.33 ms
+  TLS handshake:
+    count: 100
+    min/avg/max: 6.78 / 7.62 / 9.41 ms
+    p50/p90/p95/p99: 7.56 / 8.49 / 8.66 / 9.41 ms
+  WS handshake:
+    count: 100
+    min/avg/max: 2.16 / 3.64 / 9.52 ms
+    p50/p90/p95/p99: 2.47 / 7.07 / 7.46 / 9.52 ms
+  RTT: no_samples

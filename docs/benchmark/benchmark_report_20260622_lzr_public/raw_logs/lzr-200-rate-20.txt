@@ -1,0 +1,40 @@
+===== lzr-host public users=200 rate=20 =====
+Users: 200 | Interval: 999999ms | Duration: 20s | Threads: 4 | Connect rate: 20/s
+Elapsed: 30.0s
+
+--- Results ---
+Connects OK:    200
+Connects FAIL:  0
+Connects total: 200
+Connect failures by stage:
+  resolve/tcp/ssl/ws/timeout: 0 / 0 / 0 / 0 / 0
+Post-connect errors: 0
+Messages sent:  0
+Messages recv:  200
+Errors:         0
+Bytes sent:     0
+Bytes recv:     18800
+Duration:       29s
+Throughput:     0.0 msg/s  (0.00 KB/s)
+  Connect time:
+    count: 200
+    min/avg/max: 11.00 / 13.29 / 23.00 ms
+    p50/p90/p95/p99: 12.00 / 17.00 / 18.00 / 19.00 ms
+  Resolve:
+    count: 200
+    min/avg/max: 0.05 / 0.07 / 0.24 ms
+    p50/p90/p95/p99: 0.07 / 0.08 / 0.09 / 0.14 ms
+  TCP connect:
+    count: 200
+    min/avg/max: 2.08 / 2.38 / 5.49 ms
+    p50/p90/p95/p99: 2.33 / 2.52 / 2.67 / 4.03 ms
+  TLS handshake:
+    count: 200
+    min/avg/max: 6.76 / 7.75 / 15.63 ms
+    p50/p90/p95/p99: 7.60 / 8.44 / 8.85 / 10.13 ms
+  WS handshake:
+    count: 200
+    min/avg/max: 2.17 / 3.55 / 8.72 ms
+    p50/p90/p95/p99: 2.49 / 7.10 / 7.47 / 8.68 ms
+  RTT: no_samples
+Mon Jun 22 12:33:55 PM CST 2026

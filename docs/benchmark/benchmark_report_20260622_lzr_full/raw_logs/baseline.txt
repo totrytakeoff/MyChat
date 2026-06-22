@@ -1,0 +1,7 @@
+lzr full benchmark
+Mon Jun 22 12:40:23 PM CST 2026
+VM-4-10-debian
+target=122.51.70.33 wss=10001 http=10002
+0986f6755264ed053ca4308c6b4ab2fd615be63a52b4fff32e4dc0d98057e379  bench_ws
+users 200
+65535

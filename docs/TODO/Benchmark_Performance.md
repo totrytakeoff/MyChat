@@ -94,10 +94,13 @@ ctest --test-dir build/remote-push-odb -R GatewayMessageWsTest --output-on-failu
 - [x] WSS 建连指标拆分：resolve、TCP connect、TLS handshake、WS handshake、失败阶段分类。
 - [x] Gateway WSS handshake 链路增加服务端观测：accept、TLS、HTTP upgrade、WS accept、session add。
 - [x] 增加 `GET /api/v1/stats` 只读观测入口，便于远端压测抓取 Gateway 内部状态。
+- [ ] 修复 WSS 消息压测归档：每个场景必须完整保存 `bench_ws stdout/stderr`，并在 `messages_sent=0` 时直接判定场景无效。
 - [ ] WSS 消息指标拆分：ack RTT、push latency、业务持久化成功数。
 - [ ] HTTP 指标拆分：连接失败、HTTP 非 2xx、业务错误、请求超时。
 - [ ] 增加 `200u/400ms`、`200u/333ms`、`200u/250ms` 独立冷却复测。
 - [ ] HTTP ramp 拆分 `/health`、`/auth/info`、真实业务 API 三类场景。
+- [ ] HTTP ramp 增加本机 loopback 与公网双路径对照，先单独压 `/health` 再单独压 `/auth/info`。
+- [ ] Gateway HTTP 入口增加请求数、状态码、inflight、分接口耗时分位数等轻量观测。
 - [ ] 压测报告自动记录 commit hash、部署模式、配置文件、机器规格、冷却时间。
 
 ## P1: WSS 公网建连专项
@@ -112,12 +115,16 @@ ctest --test-dir build/remote-push-odb -R GatewayMessageWsTest --output-on-failu
 - PVE 公网发压 `150/200 users` 稳定只有 `125` 个连接成功，失败全部为 `connect_timeout`。
 - 发压机 `ulimit -n` 拉高到 `65535` 后，`150 users` 仍为 `125/150`，基本排除发压进程 fd 上限。
 - SUT 本机 loopback `150 users @ 20/s` 全成功，connect avg `2.80ms`，说明 Gateway 进程和 WSS 应用层不是当前 125 阈值的主因。
+- 2026-06-22 SUT 本机 loopback 追加 `200 users @ 20/40/80/200/s` 矩阵，4 轮共 `800` 次建连全部成功，进一步确认 Gateway 本机建连能力不是瓶颈。
+- 2026-06-22 `lzr-host` 公网发压追加 `200 users @ 20/40/80/200/s` 矩阵，4 轮共 `800` 次建连全部成功，说明 SUT 云服务器并不存在所有单源公网 IP 都卡 `125` 的普遍入口限制。
 - Gateway stats 显示进入应用层的连接 TLS/HTTP upgrade/WS accept/session_add 都能正常完成，瓶颈主要落在公网 TCP 建连路径或入口侧网络策略。
+- 2026-06-22 `lzr-host` 完整压测中 `conn-10/50/100/200` 全成功，继续证明该问题不是 Gateway 应用层固定上限，也不是 SUT 对所有单源公网 IP 的普遍限制。
 
 待办:
 
 - [ ] 压测前后分别采集 `netstat -s`，记录 TCP/SYN/reset/retransmit 增量，而不是累计值。
-- [ ] 使用第二台公网机器或同云厂商内网机器作为发压端复测，排除当前 PVE 到云服务器链路限制。
+- [x] 使用第二台公网机器 `lzr-host` 作为发压端复测，确认 `lzr-host -> SUT` 公网路径 `200 users @ 200/s` 可全成功。
+- [ ] 继续排查当前 PVE 到云服务器链路限制，重点关注 PVE 出口 NAT、路由器、防火墙、运营商路径或该源 IP 的云侧策略。
 - [ ] SUT 使用 `tcpdump` 抓取 `tcp port 10001`，确认失败连接的 SYN/SYN-ACK/ACK 是否完整。
 - [ ] 将 SUT `net.ipv4.tcp_max_syn_backlog` 从 `512` 调整到 `4096/8192` 后复测公网建连。
 - [ ] 扩展 `--connect-rate 5/10/20/40` 矩阵，确认 125 阈值是否与突发连接速率或公网链路策略相关。
@@ -126,7 +133,8 @@ ctest --test-dir build/remote-push-odb -R GatewayMessageWsTest --output-on-failu
 
 ## 当前建议执行顺序
 
-1. 优先完成 WSS 公网建连专项，明确 125 阈值来自公网链路、云侧策略还是 SUT TCP 参数。
-2. 然后专项处理 HTTP `/health` 高并发长尾问题。
-3. 再回到消息链路压测：ack RTT、push latency、DB 持久化耗时。
-4. 性能专项不阻塞当前项目总结与面试准备，但结论要写入最终面试材料：当前瓶颈定位方法和证据链比单纯 QPS 数字更重要。
+1. 先修压测工具链有效性：WSS 消息场景必须有完整日志，且 `messages_sent=0` 不能进入吞吐结论。
+2. 专项处理 HTTP `/health` 与 `/auth/info` 高并发 timeout，先拆分接口和 loopback/public 路径，再补 Gateway HTTP 侧观测。
+3. 保留 PVE 公网建连专项，但优先级下调；当前已有 SUT loopback 与 `lzr-host` public 双重证据说明 Gateway 不是 125 阈值主因。
+4. 再回到消息链路压测：ack RTT、push latency、DB 持久化耗时。
+5. 性能专项不阻塞当前项目总结与面试准备，但结论要写入最终面试材料：当前瓶颈定位方法和证据链比单纯 QPS 数字更重要。

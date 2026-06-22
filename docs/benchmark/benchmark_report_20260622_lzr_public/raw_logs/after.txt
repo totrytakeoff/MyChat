@@ -1,0 +1,4 @@
+=== lzr after ===
+Mon Jun 22 12:35:35 PM CST 2026
+State     Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
+TIME-WAIT 400

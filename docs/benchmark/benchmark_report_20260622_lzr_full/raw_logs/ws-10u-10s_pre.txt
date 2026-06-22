@@ -1,0 +1,77 @@
+=== ws-10u-10s_pre ===
+Mon Jun 22 12:43:01 PM CST 2026
+--- lzr host ---
+VM-4-10-debian
+65535
+State     Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
+TIME-WAIT 200
+--- sut health ---
+{"status": "ok"}
+--- sut stats ---
+GatewayServer stats:
+  Running: true
+online user count:0
+ ws.accept_ok: 2867
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 2867
+ ws.ssl_handshake.avg_ms: 28.3614
+ ws.ssl_handshake.max_ms: 10126
+ ws.upgrade_read.count: 2842
+ ws.upgrade_read.avg_ms: 11.4581
+ ws.upgrade_read.max_ms: 341
+ ws.accept_handshake.count: 2842
+ ws.accept_handshake.avg_ms: 0.106263
+ ws.accept_handshake.max_ms: 13
+ ws.session_add.count: 2835
+ ws.session_add.avg_ms: 0.246208
+ ws.session_add.max_ms: 11
+ processed message count:0
+  processed websocket message count:0
+ parse.decode failed count: 0
+ parse.routing failed count:7
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0
+Users: 10 | Interval: 10000ms | Duration: 60s | Threads: 4 | Connect rate: 20/s
+Elapsed: 60.5s
+
+--- Results ---
+Connects OK:    10
+Connects FAIL:  0
+Connects total: 10
+Connect failures by stage:
+  resolve/tcp/ssl/ws/timeout: 0 / 0 / 0 / 0 / 0
+Post-connect errors: 0
+Messages sent:  0
+Messages recv:  10
+Errors:         0
+Bytes sent:     0
+Bytes recv:     940
+Duration:       60s
+Throughput:     0.0 msg/s  (0.00 KB/s)
+  Connect time:
+    count: 10
+    min/avg/max: 11.00 / 12.60 / 17.00 ms
+    p50/p90/p95/p99: 12.00 / 17.00 / 17.00 / 17.00 ms
+  Resolve:
+    count: 10
+    min/avg/max: 0.04 / 0.07 / 0.17 ms
+    p50/p90/p95/p99: 0.06 / 0.17 / 0.17 / 0.17 ms
+  TCP connect:
+    count: 10
+    min/avg/max: 2.20 / 2.34 / 2.56 ms
+    p50/p90/p95/p99: 2.33 / 2.56 / 2.56 / 2.56 ms
+  TLS handshake:
+    count: 10
+    min/avg/max: 7.21 / 7.78 / 9.24 ms
+    p50/p90/p95/p99: 7.67 / 9.24 / 9.24 / 9.24 ms
+  WS handshake:
+    count: 10
+    min/avg/max: 2.36 / 2.95 / 7.35 ms
+    p50/p90/p95/p99: 2.46 / 7.35 / 7.35 / 7.35 ms
+  RTT: no_samples

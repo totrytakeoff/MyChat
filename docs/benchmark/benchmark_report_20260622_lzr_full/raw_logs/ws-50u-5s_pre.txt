@@ -1,0 +1,76 @@
+=== ws-50u-5s_pre ===
+Mon Jun 22 12:46:25 PM CST 2026
+--- lzr host ---
+VM-4-10-debian
+65535
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+--- sut health ---
+{"status": "ok"}
+--- sut stats ---
+GatewayServer stats:
+  Running: true
+online user count:0
+ ws.accept_ok: 3027
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 3027
+ ws.ssl_handshake.avg_ms: 27.1169
+ ws.ssl_handshake.max_ms: 10126
+ ws.upgrade_read.count: 3002
+ ws.upgrade_read.avg_ms: 11.0107
+ ws.upgrade_read.max_ms: 341
+ ws.accept_handshake.count: 3002
+ ws.accept_handshake.avg_ms: 0.106262
+ ws.accept_handshake.max_ms: 13
+ ws.session_add.count: 2995
+ ws.session_add.avg_ms: 0.233055
+ ws.session_add.max_ms: 11
+ processed message count:0
+  processed websocket message count:0
+ parse.decode failed count: 0
+ parse.routing failed count:7
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0
+Users: 50 | Interval: 5000ms | Duration: 60s | Threads: 4 | Connect rate: 20/s
+Elapsed: 62.5s
+
+--- Results ---
+Connects OK:    50
+Connects FAIL:  0
+Connects total: 50
+Connect failures by stage:
+  resolve/tcp/ssl/ws/timeout: 0 / 0 / 0 / 0 / 0
+Post-connect errors: 0
+Messages sent:  0
+Messages recv:  50
+Errors:         0
+Bytes sent:     0
+Bytes recv:     4700
+Duration:       62s
+Throughput:     0.0 msg/s  (0.00 KB/s)
+  Connect time:
+    count: 50
+    min/avg/max: 11.00 / 13.30 / 18.00 ms
+    p50/p90/p95/p99: 12.00 / 17.00 / 17.00 / 18.00 ms
+  Resolve:
+    count: 50
+    min/avg/max: 0.04 / 0.07 / 0.20 ms
+    p50/p90/p95/p99: 0.07 / 0.09 / 0.12 / 0.20 ms
+  TCP connect:
+    count: 50
+    min/avg/max: 2.12 / 2.36 / 2.58 ms
+    p50/p90/p95/p99: 2.35 / 2.53 / 2.55 / 2.58 ms
+  TLS handshake:
+    count: 50
+    min/avg/max: 6.84 / 7.80 / 10.51 ms
+    p50/p90/p95/p99: 7.72 / 8.55 / 8.57 / 10.51 ms
+  WS handshake:
+    count: 50
+    min/avg/max: 2.25 / 3.53 / 7.29 ms
+    p50/p90/p95/p99: 2.52 / 7.02 / 7.20 / 7.29 ms
+  RTT: no_samples

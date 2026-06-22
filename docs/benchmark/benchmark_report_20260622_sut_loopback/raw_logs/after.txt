@@ -1,0 +1,55 @@
+=== after stats ===
+GatewayServer stats:
+  Running: true
+online user count:9
+ ws.accept_ok: 1700
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 1700
+ ws.ssl_handshake.avg_ms: 43.6441
+ ws.ssl_handshake.max_ms: 10126
+ ws.upgrade_read.count: 1677
+ ws.upgrade_read.avg_ms: 16.8605
+ ws.upgrade_read.max_ms: 334
+ ws.accept_handshake.count: 1677
+ ws.accept_handshake.avg_ms: 0.0447227
+ ws.accept_handshake.max_ms: 13
+ ws.session_add.count: 1675
+ ws.session_add.avg_ms: 0.416716
+ ws.session_add.max_ms: 11
+ processed message count:0
+  processed websocket message count:0
+ parse.decode failed count: 0
+ parse.routing failed count:7
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0
+=== after tcp summary ===
+    2283 input ICMP message failed
+    0 ICMP messages failed
+    10337 failed connection attempts
+    14573 connection resets received
+    26089 segments retransmitted
+    30862 resets sent
+    244 SYN cookies sent
+    246 SYN cookies received
+    10334 resets received for embryonic SYN_RECV sockets
+    2 times the listen queue of a socket overflowed
+    2 SYNs to LISTEN sockets dropped
+    Detected reordering 3 times using reno fast retransmit
+    TCPLostRetransmit: 7049
+    4266 fast retransmits
+    80 retransmits in slow start
+    803 connections reset due to unexpected data
+    7672 connections reset due to early user close
+    TCPTimeWaitOverflow: 18870
+    TCPSYNChallenge: 733
+    TCPSynRetrans: 6738
+=== ss summary ===
+State     Recv-Q Send-Q Local Address:Port  Peer Address:Port
+LISTEN 1
+TIME-WAIT 400

@@ -1,0 +1,1 @@
+===== WSS ws-10u-10s: users=10 duration=60s interval=10000ms =====

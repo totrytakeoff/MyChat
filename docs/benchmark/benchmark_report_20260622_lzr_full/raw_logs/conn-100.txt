@@ -1,0 +1,1 @@
+===== WSS conn-100: users=100 duration=30s interval=999999ms =====

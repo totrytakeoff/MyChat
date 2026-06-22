@@ -156,6 +156,40 @@ ulimit -n 65535
 
 这个对照非常关键：同一个 Gateway、同一个 `bench_ws`、同一份 token，在本机 loopback 下 150 连接全部成功。
 
+### 4.3 2026-06-22 SUT 本机高强度补测
+
+补充报告：
+
+- `docs/benchmark/benchmark_report_20260622_sut_loopback/benchmark_report_20260622_sut_loopback.md`
+
+2026-06-22 进一步在 SUT 本机使用 `127.0.0.1:10001` 跑 200 用户建连矩阵：
+
+| 场景 | 成功 | 失败 | connect avg | connect p95 |
+| --- | ---: | ---: | ---: | ---: |
+| loopback 200 users, 20/s | 200 | 0 | 3.07ms | 4ms |
+| loopback 200 users, 40/s | 200 | 0 | 2.73ms | 4ms |
+| loopback 200 users, 80/s | 200 | 0 | 2.35ms | 3ms |
+| loopback 200 users, 200/s | 200 | 0 | 3.46ms | 11ms |
+
+合计 `800` 次本机 WSS 建连全部成功，进一步强化结论：公网 PVE 单源 IP 压测的 `125` 阈值不是 Gateway 应用层能力上限。
+
+### 4.4 2026-06-22 lzr-host 公网补测
+
+补充报告：
+
+- `docs/benchmark/benchmark_report_20260622_lzr_public/benchmark_report_20260622_lzr_public.md`
+
+使用另一台云服务器 `lzr-host` 经公网访问同一 SUT：
+
+| 场景 | 成功 | 失败 | connect avg | connect p95 |
+| --- | ---: | ---: | ---: | ---: |
+| lzr public 200 users, 20/s | 200 | 0 | 13.29ms | 18ms |
+| lzr public 200 users, 40/s | 200 | 0 | 11.99ms | 14ms |
+| lzr public 200 users, 80/s | 200 | 0 | 13.30ms | 18ms |
+| lzr public 200 users, 200/s | 200 | 0 | 17.30ms | 33ms |
+
+合计 `800` 次公网 WSS 建连全部成功。这个结果进一步说明：SUT 所在云服务器并不存在“所有单源公网 IP 都只能建 125 个连接”的普遍限制；PVE 发压机的 `125` 阈值更像是 PVE 自身公网出口、源 IP、NAT、运营商链路、路由路径或该源 IP 在云侧策略中的特殊限流。
+
 ## 5. Gateway 侧观测
 
 压测后 `GET /api/v1/stats` 摘要：
@@ -216,7 +250,7 @@ TCPSynRetrans: 6440
 
 目前最可信的定位是：
 
-> PVE 发压机到云服务器公网链路上的 TCP 建连能力存在稳定阈值或策略限制，导致超过约 125 个新连接后，后续连接在客户端侧等待到 `15s` 超时，没有进入 Gateway 应用层。
+> PVE 发压机到云服务器公网链路上的 TCP 建连能力存在稳定阈值或策略限制，导致超过约 125 个新连接后，后续连接在客户端侧等待到 `15s` 超时，没有进入 Gateway 应用层。该问题不是 Gateway 应用层能力上限，也不是 SUT 云服务器对所有单源公网 IP 的普遍限制，因为 SUT loopback 与 `lzr-host` 公网路径都能完成 `200 users @ 200/s`。
 
 证据链：
 

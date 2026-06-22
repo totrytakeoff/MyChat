@@ -1,0 +1,38 @@
+=== ws-10u-10s_pre_post ===
+Mon Jun 22 12:44:07 PM CST 2026
+--- lzr host ---
+VM-4-10-debian
+65535
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+--- sut health ---
+{"status": "ok"}
+--- sut stats ---
+GatewayServer stats:
+  Running: true
+online user count:0
+ ws.accept_ok: 2877
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 2877
+ ws.ssl_handshake.avg_ms: 28.2798
+ ws.ssl_handshake.max_ms: 10126
+ ws.upgrade_read.count: 2852
+ ws.upgrade_read.avg_ms: 11.4267
+ ws.upgrade_read.max_ms: 341
+ ws.accept_handshake.count: 2852
+ ws.accept_handshake.avg_ms: 0.107293
+ ws.accept_handshake.max_ms: 13
+ ws.session_add.count: 2845
+ ws.session_add.avg_ms: 0.245343
+ ws.session_add.max_ms: 11
+ processed message count:0
+  processed websocket message count:0
+ parse.decode failed count: 0
+ parse.routing failed count:7
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0

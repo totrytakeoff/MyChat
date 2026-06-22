@@ -1,0 +1,926 @@
+=== HTTP-Ramp_pre ===
+Mon Jun 22 12:53:53 PM CST 2026
+--- lzr host ---
+VM-4-10-debian
+65535
+State     Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
+TIME-WAIT 200
+--- sut health ---
+{"status": "ok"}
+--- sut stats ---
+GatewayServer stats:
+  Running: true
+online user count:0
+ ws.accept_ok: 4077
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 4077
+ ws.ssl_handshake.avg_ms: 21.3642
+ ws.ssl_handshake.max_ms: 10126
+ ws.upgrade_read.count: 4052
+ ws.upgrade_read.avg_ms: 8.91807
+ ws.upgrade_read.max_ms: 341
+ ws.accept_handshake.count: 4052
+ ws.accept_handshake.avg_ms: 0.145114
+ ws.accept_handshake.max_ms: 13
+ ws.session_add.count: 4045
+ ws.session_add.avg_ms: 0.172559
+ ws.session_add.max_ms: 11
+ processed message count:0
+  processed websocket message count:0
+ parse.decode failed count: 0
+ parse.routing failed count:7
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0
+
+         /\      Grafana   /‾‾/
+    /\  /  \     |\  __   /  /
+   /  \/    \    | |/ /  /   ‾‾\
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/
+
+
+     execution: local
+        script: http_benchmark.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 500 max VUs, 3m0s max duration (incl. graceful stop):
+              * default: Up to 500 looping VUs for 2m30s over 6 stages (gracefulRampDown: 30s, gracefulStop: 30s)
+
+
+running (0m00.9s), 001/500 VUs, 0 complete and 0 interrupted iterations
+default   [   1% ] 001/500 VUs  0m00.9s/2m30.0s
+
+running (0m01.9s), 002/500 VUs, 1 complete and 0 interrupted iterations
+default   [   1% ] 002/500 VUs  0m01.9s/2m30.0s
+
+running (0m02.9s), 003/500 VUs, 3 complete and 0 interrupted iterations
+default   [   2% ] 003/500 VUs  0m02.9s/2m30.0s
+
+running (0m03.9s), 004/500 VUs, 6 complete and 0 interrupted iterations
+default   [   3% ] 004/500 VUs  0m03.9s/2m30.0s
+
+running (0m04.9s), 005/500 VUs, 10 complete and 0 interrupted iterations
+default   [   3% ] 005/500 VUs  0m04.9s/2m30.0s
+
+running (0m05.9s), 006/500 VUs, 15 complete and 0 interrupted iterations
+default   [   4% ] 006/500 VUs  0m05.9s/2m30.0s
+
+running (0m06.9s), 007/500 VUs, 21 complete and 0 interrupted iterations
+default   [   5% ] 007/500 VUs  0m06.9s/2m30.0s
+
+running (0m07.9s), 008/500 VUs, 28 complete and 0 interrupted iterations
+default   [   5% ] 008/500 VUs  0m07.9s/2m30.0s
+
+running (0m08.9s), 009/500 VUs, 36 complete and 0 interrupted iterations
+default   [   6% ] 009/500 VUs  0m08.9s/2m30.0s
+
+running (0m09.9s), 009/500 VUs, 44 complete and 0 interrupted iterations
+default   [   7% ] 009/500 VUs  0m09.9s/2m30.0s
+
+running (0m10.9s), 011/500 VUs, 51 complete and 0 interrupted iterations
+default   [   7% ] 011/500 VUs  0m10.9s/2m30.0s
+
+running (0m11.9s), 012/500 VUs, 58 complete and 0 interrupted iterations
+default   [   8% ] 012/500 VUs  0m11.9s/2m30.0s
+
+running (0m12.9s), 013/500 VUs, 65 complete and 0 interrupted iterations
+default   [   9% ] 013/500 VUs  0m12.9s/2m30.0s
+
+running (0m13.9s), 015/500 VUs, 72 complete and 0 interrupted iterations
+default   [   9% ] 015/500 VUs  0m13.9s/2m30.0s
+
+running (0m14.9s), 016/500 VUs, 79 complete and 0 interrupted iterations
+default   [  10% ] 016/500 VUs  0m14.9s/2m30.0s
+
+running (0m15.9s), 017/500 VUs, 86 complete and 0 interrupted iterations
+default   [  11% ] 017/500 VUs  0m15.9s/2m30.0s
+
+running (0m16.9s), 019/500 VUs, 93 complete and 0 interrupted iterations
+default   [  11% ] 019/500 VUs  0m16.9s/2m30.0s
+
+running (0m17.9s), 020/500 VUs, 100 complete and 0 interrupted iterations
+default   [  12% ] 020/500 VUs  0m17.9s/2m30.0s
+
+running (0m18.9s), 021/500 VUs, 108 complete and 0 interrupted iterations
+default   [  13% ] 021/500 VUs  0m18.9s/2m30.0s
+
+running (0m19.9s), 023/500 VUs, 116 complete and 0 interrupted iterations
+default   [  13% ] 023/500 VUs  0m19.9s/2m30.0s
+
+running (0m20.9s), 024/500 VUs, 124 complete and 0 interrupted iterations
+default   [  14% ] 024/500 VUs  0m20.9s/2m30.0s
+
+running (0m21.9s), 025/500 VUs, 132 complete and 0 interrupted iterations
+default   [  15% ] 025/500 VUs  0m21.9s/2m30.0s
+
+running (0m22.9s), 027/500 VUs, 140 complete and 0 interrupted iterations
+default   [  15% ] 027/500 VUs  0m22.9s/2m30.0s
+
+running (0m23.9s), 028/500 VUs, 148 complete and 0 interrupted iterations
+default   [  16% ] 028/500 VUs  0m23.9s/2m30.0s
+
+running (0m24.9s), 029/500 VUs, 156 complete and 0 interrupted iterations
+default   [  17% ] 029/500 VUs  0m24.9s/2m30.0s
+
+running (0m25.9s), 031/500 VUs, 164 complete and 0 interrupted iterations
+default   [  17% ] 031/500 VUs  0m25.9s/2m30.0s
+
+running (0m26.9s), 032/500 VUs, 172 complete and 0 interrupted iterations
+default   [  18% ] 032/500 VUs  0m26.9s/2m30.0s
+
+running (0m27.9s), 033/500 VUs, 180 complete and 0 interrupted iterations
+default   [  19% ] 033/500 VUs  0m27.9s/2m30.0s
+
+running (0m28.9s), 035/500 VUs, 188 complete and 0 interrupted iterations
+default   [  19% ] 035/500 VUs  0m28.9s/2m30.0s
+
+running (0m29.9s), 036/500 VUs, 195 complete and 0 interrupted iterations
+default   [  20% ] 036/500 VUs  0m29.9s/2m30.0s
+
+running (0m30.9s), 037/500 VUs, 203 complete and 0 interrupted iterations
+default   [  21% ] 037/500 VUs  0m30.9s/2m30.0s
+
+running (0m31.9s), 039/500 VUs, 210 complete and 0 interrupted iterations
+default   [  21% ] 039/500 VUs  0m31.9s/2m30.0s
+
+running (0m32.9s), 040/500 VUs, 217 complete and 0 interrupted iterations
+default   [  22% ] 040/500 VUs  0m32.9s/2m30.0s
+
+running (0m33.9s), 041/500 VUs, 224 complete and 0 interrupted iterations
+default   [  23% ] 041/500 VUs  0m33.9s/2m30.0s
+
+running (0m34.9s), 043/500 VUs, 231 complete and 0 interrupted iterations
+default   [  23% ] 043/500 VUs  0m34.9s/2m30.0s
+
+running (0m35.9s), 044/500 VUs, 238 complete and 0 interrupted iterations
+default   [  24% ] 044/500 VUs  0m35.9s/2m30.0s
+
+running (0m36.9s), 045/500 VUs, 245 complete and 0 interrupted iterations
+default   [  25% ] 045/500 VUs  0m36.9s/2m30.0s
+
+running (0m37.9s), 047/500 VUs, 253 complete and 0 interrupted iterations
+default   [  25% ] 047/500 VUs  0m37.9s/2m30.0s
+
+running (0m38.9s), 048/500 VUs, 260 complete and 0 interrupted iterations
+default   [  26% ] 048/500 VUs  0m38.9s/2m30.0s
+
+running (0m39.9s), 049/500 VUs, 268 complete and 0 interrupted iterations
+default   [  27% ] 049/500 VUs  0m39.9s/2m30.0s
+
+running (0m40.9s), 051/500 VUs, 276 complete and 0 interrupted iterations
+default   [  27% ] 051/500 VUs  0m40.9s/2m30.0s
+
+running (0m41.9s), 053/500 VUs, 284 complete and 0 interrupted iterations
+default   [  28% ] 053/500 VUs  0m41.9s/2m30.0s
+
+running (0m42.9s), 054/500 VUs, 292 complete and 0 interrupted iterations
+default   [  29% ] 054/500 VUs  0m42.9s/2m30.0s
+
+running (0m43.9s), 056/500 VUs, 300 complete and 0 interrupted iterations
+default   [  29% ] 056/500 VUs  0m43.9s/2m30.0s
+
+running (0m44.9s), 058/500 VUs, 308 complete and 0 interrupted iterations
+default   [  30% ] 058/500 VUs  0m44.9s/2m30.0s
+
+running (0m45.9s), 059/500 VUs, 316 complete and 0 interrupted iterations
+default   [  31% ] 059/500 VUs  0m45.9s/2m30.0s
+
+running (0m46.9s), 061/500 VUs, 324 complete and 0 interrupted iterations
+default   [  31% ] 061/500 VUs  0m46.9s/2m30.0s
+
+running (0m47.9s), 063/500 VUs, 332 complete and 0 interrupted iterations
+default   [  32% ] 063/500 VUs  0m47.9s/2m30.0s
+
+running (0m48.9s), 064/500 VUs, 340 complete and 0 interrupted iterations
+default   [  33% ] 064/500 VUs  0m48.9s/2m30.0s
+
+running (0m49.9s), 066/500 VUs, 348 complete and 0 interrupted iterations
+default   [  33% ] 066/500 VUs  0m49.9s/2m30.0s
+
+running (0m50.9s), 068/500 VUs, 355 complete and 0 interrupted iterations
+default   [  34% ] 068/500 VUs  0m50.9s/2m30.0s
+
+running (0m51.9s), 069/500 VUs, 362 complete and 0 interrupted iterations
+default   [  35% ] 069/500 VUs  0m51.9s/2m30.0s
+
+running (0m52.9s), 071/500 VUs, 370 complete and 0 interrupted iterations
+default   [  35% ] 071/500 VUs  0m52.9s/2m30.0s
+
+running (0m53.9s), 073/500 VUs, 378 complete and 0 interrupted iterations
+default   [  36% ] 073/500 VUs  0m53.9s/2m30.0s
+
+running (0m54.9s), 074/500 VUs, 386 complete and 0 interrupted iterations
+default   [  37% ] 074/500 VUs  0m54.9s/2m30.0s
+
+running (0m55.9s), 076/500 VUs, 393 complete and 0 interrupted iterations
+default   [  37% ] 076/500 VUs  0m55.9s/2m30.0s
+
+running (0m56.9s), 078/500 VUs, 401 complete and 0 interrupted iterations
+default   [  38% ] 078/500 VUs  0m56.9s/2m30.0s
+
+running (0m57.9s), 079/500 VUs, 409 complete and 0 interrupted iterations
+default   [  39% ] 079/500 VUs  0m57.9s/2m30.0s
+
+running (0m58.9s), 081/500 VUs, 418 complete and 0 interrupted iterations
+default   [  39% ] 081/500 VUs  0m58.9s/2m30.0s
+
+running (0m59.9s), 083/500 VUs, 427 complete and 0 interrupted iterations
+default   [  40% ] 083/500 VUs  0m59.9s/2m30.0s
+
+running (1m00.9s), 084/500 VUs, 436 complete and 0 interrupted iterations
+default   [  41% ] 084/500 VUs  1m00.9s/2m30.0s
+
+running (1m01.9s), 086/500 VUs, 444 complete and 0 interrupted iterations
+default   [  41% ] 086/500 VUs  1m01.9s/2m30.0s
+
+running (1m02.9s), 088/500 VUs, 452 complete and 0 interrupted iterations
+default   [  42% ] 088/500 VUs  1m02.9s/2m30.0s
+
+running (1m03.9s), 089/500 VUs, 460 complete and 0 interrupted iterations
+default   [  43% ] 089/500 VUs  1m03.9s/2m30.0s
+
+running (1m04.9s), 091/500 VUs, 468 complete and 0 interrupted iterations
+default   [  43% ] 091/500 VUs  1m04.9s/2m30.0s
+
+running (1m05.9s), 093/500 VUs, 476 complete and 0 interrupted iterations
+default   [  44% ] 093/500 VUs  1m05.9s/2m30.0s
+
+running (1m06.9s), 094/500 VUs, 484 complete and 0 interrupted iterations
+default   [  45% ] 094/500 VUs  1m06.9s/2m30.0s
+
+running (1m07.9s), 096/500 VUs, 492 complete and 0 interrupted iterations
+default   [  45% ] 096/500 VUs  1m07.9s/2m30.0s
+
+running (1m08.9s), 098/500 VUs, 500 complete and 0 interrupted iterations
+default   [  46% ] 098/500 VUs  1m08.9s/2m30.0s
+
+running (1m09.9s), 099/500 VUs, 508 complete and 0 interrupted iterations
+default   [  47% ] 099/500 VUs  1m09.9s/2m30.0s
+
+running (1m10.9s), 102/500 VUs, 515 complete and 0 interrupted iterations
+default   [  47% ] 102/500 VUs  1m10.9s/2m30.0s
+
+running (1m11.9s), 106/500 VUs, 522 complete and 0 interrupted iterations
+default   [  48% ] 106/500 VUs  1m11.9s/2m30.0s
+
+running (1m12.9s), 109/500 VUs, 529 complete and 0 interrupted iterations
+default   [  49% ] 109/500 VUs  1m12.9s/2m30.0s
+
+running (1m13.9s), 113/500 VUs, 536 complete and 0 interrupted iterations
+default   [  49% ] 113/500 VUs  1m13.9s/2m30.0s
+
+running (1m14.9s), 116/500 VUs, 543 complete and 0 interrupted iterations
+default   [  50% ] 116/500 VUs  1m14.9s/2m30.0s
+time="2026-06-22T04:55:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m15.9s), 119/500 VUs, 550 complete and 0 interrupted iterations
+default   [  51% ] 119/500 VUs  1m15.9s/2m30.0s
+time="2026-06-22T04:55:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:10Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m16.9s), 123/500 VUs, 557 complete and 0 interrupted iterations
+default   [  51% ] 123/500 VUs  1m16.9s/2m30.0s
+time="2026-06-22T04:55:11Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m17.9s), 126/500 VUs, 564 complete and 0 interrupted iterations
+default   [  52% ] 126/500 VUs  1m17.9s/2m30.0s
+time="2026-06-22T04:55:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m18.9s), 129/500 VUs, 572 complete and 0 interrupted iterations
+default   [  53% ] 129/500 VUs  1m18.9s/2m30.0s
+time="2026-06-22T04:55:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:13Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m19.9s), 132/500 VUs, 580 complete and 0 interrupted iterations
+default   [  53% ] 132/500 VUs  1m19.9s/2m30.0s
+time="2026-06-22T04:55:14Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m20.9s), 136/500 VUs, 588 complete and 0 interrupted iterations
+default   [  54% ] 136/500 VUs  1m20.9s/2m30.0s
+time="2026-06-22T04:55:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m21.9s), 139/500 VUs, 596 complete and 0 interrupted iterations
+default   [  55% ] 139/500 VUs  1m21.9s/2m30.0s
+time="2026-06-22T04:55:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:16Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m22.9s), 143/500 VUs, 604 complete and 0 interrupted iterations
+default   [  55% ] 143/500 VUs  1m22.9s/2m30.0s
+time="2026-06-22T04:55:17Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m23.9s), 146/500 VUs, 612 complete and 0 interrupted iterations
+default   [  56% ] 146/500 VUs  1m23.9s/2m30.0s
+time="2026-06-22T04:55:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m24.9s), 149/500 VUs, 620 complete and 0 interrupted iterations
+default   [  57% ] 149/500 VUs  1m24.9s/2m30.0s
+time="2026-06-22T04:55:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:19Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m25.9s), 153/500 VUs, 628 complete and 0 interrupted iterations
+default   [  57% ] 153/500 VUs  1m25.9s/2m30.0s
+time="2026-06-22T04:55:20Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m26.9s), 156/500 VUs, 636 complete and 0 interrupted iterations
+default   [  58% ] 156/500 VUs  1m26.9s/2m30.0s
+time="2026-06-22T04:55:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m27.9s), 159/500 VUs, 644 complete and 0 interrupted iterations
+default   [  59% ] 159/500 VUs  1m27.9s/2m30.0s
+time="2026-06-22T04:55:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:22Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m28.9s), 163/500 VUs, 652 complete and 0 interrupted iterations
+default   [  59% ] 163/500 VUs  1m28.9s/2m30.0s
+time="2026-06-22T04:55:23Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m29.9s), 166/500 VUs, 660 complete and 0 interrupted iterations
+default   [  60% ] 166/500 VUs  1m29.9s/2m30.0s
+time="2026-06-22T04:55:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m30.9s), 169/500 VUs, 667 complete and 0 interrupted iterations
+default   [  61% ] 169/500 VUs  1m30.9s/2m30.0s
+time="2026-06-22T04:55:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:25Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m31.9s), 173/500 VUs, 674 complete and 0 interrupted iterations
+default   [  61% ] 173/500 VUs  1m31.9s/2m30.0s
+time="2026-06-22T04:55:26Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m32.9s), 176/500 VUs, 681 complete and 0 interrupted iterations
+default   [  62% ] 176/500 VUs  1m32.9s/2m30.0s
+time="2026-06-22T04:55:27Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m33.9s), 179/500 VUs, 688 complete and 0 interrupted iterations
+default   [  63% ] 179/500 VUs  1m33.9s/2m30.0s
+time="2026-06-22T04:55:27Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:28Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m34.9s), 183/500 VUs, 695 complete and 0 interrupted iterations
+default   [  63% ] 183/500 VUs  1m34.9s/2m30.0s
+time="2026-06-22T04:55:29Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m35.9s), 186/500 VUs, 701 complete and 0 interrupted iterations
+default   [  64% ] 186/500 VUs  1m35.9s/2m30.0s
+time="2026-06-22T04:55:30Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m36.9s), 189/500 VUs, 709 complete and 0 interrupted iterations
+default   [  65% ] 189/500 VUs  1m36.9s/2m30.0s
+time="2026-06-22T04:55:30Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:31Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m37.9s), 192/500 VUs, 716 complete and 0 interrupted iterations
+default   [  65% ] 193/500 VUs  1m37.9s/2m30.0s
+time="2026-06-22T04:55:32Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m38.9s), 196/500 VUs, 724 complete and 0 interrupted iterations
+default   [  66% ] 196/500 VUs  1m38.9s/2m30.0s
+time="2026-06-22T04:55:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m39.9s), 199/500 VUs, 732 complete and 0 interrupted iterations
+default   [  67% ] 199/500 VUs  1m39.9s/2m30.0s
+time="2026-06-22T04:55:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m40.9s), 209/500 VUs, 740 complete and 0 interrupted iterations
+default   [  67% ] 209/500 VUs  1m40.9s/2m30.0s
+time="2026-06-22T04:55:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m41.9s), 218/500 VUs, 748 complete and 0 interrupted iterations
+default   [  68% ] 218/500 VUs  1m41.9s/2m30.0s
+time="2026-06-22T04:55:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m42.9s), 229/500 VUs, 756 complete and 0 interrupted iterations
+default   [  69% ] 229/500 VUs  1m42.9s/2m30.0s
+time="2026-06-22T04:55:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m43.9s), 238/500 VUs, 764 complete and 0 interrupted iterations
+default   [  69% ] 238/500 VUs  1m43.9s/2m30.0s
+time="2026-06-22T04:55:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m44.9s), 249/500 VUs, 773 complete and 0 interrupted iterations
+default   [  70% ] 249/500 VUs  1m44.9s/2m30.0s
+
+running (1m45.9s), 259/500 VUs, 782 complete and 0 interrupted iterations
+default   [  71% ] 259/500 VUs  1m45.9s/2m30.0s
+time="2026-06-22T04:55:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m46.9s), 268/500 VUs, 791 complete and 0 interrupted iterations
+default   [  71% ] 268/500 VUs  1m46.9s/2m30.0s
+time="2026-06-22T04:55:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m47.9s), 278/500 VUs, 800 complete and 0 interrupted iterations
+default   [  72% ] 278/500 VUs  1m47.9s/2m30.0s
+time="2026-06-22T04:55:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m48.9s), 288/500 VUs, 809 complete and 0 interrupted iterations
+default   [  73% ] 288/500 VUs  1m48.9s/2m30.0s
+time="2026-06-22T04:55:43Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m49.9s), 298/500 VUs, 818 complete and 0 interrupted iterations
+default   [  73% ] 298/500 VUs  1m49.9s/2m30.0s
+time="2026-06-22T04:55:44Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m50.9s), 308/500 VUs, 825 complete and 0 interrupted iterations
+default   [  74% ] 308/500 VUs  1m50.9s/2m30.0s
+
+running (1m51.9s), 319/500 VUs, 833 complete and 0 interrupted iterations
+default   [  75% ] 319/500 VUs  1m51.9s/2m30.0s
+time="2026-06-22T04:55:45Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:46Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:46Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m52.9s), 328/500 VUs, 841 complete and 0 interrupted iterations
+default   [  75% ] 328/500 VUs  1m52.9s/2m30.0s
+time="2026-06-22T04:55:47Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:47Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:47Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m53.9s), 339/500 VUs, 848 complete and 0 interrupted iterations
+default   [  76% ] 339/500 VUs  1m53.9s/2m30.0s
+time="2026-06-22T04:55:48Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:48Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m54.9s), 348/500 VUs, 855 complete and 0 interrupted iterations
+default   [  77% ] 349/500 VUs  1m54.9s/2m30.0s
+time="2026-06-22T04:55:48Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:49Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m55.9s), 358/500 VUs, 861 complete and 0 interrupted iterations
+default   [  77% ] 359/500 VUs  1m55.9s/2m30.0s
+time="2026-06-22T04:55:49Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:50Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:50Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m56.9s), 368/500 VUs, 869 complete and 0 interrupted iterations
+default   [  78% ] 368/500 VUs  1m56.9s/2m30.0s
+time="2026-06-22T04:55:50Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:51Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m57.9s), 379/500 VUs, 876 complete and 0 interrupted iterations
+default   [  79% ] 379/500 VUs  1m57.9s/2m30.0s
+time="2026-06-22T04:55:51Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:52Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:52Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m58.9s), 389/500 VUs, 884 complete and 0 interrupted iterations
+default   [  79% ] 389/500 VUs  1m58.9s/2m30.0s
+time="2026-06-22T04:55:53Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:53Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:53Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (1m59.9s), 399/500 VUs, 892 complete and 0 interrupted iterations
+default   [  80% ] 399/500 VUs  1m59.9s/2m30.0s
+time="2026-06-22T04:55:54Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:54Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m00.9s), 409/500 VUs, 900 complete and 0 interrupted iterations
+default   [  81% ] 409/500 VUs  2m00.9s/2m30.0s
+time="2026-06-22T04:55:54Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:55Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m01.9s), 418/500 VUs, 908 complete and 0 interrupted iterations
+default   [  81% ] 418/500 VUs  2m01.9s/2m30.0s
+time="2026-06-22T04:55:56Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:56Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m02.9s), 428/500 VUs, 916 complete and 0 interrupted iterations
+default   [  82% ] 428/500 VUs  2m02.9s/2m30.0s
+time="2026-06-22T04:55:57Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m03.9s), 439/500 VUs, 924 complete and 0 interrupted iterations
+default   [  83% ] 439/500 VUs  2m03.9s/2m30.0s
+time="2026-06-22T04:55:57Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:58Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m04.9s), 449/500 VUs, 932 complete and 0 interrupted iterations
+default   [  83% ] 449/500 VUs  2m04.9s/2m30.0s
+time="2026-06-22T04:55:59Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:55:59Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m05.9s), 459/500 VUs, 940 complete and 0 interrupted iterations
+default   [  84% ] 459/500 VUs  2m05.9s/2m30.0s
+time="2026-06-22T04:56:00Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m06.9s), 469/500 VUs, 948 complete and 0 interrupted iterations
+default   [  85% ] 469/500 VUs  2m06.9s/2m30.0s
+time="2026-06-22T04:56:00Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:01Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m07.9s), 478/500 VUs, 956 complete and 0 interrupted iterations
+default   [  85% ] 478/500 VUs  2m07.9s/2m30.0s
+time="2026-06-22T04:56:02Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:02Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m08.9s), 488/500 VUs, 964 complete and 0 interrupted iterations
+default   [  86% ] 488/500 VUs  2m08.9s/2m30.0s
+time="2026-06-22T04:56:03Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m09.9s), 498/500 VUs, 972 complete and 0 interrupted iterations
+default   [  87% ] 498/500 VUs  2m09.9s/2m30.0s
+time="2026-06-22T04:56:03Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:04Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:04Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m10.9s), 500/500 VUs, 979 complete and 0 interrupted iterations
+default   [  87% ] 500/500 VUs  2m10.9s/2m30.0s
+time="2026-06-22T04:56:04Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:05Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:05Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:05Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m11.9s), 500/500 VUs, 986 complete and 0 interrupted iterations
+default   [  88% ] 500/500 VUs  2m11.9s/2m30.0s
+time="2026-06-22T04:56:06Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:06Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:06Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m12.9s), 500/500 VUs, 993 complete and 0 interrupted iterations
+default   [  89% ] 500/500 VUs  2m12.9s/2m30.0s
+time="2026-06-22T04:56:06Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:07Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:07Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m13.9s), 500/500 VUs, 1000 complete and 0 interrupted iterations
+default   [  89% ] 500/500 VUs  2m13.9s/2m30.0s
+time="2026-06-22T04:56:07Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:08Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:08Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:08Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m14.9s), 500/500 VUs, 1007 complete and 0 interrupted iterations
+default   [  90% ] 500/500 VUs  2m14.9s/2m30.0s
+time="2026-06-22T04:56:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m15.9s), 500/500 VUs, 1013 complete and 0 interrupted iterations
+default   [  91% ] 500/500 VUs  2m15.9s/2m30.0s
+time="2026-06-22T04:56:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:09Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:10Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:10Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:10Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m16.9s), 500/500 VUs, 1022 complete and 0 interrupted iterations
+default   [  91% ] 500/500 VUs  2m16.9s/2m30.0s
+time="2026-06-22T04:56:10Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:11Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:11Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:11Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:11Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m17.9s), 500/500 VUs, 1031 complete and 0 interrupted iterations
+default   [  92% ] 500/500 VUs  2m17.9s/2m30.0s
+time="2026-06-22T04:56:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m18.9s), 500/500 VUs, 1040 complete and 0 interrupted iterations
+default   [  93% ] 500/500 VUs  2m18.9s/2m30.0s
+time="2026-06-22T04:56:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:12Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:13Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:13Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:13Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m19.9s), 500/500 VUs, 1049 complete and 0 interrupted iterations
+default   [  93% ] 500/500 VUs  2m19.9s/2m30.0s
+time="2026-06-22T04:56:13Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:14Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:14Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:14Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:14Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m20.9s), 500/500 VUs, 1059 complete and 0 interrupted iterations
+default   [  94% ] 500/500 VUs  2m20.9s/2m30.0s
+time="2026-06-22T04:56:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m21.9s), 500/500 VUs, 1068 complete and 0 interrupted iterations
+default   [  95% ] 500/500 VUs  2m21.9s/2m30.0s
+time="2026-06-22T04:56:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:15Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:16Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:16Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:16Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m22.9s), 500/500 VUs, 1077 complete and 0 interrupted iterations
+default   [  95% ] 500/500 VUs  2m22.9s/2m30.0s
+time="2026-06-22T04:56:16Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:17Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:17Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:17Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:17Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m23.9s), 500/500 VUs, 1087 complete and 0 interrupted iterations
+default   [  96% ] 500/500 VUs  2m23.9s/2m30.0s
+time="2026-06-22T04:56:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m24.9s), 500/500 VUs, 1096 complete and 0 interrupted iterations
+default   [  97% ] 500/500 VUs  2m24.9s/2m30.0s
+time="2026-06-22T04:56:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:18Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:19Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:19Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:19Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m25.9s), 500/500 VUs, 1105 complete and 0 interrupted iterations
+default   [  97% ] 500/500 VUs  2m25.9s/2m30.0s
+time="2026-06-22T04:56:19Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:20Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:20Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:20Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:20Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m26.9s), 500/500 VUs, 1115 complete and 0 interrupted iterations
+default   [  98% ] 500/500 VUs  2m26.9s/2m30.0s
+time="2026-06-22T04:56:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m27.9s), 496/500 VUs, 1124 complete and 0 interrupted iterations
+default   [  99% ] 496/500 VUs  2m27.9s/2m30.0s
+time="2026-06-22T04:56:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:21Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:22Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:22Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:22Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m28.9s), 492/500 VUs, 1129 complete and 0 interrupted iterations
+default   [  99% ] 492/500 VUs  2m28.9s/2m30.0s
+time="2026-06-22T04:56:22Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:23Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:23Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:23Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:23Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m29.9s), 490/500 VUs, 1131 complete and 0 interrupted iterations
+default   [ 100% ] 490/500 VUs  2m29.9s/2m30.0s
+time="2026-06-22T04:56:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m30.9s), 489/500 VUs, 1132 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:24Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:25Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m31.9s), 488/500 VUs, 1133 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:26Z" level=warning msg="Request Failed" error="request timeout"
+
+running (2m32.9s), 483/500 VUs, 1138 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:27Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:27Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m33.9s), 478/500 VUs, 1143 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:27Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:27Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:28Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:28Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:28Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m34.9s), 478/500 VUs, 1143 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:28Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:29Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:29Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:29Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:29Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m35.9s), 476/500 VUs, 1145 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:30Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:30Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:30Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m36.9s), 475/500 VUs, 1146 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+
+running (2m37.9s), 470/500 VUs, 1151 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:32Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:32Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:32Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m38.9s), 466/500 VUs, 1155 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m39.9s), 465/500 VUs, 1156 complete and 0 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:33Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m40.9s), 442/500 VUs, 1157 complete and 22 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:34Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m41.9s), 415/500 VUs, 1159 complete and 47 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:35Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m42.9s), 385/500 VUs, 1164 complete and 72 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:36Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m43.9s), 355/500 VUs, 1169 complete and 97 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:37Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m44.9s), 329/500 VUs, 1170 complete and 122 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:38Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m45.9s), 303/500 VUs, 1171 complete and 147 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:39Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:40Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:40Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:40Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:40Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:40Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:40Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:40Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m46.9s), 278/500 VUs, 1171 complete and 172 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m47.9s), 248/500 VUs, 1176 complete and 197 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:41Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+time="2026-06-22T04:56:42Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m48.9s), 218/500 VUs, 1181 complete and 222 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:43Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:43Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m49.9s), 200/500 VUs, 1182 complete and 239 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:44Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:44Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/health\": request timeout"
+
+running (2m50.9s), 174/500 VUs, 1183 complete and 264 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+
+running (2m51.9s), 155/500 VUs, 1184 complete and 282 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+
+running (2m52.9s), 132/500 VUs, 1188 complete and 301 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+
+running (2m53.9s), 109/500 VUs, 1192 complete and 320 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:48Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m54.9s), 084/500 VUs, 1192 complete and 345 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:48Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:49Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m55.9s), 058/500 VUs, 1193 complete and 370 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+time="2026-06-22T04:56:49Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+time="2026-06-22T04:56:50Z" level=warning msg="Request Failed" error="Get \"http://122.51.70.33:10002/api/v1/auth/info\": request timeout"
+
+running (2m56.9s), 031/500 VUs, 1195 complete and 395 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+
+running (2m57.9s), 027/500 VUs, 1197 complete and 397 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+
+running (2m58.9s), 018/500 VUs, 1201 complete and 402 interrupted iterations
+default ↓ [ 100% ] 490/500 VUs  2m30s
+
+
+  █ THRESHOLDS
+
+    http_req_duration
+    ✗ 'p(95)<500' p(95)=59.99s
+    ✗ 'p(99)<2000' p(99)=59.99s
+
+    request_failed
+    ✗ 'rate<0.01' rate=56.03%
+
+
+  █ TOTAL RESULTS
+
+    CUSTOM
+    health_duration................: avg=12580.23801 min=4.027847 med=4.853039  max=59998.993488 p(90)=59998.088016 p(95)=59998.387225
+    info_duration..................: avg=3217.089016 min=2.648027 med=46.496668 max=59998.951442 p(90)=50.507047    p(95)=58641.215652
+    request_failed.................: 56.03% 1454 out of 2595
+
+    HTTP
+    http_req_duration..............: avg=8.23s       min=2.64ms   med=45.88ms   max=59.99s       p(90)=59.99s       p(95)=59.99s
+      { expected_response:true }...: avg=2.23s       min=4.02ms   med=4.67ms    max=59.97s       p(90)=5.02ms       p(95)=5.44ms
+    http_req_failed................: 56.03% 1454 out of 2595
+    http_reqs......................: 2595   14.442215/s
+
+    EXECUTION
+    iteration_duration.............: avg=9.14s       min=1s       med=1.05s     max=2m1s         p(90)=1.05s        p(95)=1m1s
+    iterations.....................: 1201   6.684046/s
+    vus............................: 18     min=1            max=500
+    vus_max........................: 500    min=500          max=500
+
+    NETWORK
+    data_received..................: 343 kB 1.9 kB/s
+    data_sent......................: 865 kB 4.8 kB/s
+
+
+
+
+running (2m59.7s), 000/500 VUs, 1201 complete and 420 interrupted iterations
+default ✓ [ 100% ] 000/500 VUs  2m30s
+time="2026-06-22T04:56:54Z" level=error msg="thresholds on metrics 'http_req_duration, request_failed' have been crossed"
