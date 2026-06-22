@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include <httplib.h>
+#include "http_types.hpp"
 #include <spdlog/logger.h>
 
 namespace im::gateway {
@@ -27,16 +27,16 @@ public:
         std::shared_ptr<MultiPlatformAuthManager> auth_mgr
     );
 
-    void handle_create_group(const httplib::Request& req, httplib::Response& res);
-    void handle_join_group(const httplib::Request& req, httplib::Response& res);
-    void handle_leave_group(const httplib::Request& req, httplib::Response& res);
-    void handle_group_info(const httplib::Request& req, httplib::Response& res);
-    void handle_search_groups(const httplib::Request& req, httplib::Response& res);
-    void handle_list_groups(const httplib::Request& req, httplib::Response& res);
-    void handle_list_members(const httplib::Request& req, httplib::Response& res);
+    void handle_create_group(const HttpRequest& req, HttpResponse& res);
+    void handle_join_group(const HttpRequest& req, HttpResponse& res);
+    void handle_leave_group(const HttpRequest& req, HttpResponse& res);
+    void handle_group_info(const HttpRequest& req, HttpResponse& res);
+    void handle_search_groups(const HttpRequest& req, HttpResponse& res);
+    void handle_list_groups(const HttpRequest& req, HttpResponse& res);
+    void handle_list_members(const HttpRequest& req, HttpResponse& res);
 
 private:
-    std::string extract_bearer_token(const httplib::Request& req) const;
+    std::string extract_bearer_token(const HttpRequest& req) const;
 
     std::shared_ptr<GroupClient> group_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;

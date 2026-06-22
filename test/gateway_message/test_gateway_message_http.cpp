@@ -136,7 +136,7 @@ protected:
     RecordingPushNotifier recording_notifier_;
 };
 
-json parse_body(const httplib::Response& res) {
+json parse_body(const im::gateway::HttpResponse& res) {
     return json::parse(res.body);
 }
 
@@ -145,7 +145,7 @@ TEST_F(GatewayMessageHttpTest, SendMessageWithValidTokenReturns201) {
     std::string receiver_uid = "task4-test-send-201-receiver";
     std::string token = make_token_for(*auth_mgr_, sender_uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     json body;
@@ -153,7 +153,7 @@ TEST_F(GatewayMessageHttpTest, SendMessageWithValidTokenReturns201) {
     body["content"] = "Hello from test!";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send(req, res);
 
     EXPECT_EQ(res.status, 201) << "Body: " << res.body;
@@ -171,7 +171,7 @@ TEST_F(GatewayMessageHttpTest, SendMessageNotifiesReceiverThroughBoundary) {
     std::string token = make_token_for(*auth_mgr_, sender_uid);
     controller_->set_push_notifier(&recording_notifier_);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     req.body = json{
@@ -179,7 +179,7 @@ TEST_F(GatewayMessageHttpTest, SendMessageNotifiesReceiverThroughBoundary) {
         {"content", "HTTP push boundary"}
     }.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send(req, res);
 
     EXPECT_EQ(res.status, 201) << "Body: " << res.body;
@@ -196,21 +196,21 @@ TEST_F(GatewayMessageHttpTest, SendMessageNotifiesReceiverThroughBoundary) {
 }
 
 TEST_F(GatewayMessageHttpTest, SendMessageMissingTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     json body;
     body["receiver_uid"] = "task4-test-no-token-rec";
     body["content"] = "No token";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send(req, res);
 
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
 }
 
 TEST_F(GatewayMessageHttpTest, SendMessageInvalidTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer definitely-invalid-token");
     json body;
@@ -218,7 +218,7 @@ TEST_F(GatewayMessageHttpTest, SendMessageInvalidTokenReturns401) {
     body["content"] = "Bad token";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send(req, res);
 
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
@@ -229,28 +229,28 @@ TEST_F(GatewayMessageHttpTest, SendMessageMissingFieldsReturns400) {
 
     // Missing receiver_uid
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + token);
         json body;
         body["content"] = "missing receiver";
         req.body = body.dump();
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send(req, res);
         EXPECT_EQ(res.status, 400) << "Body: " << res.body;
     }
 
     // Missing content
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + token);
         json body;
         body["receiver_uid"] = "task4-test-missing-content";
         req.body = body.dump();
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send(req, res);
         EXPECT_EQ(res.status, 400) << "Body: " << res.body;
     }
@@ -263,7 +263,7 @@ TEST_F(GatewayMessageHttpTest, SendMessageTrustsTokenUidNotBodyUid) {
     std::string receiver_uid = "task4-test-trust-rec";
     std::string token = make_token_for(*auth_mgr_, token_uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     json body;
@@ -272,7 +272,7 @@ TEST_F(GatewayMessageHttpTest, SendMessageTrustsTokenUidNotBodyUid) {
     body["content"] = "Trust token";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send(req, res);
 
     EXPECT_EQ(res.status, 201) << "Body: " << res.body;
@@ -288,14 +288,14 @@ TEST_F(GatewayMessageHttpTest, HistoryQueryReturnsMessages) {
     std::string token = make_token_for(*auth_mgr_, sender_uid);
 
     auto send_msg = [&](const std::string& content) {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + token);
         json body;
         body["receiver_uid"] = receiver_uid;
         body["content"] = content;
         req.body = body.dump();
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send(req, res);
         EXPECT_EQ(res.status, 201);
     };
@@ -304,12 +304,12 @@ TEST_F(GatewayMessageHttpTest, HistoryQueryReturnsMessages) {
     send_msg("history message 2");
 
     // Query history
-    httplib::Request hist_req;
+    im::gateway::HttpRequest hist_req;
     hist_req.method = "GET";
     hist_req.set_header("Authorization", "Bearer " + token);
     hist_req.params.emplace("peer_uid", receiver_uid);
 
-    httplib::Response hist_res;
+    im::gateway::HttpResponse hist_res;
     controller_->handle_history(hist_req, hist_res);
 
     EXPECT_EQ(hist_res.status, 200) << "Body: " << hist_res.body;
@@ -323,11 +323,11 @@ TEST_F(GatewayMessageHttpTest, HistoryQueryReturnsMessages) {
 TEST_F(GatewayMessageHttpTest, HistoryQueryMissingPeerReturns400) {
     std::string token = make_token_for(*auth_mgr_, "task4-test-hist-no-peer");
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.set_header("Authorization", "Bearer " + token);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_history(req, res);
 
     EXPECT_EQ(res.status, 400) << "Body: " << res.body;
@@ -340,14 +340,14 @@ TEST_F(GatewayMessageHttpTest, OfflinePullReturnsAndDeliversMessages) {
     std::string sender_token = make_token_for(*auth_mgr_, sender_uid);
 
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + sender_token);
         json body;
         body["receiver_uid"] = receiver_uid;
         body["content"] = "Offline message";
         req.body = body.dump();
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send(req, res);
         ASSERT_EQ(res.status, 201);
     }
@@ -355,11 +355,11 @@ TEST_F(GatewayMessageHttpTest, OfflinePullReturnsAndDeliversMessages) {
     // Pull offline as receiver
     std::string recv_token = make_token_for(*auth_mgr_, receiver_uid);
 
-    httplib::Request off_req;
+    im::gateway::HttpRequest off_req;
     off_req.method = "GET";
     off_req.set_header("Authorization", "Bearer " + recv_token);
 
-    httplib::Response off_res;
+    im::gateway::HttpResponse off_res;
     controller_->handle_offline(off_req, off_res);
 
     EXPECT_EQ(off_res.status, 200) << "Body: " << off_res.body;
@@ -372,7 +372,7 @@ TEST_F(GatewayMessageHttpTest, OfflinePullReturnsAndDeliversMessages) {
 
     // Second pull should be empty (messages were marked delivered)
     {
-        httplib::Response off_res2;
+        im::gateway::HttpResponse off_res2;
         controller_->handle_offline(off_req, off_res2);
         EXPECT_EQ(off_res2.status, 200);
         json j2 = parse_body(off_res2);

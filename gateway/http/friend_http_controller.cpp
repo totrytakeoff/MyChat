@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../../common/utils/http_utils.hpp"
+#include "http_response_builder.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "friend_client.hpp"
@@ -17,7 +17,6 @@ namespace gateway {
 using json = nlohmann::json;
 using im::service::friend_::FriendRequest;
 using im::service::friend_::FriendInfoDTO;
-using im::utils::HttpUtils;
 using im::utils::LogManager;
 
 namespace {
@@ -51,18 +50,18 @@ FriendHttpController::FriendHttpController(
 }
 
 void FriendHttpController::handle_send_request(
-    const httplib::Request& req, httplib::Response& res)
+    const HttpRequest& req, HttpResponse& res)
 {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            build_http_response(res, 401, "", "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            build_http_response(res, 401, "", "Invalid or expired access token");
             return;
         }
 
@@ -70,13 +69,13 @@ void FriendHttpController::handle_send_request(
         try {
             body = json::parse(req.body);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            build_http_response(res, 400, "", "Invalid JSON body");
             return;
         }
 
         std::string target_uid = body.value("target_uid", "");
         if (target_uid.empty()) {
-            HttpUtils::buildResponse(res, 400, "", "Missing required field: target_uid");
+            build_http_response(res, 400, "", "Missing required field: target_uid");
             return;
         }
 
@@ -92,7 +91,7 @@ void FriendHttpController::handle_send_request(
             if (result.error_code == "ALREADY_EXISTS") status = 409;
             else if (result.error_code == "TARGET_NOT_FOUND") status = 404;
             else if (result.error_code == "SELF_REQUEST") status = 400;
-            HttpUtils::buildResponse(res, status, "", result.message);
+            build_http_response(res, status, "", result.message);
             logger_->warn("Send friend request failed: {} ({})", result.message, result.error_code);
             return;
         }
@@ -105,23 +104,23 @@ void FriendHttpController::handle_send_request(
         logger_->info("Friend request sent: {} -> {}", user_info.user_id, target_uid);
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_send_request: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
 void FriendHttpController::handle_respond_request(
-    const httplib::Request& req, httplib::Response& res)
+    const HttpRequest& req, HttpResponse& res)
 {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            build_http_response(res, 401, "", "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            build_http_response(res, 401, "", "Invalid or expired access token");
             return;
         }
 
@@ -129,7 +128,7 @@ void FriendHttpController::handle_respond_request(
         try {
             body = json::parse(req.body);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            build_http_response(res, 400, "", "Invalid JSON body");
             return;
         }
 
@@ -137,7 +136,7 @@ void FriendHttpController::handle_respond_request(
         bool accept = body.value("accept", false);
 
         if (friend_id == 0) {
-            HttpUtils::buildResponse(res, 400, "", "Missing required field: friend_id");
+            build_http_response(res, 400, "", "Missing required field: friend_id");
             return;
         }
 
@@ -147,7 +146,7 @@ void FriendHttpController::handle_respond_request(
             int status = 400;
             if (result.error_code == "NOT_FOUND") status = 404;
             else if (result.error_code == "FORBIDDEN") status = 403;
-            HttpUtils::buildResponse(res, status, "", result.message);
+            build_http_response(res, status, "", result.message);
             logger_->warn("Respond to friend request failed: {} ({})", result.message, result.error_code);
             return;
         }
@@ -161,23 +160,23 @@ void FriendHttpController::handle_respond_request(
             accept ? "accepted" : "rejected", friend_id, user_info.user_id);
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_respond_request: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
 void FriendHttpController::handle_list_friends(
-    const httplib::Request& req, httplib::Response& res)
+    const HttpRequest& req, HttpResponse& res)
 {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            build_http_response(res, 401, "", "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            build_http_response(res, 401, "", "Invalid or expired access token");
             return;
         }
 
@@ -195,23 +194,23 @@ void FriendHttpController::handle_list_friends(
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_list_friends: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
 void FriendHttpController::handle_pending_requests(
-    const httplib::Request& req, httplib::Response& res)
+    const HttpRequest& req, HttpResponse& res)
 {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            build_http_response(res, 401, "", "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            build_http_response(res, 401, "", "Invalid or expired access token");
             return;
         }
 
@@ -229,12 +228,12 @@ void FriendHttpController::handle_pending_requests(
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_pending_requests: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
 std::string FriendHttpController::extract_bearer_token(
-    const httplib::Request& req) const
+    const HttpRequest& req) const
 {
     auto it = req.headers.find("Authorization");
     if (it == req.headers.end()) {

@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../../common/utils/http_utils.hpp"
+#include "http_response_builder.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "message_client.hpp"
@@ -18,7 +18,6 @@ namespace im::gateway {
 using json = nlohmann::json;
 using im::service::message::MessageData;
 using im::service::message::SendRequest;
-using im::utils::HttpUtils;
 using im::utils::LogManager;
 
 namespace {
@@ -57,18 +56,18 @@ MessageHttpController::MessageHttpController(
     logger_ = LogManager::GetLogger("message_http_controller");
 }
 
-void MessageHttpController::handle_send(const httplib::Request& req, httplib::Response& res) {
+void MessageHttpController::handle_send(const HttpRequest& req, HttpResponse& res) {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Invalid or expired access token");
             return;
         }
@@ -77,7 +76,7 @@ void MessageHttpController::handle_send(const httplib::Request& req, httplib::Re
         try {
             body = json::parse(req.body);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            build_http_response(res, 400, "", "Invalid JSON body");
             return;
         }
 
@@ -85,7 +84,7 @@ void MessageHttpController::handle_send(const httplib::Request& req, httplib::Re
         std::string content = body.value("content", "");
 
         if (receiver_uid.empty() || content.empty()) {
-            HttpUtils::buildResponse(res, 400, "",
+            build_http_response(res, 400, "",
                 "Missing required fields: receiver_uid, content");
             return;
         }
@@ -101,7 +100,7 @@ void MessageHttpController::handle_send(const httplib::Request& req, httplib::Re
         auto result = msg_client_->send_text_message(send_req);
 
         if (!result.ok) {
-            HttpUtils::buildResponse(res, 500, "", result.message);
+            build_http_response(res, 500, "", result.message);
             logger_->warn("Send message failed: {} ({})", result.message, result.error_code);
             return;
         }
@@ -123,29 +122,29 @@ void MessageHttpController::handle_send(const httplib::Request& req, httplib::Re
             result.data.sender_uid, result.data.receiver_uid, result.data.msg_id);
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_send: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-void MessageHttpController::handle_history(const httplib::Request& req, httplib::Response& res) {
+void MessageHttpController::handle_history(const HttpRequest& req, HttpResponse& res) {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Invalid or expired access token");
             return;
         }
 
         std::string peer_uid = req.has_param("peer_uid") ? req.get_param_value("peer_uid") : "";
         if (peer_uid.empty()) {
-            HttpUtils::buildResponse(res, 400, "",
+            build_http_response(res, 400, "",
                 "Missing required query parameter: peer_uid");
             return;
         }
@@ -155,7 +154,7 @@ void MessageHttpController::handle_history(const httplib::Request& req, httplib:
             try {
                 before_time = std::stoll(req.get_param_value("before_time"));
             } catch (...) {
-                HttpUtils::buildResponse(res, 400, "",
+                build_http_response(res, 400, "",
                     "Invalid before_time parameter");
                 return;
             }
@@ -186,22 +185,22 @@ void MessageHttpController::handle_history(const httplib::Request& req, httplib:
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_history: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-void MessageHttpController::handle_offline(const httplib::Request& req, httplib::Response& res) {
+void MessageHttpController::handle_offline(const HttpRequest& req, HttpResponse& res) {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Invalid or expired access token");
             return;
         }
@@ -211,7 +210,7 @@ void MessageHttpController::handle_offline(const httplib::Request& req, httplib:
             try {
                 before_time = std::stoll(req.get_param_value("before_time"));
             } catch (...) {
-                HttpUtils::buildResponse(res, 400, "",
+                build_http_response(res, 400, "",
                     "Invalid before_time parameter");
                 return;
             }
@@ -251,11 +250,11 @@ void MessageHttpController::handle_offline(const httplib::Request& req, httplib:
         logger_->info("Pulled {} offline messages for user {}", msgs.size(), user_info.user_id);
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_offline: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-std::string MessageHttpController::extract_bearer_token(const httplib::Request& req) const {
+std::string MessageHttpController::extract_bearer_token(const HttpRequest& req) const {
     auto it = req.headers.find("Authorization");
     if (it == req.headers.end()) {
         return "";

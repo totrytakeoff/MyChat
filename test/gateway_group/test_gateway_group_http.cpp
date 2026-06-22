@@ -147,18 +147,18 @@ protected:
     std::unique_ptr<GroupHttpController> controller_;
 };
 
-json parse_body(const httplib::Response& res) {
+json parse_body(const im::gateway::HttpResponse& res) {
     return json::parse(res.body);
 }
 
 // ==================== Create Group Tests ====================
 
 TEST_F(GatewayGroupHttpTest, CreateGroupRequiresAuth) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.body = R"({"name":"test-group"})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_create_group(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -168,12 +168,12 @@ TEST_F(GatewayGroupHttpTest, CreateGroupHappyPath) {
     std::string uid = create_user("group-http-test-create-ok");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = R"({"name":"group-http-test-create-ok-group"})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_create_group(req, res);
 
     EXPECT_EQ(res.status, 201);
@@ -186,12 +186,12 @@ TEST_F(GatewayGroupHttpTest, CreateGroupMissingName) {
     std::string uid = create_user("group-http-test-create-no-name");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = R"({})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_create_group(req, res);
 
     EXPECT_EQ(res.status, 400);
@@ -201,24 +201,24 @@ TEST_F(GatewayGroupHttpTest, CreateGroupInvalidJson) {
     std::string uid = create_user("group-http-test-create-bad-json");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = "not-json";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_create_group(req, res);
 
     EXPECT_EQ(res.status, 400);
 }
 
 TEST_F(GatewayGroupHttpTest, CreateGroupWithInvalidToken) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer invalid-token");
     req.body = R"({"name":"test-group"})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_create_group(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -227,11 +227,11 @@ TEST_F(GatewayGroupHttpTest, CreateGroupWithInvalidToken) {
 // ==================== Join Group Tests ====================
 
 TEST_F(GatewayGroupHttpTest, JoinGroupRequiresAuth) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.body = R"({"group_id":1})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_join_group(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -250,12 +250,12 @@ TEST_F(GatewayGroupHttpTest, JoinGroupHappyPath) {
     auto cres = group_svc_->create_group(creq);
     ASSERT_TRUE(cres.ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", cres.group_id}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_join_group(req, res);
 
     EXPECT_EQ(res.status, 200);
@@ -267,12 +267,12 @@ TEST_F(GatewayGroupHttpTest, JoinGroupNotFound) {
     std::string uid = create_user("group-http-test-join-nf");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = R"({"group_id":99999999})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_join_group(req, res);
 
     EXPECT_EQ(res.status, 404);
@@ -294,12 +294,12 @@ TEST_F(GatewayGroupHttpTest, JoinGroupAlreadyMember) {
     ASSERT_TRUE(group_svc_->join_group(cres.group_id, uid_member, kNowMs).ok);
 
     // Second join should fail
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", cres.group_id}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_join_group(req, res);
 
     EXPECT_EQ(res.status, 409);
@@ -309,12 +309,12 @@ TEST_F(GatewayGroupHttpTest, JoinGroupMissingGroupId) {
     std::string uid = create_user("group-http-test-join-no-id");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = R"({})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_join_group(req, res);
 
     EXPECT_EQ(res.status, 400);
@@ -323,11 +323,11 @@ TEST_F(GatewayGroupHttpTest, JoinGroupMissingGroupId) {
 // ==================== Leave Group Tests ====================
 
 TEST_F(GatewayGroupHttpTest, LeaveGroupRequiresAuth) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.body = R"({"group_id":1})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_leave_group(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -347,12 +347,12 @@ TEST_F(GatewayGroupHttpTest, LeaveGroupHappyPath) {
 
     ASSERT_TRUE(group_svc_->join_group(cres.group_id, uid_member, kNowMs).ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", cres.group_id}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_leave_group(req, res);
 
     EXPECT_EQ(res.status, 200);
@@ -371,12 +371,12 @@ TEST_F(GatewayGroupHttpTest, LeaveGroupOwnerCannotLeave) {
     auto cres = group_svc_->create_group(creq);
     ASSERT_TRUE(cres.ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", cres.group_id}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_leave_group(req, res);
 
     EXPECT_EQ(res.status, 403);
@@ -394,12 +394,12 @@ TEST_F(GatewayGroupHttpTest, LeaveGroupNotMember) {
     auto cres = group_svc_->create_group(creq);
     ASSERT_TRUE(cres.ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", cres.group_id}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_leave_group(req, res);
 
     EXPECT_EQ(res.status, 403);
@@ -409,12 +409,12 @@ TEST_F(GatewayGroupHttpTest, LeaveGroupNotFound) {
     std::string uid = create_user("group-http-test-leave-nf");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = R"({"group_id":99999999})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_leave_group(req, res);
 
     EXPECT_EQ(res.status, 404);
@@ -423,10 +423,10 @@ TEST_F(GatewayGroupHttpTest, LeaveGroupNotFound) {
 // ==================== List Groups Tests ====================
 
 TEST_F(GatewayGroupHttpTest, ListGroupsRequiresAuth) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_groups(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -444,11 +444,11 @@ TEST_F(GatewayGroupHttpTest, ListGroupsReturnsMyGroups) {
     auto c1 = group_svc_->create_group(creq);
     ASSERT_TRUE(c1.ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token_a);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_groups(req, res);
 
     EXPECT_EQ(res.status, 200);
@@ -470,11 +470,11 @@ TEST_F(GatewayGroupHttpTest, ListGroupsEmptyForNewUser) {
     std::string uid = create_user("group-http-test-list-empty");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_groups(req, res);
 
     EXPECT_EQ(res.status, 200);
@@ -495,12 +495,12 @@ TEST_F(GatewayGroupHttpTest, SearchGroupsByNameAndInfoBeforeJoin) {
     auto cres = group_svc_->create_group(creq);
     ASSERT_TRUE(cres.ok);
 
-    httplib::Request search_req;
+    im::gateway::HttpRequest search_req;
     search_req.method = "GET";
     search_req.headers.emplace("Authorization", "Bearer " + token);
     search_req.params.emplace("q", "search-target");
 
-    httplib::Response search_res;
+    im::gateway::HttpResponse search_res;
     controller_->handle_search_groups(search_req, search_res);
 
     ASSERT_EQ(search_res.status, 200) << "Body: " << search_res.body;
@@ -510,12 +510,12 @@ TEST_F(GatewayGroupHttpTest, SearchGroupsByNameAndInfoBeforeJoin) {
     EXPECT_EQ(search_body["groups"][0]["group_id"], cres.group_id);
     EXPECT_EQ(search_body["groups"][0]["joined"], false);
 
-    httplib::Request info_req;
+    im::gateway::HttpRequest info_req;
     info_req.method = "GET";
     info_req.headers.emplace("Authorization", "Bearer " + token);
     info_req.params.emplace("group_id", std::to_string(cres.group_id));
 
-    httplib::Response info_res;
+    im::gateway::HttpResponse info_res;
     controller_->handle_group_info(info_req, info_res);
 
     ASSERT_EQ(info_res.status, 200) << "Body: " << info_res.body;
@@ -538,12 +538,12 @@ TEST_F(GatewayGroupHttpTest, GroupInfoIncludesMembersAfterJoin) {
     ASSERT_TRUE(cres.ok);
     ASSERT_TRUE(group_svc_->join_group(cres.group_id, uid_member, kNowMs).ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(cres.group_id));
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_group_info(req, res);
 
     ASSERT_EQ(res.status, 200) << "Body: " << res.body;
@@ -556,11 +556,11 @@ TEST_F(GatewayGroupHttpTest, GroupInfoIncludesMembersAfterJoin) {
 // ==================== List Members Tests ====================
 
 TEST_F(GatewayGroupHttpTest, ListMembersRequiresAuth) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.params.emplace("group_id", "1");
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_members(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -580,12 +580,12 @@ TEST_F(GatewayGroupHttpTest, ListMembersHappyPath) {
 
     ASSERT_TRUE(group_svc_->join_group(cres.group_id, uid_member, kNowMs).ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(cres.group_id));
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_members(req, res);
 
     EXPECT_EQ(res.status, 200);
@@ -606,12 +606,12 @@ TEST_F(GatewayGroupHttpTest, ListMembersNonMemberGetsEmpty) {
     auto cres = group_svc_->create_group(creq);
     ASSERT_TRUE(cres.ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(cres.group_id));
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_members(req, res);
 
     EXPECT_EQ(res.status, 403);
@@ -621,12 +621,12 @@ TEST_F(GatewayGroupHttpTest, ListMembersNonexistentGroup) {
     std::string uid = create_user("group-http-test-members-nf");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", "99999999");
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_members(req, res);
 
     EXPECT_EQ(res.status, 404);
@@ -636,11 +636,11 @@ TEST_F(GatewayGroupHttpTest, ListMembersMissingGroupId) {
     std::string uid = create_user("group-http-test-members-no-id");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_members(req, res);
 
     EXPECT_EQ(res.status, 400);

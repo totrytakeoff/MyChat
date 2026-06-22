@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include <httplib.h>
+#include "http_types.hpp"
 #include <spdlog/logger.h>
 
 namespace im::gateway {
@@ -35,12 +35,12 @@ public:
         push_notifier_ = notifier;
     }
 
-    void handle_send(const httplib::Request& req, httplib::Response& res);
-    void handle_history(const httplib::Request& req, httplib::Response& res);
-    void handle_offline(const httplib::Request& req, httplib::Response& res);
+    void handle_send(const HttpRequest& req, HttpResponse& res);
+    void handle_history(const HttpRequest& req, HttpResponse& res);
+    void handle_offline(const HttpRequest& req, HttpResponse& res);
 
 private:
-    std::string extract_bearer_token(const httplib::Request& req) const;
+    std::string extract_bearer_token(const HttpRequest& req) const;
 
     std::shared_ptr<MessageClient> msg_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;

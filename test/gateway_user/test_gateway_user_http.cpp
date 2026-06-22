@@ -108,16 +108,16 @@ protected:
 };
 
 // Helper: parse JSON body from a response
-json parse_body(const httplib::Response& res) {
+json parse_body(const im::gateway::HttpResponse& res) {
     return json::parse(res.body);
 }
 
 // Helper: register a user through the controller, return the response
-httplib::Response do_register(UserHttpController& ctrl,
+im::gateway::HttpResponse do_register(UserHttpController& ctrl,
                               const std::string& account,
                               const std::string& password,
                               const std::string& nickname = "") {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     json body;
     body["account"] = account;
     body["password"] = password;
@@ -125,23 +125,23 @@ httplib::Response do_register(UserHttpController& ctrl,
     req.body = body.dump();
     req.method = "POST";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     ctrl.handle_register(req, res);
     return res;
 }
 
 // Helper: login through the controller
-httplib::Response do_login(UserHttpController& ctrl,
+im::gateway::HttpResponse do_login(UserHttpController& ctrl,
                            const std::string& account,
                            const std::string& password) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     json body;
     body["account"] = account;
     body["password"] = password;
     req.body = body.dump();
     req.method = "POST";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     ctrl.handle_login(req, res);
     return res;
 }
@@ -168,13 +168,13 @@ TEST_F(GatewayUserHttpTest, RegisterDuplicateReturns409) {
 }
 
 TEST_F(GatewayUserHttpTest, RegisterMissingFieldsReturns400) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     json body;
     body["account"] = "task6-test-missing";
     req.body = body.dump();
     req.method = "POST";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_register(req, res);
     EXPECT_EQ(res.status, 400) << "Body: " << res.body;
 }
@@ -207,11 +207,11 @@ TEST_F(GatewayUserHttpTest, ProfileWithValidTokenReturns200) {
     json reg_j = parse_body(reg);
     std::string access_token = reg_j["access_token"];
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.set_header("Authorization", "Bearer " + access_token);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_profile(req, res);
     EXPECT_EQ(res.status, 200) << "Body: " << res.body;
 
@@ -221,32 +221,32 @@ TEST_F(GatewayUserHttpTest, ProfileWithValidTokenReturns200) {
 }
 
 TEST_F(GatewayUserHttpTest, ProfileMissingTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_profile(req, res);
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
 }
 
 TEST_F(GatewayUserHttpTest, ProfileInvalidTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.set_header("Authorization", "Bearer definitely-invalid-token");
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_profile(req, res);
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
 }
 
 TEST_F(GatewayUserHttpTest, ProfileNonExistentUidReturns404) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     auto token = auth_mgr_->generate_access_token(
         "task6-test-missing-uid", "missing-account", "device-web", "web", 60);
     req.set_header("Authorization", "Bearer " + token);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_profile(req, res);
     EXPECT_EQ(res.status, 404) << "Body: " << res.body;
 }
@@ -257,14 +257,14 @@ TEST_F(GatewayUserHttpTest, UpdateProfileRequiresAuthAndPersistsEditableFields) 
     json reg_j = parse_body(reg);
     std::string access_token = reg_j["access_token"];
 
-    httplib::Request missing_auth_req;
+    im::gateway::HttpRequest missing_auth_req;
     missing_auth_req.method = "POST";
     missing_auth_req.body = R"({"nickname":"NoAuth"})";
-    httplib::Response missing_auth_res;
+    im::gateway::HttpResponse missing_auth_res;
     controller_->handle_update_profile(missing_auth_req, missing_auth_res);
     EXPECT_EQ(missing_auth_res.status, 401) << "Body: " << missing_auth_res.body;
 
-    httplib::Request update_req;
+    im::gateway::HttpRequest update_req;
     update_req.method = "POST";
     update_req.set_header("Authorization", "Bearer " + access_token);
     json update_body;
@@ -274,7 +274,7 @@ TEST_F(GatewayUserHttpTest, UpdateProfileRequiresAuthAndPersistsEditableFields) 
     update_body["signature"] = "profile updated";
     update_req.body = update_body.dump();
 
-    httplib::Response update_res;
+    im::gateway::HttpResponse update_res;
     controller_->handle_update_profile(update_req, update_res);
     ASSERT_EQ(update_res.status, 200) << "Body: " << update_res.body;
     json update_j = parse_body(update_res);
@@ -284,10 +284,10 @@ TEST_F(GatewayUserHttpTest, UpdateProfileRequiresAuthAndPersistsEditableFields) 
     EXPECT_EQ(update_j["profile"]["gender"], 2);
     EXPECT_EQ(update_j["profile"]["signature"], "profile updated");
 
-    httplib::Request profile_req;
+    im::gateway::HttpRequest profile_req;
     profile_req.method = "GET";
     profile_req.set_header("Authorization", "Bearer " + access_token);
-    httplib::Response profile_res;
+    im::gateway::HttpResponse profile_res;
     controller_->handle_profile(profile_req, profile_res);
     ASSERT_EQ(profile_res.status, 200) << "Body: " << profile_res.body;
     json profile_j = parse_body(profile_res);
@@ -306,24 +306,24 @@ TEST_F(GatewayUserHttpTest, SearchUserFindsByUidAndAccount) {
     std::string access_token = alice_j["access_token"];
     std::string bob_uid = bob_j["profile"]["uid"];
 
-    httplib::Request by_uid_req;
+    im::gateway::HttpRequest by_uid_req;
     by_uid_req.method = "GET";
     by_uid_req.set_header("Authorization", "Bearer " + access_token);
     by_uid_req.params.emplace("q", bob_uid);
 
-    httplib::Response by_uid_res;
+    im::gateway::HttpResponse by_uid_res;
     controller_->handle_search_user(by_uid_req, by_uid_res);
     ASSERT_EQ(by_uid_res.status, 200) << "Body: " << by_uid_res.body;
     auto by_uid_j = parse_body(by_uid_res);
     EXPECT_EQ(by_uid_j["profile"]["uid"], bob_uid);
     EXPECT_EQ(by_uid_j["profile"]["account"], "task6-test-search-bob");
 
-    httplib::Request by_account_req;
+    im::gateway::HttpRequest by_account_req;
     by_account_req.method = "GET";
     by_account_req.set_header("Authorization", "Bearer " + access_token);
     by_account_req.params.emplace("q", "task6-test-search-bob");
 
-    httplib::Response by_account_res;
+    im::gateway::HttpResponse by_account_res;
     controller_->handle_search_user(by_account_req, by_account_res);
     ASSERT_EQ(by_account_res.status, 200) << "Body: " << by_account_res.body;
     auto by_account_j = parse_body(by_account_res);
@@ -342,12 +342,12 @@ TEST_F(GatewayUserHttpTest, SearchUserFindsByNicknameAndReturnsList) {
     json alice_j = parse_body(alice);
     std::string access_token = alice_j["access_token"];
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.set_header("Authorization", "Bearer " + access_token);
     req.params.emplace("q", "小明");
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_search_user(req, res);
 
     ASSERT_EQ(res.status, 200) << "Body: " << res.body;
@@ -361,20 +361,20 @@ TEST_F(GatewayUserHttpTest, SearchUserRejectsMissingTokenOrUnknownQuery) {
     ASSERT_EQ(reg.status, 201);
     std::string access_token = parse_body(reg)["access_token"];
 
-    httplib::Request missing_token;
+    im::gateway::HttpRequest missing_token;
     missing_token.method = "GET";
     missing_token.params.emplace("q", "task6-test-search-auth");
 
-    httplib::Response missing_token_res;
+    im::gateway::HttpResponse missing_token_res;
     controller_->handle_search_user(missing_token, missing_token_res);
     EXPECT_EQ(missing_token_res.status, 401) << "Body: " << missing_token_res.body;
 
-    httplib::Request unknown;
+    im::gateway::HttpRequest unknown;
     unknown.method = "GET";
     unknown.set_header("Authorization", "Bearer " + access_token);
     unknown.params.emplace("q", "task6-test-search-missing");
 
-    httplib::Response unknown_res;
+    im::gateway::HttpResponse unknown_res;
     controller_->handle_search_user(unknown, unknown_res);
     EXPECT_EQ(unknown_res.status, 200) << "Body: " << unknown_res.body;
     EXPECT_TRUE(parse_body(unknown_res)["users"].empty());

@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../../common/utils/http_utils.hpp"
+#include "http_response_builder.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "user_client.hpp"
@@ -17,7 +17,6 @@ using json = nlohmann::json;
 using im::service::user::RegisterRequest;
 using im::service::user::UpdateProfileRequest;
 using im::service::user::UserProfile;
-using im::utils::HttpUtils;
 using im::utils::LogManager;
 
 namespace {
@@ -68,13 +67,13 @@ UserHttpController::UserHttpController(
     logger_ = LogManager::GetLogger("user_http_controller");
 }
 
-void UserHttpController::handle_register(const httplib::Request& req, httplib::Response& res) {
+void UserHttpController::handle_register(const HttpRequest& req, HttpResponse& res) {
     try {
         json body;
         try {
             body = json::parse(req.body);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            build_http_response(res, 400, "", "Invalid JSON body");
             return;
         }
 
@@ -85,7 +84,7 @@ void UserHttpController::handle_register(const httplib::Request& req, httplib::R
         std::string platform = body.value("platform", "web");
 
         if (account.empty() || password.empty()) {
-            HttpUtils::buildResponse(res, 400, "",
+            build_http_response(res, 400, "",
                 "Missing required fields: account, password");
             return;
         }
@@ -100,10 +99,10 @@ void UserHttpController::handle_register(const httplib::Request& req, httplib::R
 
         if (!result.ok) {
             if (result.error_code == "DUPLICATE_ACCOUNT") {
-                HttpUtils::buildResponse(res, 409, "",
+                build_http_response(res, 409, "",
                     "Account already exists");
             } else {
-                HttpUtils::buildResponse(res, 500, "", result.message);
+                build_http_response(res, 500, "", result.message);
             }
             logger_->warn("Register failed: {} ({})", result.message, result.error_code);
             return;
@@ -122,17 +121,17 @@ void UserHttpController::handle_register(const httplib::Request& req, httplib::R
         logger_->info("User registered: {} ({})", result.profile.account, result.profile.uid);
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_register: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-void UserHttpController::handle_login(const httplib::Request& req, httplib::Response& res) {
+void UserHttpController::handle_login(const HttpRequest& req, HttpResponse& res) {
     try {
         json body;
         try {
             body = json::parse(req.body);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            build_http_response(res, 400, "", "Invalid JSON body");
             return;
         }
 
@@ -142,7 +141,7 @@ void UserHttpController::handle_login(const httplib::Request& req, httplib::Resp
         std::string platform = body.value("platform", "web");
 
         if (account.empty() || password.empty()) {
-            HttpUtils::buildResponse(res, 400, "",
+            build_http_response(res, 400, "",
                 "Missing required fields: account, password");
             return;
         }
@@ -151,10 +150,10 @@ void UserHttpController::handle_login(const httplib::Request& req, httplib::Resp
 
         if (!result.ok) {
             if (result.error_code == "WRONG_PASSWORD" || result.error_code == "INVALID_ACCOUNT") {
-                HttpUtils::buildResponse(res, 401, "",
+                build_http_response(res, 401, "",
                     "Invalid account or password");
             } else {
-                HttpUtils::buildResponse(res, 500, "", result.message);
+                build_http_response(res, 500, "", result.message);
             }
             logger_->warn("Login failed for {}: {} ({})", account, result.message, result.error_code);
             return;
@@ -173,29 +172,29 @@ void UserHttpController::handle_login(const httplib::Request& req, httplib::Resp
         logger_->info("User logged in: {} ({})", result.profile.account, result.profile.uid);
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_login: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-void UserHttpController::handle_profile(const httplib::Request& req, httplib::Response& res) {
+void UserHttpController::handle_profile(const HttpRequest& req, HttpResponse& res) {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Invalid or expired access token");
             return;
         }
 
         auto profile = user_client_->get_profile_by_uid(user_info.user_id);
         if (!profile.has_value()) {
-            HttpUtils::buildResponse(res, 404, "",
+            build_http_response(res, 404, "",
                 "User profile not found");
             return;
         }
@@ -207,22 +206,22 @@ void UserHttpController::handle_profile(const httplib::Request& req, httplib::Re
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_profile: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-void UserHttpController::handle_update_profile(const httplib::Request& req, httplib::Response& res) {
+void UserHttpController::handle_update_profile(const HttpRequest& req, HttpResponse& res) {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Invalid or expired access token");
             return;
         }
@@ -231,13 +230,13 @@ void UserHttpController::handle_update_profile(const httplib::Request& req, http
         try {
             body = json::parse(req.body);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            build_http_response(res, 400, "", "Invalid JSON body");
             return;
         }
 
         auto current = user_client_->get_profile_by_uid(user_info.user_id);
         if (!current.has_value()) {
-            HttpUtils::buildResponse(res, 404, "", "User profile not found");
+            build_http_response(res, 404, "", "User profile not found");
             return;
         }
 
@@ -252,7 +251,7 @@ void UserHttpController::handle_update_profile(const httplib::Request& req, http
         }
 
         if (update.nickname.empty()) {
-            HttpUtils::buildResponse(res, 400, "", "Nickname must not be empty");
+            build_http_response(res, 400, "", "Nickname must not be empty");
             return;
         }
 
@@ -260,11 +259,11 @@ void UserHttpController::handle_update_profile(const httplib::Request& req, http
         if (!result.ok) {
             if (result.error_code == "EMPTY_UID" || result.error_code == "EMPTY_NICKNAME" ||
                 result.error_code == "PARAM_ERROR") {
-                HttpUtils::buildResponse(res, 400, "", result.message);
+                build_http_response(res, 400, "", result.message);
             } else if (result.error_code == "USER_NOT_FOUND") {
-                HttpUtils::buildResponse(res, 404, "", result.message);
+                build_http_response(res, 404, "", result.message);
             } else {
-                HttpUtils::buildResponse(res, 500, "", result.message);
+                build_http_response(res, 500, "", result.message);
             }
             logger_->warn("Update profile failed for {}: {} ({})",
                           user_info.user_id, result.message, result.error_code);
@@ -277,22 +276,22 @@ void UserHttpController::handle_update_profile(const httplib::Request& req, http
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_update_profile: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-void UserHttpController::handle_search_user(const httplib::Request& req, httplib::Response& res) {
+void UserHttpController::handle_search_user(const HttpRequest& req, HttpResponse& res) {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "",
+            build_http_response(res, 401, "",
                 "Invalid or expired access token");
             return;
         }
@@ -302,7 +301,7 @@ void UserHttpController::handle_search_user(const httplib::Request& req, httplib
             query = req.get_param_value("keyword");
         }
         if (query.empty()) {
-            HttpUtils::buildResponse(res, 400, "",
+            build_http_response(res, 400, "",
                 "Missing required query parameter: q");
             return;
         }
@@ -322,11 +321,11 @@ void UserHttpController::handle_search_user(const httplib::Request& req, httplib
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_search_user: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
-std::string UserHttpController::extract_bearer_token(const httplib::Request& req) const {
+std::string UserHttpController::extract_bearer_token(const HttpRequest& req) const {
     auto it = req.headers.find("Authorization");
     if (it == req.headers.end()) {
         return "";

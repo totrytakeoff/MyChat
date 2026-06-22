@@ -128,34 +128,34 @@ protected:
     std::unique_ptr<FriendHttpController> controller_;
 };
 
-json parse_body(const httplib::Response& res) {
+json parse_body(const im::gateway::HttpResponse& res) {
     return json::parse(res.body);
 }
 
 // ── Auth / token tests ─────────────────────────────────────────────────
 
 TEST_F(GatewayFriendHttpTest, SendRequestMissingTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     json body;
     body["target_uid"] = "friend-http-test-someone";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_request(req, res);
 
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
 }
 
 TEST_F(GatewayFriendHttpTest, SendRequestInvalidTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer definitely-invalid-token");
     json body;
     body["target_uid"] = "friend-http-test-someone";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_request(req, res);
 
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
@@ -164,12 +164,12 @@ TEST_F(GatewayFriendHttpTest, SendRequestInvalidTokenReturns401) {
 TEST_F(GatewayFriendHttpTest, SendRequestInvalidJsonReturns400) {
     std::string token = make_token("friend-http-test-user");
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     req.body = "not-valid-json";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_request(req, res);
 
     EXPECT_EQ(res.status, 400) << "Body: " << res.body;
@@ -178,14 +178,14 @@ TEST_F(GatewayFriendHttpTest, SendRequestInvalidJsonReturns400) {
 TEST_F(GatewayFriendHttpTest, SendRequestMissingTargetUidReturns400) {
     std::string token = make_token("friend-http-test-user");
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     json body;
     body["some_other_field"] = "value";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_request(req, res);
 
     EXPECT_EQ(res.status, 400) << "Body: " << res.body;
@@ -194,34 +194,34 @@ TEST_F(GatewayFriendHttpTest, SendRequestMissingTargetUidReturns400) {
 TEST_F(GatewayFriendHttpTest, RespondMissingFriendIdReturns400) {
     std::string token = make_token("friend-http-test-user");
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     json body;
     body["accept"] = true;
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_respond_request(req, res);
 
     EXPECT_EQ(res.status, 400) << "Body: " << res.body;
 }
 
 TEST_F(GatewayFriendHttpTest, ListFriendsMissingTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_friends(req, res);
 
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
 }
 
 TEST_F(GatewayFriendHttpTest, PendingRequestsMissingTokenReturns401) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_pending_requests(req, res);
 
     EXPECT_EQ(res.status, 401) << "Body: " << res.body;
@@ -252,14 +252,14 @@ TEST_F(GatewayFriendHttpTest, SendAndRespondHappyPath) {
 
     // 1) Alice sends a friend request to Bob
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + alice_token);
         json body;
         body["target_uid"] = uid_bob;
         req.body = body.dump();
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send_request(req, res);
 
         EXPECT_EQ(res.status, 201) << "Body: " << res.body;
@@ -274,7 +274,7 @@ TEST_F(GatewayFriendHttpTest, SendAndRespondHappyPath) {
         ASSERT_EQ(pending.size(), 1);
         uint64_t friend_id = pending[0].friend_id;
 
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + bob_token);
         json body;
@@ -282,7 +282,7 @@ TEST_F(GatewayFriendHttpTest, SendAndRespondHappyPath) {
         body["accept"] = true;
         req.body = body.dump();
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_respond_request(req, res);
 
         EXPECT_EQ(res.status, 200) << "Body: " << res.body;
@@ -292,11 +292,11 @@ TEST_F(GatewayFriendHttpTest, SendAndRespondHappyPath) {
 
     // 3) List friends for Alice — Bob should appear
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "GET";
         req.set_header("Authorization", "Bearer " + alice_token);
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_list_friends(req, res);
 
         EXPECT_EQ(res.status, 200) << "Body: " << res.body;
@@ -310,11 +310,11 @@ TEST_F(GatewayFriendHttpTest, SendAndRespondHappyPath) {
 
     // 4) List friends for Bob — Alice should appear
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "GET";
         req.set_header("Authorization", "Bearer " + bob_token);
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_list_friends(req, res);
 
         EXPECT_EQ(res.status, 200) << "Body: " << res.body;
@@ -337,14 +337,14 @@ TEST_F(GatewayFriendHttpTest, SendRequestSelfRequestRejected) {
     std::string uid = reg.profile.uid;
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     json body;
     body["target_uid"] = uid;
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_request(req, res);
 
     EXPECT_EQ(res.status, 400) << "Body: " << res.body;
@@ -367,13 +367,13 @@ TEST_F(GatewayFriendHttpTest, SendRequestDuplicateReturns409) {
     std::string token_a = make_token(uid_a);
 
     auto send_req = [&]() {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + token_a);
         json body;
         body["target_uid"] = uid_b;
         req.body = body.dump();
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send_request(req, res);
         return res;
     };
@@ -395,14 +395,14 @@ TEST_F(GatewayFriendHttpTest, SendRequestTargetNotFoundReturns404) {
     ASSERT_TRUE(reg.ok);
     std::string token = make_token(reg.profile.uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     json body;
     body["target_uid"] = "nonexistent-uid-99999";
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_request(req, res);
 
     EXPECT_EQ(res.status, 404) << "Body: " << res.body;
@@ -428,13 +428,13 @@ TEST_F(GatewayFriendHttpTest, RespondOnlyForbiddenForNonTarget) {
 
     // A -> B
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + token_a);
         json body;
         body["target_uid"] = uid_b;
         req.body = body.dump();
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send_request(req, res);
         EXPECT_EQ(res.status, 201);
     }
@@ -446,14 +446,14 @@ TEST_F(GatewayFriendHttpTest, RespondOnlyForbiddenForNonTarget) {
 
     // C tries to respond (should be forbidden)
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + token_c);
         json body;
         body["friend_id"] = friend_id;
         body["accept"] = true;
         req.body = body.dump();
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_respond_request(req, res);
 
         EXPECT_EQ(res.status, 403) << "Body: " << res.body;
@@ -463,7 +463,7 @@ TEST_F(GatewayFriendHttpTest, RespondOnlyForbiddenForNonTarget) {
 TEST_F(GatewayFriendHttpTest, RespondNotFoundReturns404) {
     std::string token = make_token("friend-http-test-nf");
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.set_header("Authorization", "Bearer " + token);
     json body;
@@ -471,7 +471,7 @@ TEST_F(GatewayFriendHttpTest, RespondNotFoundReturns404) {
     body["accept"] = true;
     req.body = body.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_respond_request(req, res);
 
     EXPECT_EQ(res.status, 404) << "Body: " << res.body;
@@ -496,24 +496,24 @@ TEST_F(GatewayFriendHttpTest, PendingRequestsList) {
 
     // A -> B
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "POST";
         req.set_header("Authorization", "Bearer " + token_a);
         json body;
         body["target_uid"] = uid_b;
         req.body = body.dump();
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_send_request(req, res);
         EXPECT_EQ(res.status, 201);
     }
 
     // B sees pending
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "GET";
         req.set_header("Authorization", "Bearer " + token_b);
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_pending_requests(req, res);
 
         EXPECT_EQ(res.status, 200) << "Body: " << res.body;
@@ -526,11 +526,11 @@ TEST_F(GatewayFriendHttpTest, PendingRequestsList) {
 
     // A does NOT see pending (A is the requester)
     {
-        httplib::Request req;
+        im::gateway::HttpRequest req;
         req.method = "GET";
         req.set_header("Authorization", "Bearer " + token_a);
 
-        httplib::Response res;
+        im::gateway::HttpResponse res;
         controller_->handle_pending_requests(req, res);
 
         EXPECT_EQ(res.status, 200) << "Body: " << res.body;
@@ -550,11 +550,11 @@ TEST_F(GatewayFriendHttpTest, FriendsListReturnsEmptyForNoFriends) {
     ASSERT_TRUE(reg.ok);
     std::string token = make_token(reg.profile.uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.set_header("Authorization", "Bearer " + token);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_list_friends(req, res);
 
     EXPECT_EQ(res.status, 200) << "Body: " << res.body;

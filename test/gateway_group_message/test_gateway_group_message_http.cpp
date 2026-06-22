@@ -193,18 +193,18 @@ protected:
     RecordingPushNotifier recording_notifier_;
 };
 
-json parse_body(const httplib::Response& res) {
+json parse_body(const im::gateway::HttpResponse& res) {
     return json::parse(res.body);
 }
 
 // ==================== Send Message Tests ====================
 
 TEST_F(GatewayGroupMessageHttpTest, SendMessageRequiresAuth) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.body = R"({"group_id":1,"content":"hello"})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -218,12 +218,12 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageHappyPath) {
     uint64_t gid = create_group("group-msg-http-test-send-group", owner);
     ASSERT_TRUE(group_svc_->join_group(gid, member, kNowMs).ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", gid}, {"content", "Hello group!"}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 201);
@@ -243,12 +243,12 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageFansOutToOtherMembersOnly) {
     ASSERT_TRUE(group_svc_->join_group(gid, member2, kNowMs).ok);
     controller_->set_push_notifier(&recording_notifier_);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", gid}, {"content", "Fanout group!"}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 201);
@@ -277,12 +277,12 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageMissingGroupId) {
     std::string uid = create_user("group-msg-http-test-send-no-gid");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = R"({"content":"hello"})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 400);
@@ -292,12 +292,12 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageMissingContent) {
     std::string uid = create_user("group-msg-http-test-send-no-content");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = R"({"group_id":1})";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 400);
@@ -307,12 +307,12 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageInvalidJson) {
     std::string uid = create_user("group-msg-http-test-send-bad-json");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = "not-json";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 400);
@@ -321,10 +321,10 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageInvalidJson) {
 // ==================== Get History Tests ====================
 
 TEST_F(GatewayGroupMessageHttpTest, GetHistoryRequiresAuth) {
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 401);
@@ -342,12 +342,12 @@ TEST_F(GatewayGroupMessageHttpTest, GetHistoryHappyPath) {
     ASSERT_TRUE(group_msg_svc_->send_message(gid, owner, "First message", kNowMs).ok);
     ASSERT_TRUE(group_msg_svc_->send_message(gid, member, "Second message", kNowMs + 1000).ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(gid));
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 200);
@@ -365,12 +365,12 @@ TEST_F(GatewayGroupMessageHttpTest, GetHistoryNonMemberForbidden) {
 
     uint64_t gid = create_group("group-msg-http-test-hist-nm-group", owner);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(gid));
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 403);
@@ -380,12 +380,12 @@ TEST_F(GatewayGroupMessageHttpTest, GetHistoryNonexistentGroup) {
     std::string uid = create_user("group-msg-http-test-hist-nf");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", "99999999");
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 404);
@@ -395,11 +395,11 @@ TEST_F(GatewayGroupMessageHttpTest, GetHistoryMissingGroupId) {
     std::string uid = create_user("group-msg-http-test-hist-no-gid");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 400);
@@ -416,13 +416,13 @@ TEST_F(GatewayGroupMessageHttpTest, GetHistoryWithBeforeTime) {
     ASSERT_TRUE(group_msg_svc_->send_message(gid, owner, "Old message", kNowMs).ok);
     ASSERT_TRUE(group_msg_svc_->send_message(gid, member, "New message", kNowMs + 10000).ok);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(gid));
     req.params.emplace("before", std::to_string(kNowMs + 5000));
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 200);
@@ -441,12 +441,12 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageNonMemberForbidden) {
 
     uint64_t gid = create_group("group-msg-http-test-perm-group", owner);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", gid}, {"content", "Hello"}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 403);
@@ -456,12 +456,12 @@ TEST_F(GatewayGroupMessageHttpTest, SendMessageToNonexistentGroup) {
     std::string uid = create_user("group-msg-http-test-send-nonexist");
     std::string token = make_token(uid);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "POST";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.body = json{{"group_id", 99999999ULL}, {"content", "Hello"}}.dump();
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_send_message(req, res);
 
     EXPECT_EQ(res.status, 404);
@@ -475,13 +475,13 @@ TEST_F(GatewayGroupMessageHttpTest, GetHistoryInvalidBefore) {
 
     uint64_t gid = create_group("group-msg-http-test-hist-bad-before-group", owner);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(gid));
     req.params.emplace("before", "not-a-number");
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 400);
@@ -493,13 +493,13 @@ TEST_F(GatewayGroupMessageHttpTest, GetHistoryInvalidLimit) {
 
     uint64_t gid = create_group("group-msg-http-test-hist-bad-limit-group", owner);
 
-    httplib::Request req;
+    im::gateway::HttpRequest req;
     req.method = "GET";
     req.headers.emplace("Authorization", "Bearer " + token);
     req.params.emplace("group_id", std::to_string(gid));
     req.params.emplace("limit", "not-a-number");
 
-    httplib::Response res;
+    im::gateway::HttpResponse res;
     controller_->handle_get_history(req, res);
 
     EXPECT_EQ(res.status, 400);

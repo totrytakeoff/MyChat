@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "../../common/utils/http_utils.hpp"
+#include "http_response_builder.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "group_client.hpp"
@@ -19,7 +19,6 @@ namespace gateway {
 
 using json = nlohmann::json;
 using im::service::group::GroupMessageDTO;
-using im::utils::HttpUtils;
 using im::utils::LogManager;
 
 namespace {
@@ -46,18 +45,18 @@ GroupMessageHttpController::GroupMessageHttpController(
 }
 
 void GroupMessageHttpController::handle_send_message(
-    const httplib::Request& req, httplib::Response& res)
+    const HttpRequest& req, HttpResponse& res)
 {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            build_http_response(res, 401, "", "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            build_http_response(res, 401, "", "Invalid or expired access token");
             return;
         }
 
@@ -65,7 +64,7 @@ void GroupMessageHttpController::handle_send_message(
         try {
             body = json::parse(req.body);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid JSON body");
+            build_http_response(res, 400, "", "Invalid JSON body");
             return;
         }
 
@@ -73,23 +72,23 @@ void GroupMessageHttpController::handle_send_message(
         std::string content = body.value("content", "");
 
         if (group_id == 0) {
-            HttpUtils::buildResponse(res, 400, "", "Missing required field: group_id");
+            build_http_response(res, 400, "", "Missing required field: group_id");
             return;
         }
         if (content.empty()) {
-            HttpUtils::buildResponse(res, 400, "", "Missing required field: content");
+            build_http_response(res, 400, "", "Missing required field: content");
             return;
         }
 
         if (!group_client_->group_exists(group_id)) {
-            HttpUtils::buildResponse(res, 404, "", "Group not found");
+            build_http_response(res, 404, "", "Group not found");
             return;
         }
 
         // Verify caller is a member and get member list for fanout
         auto members = group_client_->list_members(group_id, user_info.user_id);
         if (members.empty()) {
-            HttpUtils::buildResponse(res, 403, "", "Not a member of this group");
+            build_http_response(res, 403, "", "Not a member of this group");
             return;
         }
 
@@ -99,7 +98,7 @@ void GroupMessageHttpController::handle_send_message(
             group_id, user_info.user_id, content, send_time);
 
         if (!store_result.ok) {
-            HttpUtils::buildResponse(res, 500, "", "Failed to send message: " + store_result.message);
+            build_http_response(res, 500, "", "Failed to send message: " + store_result.message);
             logger_->warn("Send group message failed: {}", store_result.message);
             return;
         }
@@ -130,29 +129,29 @@ void GroupMessageHttpController::handle_send_message(
             group_id, user_info.user_id, store_result.msg_id);
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_send_message: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
 void GroupMessageHttpController::handle_get_history(
-    const httplib::Request& req, httplib::Response& res)
+    const HttpRequest& req, HttpResponse& res)
 {
     try {
         std::string token = extract_bearer_token(req);
         if (token.empty()) {
-            HttpUtils::buildResponse(res, 401, "", "Missing or invalid Authorization header");
+            build_http_response(res, 401, "", "Missing or invalid Authorization header");
             return;
         }
 
         UserTokenInfo user_info;
         if (!auth_mgr_->verify_access_token(token, user_info)) {
-            HttpUtils::buildResponse(res, 401, "", "Invalid or expired access token");
+            build_http_response(res, 401, "", "Invalid or expired access token");
             return;
         }
 
         std::string group_id_str = req.get_param_value("group_id");
         if (group_id_str.empty()) {
-            HttpUtils::buildResponse(res, 400, "", "Missing query parameter: group_id");
+            build_http_response(res, 400, "", "Missing query parameter: group_id");
             return;
         }
 
@@ -160,19 +159,19 @@ void GroupMessageHttpController::handle_get_history(
         try {
             group_id = std::stoull(group_id_str);
         } catch (...) {
-            HttpUtils::buildResponse(res, 400, "", "Invalid group_id");
+            build_http_response(res, 400, "", "Invalid group_id");
             return;
         }
 
         if (!group_client_->group_exists(group_id)) {
-            HttpUtils::buildResponse(res, 404, "", "Group not found");
+            build_http_response(res, 404, "", "Group not found");
             return;
         }
 
         // Verify caller is a member
         auto members = group_client_->list_members(group_id, user_info.user_id);
         if (members.empty()) {
-            HttpUtils::buildResponse(res, 403, "", "Not a member of this group");
+            build_http_response(res, 403, "", "Not a member of this group");
             return;
         }
 
@@ -182,7 +181,7 @@ void GroupMessageHttpController::handle_get_history(
             try {
                 before_time = std::stoll(before_str);
             } catch (...) {
-                HttpUtils::buildResponse(res, 400, "", "Invalid 'before' parameter");
+                build_http_response(res, 400, "", "Invalid 'before' parameter");
                 return;
             }
         }
@@ -193,7 +192,7 @@ void GroupMessageHttpController::handle_get_history(
             try {
                 limit = std::stoi(limit_str);
             } catch (...) {
-                HttpUtils::buildResponse(res, 400, "", "Invalid 'limit' parameter");
+                build_http_response(res, 400, "", "Invalid 'limit' parameter");
                 return;
             }
         }
@@ -221,12 +220,12 @@ void GroupMessageHttpController::handle_get_history(
         res.set_content(response_body.dump(), "application/json");
     } catch (const std::exception& e) {
         logger_->error("Exception in handle_get_history: {}", e.what());
-        HttpUtils::buildResponse(res, 500, "", "Internal server error");
+        build_http_response(res, 500, "", "Internal server error");
     }
 }
 
 std::string GroupMessageHttpController::extract_bearer_token(
-    const httplib::Request& req) const
+    const HttpRequest& req) const
 {
     auto it = req.headers.find("Authorization");
     if (it == req.headers.end()) {

@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include <httplib.h>
+#include "http_types.hpp"
 #include <spdlog/logger.h>
 
 namespace im::gateway {
@@ -27,13 +27,13 @@ public:
         std::shared_ptr<MultiPlatformAuthManager> auth_mgr
     );
 
-    void handle_send_request(const httplib::Request& req, httplib::Response& res);
-    void handle_respond_request(const httplib::Request& req, httplib::Response& res);
-    void handle_list_friends(const httplib::Request& req, httplib::Response& res);
-    void handle_pending_requests(const httplib::Request& req, httplib::Response& res);
+    void handle_send_request(const HttpRequest& req, HttpResponse& res);
+    void handle_respond_request(const HttpRequest& req, HttpResponse& res);
+    void handle_list_friends(const HttpRequest& req, HttpResponse& res);
+    void handle_pending_requests(const HttpRequest& req, HttpResponse& res);
 
 private:
-    std::string extract_bearer_token(const httplib::Request& req) const;
+    std::string extract_bearer_token(const HttpRequest& req) const;
 
     std::shared_ptr<FriendClient> friend_client_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;

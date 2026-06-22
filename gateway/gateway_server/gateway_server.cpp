@@ -60,7 +60,23 @@
 // 主头文件和第三方库
 #include "gateway_server.hpp"
 #include "httplib.h"
+#include "../http/httplib_adapter.hpp"
 #include <nlohmann/json.hpp>
+
+namespace {
+
+template <typename Controller, typename Handler>
+void dispatch_http_controller(Controller& controller,
+                              Handler handler,
+                              const httplib::Request& req,
+                              httplib::Response& res) {
+    auto request = im::gateway::from_httplib_request(req);
+    im::gateway::HttpResponse response;
+    (controller.*handler)(request, response);
+    im::gateway::apply_http_response(response, res);
+}
+
+} // namespace
 
 #if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
 #include <odb/pgsql/database.hxx>
@@ -79,23 +95,23 @@ void register_user_http_routes_on_server(httplib::Server& server,
                                          im::gateway::UserHttpController& controller) {
     server.Post("/api/v1/auth/register",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_register(req, res);
+            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_register, req, res);
         });
     server.Post("/api/v1/auth/login",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_login(req, res);
+            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_login, req, res);
         });
     server.Get("/api/v1/auth/info",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_profile(req, res);
+            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_profile, req, res);
         });
     server.Post("/api/v1/auth/profile",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_update_profile(req, res);
+            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_update_profile, req, res);
         });
     server.Get("/api/v1/users/search",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_search_user(req, res);
+            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_search_user, req, res);
         });
 }
 #endif
@@ -133,15 +149,15 @@ void register_message_http_routes_on_server(httplib::Server& server,
                                             im::gateway::MessageHttpController& controller) {
     server.Post("/api/v1/messages/send",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_send(req, res);
+            dispatch_http_controller(controller, &im::gateway::MessageHttpController::handle_send, req, res);
         });
     server.Get("/api/v1/messages/history",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_history(req, res);
+            dispatch_http_controller(controller, &im::gateway::MessageHttpController::handle_history, req, res);
         });
     server.Get("/api/v1/messages/offline",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_offline(req, res);
+            dispatch_http_controller(controller, &im::gateway::MessageHttpController::handle_offline, req, res);
         });
 }
 #endif
@@ -161,19 +177,19 @@ void register_friend_http_routes_on_server(httplib::Server& server,
                                            im::gateway::FriendHttpController& controller) {
     server.Post("/api/v1/friends/request",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_send_request(req, res);
+            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_send_request, req, res);
         });
     server.Post("/api/v1/friends/respond",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_respond_request(req, res);
+            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_respond_request, req, res);
         });
     server.Get("/api/v1/friends",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_list_friends(req, res);
+            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_list_friends, req, res);
         });
     server.Get("/api/v1/friends/pending",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_pending_requests(req, res);
+            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_pending_requests, req, res);
         });
 }
 #endif
@@ -197,31 +213,31 @@ void register_group_http_routes_on_server(httplib::Server& server,
                                           im::gateway::GroupHttpController& controller) {
     server.Post("/api/v1/groups",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_create_group(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_create_group, req, res);
         });
     server.Post("/api/v1/groups/join",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_join_group(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_join_group, req, res);
         });
     server.Post("/api/v1/groups/leave",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_leave_group(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_leave_group, req, res);
         });
     server.Get("/api/v1/groups/info",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_group_info(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_group_info, req, res);
         });
     server.Get("/api/v1/groups/search",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_search_groups(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_search_groups, req, res);
         });
     server.Get("/api/v1/groups",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_list_groups(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_list_groups, req, res);
         });
     server.Get("/api/v1/groups/members",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_list_members(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_list_members, req, res);
         });
 }
 #endif
@@ -239,11 +255,11 @@ void register_group_message_http_routes_on_server(
     im::gateway::GroupMessageHttpController& controller) {
     server.Post("/api/v1/groups/messages/send",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_send_message(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupMessageHttpController::handle_send_message, req, res);
         });
     server.Get("/api/v1/groups/messages/history",
         [&](const httplib::Request& req, httplib::Response& res) {
-            controller.handle_get_history(req, res);
+            dispatch_http_controller(controller, &im::gateway::GroupMessageHttpController::handle_get_history, req, res);
         });
 }
 #endif
