@@ -1,0 +1,45 @@
+GatewayServer stats:
+  Running: true
+online user count:0
+ ws.accept_ok: 0
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 0
+ ws.ssl_handshake.avg_ms: 0
+ ws.ssl_handshake.max_ms: 0
+ ws.upgrade_read.count: 0
+ ws.upgrade_read.avg_ms: 0
+ ws.upgrade_read.max_ms: 0
+ ws.accept_handshake.count: 0
+ ws.accept_handshake.avg_ms: 0
+ ws.accept_handshake.max_ms: 0
+ ws.session_add.count: 0
+ ws.session_add.avg_ms: 0
+ ws.session_add.max_ms: 0
+ processed message count:0
+  processed websocket message count:0
+ parse.decode failed count: 0
+ parse.routing failed count:0
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ http.worker_threads: 64
+ http.max_queued_requests: 1024
+ http.keep_alive_timeout_sec: 1
+ http.keep_alive_max_count: 10
+ http.total_requests: 8578
+ http.inflight_requests: 1
+ http.status_2xx: 8577
+ http.status_4xx: 0
+ http.status_5xx: 0
+ http.status_other: 0
+ http.route.GET /api/v1/health.count: 8574
+ http.route.GET /api/v1/health.avg_ms: 0.000233263
+ http.route.GET /api/v1/health.max_ms: 2
+ http.route.GET /api/v1/stats.count: 3
+ http.route.GET /api/v1/stats.avg_ms: 0
+ http.route.GET /api/v1/stats.max_ms: 0
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0

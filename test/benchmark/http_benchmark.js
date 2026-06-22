@@ -1,9 +1,16 @@
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { sleep } from 'k6';
 import { SharedArray } from 'k6/data';
 import { Trend, Rate } from 'k6/metrics';
 
+const BASE = __ENV.BASE_URL || 'http://127.0.0.1:10002';
+const SCENARIO = __ENV.SCENARIO || 'mixed';
+const NO_CONNECTION_REUSE = (__ENV.NO_CONNECTION_REUSE || 'false') === 'true';
+
 const tokens = new SharedArray('tokens', function () {
+  if (SCENARIO === 'health') {
+    return [];
+  }
   const data = JSON.parse(open('./users.json'));
   return Array.isArray(data) ? data.map(u => u.access_token) : data.users.map(u => u.access_token);
 });
@@ -25,28 +32,38 @@ export const options = {
     http_req_duration: ['p(95)<500', 'p(99)<2000'],
     request_failed: ['rate<0.01'],
   },
+  noConnectionReuse: NO_CONNECTION_REUSE,
 };
 
-const BASE = __ENV.BASE_URL || 'http://127.0.0.1:10002';
+function recordResult(res) {
+  failRate.add(res.status !== 200);
+}
+
+function requestHealth() {
+  const r = http.get(`${BASE}/api/v1/health`);
+  healthTrend.add(r.timings.duration);
+  recordResult(r);
+}
+
+function requestInfo() {
+  const token = tokens[__VU % tokens.length];
+  const r = http.get(`${BASE}/api/v1/auth/info`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  infoTrend.add(r.timings.duration);
+  recordResult(r);
+}
 
 export default function () {
-  const token = tokens[__VU % tokens.length];
-
-  // health
-  {
-    const r = http.get(`${BASE}/api/v1/health`);
-    healthTrend.add(r.timings.duration);
-    failRate.add(r.status !== 200);
+  if (SCENARIO === 'health') {
+    requestHealth();
+  } else if (SCENARIO === 'info') {
+    requestInfo();
+  } else {
+    requestHealth();
+    requestInfo();
   }
 
-  // authenticated info
-  {
-    const r = http.get(`${BASE}/api/v1/auth/info`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    infoTrend.add(r.timings.duration);
-    failRate.add(r.status !== 200);
-  }
 
   sleep(1);
 }

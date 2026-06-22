@@ -197,6 +197,23 @@ k6 run --vus 10 --duration 60s \
   http_benchmark.js
 ```
 
+HTTP 脚本支持拆分场景，便于定位是 HTTP 接入层还是认证业务路径慢：
+
+```bash
+# 只压健康检查
+k6 run -e BASE_URL=http://<服务器IP>:10002 -e SCENARIO=health http_benchmark.js
+
+# 只压认证用户信息
+k6 run -e BASE_URL=http://<服务器IP>:10002 -e SCENARIO=info http_benchmark.js
+
+# 混合场景，默认值
+k6 run -e BASE_URL=http://<服务器IP>:10002 -e SCENARIO=mixed http_benchmark.js
+
+# 禁用连接复用，对照 keep-alive 对 HTTP worker 的影响
+k6 run -e BASE_URL=http://<服务器IP>:10002 -e SCENARIO=health \
+  -e NO_CONNECTION_REUSE=true http_benchmark.js
+```
+
 ## 日志和结果
 
 压测日志保存在发压端的 `$BENCH_PVE_TOOL_DIR/logs/` 目录:

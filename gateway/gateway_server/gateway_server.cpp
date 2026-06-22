@@ -253,6 +253,12 @@ namespace gateway {
 
 namespace {
 
+constexpr size_t kHttpWorkerThreads = 64;
+constexpr size_t kHttpMaxQueuedRequests = 1024;
+constexpr time_t kHttpKeepAliveTimeoutSec = 1;
+constexpr size_t kHttpKeepAliveMaxCount = 1;
+thread_local uint64_t t_http_request_start_us = 0;
+
 class InflightMessageGuard {
 public:
     explicit InflightMessageGuard(std::atomic<size_t>& counter) : counter_(counter), active_(true) {}
@@ -276,6 +282,18 @@ private:
     std::atomic<size_t>& counter_;
     bool active_;
 };
+
+uint64_t now_steady_us() {
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+
+std::string http_route_key(const httplib::Request& req) {
+    if (!req.matched_route.empty()) {
+        return req.method + " " + req.matched_route;
+    }
+    return req.method + " " + req.path;
+}
 
 #if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_FRIEND_CLIENT) || defined(IM_ENABLE_REMOTE_GROUP_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
 bool is_blank(const std::string& value) {
@@ -347,6 +365,44 @@ GatewayServer::GatewayServer(const std::string platform_strategy_config,
  * @details 确保服务器正确停止，释放所有资源
  */
 GatewayServer::~GatewayServer() { stop(); }
+
+void GatewayServer::record_http_response(const httplib::Request& req,
+                                         const httplib::Response& res,
+                                         uint64_t duration_ms) {
+    if (res.status >= 200 && res.status < 300) {
+        http_stats_.status_2xx.fetch_add(1, std::memory_order_relaxed);
+    } else if (res.status >= 400 && res.status < 500) {
+        http_stats_.status_4xx.fetch_add(1, std::memory_order_relaxed);
+    } else if (res.status >= 500 && res.status < 600) {
+        http_stats_.status_5xx.fetch_add(1, std::memory_order_relaxed);
+    } else {
+        http_stats_.status_other.fetch_add(1, std::memory_order_relaxed);
+    }
+
+    const std::string key = http_route_key(req);
+    std::lock_guard<std::mutex> lock(http_stats_.routes_mutex);
+    auto& stats = http_stats_.routes[key];
+    ++stats.count;
+    stats.total_ms += duration_ms;
+    if (duration_ms > stats.max_ms) {
+        stats.max_ms = duration_ms;
+    }
+}
+
+std::string GatewayServer::format_http_route_stats() const {
+    std::ostringstream ss;
+    std::lock_guard<std::mutex> lock(http_stats_.routes_mutex);
+    for (const auto& [route, stats] : http_stats_.routes) {
+        const double avg = stats.count == 0
+                                   ? 0.0
+                                   : static_cast<double>(stats.total_ms) /
+                                             static_cast<double>(stats.count);
+        ss << " http.route." << route << ".count: " << stats.count << std::endl;
+        ss << " http.route." << route << ".avg_ms: " << avg << std::endl;
+        ss << " http.route." << route << ".max_ms: " << stats.max_ms << std::endl;
+    }
+    return ss.str();
+}
 
 // ==================== 服务器生命周期管理 ====================
 
@@ -584,6 +640,23 @@ std::string GatewayServer::get_server_stats() const {
     ss << " parse.routing failed count:" << msg_parser_->get_stats().routing_failures << std::endl;
     ss << " ws.inflight_messages: " << ws_inflight_messages_.load() << std::endl;
     ss << " ws.max_inflight_messages: " << max_ws_inflight_messages_ << std::endl;
+    ss << " http.worker_threads: " << kHttpWorkerThreads << std::endl;
+    ss << " http.max_queued_requests: " << kHttpMaxQueuedRequests << std::endl;
+    ss << " http.keep_alive_timeout_sec: " << kHttpKeepAliveTimeoutSec << std::endl;
+    ss << " http.keep_alive_max_count: " << kHttpKeepAliveMaxCount << std::endl;
+    ss << " http.total_requests: "
+       << http_stats_.total_requests.load(std::memory_order_relaxed) << std::endl;
+    ss << " http.inflight_requests: "
+       << http_stats_.inflight_requests.load(std::memory_order_relaxed) << std::endl;
+    ss << " http.status_2xx: "
+       << http_stats_.status_2xx.load(std::memory_order_relaxed) << std::endl;
+    ss << " http.status_4xx: "
+       << http_stats_.status_4xx.load(std::memory_order_relaxed) << std::endl;
+    ss << " http.status_5xx: "
+       << http_stats_.status_5xx.load(std::memory_order_relaxed) << std::endl;
+    ss << " http.status_other: "
+       << http_stats_.status_other.load(std::memory_order_relaxed) << std::endl;
+    ss << format_http_route_stats();
     ss << " thread_pool.threads: " << im::utils::ThreadPool::GetInstance().GetThreadCount()
        << std::endl;
     ss << " thread_pool.queued_or_running_tasks: "
@@ -1292,6 +1365,31 @@ void GatewayServer::init_http_server(uint16_t port) {
     this->http_server_ = std::make_unique<httplib::Server>();
 
     try {
+        http_server_->new_task_queue = [] {
+            return new httplib::ThreadPool(kHttpWorkerThreads, kHttpMaxQueuedRequests);
+        };
+        http_server_->set_keep_alive_timeout(kHttpKeepAliveTimeoutSec);
+        http_server_->set_keep_alive_max_count(kHttpKeepAliveMaxCount);
+        http_server_->set_tcp_nodelay(true);
+        http_server_->set_pre_routing_handler([this](const httplib::Request&,
+                                                     httplib::Response&) {
+            t_http_request_start_us = now_steady_us();
+            http_stats_.total_requests.fetch_add(1, std::memory_order_relaxed);
+            http_stats_.inflight_requests.fetch_add(1, std::memory_order_acq_rel);
+            return httplib::Server::HandlerResponse::Unhandled;
+        });
+        http_server_->set_post_routing_handler([this](const httplib::Request& req,
+                                                      httplib::Response& res) {
+            uint64_t duration_ms = 0;
+            if (t_http_request_start_us != 0) {
+                const uint64_t now_us = now_steady_us();
+                duration_ms = (now_us - t_http_request_start_us) / 1000;
+                t_http_request_start_us = 0;
+            }
+            http_stats_.inflight_requests.fetch_sub(1, std::memory_order_acq_rel);
+            record_http_response(req, res, duration_ms);
+        });
+
         // ============ HTTP请求处理回调函数 ============
         // 构建通用HTTP请求处理函数（处理所有HTTP请求）
         std::function<void(const httplib::Request& req, httplib::Response& res)> http_callback(

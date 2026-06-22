@@ -34,7 +34,9 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <thread>
 
@@ -193,6 +195,28 @@ private:
     void schedule_delayed_close(SessionPtr session, std::chrono::milliseconds delay);
     bool is_session_authenticated(SessionPtr session) const;
 
+    struct HttpRouteStats {
+        uint64_t count = 0;
+        uint64_t total_ms = 0;
+        uint64_t max_ms = 0;
+    };
+
+    struct HttpStats {
+        std::atomic<uint64_t> total_requests{0};
+        std::atomic<uint64_t> inflight_requests{0};
+        std::atomic<uint64_t> status_2xx{0};
+        std::atomic<uint64_t> status_4xx{0};
+        std::atomic<uint64_t> status_5xx{0};
+        std::atomic<uint64_t> status_other{0};
+        mutable std::mutex routes_mutex;
+        std::unordered_map<std::string, HttpRouteStats> routes;
+    };
+
+    void record_http_response(const httplib::Request& req,
+                              const httplib::Response& res,
+                              uint64_t duration_ms);
+    std::string format_http_route_stats() const;
+
 
     // 网络服务组件
     std::shared_ptr<IOServicePool> io_service_pool_;
@@ -216,6 +240,7 @@ private:
     std::atomic<bool> is_running_;
     std::atomic<size_t> ws_inflight_messages_{0};
     size_t max_ws_inflight_messages_{4096};
+    HttpStats http_stats_;
     std::string psc_path_;     // platform_strategy_config_path_
     std::string config_path_;  // gateway/router/auth shared config path for the MVP
 
