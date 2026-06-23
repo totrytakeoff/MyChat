@@ -36,7 +36,7 @@ static constexpr ::_pbi::MigrationSchema* schemas = nullptr;
 static constexpr ::_pb::Message* const* file_default_instances = nullptr;
 const char descriptor_table_protodef_command_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\rcommand.proto\022\nim.command*\200\010\n\tCommandI"
+    "\n\rcommand.proto\022\nim.command*\264\010\n\tCommandI"
     "D\022\017\n\013CMD_UNKNOWN\020\000\022\021\n\rCMD_HEARTBEAT\020\001\022\025\n"
     "\021CMD_SERVER_NOTIFY\020\002\022\024\n\020CMD_CLIENT_ERROR"
     "\020\003\022\025\n\021CMD_REFRESH_TOKEN\020\004\022\016\n\tCMD_LOGIN\020\351"
@@ -59,16 +59,17 @@ const char descriptor_table_protodef_command_2eproto[] ABSL_ATTRIBUTE_SECTION_VA
     "D_QUIT_GROUP\020\250\037\022\032\n\025CMD_GET_GROUP_MEMBERS"
     "\020\251\037\022\033\n\026CMD_GET_GROUP_MESSAGES\020\252\037\022\035\n\030CMD_"
     "TRANSFER_GROUP_OWNER\020\253\037\022\030\n\023CMD_SET_GROUP"
-    "_ADMIN\020\254\037\022\025\n\020CMD_PUSH_MESSAGE\020\211\'\022\033\n\026CMD_"
-    "PUSH_BATCH_MESSAGE\020\212\'\022\032\n\025CMD_PUSH_NOTIFI"
-    "CATION\020\213\'\022\024\n\017CMD_PUSH_SYSTEM\020\214\'\022\025\n\020CMD_P"
-    "USH_OFFLINE\020\215\'b\006proto3"
+    "_ADMIN\020\254\037\022\025\n\020CMD_SEARCH_GROUP\020\255\037\022\033\n\026CMD_"
+    "SEND_GROUP_MESSAGE\020\256\037\022\025\n\020CMD_PUSH_MESSAG"
+    "E\020\211\'\022\033\n\026CMD_PUSH_BATCH_MESSAGE\020\212\'\022\032\n\025CMD"
+    "_PUSH_NOTIFICATION\020\213\'\022\024\n\017CMD_PUSH_SYSTEM"
+    "\020\214\'\022\025\n\020CMD_PUSH_OFFLINE\020\215\'b\006proto3"
 };
 static ::absl::once_flag descriptor_table_command_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_command_2eproto = {
     false,
     false,
-    1062,
+    1114,
     descriptor_table_protodef_command_2eproto,
     "command.proto",
     &descriptor_table_command_2eproto_once,
@@ -88,7 +89,7 @@ const ::google::protobuf::EnumDescriptor* CommandID_descriptor() {
   return file_level_enum_descriptors_command_2eproto[0];
 }
 PROTOBUF_CONSTINIT const uint32_t CommandID_internal_data_[] = {
-    327680u, 2424832u, 4002u, 2007u, 4010u, 2001u, 3004u, 4006u, 5002u, 1004u, 2005u, 3002u, 3006u, 4004u, 4008u, 4012u, 5004u, 1002u, 1006u, 2003u, 2006u, 3001u, 3003u, 3005u, 4001u, 4003u, 4005u, 4007u, 4009u, 4011u, 5001u, 5003u, 5005u, 1001u, 1003u, 1005u, 1007u, 2002u, 2004u, };
+    327680u, 2555904u, 4004u, 3002u, 4012u, 2001u, 3006u, 4008u, 5002u, 1004u, 2005u, 3004u, 4002u, 4006u, 4010u, 4014u, 5004u, 1002u, 1006u, 2003u, 2007u, 3003u, 3005u, 4001u, 4003u, 4005u, 4007u, 4009u, 4011u, 4013u, 5001u, 5003u, 5005u, 1001u, 1003u, 1005u, 1007u, 2002u, 2004u, 2006u, 3001u, };
 bool CommandID_IsValid(int value) {
   return ::_pbi::ValidateEnum(value, CommandID_internal_data_);
 }

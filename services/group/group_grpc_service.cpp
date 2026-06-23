@@ -1,6 +1,7 @@
 #include "group_grpc_service.hpp"
 
 #include "group_message_service.hpp"
+#include "group_packet_dispatcher.hpp"
 #include "group_service.hpp"
 
 #include <chrono>
@@ -141,6 +142,34 @@ GroupGrpcService::GroupGrpcService(GroupService* group_service,
                                    GroupMessageService* group_message_service)
     : group_service_(group_service)
     , group_message_service_(group_message_service) {}
+
+::grpc::Status GroupGrpcService::ForwardPacket(
+    ::grpc::ServerContext* /*context*/,
+    const im::group::GroupPacketRequest* request,
+    im::group::GroupPacketResponse* response) {
+    if (!response) {
+        return ::grpc::Status::OK;
+    }
+    if (!group_service_) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR,
+                 "GroupService is not available");
+        return ::grpc::Status::OK;
+    }
+    if (!request) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR,
+                 "im::group::GroupPacketRequest request is null");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        GroupPacketDispatcher dispatcher(group_service_, group_message_service_);
+        response->CopyFrom(dispatcher.handle(*request));
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
 
 ::grpc::Status GroupGrpcService::CreateGroup(
     ::grpc::ServerContext* /*context*/,

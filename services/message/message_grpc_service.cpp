@@ -1,5 +1,6 @@
 #include "message_grpc_service.hpp"
 
+#include "message_packet_dispatcher.hpp"
 #include "message_service.hpp"
 
 #include <chrono>
@@ -105,6 +106,29 @@ bool require_service(MessageService* service, Response* response) {
 
 MessageGrpcService::MessageGrpcService(MessageService* message_service)
     : message_service_(message_service) {}
+
+::grpc::Status MessageGrpcService::ForwardPacket(
+    ::grpc::ServerContext* /*context*/,
+    const im::message::MessagePacketRequest* request,
+    im::message::MessagePacketResponse* response) {
+    if (!require_service(message_service_, response)) {
+        return ::grpc::Status::OK;
+    }
+    if (!request) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR,
+                 "im::message::MessagePacketRequest request is null");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        MessagePacketDispatcher dispatcher(message_service_);
+        response->CopyFrom(dispatcher.handle(*request));
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
 
 ::grpc::Status MessageGrpcService::SendMessage(
     ::grpc::ServerContext* /*context*/,

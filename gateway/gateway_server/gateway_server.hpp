@@ -21,6 +21,7 @@
 
 #include "../auth/multi_platform_auth.hpp"
 #include "../connection_manager/connection_manager.hpp"
+#include "../command_handlers/gateway_command_handler_registry.hpp"
 #include "../message_processor/coro_message_processor.hpp"
 #include "../message_processor/message_parser.hpp"
 #include "../message_processor/message_processor.hpp"
@@ -43,18 +44,14 @@
 namespace odb { namespace pgsql { class database; } }
 namespace grpc { class Server; }
 
-#ifdef IM_ENABLE_USER_HTTP
-namespace im::gateway { class UserHttpController; }
-namespace im::gateway { class UserClient; }
-#endif
+namespace im::gateway { class UserServiceAdapter; }
+namespace im::gateway { class MessageServiceAdapter; }
+namespace im::gateway { class FriendServiceAdapter; }
+namespace im::gateway { class GroupServiceAdapter; }
 
-#if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS) || defined(IM_ENABLE_PUSH_SERVICE)
-namespace im::gateway { class MessageClient; }
-#endif
-
-#ifdef IM_ENABLE_MESSAGE_HTTP
-namespace im::gateway { class MessageHttpController; }
-#endif
+namespace im::service::user { class UserService; }
+namespace im::service::message { class MessageService; }
+namespace im::service::friend_ { class FriendService; }
 
 #ifdef IM_ENABLE_MESSAGE_WS
 namespace im::gateway { class MessageWsHandler; }
@@ -73,20 +70,9 @@ namespace im::gateway { class RemotePushNotifier; }
 namespace im::gateway { class GatewayPushDeliveryService; }
 #endif
 
-#ifdef IM_ENABLE_FRIEND_HTTP
-namespace im::gateway { class FriendClient; }
-namespace im::gateway { class FriendHttpController; }
-#endif
-
-#ifdef IM_ENABLE_GROUP_HTTP
+#if defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
 namespace im::service::group { class GroupService; }
-namespace im::gateway { class GroupClient; }
-namespace im::gateway { class GroupHttpController; }
-#endif
-
-#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
 namespace im::service::group { class GroupMessageService; }
-namespace im::gateway { class GroupMessageHttpController; }
 #endif
 
 namespace im {
@@ -151,31 +137,26 @@ private:
     void init_msg_parser();     // param: routerMgr/router_configfile
     void init_msg_processor();  // param: routerMgr/router_configfile , auth_mgr/auth_configfile ,
                                 // CoroProcessingOptions
+    void init_database_runtime();
+    void init_user_runtime();
+    void init_message_runtime();
+    void init_friend_runtime();
+    void init_group_runtime();
+    void init_group_message_runtime();
+    void init_message_ws_runtime();
 
     // bool init_utils_components();
     void init_logger(const std::string& log_folder = "");
     void init_io_service_pool();  // 初始化IOServicePool
 
     void register_message_handlers();
+    void refresh_runtime_registry();
 
-#ifdef IM_ENABLE_USER_HTTP
-    void register_user_http_routes();
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
+    void ensure_user_service();
 #endif
-
-#ifdef IM_ENABLE_MESSAGE_HTTP
-    void register_message_http_routes();
-#endif
-
-#ifdef IM_ENABLE_FRIEND_HTTP
-    void register_friend_http_routes();
-#endif
-
-#ifdef IM_ENABLE_GROUP_HTTP
-    void register_group_http_routes();
-#endif
-
-#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-    void register_group_message_http_routes();
+#if defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
+    void ensure_group_services();
 #endif
 
 #ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
@@ -212,10 +193,29 @@ private:
         std::unordered_map<std::string, HttpRouteStats> routes;
     };
 
+    struct ServiceRuntimeState {
+        std::string name;
+        std::string mode = "local";
+        std::string remote_endpoint;
+        int timeout_ms = 200;
+        bool local_bound = false;
+        bool remote_bound = false;
+    };
+
     void record_http_response(const httplib::Request& req,
                               const httplib::Response& res,
                               uint64_t duration_ms);
     std::string format_http_route_stats() const;
+    ServiceRuntimeState& load_service_runtime_state(const ConfigManager& config,
+                                                    const std::string& name,
+                                                    int default_timeout_ms = 200);
+    void mark_service_runtime_local(const std::string& name);
+    void mark_service_runtime_remote(const std::string& name,
+                                     const std::string& endpoint);
+    void warn_unknown_runtime_mode(const ServiceRuntimeState& state,
+                                   const std::string& fallback) const;
+    static bool is_remote_mode(const ServiceRuntimeState& state);
+    static bool is_local_mode(const ServiceRuntimeState& state);
 
 
     // 网络服务组件
@@ -241,24 +241,14 @@ private:
     std::atomic<size_t> ws_inflight_messages_{0};
     size_t max_ws_inflight_messages_{4096};
     HttpStats http_stats_;
+    std::unordered_map<std::string, ServiceRuntimeState> service_runtime_;
+    GatewayRuntimeRegistry runtime_registry_;
     std::string psc_path_;     // platform_strategy_config_path_
     std::string config_path_;  // gateway/router/auth shared config path for the MVP
 
 #if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
     // ODB database instance for service integration
     std::shared_ptr<odb::pgsql::database> odb_db_;
-#endif
-
-#ifdef IM_ENABLE_USER_HTTP
-    std::unique_ptr<UserHttpController> user_http_controller_;
-#endif
-
-#ifdef IM_ENABLE_MESSAGE_HTTP
-    std::unique_ptr<MessageHttpController> message_http_controller_;
-#endif
-
-#if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS) || defined(IM_ENABLE_PUSH_SERVICE)
-    std::shared_ptr<MessageClient> message_client_;
 #endif
 
 #ifdef IM_ENABLE_MESSAGE_WS
@@ -280,19 +270,6 @@ private:
     int gateway_push_delivery_selected_port_ = 0;
 #endif
 
-#ifdef IM_ENABLE_FRIEND_HTTP
-    std::shared_ptr<FriendClient> friend_client_;
-    std::unique_ptr<FriendHttpController> friend_http_controller_;
-#endif
-
-#ifdef IM_ENABLE_GROUP_HTTP
-    std::shared_ptr<GroupClient> group_client_;
-    std::unique_ptr<GroupHttpController> group_http_controller_;
-#endif
-
-#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-    std::unique_ptr<GroupMessageHttpController> group_message_http_controller_;
-#endif
 };
 
 

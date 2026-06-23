@@ -8,10 +8,27 @@ import "base.proto";
 // Gateway can keep using local FriendService while this boundary is staged,
 // then switch to RPC without changing the external HTTP contract.
 service FriendService {
+    rpc ForwardPacket(FriendPacketRequest) returns (FriendPacketResponse);
     rpc SendRequest(AddFriendRequest) returns (AddFriendResponse);
     rpc RespondToRequest(HandleFriendRequest) returns (HandleFriendResponse);
     rpc GetFriends(GetFriendListRequest) returns (GetFriendListResponse);
     rpc GetPendingRequests(GetFriendRequestsRequest) returns (GetFriendRequestsResponse);
+}
+
+// Gateway 到 FriendService 的统一 packet 边界。Gateway 只填充 envelope，
+// FriendService 负责解析 payload、执行业务并返回响应 packet。
+message FriendPacketRequest {
+    im.base.IMHeader header = 1;
+    string type_name = 2;
+    bytes payload = 3;
+}
+
+message FriendPacketResponse {
+    im.base.BaseResponse base = 1;
+    im.base.IMHeader header = 2;
+    string type_name = 3;
+    bytes payload = 4;
+    int32 http_status = 5;
 }
 
 // 好友请求状态

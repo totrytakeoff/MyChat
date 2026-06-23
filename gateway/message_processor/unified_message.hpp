@@ -17,6 +17,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <unordered_map>
 #include "../../common/proto/base.pb.h"
 
 namespace im {
@@ -41,6 +42,7 @@ public:
         std::string http_method;    // HTTP方法 (GET/POST等)
         std::string original_path;  // 原始路径
         std::string raw_body;       // 原始请求体
+        std::unordered_map<std::string, std::string> query_params; // HTTP查询参数
     };
 
     // 构造函数

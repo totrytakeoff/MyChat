@@ -3,65 +3,56 @@
 #include <chrono>
 #include <string>
 
+#include "../../common/network/packet_error_builder.hpp"
 #include "../../common/network/protobuf_codec.hpp"
 #include "../../common/utils/log_manager.hpp"
 #include "../../common/utils/service_identity.hpp"
+#include "../../services/message/message_packet_dispatcher.hpp"
+#include "../../services/message/message_service.hpp"
 #include "../../services/push/push_notifier.hpp"
-#include "../http/message_client.hpp"
-#include "../../services/odb/message.hpp"
+#include "../service_adapters/message_service_adapter.hpp"
 
 namespace im::gateway {
 
 using im::base::ErrorCode;
+using im::network::PacketErrorBuilder;
 using im::network::ProtobufCodec;
-using im::service::message::SendRequest;
 using im::utils::LogManager;
 using im::utils::ServiceIdentityManager;
 
 namespace {
 
-int64_t now_ms() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch()
-    ).count();
-}
-
-// Build an encoded SendMessageResponse with the given error code and message,
-// preserving the request header's sequence identity.
 std::string encode_error_response(const im::base::IMHeader& request_header,
                                   ErrorCode error_code,
                                   const std::string& error_message)
 {
-    im::message::SendMessageResponse resp;
-    resp.mutable_base()->set_error_code(error_code);
-    if (!error_message.empty()) {
-        resp.mutable_base()->set_error_message(error_message);
-    }
-
-    base::IMHeader response_header = ProtobufCodec::returnHeaderBuilder(
+    return PacketErrorBuilder::build_json_error_response(
         request_header,
+        error_code,
+        error_message,
         ServiceIdentityManager::getInstance().getDeviceId(),
         ServiceIdentityManager::getInstance().getPlatformInfo());
-
-    std::string encoded;
-    if (ProtobufCodec::encode(response_header, resp, encoded)) {
-        return encoded;
-    }
-    return "";
 }
 
 } // anonymous namespace
 
 MessageWsHandler::MessageWsHandler(
-    std::shared_ptr<MessageClient> msg_client,
+    std::shared_ptr<im::service::message::MessageService> message_service,
+    std::shared_ptr<MessageServiceAdapter> remote_message_adapter,
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr,
     im::service::push::PushNotifier* push_notifier)
-    : msg_client_(std::move(msg_client))
+    : message_service_(std::move(message_service))
+    , remote_message_adapter_(std::move(remote_message_adapter))
     , auth_mgr_(std::move(auth_mgr))
     , push_notifier_(push_notifier)
 {
     LogManager::SetLogToFile("message_ws_handler", "logs/message_ws_handler.log");
     logger_ = LogManager::GetLogger("message_ws_handler");
+    if (message_service_) {
+        local_dispatcher_ =
+                std::make_unique<im::service::message::MessagePacketDispatcher>(
+                        message_service_.get());
+    }
 }
 
 ProcessorResult MessageWsHandler::handle_send(const UnifiedMessage& msg) {
@@ -106,28 +97,7 @@ ProcessorResult MessageWsHandler::handle_send(const UnifiedMessage& msg) {
                                    "Device ID mismatch", error_pb, "");
         }
 
-        // 4. Validate protobuf type name.
-        if (msg.get_protobuf_type_name() != "im.message.SendMessageRequest") {
-            logger_->warn("Unexpected protobuf type: {}, expected im.message.SendMessageRequest",
-                          msg.get_protobuf_type_name());
-            std::string error_pb = encode_error_response(
-                header, ErrorCode::INVALID_REQUEST,
-                "Unexpected protobuf type, expected im.message.SendMessageRequest");
-            return ProcessorResult(ErrorCode::INVALID_REQUEST,
-                                   "Wrong protobuf type", error_pb, "");
-        }
-
-        // 5. Parse the SendMessageRequest from the protobuf payload.
-        im::message::SendMessageRequest send_req;
-        if (!send_req.ParseFromString(msg.get_protobuf_payload())) {
-            std::string error_pb = encode_error_response(
-                header, ErrorCode::INVALID_REQUEST,
-                "Failed to parse SendMessageRequest");
-            return ProcessorResult(ErrorCode::INVALID_REQUEST,
-                                   "Failed to parse SendMessageRequest", error_pb, "");
-        }
-
-        // 6. Validate receiver.
+        // 4. Validate routing-level receiver. Payload-level validation belongs to message service.
         std::string receiver_uid = header.to_uid();
         if (receiver_uid.empty()) {
             std::string error_pb = encode_error_response(
@@ -137,69 +107,68 @@ ProcessorResult MessageWsHandler::handle_send(const UnifiedMessage& msg) {
                                    "Missing receiver UID", error_pb, "");
         }
 
-        // 7. Validate content (from the protobuf body, or fall back to header).
-        const auto& body = send_req.body();
-        std::string content = body.content();
-        if (content.empty()) {
+        if (!remote_message_adapter_ && !local_dispatcher_) {
             std::string error_pb = encode_error_response(
-                header, ErrorCode::PARAM_ERROR,
-                "Missing message content");
-            return ProcessorResult(ErrorCode::PARAM_ERROR,
-                                   "Missing message content", error_pb, "");
+                header, ErrorCode::SERVER_ERROR, "Message service is not initialized");
+            return ProcessorResult(ErrorCode::SERVER_ERROR,
+                                   "Message service is not initialized", error_pb, "");
         }
 
-        // 8. Persist the message. The sender identity comes from the verified
-        //    token, NOT from header.from_uid or any client-supplied field.
-        SendRequest store_req;
-        store_req.sender_uid = token_user.user_id;
-        store_req.receiver_uid = receiver_uid;
-        store_req.content = content;
-        store_req.msg_type = im::service::message::MessageType::TEXT;
-        store_req.now_ms = now_ms();
+        im::base::IMHeader service_header = header;
+        service_header.set_from_uid(token_user.user_id);
+        service_header.set_to_uid(receiver_uid);
 
-        auto result = msg_client_->send_text_message(store_req);
-        if (!result.ok) {
-            logger_->warn("Persistence failed: {} ({})", result.message, result.error_code);
-            std::string error_pb = encode_error_response(
-                header, ErrorCode::SERVER_ERROR, result.message);
-            return ProcessorResult(ErrorCode::SERVER_ERROR, result.message, error_pb, "");
+        im::message::MessagePacketRequest packet;
+        packet.mutable_header()->CopyFrom(service_header);
+        packet.set_type_name(msg.get_protobuf_type_name());
+        packet.set_payload(msg.get_protobuf_payload());
+
+        im::message::MessagePacketResponse result;
+        if (remote_message_adapter_) {
+            result = remote_message_adapter_->forward(packet);
+        } else {
+            result = local_dispatcher_->handle(packet);
         }
-
-        // 9. Build SendMessageResponse protobuf.
-        im::message::SendMessageResponse send_resp;
-        send_resp.mutable_base()->set_error_code(ErrorCode::SUCCESS);
-        send_resp.mutable_base()->set_error_message("");
-        im::message::MessageBody* response_body = send_resp.mutable_message();
-        response_body->set_message_id(std::to_string(result.data.msg_id));
-        response_body->set_type(static_cast<im::message::MessageType>(result.data.msg_type));
-        response_body->set_content(result.data.content);
-        response_body->set_is_recalled(false);
-        response_body->set_is_read(false);
-
-        base::IMHeader response_header = ProtobufCodec::returnHeaderBuilder(
-            header,
-            ServiceIdentityManager::getInstance().getDeviceId(),
-            ServiceIdentityManager::getInstance().getPlatformInfo());
 
         std::string protobuf_response;
-        if (!ProtobufCodec::encode(response_header, send_resp, protobuf_response)) {
-            logger_->error("Failed to encode SendMessageResponse");
+        if (!ProtobufCodec::encodeEnvelope(result.header(),
+                                           result.type_name(),
+                                           result.payload(),
+                                           protobuf_response)) {
+            logger_->error("Failed to encode message packet response");
             std::string error_pb = encode_error_response(
                 header, ErrorCode::SERVER_ERROR, "Failed to encode response");
             return ProcessorResult(ErrorCode::SERVER_ERROR,
                                    "Failed to encode response", error_pb, "");
         }
 
-        logger_->info("WS send: token_user={} -> {} (msg_id={}, client_from_uid={})",
-                      token_user.user_id, receiver_uid, result.data.msg_id, header.from_uid());
+        const bool ok = result.base().error_code() == im::base::SUCCESS;
+        if (!ok) {
+            logger_->warn("Message service packet failed: {} ({})",
+                          result.base().error_message(),
+                          static_cast<int>(result.base().error_code()));
+            return ProcessorResult(result.base().error_code(),
+                                   result.base().error_message(),
+                                   protobuf_response,
+                                   "");
+        }
 
-        // 10. Delegate push through the boundary (best-effort, does not affect ack).
-        if (push_notifier_) {
-            im::service::push::PushContext context;
-            context.sender_uid = token_user.user_id;
-            context.conversation_type = "direct";
-            context.conversation_id = token_user.user_id;
-            push_notifier_->notify_user(receiver_uid, result.data.msg_id, content, context);
+        logger_->info("WS send packet forwarded: token_user={} -> {} (client_from_uid={})",
+                      token_user.user_id, receiver_uid, header.from_uid());
+
+        if (push_notifier_ && result.push_event().enabled()) {
+            try {
+                im::service::push::PushContext push_context;
+                push_context.sender_uid = result.push_event().sender_uid();
+                push_context.conversation_type = result.push_event().conversation_type();
+                push_context.conversation_id = result.push_event().conversation_id();
+                push_notifier_->notify_user(result.push_event().receiver_uid(),
+                                            result.push_event().msg_id(),
+                                            result.push_event().content(),
+                                            push_context);
+            } catch (const std::exception& e) {
+                logger_->warn("Push notification failed after WS send ack: {}", e.what());
+            }
         }
 
         return ProcessorResult(0, "", protobuf_response, "");

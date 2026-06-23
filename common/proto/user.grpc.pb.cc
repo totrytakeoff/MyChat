@@ -23,6 +23,7 @@ namespace im {
 namespace user {
 
 static const char* UserService_method_names[] = {
+  "/im.user.UserService/ForwardPacket",
   "/im.user.UserService/Register",
   "/im.user.UserService/Login",
   "/im.user.UserService/GetUserInfo",
@@ -37,12 +38,36 @@ std::unique_ptr< UserService::Stub> UserService::NewStub(const std::shared_ptr< 
 }
 
 UserService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
-  : channel_(channel), rpcmethod_Register_(UserService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Login_(UserService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetUserInfo_(UserService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SearchUsers_(UserService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_UpdateUserInfo_(UserService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  : channel_(channel), rpcmethod_ForwardPacket_(UserService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Register_(UserService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Login_(UserService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetUserInfo_(UserService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SearchUsers_(UserService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_UpdateUserInfo_(UserService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
+
+::grpc::Status UserService::Stub::ForwardPacket(::grpc::ClientContext* context, const ::im::user::UserPacketRequest& request, ::im::user::UserPacketResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::user::UserPacketRequest, ::im::user::UserPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ForwardPacket_, context, request, response);
+}
+
+void UserService::Stub::async::ForwardPacket(::grpc::ClientContext* context, const ::im::user::UserPacketRequest* request, ::im::user::UserPacketResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::user::UserPacketRequest, ::im::user::UserPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ForwardPacket_, context, request, response, std::move(f));
+}
+
+void UserService::Stub::async::ForwardPacket(::grpc::ClientContext* context, const ::im::user::UserPacketRequest* request, ::im::user::UserPacketResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ForwardPacket_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::user::UserPacketResponse>* UserService::Stub::PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::user::UserPacketRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::user::UserPacketResponse, ::im::user::UserPacketRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ForwardPacket_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::user::UserPacketResponse>* UserService::Stub::AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::user::UserPacketRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncForwardPacketRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
 
 ::grpc::Status UserService::Stub::Register(::grpc::ClientContext* context, const ::im::user::RegisterRequest& request, ::im::user::RegisterResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::im::user::RegisterRequest, ::im::user::RegisterResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_Register_, context, request, response);
@@ -163,6 +188,16 @@ UserService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       UserService_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::UserPacketRequest, ::im::user::UserPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](UserService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::user::UserPacketRequest* req,
+             ::im::user::UserPacketResponse* resp) {
+               return service->ForwardPacket(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      UserService_method_names[1],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::RegisterRequest, ::im::user::RegisterResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](UserService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -171,7 +206,7 @@ UserService::Service::Service() {
                return service->Register(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      UserService_method_names[1],
+      UserService_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::LoginRequest, ::im::user::LoginResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](UserService::Service* service,
@@ -181,7 +216,7 @@ UserService::Service::Service() {
                return service->Login(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      UserService_method_names[2],
+      UserService_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::GetUserInfoRequest, ::im::user::GetUserInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](UserService::Service* service,
@@ -191,7 +226,7 @@ UserService::Service::Service() {
                return service->GetUserInfo(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      UserService_method_names[3],
+      UserService_method_names[4],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::SearchUsersRequest, ::im::user::SearchUsersResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](UserService::Service* service,
@@ -201,7 +236,7 @@ UserService::Service::Service() {
                return service->SearchUsers(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      UserService_method_names[4],
+      UserService_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< UserService::Service, ::im::user::UpdateUserInfoRequest, ::im::user::UpdateUserInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](UserService::Service* service,
@@ -213,6 +248,13 @@ UserService::Service::Service() {
 }
 
 UserService::Service::~Service() {
+}
+
+::grpc::Status UserService::Service::ForwardPacket(::grpc::ServerContext* context, const ::im::user::UserPacketRequest* request, ::im::user::UserPacketResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
 ::grpc::Status UserService::Service::Register(::grpc::ServerContext* context, const ::im::user::RegisterRequest* request, ::im::user::RegisterResponse* response) {

@@ -1,5 +1,6 @@
 #include "friend_grpc_service.hpp"
 
+#include "friend_packet_dispatcher.hpp"
 #include "friend_service.hpp"
 
 #include <chrono>
@@ -94,6 +95,29 @@ bool require_service(FriendService* service, Response* response) {
 
 FriendGrpcService::FriendGrpcService(FriendService* friend_service)
     : friend_service_(friend_service) {}
+
+::grpc::Status FriendGrpcService::ForwardPacket(
+    ::grpc::ServerContext* /*context*/,
+    const im::friend_::FriendPacketRequest* request,
+    im::friend_::FriendPacketResponse* response) {
+    if (!require_service(friend_service_, response)) {
+        return ::grpc::Status::OK;
+    }
+    if (!request) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR,
+                 "im::friend_::FriendPacketRequest request is null");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        FriendPacketDispatcher dispatcher(friend_service_);
+        response->CopyFrom(dispatcher.handle(*request));
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
 
 ::grpc::Status FriendGrpcService::SendRequest(
     ::grpc::ServerContext* /*context*/,

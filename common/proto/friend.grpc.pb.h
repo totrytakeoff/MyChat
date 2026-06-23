@@ -40,6 +40,13 @@ class FriendService final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
+    virtual ::grpc::Status ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::im::friend_::FriendPacketResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::FriendPacketResponse>> AsyncForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::FriendPacketResponse>>(AsyncForwardPacketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::FriendPacketResponse>> PrepareAsyncForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::FriendPacketResponse>>(PrepareAsyncForwardPacketRaw(context, request, cq));
+    }
     virtual ::grpc::Status SendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::im::friend_::AddFriendResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::AddFriendResponse>> AsyncSendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::AddFriendResponse>>(AsyncSendRequestRaw(context, request, cq));
@@ -71,6 +78,8 @@ class FriendService final {
     class async_interface {
      public:
       virtual ~async_interface() {}
+      virtual void ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void SendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest* request, ::im::friend_::AddFriendResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void SendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest* request, ::im::friend_::AddFriendResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void RespondToRequest(::grpc::ClientContext* context, const ::im::friend_::HandleFriendRequest* request, ::im::friend_::HandleFriendResponse* response, std::function<void(::grpc::Status)>) = 0;
@@ -84,6 +93,8 @@ class FriendService final {
     virtual class async_interface* async() { return nullptr; }
     class async_interface* experimental_async() { return async(); }
    private:
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::FriendPacketResponse>* AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::FriendPacketResponse>* PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::AddFriendResponse>* AsyncSendRequestRaw(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::AddFriendResponse>* PrepareAsyncSendRequestRaw(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::friend_::HandleFriendResponse>* AsyncRespondToRequestRaw(::grpc::ClientContext* context, const ::im::friend_::HandleFriendRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -96,6 +107,13 @@ class FriendService final {
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+    ::grpc::Status ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::im::friend_::FriendPacketResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>> AsyncForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>>(AsyncForwardPacketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>> PrepareAsyncForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>>(PrepareAsyncForwardPacketRaw(context, request, cq));
+    }
     ::grpc::Status SendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::im::friend_::AddFriendResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::friend_::AddFriendResponse>> AsyncSendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::friend_::AddFriendResponse>>(AsyncSendRequestRaw(context, request, cq));
@@ -127,6 +145,8 @@ class FriendService final {
     class async final :
       public StubInterface::async_interface {
      public:
+      void ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response, std::function<void(::grpc::Status)>) override;
+      void ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void SendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest* request, ::im::friend_::AddFriendResponse* response, std::function<void(::grpc::Status)>) override;
       void SendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest* request, ::im::friend_::AddFriendResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void RespondToRequest(::grpc::ClientContext* context, const ::im::friend_::HandleFriendRequest* request, ::im::friend_::HandleFriendResponse* response, std::function<void(::grpc::Status)>) override;
@@ -146,6 +166,8 @@ class FriendService final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class async async_stub_{this};
+    ::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>* AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>* PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::friend_::AddFriendResponse>* AsyncSendRequestRaw(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::friend_::AddFriendResponse>* PrepareAsyncSendRequestRaw(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::friend_::HandleFriendResponse>* AsyncRespondToRequestRaw(::grpc::ClientContext* context, const ::im::friend_::HandleFriendRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -154,6 +176,7 @@ class FriendService final {
     ::grpc::ClientAsyncResponseReader< ::im::friend_::GetFriendListResponse>* PrepareAsyncGetFriendsRaw(::grpc::ClientContext* context, const ::im::friend_::GetFriendListRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::friend_::GetFriendRequestsResponse>* AsyncGetPendingRequestsRaw(::grpc::ClientContext* context, const ::im::friend_::GetFriendRequestsRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::friend_::GetFriendRequestsResponse>* PrepareAsyncGetPendingRequestsRaw(::grpc::ClientContext* context, const ::im::friend_::GetFriendRequestsRequest& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_ForwardPacket_;
     const ::grpc::internal::RpcMethod rpcmethod_SendRequest_;
     const ::grpc::internal::RpcMethod rpcmethod_RespondToRequest_;
     const ::grpc::internal::RpcMethod rpcmethod_GetFriends_;
@@ -165,10 +188,31 @@ class FriendService final {
    public:
     Service();
     virtual ~Service();
+    virtual ::grpc::Status ForwardPacket(::grpc::ServerContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response);
     virtual ::grpc::Status SendRequest(::grpc::ServerContext* context, const ::im::friend_::AddFriendRequest* request, ::im::friend_::AddFriendResponse* response);
     virtual ::grpc::Status RespondToRequest(::grpc::ServerContext* context, const ::im::friend_::HandleFriendRequest* request, ::im::friend_::HandleFriendResponse* response);
     virtual ::grpc::Status GetFriends(::grpc::ServerContext* context, const ::im::friend_::GetFriendListRequest* request, ::im::friend_::GetFriendListResponse* response);
     virtual ::grpc::Status GetPendingRequests(::grpc::ServerContext* context, const ::im::friend_::GetFriendRequestsRequest* request, ::im::friend_::GetFriendRequestsResponse* response);
+  };
+  template <class BaseClass>
+  class WithAsyncMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodAsync(0);
+    }
+    ~WithAsyncMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::friend_::FriendPacketRequest* /*request*/, ::im::friend_::FriendPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestForwardPacket(::grpc::ServerContext* context, ::im::friend_::FriendPacketRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::friend_::FriendPacketResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
   };
   template <class BaseClass>
   class WithAsyncMethod_SendRequest : public BaseClass {
@@ -176,7 +220,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SendRequest() {
-      ::grpc::Service::MarkMethodAsync(0);
+      ::grpc::Service::MarkMethodAsync(1);
     }
     ~WithAsyncMethod_SendRequest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -187,7 +231,7 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendRequest(::grpc::ServerContext* context, ::im::friend_::AddFriendRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::friend_::AddFriendResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -196,7 +240,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_RespondToRequest() {
-      ::grpc::Service::MarkMethodAsync(1);
+      ::grpc::Service::MarkMethodAsync(2);
     }
     ~WithAsyncMethod_RespondToRequest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -207,7 +251,7 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestRespondToRequest(::grpc::ServerContext* context, ::im::friend_::HandleFriendRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::friend_::HandleFriendResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -216,7 +260,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetFriends() {
-      ::grpc::Service::MarkMethodAsync(2);
+      ::grpc::Service::MarkMethodAsync(3);
     }
     ~WithAsyncMethod_GetFriends() override {
       BaseClassMustBeDerivedFromService(this);
@@ -227,7 +271,7 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetFriends(::grpc::ServerContext* context, ::im::friend_::GetFriendListRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::friend_::GetFriendListResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -236,7 +280,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetPendingRequests() {
-      ::grpc::Service::MarkMethodAsync(3);
+      ::grpc::Service::MarkMethodAsync(4);
     }
     ~WithAsyncMethod_GetPendingRequests() override {
       BaseClassMustBeDerivedFromService(this);
@@ -247,23 +291,50 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetPendingRequests(::grpc::ServerContext* context, ::im::friend_::GetFriendRequestsRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::friend_::GetFriendRequestsResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_SendRequest<WithAsyncMethod_RespondToRequest<WithAsyncMethod_GetFriends<WithAsyncMethod_GetPendingRequests<Service > > > > AsyncService;
+  typedef WithAsyncMethod_ForwardPacket<WithAsyncMethod_SendRequest<WithAsyncMethod_RespondToRequest<WithAsyncMethod_GetFriends<WithAsyncMethod_GetPendingRequests<Service > > > > > AsyncService;
+  template <class BaseClass>
+  class WithCallbackMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response) { return this->ForwardPacket(context, request, response); }));}
+    void SetMessageAllocatorFor_ForwardPacket(
+        ::grpc::MessageAllocator< ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::friend_::FriendPacketRequest* /*request*/, ::im::friend_::FriendPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ForwardPacket(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::friend_::FriendPacketRequest* /*request*/, ::im::friend_::FriendPacketResponse* /*response*/)  { return nullptr; }
+  };
   template <class BaseClass>
   class WithCallbackMethod_SendRequest : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SendRequest() {
-      ::grpc::Service::MarkMethodCallback(0,
+      ::grpc::Service::MarkMethodCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::im::friend_::AddFriendRequest, ::im::friend_::AddFriendResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::friend_::AddFriendRequest* request, ::im::friend_::AddFriendResponse* response) { return this->SendRequest(context, request, response); }));}
     void SetMessageAllocatorFor_SendRequest(
         ::grpc::MessageAllocator< ::im::friend_::AddFriendRequest, ::im::friend_::AddFriendResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::friend_::AddFriendRequest, ::im::friend_::AddFriendResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -284,13 +355,13 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_RespondToRequest() {
-      ::grpc::Service::MarkMethodCallback(1,
+      ::grpc::Service::MarkMethodCallback(2,
           new ::grpc::internal::CallbackUnaryHandler< ::im::friend_::HandleFriendRequest, ::im::friend_::HandleFriendResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::friend_::HandleFriendRequest* request, ::im::friend_::HandleFriendResponse* response) { return this->RespondToRequest(context, request, response); }));}
     void SetMessageAllocatorFor_RespondToRequest(
         ::grpc::MessageAllocator< ::im::friend_::HandleFriendRequest, ::im::friend_::HandleFriendResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::friend_::HandleFriendRequest, ::im::friend_::HandleFriendResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -311,13 +382,13 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetFriends() {
-      ::grpc::Service::MarkMethodCallback(2,
+      ::grpc::Service::MarkMethodCallback(3,
           new ::grpc::internal::CallbackUnaryHandler< ::im::friend_::GetFriendListRequest, ::im::friend_::GetFriendListResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::friend_::GetFriendListRequest* request, ::im::friend_::GetFriendListResponse* response) { return this->GetFriends(context, request, response); }));}
     void SetMessageAllocatorFor_GetFriends(
         ::grpc::MessageAllocator< ::im::friend_::GetFriendListRequest, ::im::friend_::GetFriendListResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::friend_::GetFriendListRequest, ::im::friend_::GetFriendListResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -338,13 +409,13 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetPendingRequests() {
-      ::grpc::Service::MarkMethodCallback(3,
+      ::grpc::Service::MarkMethodCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::im::friend_::GetFriendRequestsRequest, ::im::friend_::GetFriendRequestsResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::friend_::GetFriendRequestsRequest* request, ::im::friend_::GetFriendRequestsResponse* response) { return this->GetPendingRequests(context, request, response); }));}
     void SetMessageAllocatorFor_GetPendingRequests(
         ::grpc::MessageAllocator< ::im::friend_::GetFriendRequestsRequest, ::im::friend_::GetFriendRequestsResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::friend_::GetFriendRequestsRequest, ::im::friend_::GetFriendRequestsResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -359,15 +430,32 @@ class FriendService final {
     virtual ::grpc::ServerUnaryReactor* GetPendingRequests(
       ::grpc::CallbackServerContext* /*context*/, const ::im::friend_::GetFriendRequestsRequest* /*request*/, ::im::friend_::GetFriendRequestsResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_SendRequest<WithCallbackMethod_RespondToRequest<WithCallbackMethod_GetFriends<WithCallbackMethod_GetPendingRequests<Service > > > > CallbackService;
+  typedef WithCallbackMethod_ForwardPacket<WithCallbackMethod_SendRequest<WithCallbackMethod_RespondToRequest<WithCallbackMethod_GetFriends<WithCallbackMethod_GetPendingRequests<Service > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
+  class WithGenericMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
+    ~WithGenericMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::friend_::FriendPacketRequest* /*request*/, ::im::friend_::FriendPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
   template <class BaseClass>
   class WithGenericMethod_SendRequest : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SendRequest() {
-      ::grpc::Service::MarkMethodGeneric(0);
+      ::grpc::Service::MarkMethodGeneric(1);
     }
     ~WithGenericMethod_SendRequest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -384,7 +472,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_RespondToRequest() {
-      ::grpc::Service::MarkMethodGeneric(1);
+      ::grpc::Service::MarkMethodGeneric(2);
     }
     ~WithGenericMethod_RespondToRequest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -401,7 +489,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetFriends() {
-      ::grpc::Service::MarkMethodGeneric(2);
+      ::grpc::Service::MarkMethodGeneric(3);
     }
     ~WithGenericMethod_GetFriends() override {
       BaseClassMustBeDerivedFromService(this);
@@ -418,7 +506,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetPendingRequests() {
-      ::grpc::Service::MarkMethodGeneric(3);
+      ::grpc::Service::MarkMethodGeneric(4);
     }
     ~WithGenericMethod_GetPendingRequests() override {
       BaseClassMustBeDerivedFromService(this);
@@ -430,12 +518,32 @@ class FriendService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
+    ~WithRawMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::friend_::FriendPacketRequest* /*request*/, ::im::friend_::FriendPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestForwardPacket(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_SendRequest : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SendRequest() {
-      ::grpc::Service::MarkMethodRaw(0);
+      ::grpc::Service::MarkMethodRaw(1);
     }
     ~WithRawMethod_SendRequest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -446,7 +554,7 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendRequest(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -455,7 +563,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_RespondToRequest() {
-      ::grpc::Service::MarkMethodRaw(1);
+      ::grpc::Service::MarkMethodRaw(2);
     }
     ~WithRawMethod_RespondToRequest() override {
       BaseClassMustBeDerivedFromService(this);
@@ -466,7 +574,7 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestRespondToRequest(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -475,7 +583,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetFriends() {
-      ::grpc::Service::MarkMethodRaw(2);
+      ::grpc::Service::MarkMethodRaw(3);
     }
     ~WithRawMethod_GetFriends() override {
       BaseClassMustBeDerivedFromService(this);
@@ -486,7 +594,7 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetFriends(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -495,7 +603,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetPendingRequests() {
-      ::grpc::Service::MarkMethodRaw(3);
+      ::grpc::Service::MarkMethodRaw(4);
     }
     ~WithRawMethod_GetPendingRequests() override {
       BaseClassMustBeDerivedFromService(this);
@@ -506,8 +614,30 @@ class FriendService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetPendingRequests(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ForwardPacket(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::friend_::FriendPacketRequest* /*request*/, ::im::friend_::FriendPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ForwardPacket(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithRawCallbackMethod_SendRequest : public BaseClass {
@@ -515,7 +645,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SendRequest() {
-      ::grpc::Service::MarkMethodRawCallback(0,
+      ::grpc::Service::MarkMethodRawCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendRequest(context, request, response); }));
@@ -537,7 +667,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_RespondToRequest() {
-      ::grpc::Service::MarkMethodRawCallback(1,
+      ::grpc::Service::MarkMethodRawCallback(2,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->RespondToRequest(context, request, response); }));
@@ -559,7 +689,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetFriends() {
-      ::grpc::Service::MarkMethodRawCallback(2,
+      ::grpc::Service::MarkMethodRawCallback(3,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetFriends(context, request, response); }));
@@ -581,7 +711,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetPendingRequests() {
-      ::grpc::Service::MarkMethodRawCallback(3,
+      ::grpc::Service::MarkMethodRawCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetPendingRequests(context, request, response); }));
@@ -598,12 +728,39 @@ class FriendService final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodStreamed(0,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse>* streamer) {
+                       return this->StreamedForwardPacket(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::friend_::FriendPacketRequest* /*request*/, ::im::friend_::FriendPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedForwardPacket(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::friend_::FriendPacketRequest,::im::friend_::FriendPacketResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_SendRequest : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SendRequest() {
-      ::grpc::Service::MarkMethodStreamed(0,
+      ::grpc::Service::MarkMethodStreamed(1,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::friend_::AddFriendRequest, ::im::friend_::AddFriendResponse>(
             [this](::grpc::ServerContext* context,
@@ -630,7 +787,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_RespondToRequest() {
-      ::grpc::Service::MarkMethodStreamed(1,
+      ::grpc::Service::MarkMethodStreamed(2,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::friend_::HandleFriendRequest, ::im::friend_::HandleFriendResponse>(
             [this](::grpc::ServerContext* context,
@@ -657,7 +814,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetFriends() {
-      ::grpc::Service::MarkMethodStreamed(2,
+      ::grpc::Service::MarkMethodStreamed(3,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::friend_::GetFriendListRequest, ::im::friend_::GetFriendListResponse>(
             [this](::grpc::ServerContext* context,
@@ -684,7 +841,7 @@ class FriendService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetPendingRequests() {
-      ::grpc::Service::MarkMethodStreamed(3,
+      ::grpc::Service::MarkMethodStreamed(4,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::friend_::GetFriendRequestsRequest, ::im::friend_::GetFriendRequestsResponse>(
             [this](::grpc::ServerContext* context,
@@ -705,9 +862,9 @@ class FriendService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedGetPendingRequests(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::friend_::GetFriendRequestsRequest,::im::friend_::GetFriendRequestsResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_SendRequest<WithStreamedUnaryMethod_RespondToRequest<WithStreamedUnaryMethod_GetFriends<WithStreamedUnaryMethod_GetPendingRequests<Service > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_ForwardPacket<WithStreamedUnaryMethod_SendRequest<WithStreamedUnaryMethod_RespondToRequest<WithStreamedUnaryMethod_GetFriends<WithStreamedUnaryMethod_GetPendingRequests<Service > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_SendRequest<WithStreamedUnaryMethod_RespondToRequest<WithStreamedUnaryMethod_GetFriends<WithStreamedUnaryMethod_GetPendingRequests<Service > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_ForwardPacket<WithStreamedUnaryMethod_SendRequest<WithStreamedUnaryMethod_RespondToRequest<WithStreamedUnaryMethod_GetFriends<WithStreamedUnaryMethod_GetPendingRequests<Service > > > > > StreamedService;
 };
 
 }  // namespace friend_

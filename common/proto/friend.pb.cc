@@ -367,6 +367,70 @@ struct GetBlacklistRequestDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetBlacklistRequestDefaultTypeInternal _GetBlacklistRequest_default_instance_;
 
+inline constexpr FriendPacketResponse::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        type_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        payload_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        base_{nullptr},
+        header_{nullptr},
+        http_status_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR FriendPacketResponse::FriendPacketResponse(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct FriendPacketResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR FriendPacketResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~FriendPacketResponseDefaultTypeInternal() {}
+  union {
+    FriendPacketResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendPacketResponseDefaultTypeInternal _FriendPacketResponse_default_instance_;
+
+inline constexpr FriendPacketRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        type_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        payload_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        header_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR FriendPacketRequest::FriendPacketRequest(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct FriendPacketRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR FriendPacketRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~FriendPacketRequestDefaultTypeInternal() {}
+  union {
+    FriendPacketRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendPacketRequestDefaultTypeInternal _FriendPacketRequest_default_instance_;
+
 inline constexpr AddToBlacklistResponse::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -484,6 +548,38 @@ static constexpr const ::_pb::ServiceDescriptor**
 const ::uint32_t
     TableStruct_friend_2eproto::offsets[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
         protodesc_cold) = {
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketRequest, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketRequest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketRequest, _impl_.header_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketRequest, _impl_.type_name_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketRequest, _impl_.payload_),
+        0,
+        ~0u,
+        ~0u,
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketResponse, _impl_._has_bits_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketResponse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketResponse, _impl_.base_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketResponse, _impl_.header_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketResponse, _impl_.type_name_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketResponse, _impl_.payload_),
+        PROTOBUF_FIELD_OFFSET(::im::friend_::FriendPacketResponse, _impl_.http_status_),
+        0,
+        1,
+        ~0u,
+        ~0u,
+        ~0u,
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::im::friend_::FriendInfo, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -679,24 +775,28 @@ const ::uint32_t
 
 static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
-        {0, -1, -1, sizeof(::im::friend_::FriendInfo)},
-        {15, -1, -1, sizeof(::im::friend_::FriendRequest)},
-        {31, 42, -1, sizeof(::im::friend_::AddFriendRequest)},
-        {45, 55, -1, sizeof(::im::friend_::AddFriendResponse)},
-        {57, 68, -1, sizeof(::im::friend_::HandleFriendRequest)},
-        {71, 80, -1, sizeof(::im::friend_::HandleFriendResponse)},
-        {81, 90, -1, sizeof(::im::friend_::GetFriendListRequest)},
-        {91, 101, -1, sizeof(::im::friend_::GetFriendListResponse)},
-        {103, 112, -1, sizeof(::im::friend_::GetFriendRequestsRequest)},
-        {113, 123, -1, sizeof(::im::friend_::GetFriendRequestsResponse)},
-        {125, 135, -1, sizeof(::im::friend_::AddToBlacklistRequest)},
-        {137, 146, -1, sizeof(::im::friend_::AddToBlacklistResponse)},
-        {147, 157, -1, sizeof(::im::friend_::RemoveFromBlacklistRequest)},
-        {159, 168, -1, sizeof(::im::friend_::RemoveFromBlacklistResponse)},
-        {169, 178, -1, sizeof(::im::friend_::GetBlacklistRequest)},
-        {179, 189, -1, sizeof(::im::friend_::GetBlacklistResponse)},
+        {0, 11, -1, sizeof(::im::friend_::FriendPacketRequest)},
+        {14, 27, -1, sizeof(::im::friend_::FriendPacketResponse)},
+        {32, -1, -1, sizeof(::im::friend_::FriendInfo)},
+        {47, -1, -1, sizeof(::im::friend_::FriendRequest)},
+        {63, 74, -1, sizeof(::im::friend_::AddFriendRequest)},
+        {77, 87, -1, sizeof(::im::friend_::AddFriendResponse)},
+        {89, 100, -1, sizeof(::im::friend_::HandleFriendRequest)},
+        {103, 112, -1, sizeof(::im::friend_::HandleFriendResponse)},
+        {113, 122, -1, sizeof(::im::friend_::GetFriendListRequest)},
+        {123, 133, -1, sizeof(::im::friend_::GetFriendListResponse)},
+        {135, 144, -1, sizeof(::im::friend_::GetFriendRequestsRequest)},
+        {145, 155, -1, sizeof(::im::friend_::GetFriendRequestsResponse)},
+        {157, 167, -1, sizeof(::im::friend_::AddToBlacklistRequest)},
+        {169, 178, -1, sizeof(::im::friend_::AddToBlacklistResponse)},
+        {179, 189, -1, sizeof(::im::friend_::RemoveFromBlacklistRequest)},
+        {191, 200, -1, sizeof(::im::friend_::RemoveFromBlacklistResponse)},
+        {201, 210, -1, sizeof(::im::friend_::GetBlacklistRequest)},
+        {211, 221, -1, sizeof(::im::friend_::GetBlacklistResponse)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
+    &::im::friend_::_FriendPacketRequest_default_instance_._instance,
+    &::im::friend_::_FriendPacketResponse_default_instance_._instance,
     &::im::friend_::_FriendInfo_default_instance_._instance,
     &::im::friend_::_FriendRequest_default_instance_._instance,
     &::im::friend_::_AddFriendRequest_default_instance_._instance,
@@ -716,58 +816,66 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 const char descriptor_table_protodef_friend_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\014friend.proto\022\nim.friend_\032\nbase.proto\"\304"
-    "\001\n\nFriendInfo\022\013\n\003uid\030\001 \001(\t\022\016\n\006remark\030\002 \001"
-    "(\t\022\020\n\010add_time\030\003 \001(\003\0221\n\013permissions\030\004 \003("
-    "\0162\034.im.friend_.FriendPermission\022\021\n\tfrien"
-    "d_id\030\005 \001(\004\022\020\n\010nickname\030\006 \001(\t\022/\n\006status\030\007"
-    " \001(\0162\037.im.friend_.FriendRequestStatus\"\301\001"
-    "\n\rFriendRequest\022\022\n\nrequest_id\030\001 \001(\t\022\020\n\010f"
-    "rom_uid\030\002 \001(\t\022\016\n\006to_uid\030\003 \001(\t\022\017\n\007message"
-    "\030\004 \001(\t\022/\n\006status\030\005 \001(\0162\037.im.friend_.Frie"
-    "ndRequestStatus\022\023\n\013create_time\030\006 \001(\003\022\021\n\t"
-    "friend_id\030\007 \001(\004\022\020\n\010nickname\030\010 \001(\t\"V\n\020Add"
-    "FriendRequest\022!\n\006header\030\001 \001(\0132\021.im.base."
-    "IMHeader\022\016\n\006to_uid\030\002 \001(\t\022\017\n\007message\030\003 \001("
-    "\t\"d\n\021AddFriendResponse\022#\n\004base\030\001 \001(\0132\025.i"
-    "m.base.BaseResponse\022*\n\007request\030\002 \001(\0132\031.i"
-    "m.friend_.FriendRequest\"\\\n\023HandleFriendR"
-    "equest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeade"
-    "r\022\022\n\nrequest_id\030\002 \001(\t\022\016\n\006accept\030\003 \001(\010\";\n"
-    "\024HandleFriendResponse\022#\n\004base\030\001 \001(\0132\025.im"
-    ".base.BaseResponse\"9\n\024GetFriendListReque"
-    "st\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeader\"e\n"
-    "\025GetFriendListResponse\022#\n\004base\030\001 \001(\0132\025.i"
-    "m.base.BaseResponse\022\'\n\007friends\030\002 \003(\0132\026.i"
-    "m.friend_.FriendInfo\"=\n\030GetFriendRequest"
-    "sRequest\022!\n\006header\030\001 \001(\0132\021.im.base.IMHea"
-    "der\"m\n\031GetFriendRequestsResponse\022#\n\004base"
-    "\030\001 \001(\0132\025.im.base.BaseResponse\022+\n\010request"
-    "s\030\002 \003(\0132\031.im.friend_.FriendRequest\"N\n\025Ad"
-    "dToBlacklistRequest\022!\n\006header\030\001 \001(\0132\021.im"
-    ".base.IMHeader\022\022\n\ntarget_uid\030\002 \001(\t\"=\n\026Ad"
-    "dToBlacklistResponse\022#\n\004base\030\001 \001(\0132\025.im."
-    "base.BaseResponse\"S\n\032RemoveFromBlacklist"
-    "Request\022!\n\006header\030\001 \001(\0132\021.im.base.IMHead"
-    "er\022\022\n\ntarget_uid\030\002 \001(\t\"B\n\033RemoveFromBlac"
-    "klistResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Ba"
-    "seResponse\"8\n\023GetBlacklistRequest\022!\n\006hea"
-    "der\030\001 \001(\0132\021.im.base.IMHeader\"O\n\024GetBlack"
-    "listResponse\022#\n\004base\030\001 \001(\0132\025.im.base.Bas"
-    "eResponse\022\022\n\nblack_uids\030\002 \003(\t*>\n\023FriendR"
-    "equestStatus\022\013\n\007PENDING\020\000\022\014\n\010ACCEPTED\020\001\022"
-    "\014\n\010REJECTED\020\002*D\n\020FriendPermission\022\n\n\006NOR"
-    "MAL\020\000\022\013\n\007NO_CHAT\020\001\022\r\n\tNO_MOMENT\020\002\022\010\n\004STA"
-    "R\020\0032\350\002\n\rFriendService\022J\n\013SendRequest\022\034.i"
-    "m.friend_.AddFriendRequest\032\035.im.friend_."
-    "AddFriendResponse\022U\n\020RespondToRequest\022\037."
-    "im.friend_.HandleFriendRequest\032 .im.frie"
-    "nd_.HandleFriendResponse\022Q\n\nGetFriends\022 "
-    ".im.friend_.GetFriendListRequest\032!.im.fr"
-    "iend_.GetFriendListResponse\022a\n\022GetPendin"
-    "gRequests\022$.im.friend_.GetFriendRequests"
-    "Request\032%.im.friend_.GetFriendRequestsRe"
-    "sponseb\006proto3"
+    "\n\014friend.proto\022\nim.friend_\032\nbase.proto\"\\"
+    "\n\023FriendPacketRequest\022!\n\006header\030\001 \001(\0132\021."
+    "im.base.IMHeader\022\021\n\ttype_name\030\002 \001(\t\022\017\n\007p"
+    "ayload\030\003 \001(\014\"\227\001\n\024FriendPacketResponse\022#\n"
+    "\004base\030\001 \001(\0132\025.im.base.BaseResponse\022!\n\006he"
+    "ader\030\002 \001(\0132\021.im.base.IMHeader\022\021\n\ttype_na"
+    "me\030\003 \001(\t\022\017\n\007payload\030\004 \001(\014\022\023\n\013http_status"
+    "\030\005 \001(\005\"\304\001\n\nFriendInfo\022\013\n\003uid\030\001 \001(\t\022\016\n\006re"
+    "mark\030\002 \001(\t\022\020\n\010add_time\030\003 \001(\003\0221\n\013permissi"
+    "ons\030\004 \003(\0162\034.im.friend_.FriendPermission\022"
+    "\021\n\tfriend_id\030\005 \001(\004\022\020\n\010nickname\030\006 \001(\t\022/\n\006"
+    "status\030\007 \001(\0162\037.im.friend_.FriendRequestS"
+    "tatus\"\301\001\n\rFriendRequest\022\022\n\nrequest_id\030\001 "
+    "\001(\t\022\020\n\010from_uid\030\002 \001(\t\022\016\n\006to_uid\030\003 \001(\t\022\017\n"
+    "\007message\030\004 \001(\t\022/\n\006status\030\005 \001(\0162\037.im.frie"
+    "nd_.FriendRequestStatus\022\023\n\013create_time\030\006"
+    " \001(\003\022\021\n\tfriend_id\030\007 \001(\004\022\020\n\010nickname\030\010 \001("
+    "\t\"V\n\020AddFriendRequest\022!\n\006header\030\001 \001(\0132\021."
+    "im.base.IMHeader\022\016\n\006to_uid\030\002 \001(\t\022\017\n\007mess"
+    "age\030\003 \001(\t\"d\n\021AddFriendResponse\022#\n\004base\030\001"
+    " \001(\0132\025.im.base.BaseResponse\022*\n\007request\030\002"
+    " \001(\0132\031.im.friend_.FriendRequest\"\\\n\023Handl"
+    "eFriendRequest\022!\n\006header\030\001 \001(\0132\021.im.base"
+    ".IMHeader\022\022\n\nrequest_id\030\002 \001(\t\022\016\n\006accept\030"
+    "\003 \001(\010\";\n\024HandleFriendResponse\022#\n\004base\030\001 "
+    "\001(\0132\025.im.base.BaseResponse\"9\n\024GetFriendL"
+    "istRequest\022!\n\006header\030\001 \001(\0132\021.im.base.IMH"
+    "eader\"e\n\025GetFriendListResponse\022#\n\004base\030\001"
+    " \001(\0132\025.im.base.BaseResponse\022\'\n\007friends\030\002"
+    " \003(\0132\026.im.friend_.FriendInfo\"=\n\030GetFrien"
+    "dRequestsRequest\022!\n\006header\030\001 \001(\0132\021.im.ba"
+    "se.IMHeader\"m\n\031GetFriendRequestsResponse"
+    "\022#\n\004base\030\001 \001(\0132\025.im.base.BaseResponse\022+\n"
+    "\010requests\030\002 \003(\0132\031.im.friend_.FriendReque"
+    "st\"N\n\025AddToBlacklistRequest\022!\n\006header\030\001 "
+    "\001(\0132\021.im.base.IMHeader\022\022\n\ntarget_uid\030\002 \001"
+    "(\t\"=\n\026AddToBlacklistResponse\022#\n\004base\030\001 \001"
+    "(\0132\025.im.base.BaseResponse\"S\n\032RemoveFromB"
+    "lacklistRequest\022!\n\006header\030\001 \001(\0132\021.im.bas"
+    "e.IMHeader\022\022\n\ntarget_uid\030\002 \001(\t\"B\n\033Remove"
+    "FromBlacklistResponse\022#\n\004base\030\001 \001(\0132\025.im"
+    ".base.BaseResponse\"8\n\023GetBlacklistReques"
+    "t\022!\n\006header\030\001 \001(\0132\021.im.base.IMHeader\"O\n\024"
+    "GetBlacklistResponse\022#\n\004base\030\001 \001(\0132\025.im."
+    "base.BaseResponse\022\022\n\nblack_uids\030\002 \003(\t*>\n"
+    "\023FriendRequestStatus\022\013\n\007PENDING\020\000\022\014\n\010ACC"
+    "EPTED\020\001\022\014\n\010REJECTED\020\002*D\n\020FriendPermissio"
+    "n\022\n\n\006NORMAL\020\000\022\013\n\007NO_CHAT\020\001\022\r\n\tNO_MOMENT\020"
+    "\002\022\010\n\004STAR\020\0032\274\003\n\rFriendService\022R\n\rForward"
+    "Packet\022\037.im.friend_.FriendPacketRequest\032"
+    " .im.friend_.FriendPacketResponse\022J\n\013Sen"
+    "dRequest\022\034.im.friend_.AddFriendRequest\032\035"
+    ".im.friend_.AddFriendResponse\022U\n\020Respond"
+    "ToRequest\022\037.im.friend_.HandleFriendReque"
+    "st\032 .im.friend_.HandleFriendResponse\022Q\n\n"
+    "GetFriends\022 .im.friend_.GetFriendListReq"
+    "uest\032!.im.friend_.GetFriendListResponse\022"
+    "a\n\022GetPendingRequests\022$.im.friend_.GetFr"
+    "iendRequestsRequest\032%.im.friend_.GetFrie"
+    "ndRequestsResponseb\006proto3"
 };
 static const ::_pbi::DescriptorTable* const descriptor_table_friend_2eproto_deps[1] =
     {
@@ -777,13 +885,13 @@ static ::absl::once_flag descriptor_table_friend_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_friend_2eproto = {
     false,
     false,
-    2054,
+    2386,
     descriptor_table_protodef_friend_2eproto,
     "friend.proto",
     &descriptor_table_friend_2eproto_once,
     descriptor_table_friend_2eproto_deps,
     1,
-    16,
+    18,
     schemas,
     file_default_instances,
     TableStruct_friend_2eproto::offsets,
@@ -809,6 +917,720 @@ PROTOBUF_CONSTINIT const uint32_t FriendPermission_internal_data_[] = {
     262144u, 0u, };
 bool FriendPermission_IsValid(int value) {
   return 0 <= value && value <= 3;
+}
+// ===================================================================
+
+class FriendPacketRequest::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<FriendPacketRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_._has_bits_);
+};
+
+void FriendPacketRequest::clear_header() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.header_ != nullptr) _impl_.header_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+FriendPacketRequest::FriendPacketRequest(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.friend_.FriendPacketRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE FriendPacketRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::friend_::FriendPacketRequest& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        type_name_(arena, from.type_name_),
+        payload_(arena, from.payload_) {}
+
+FriendPacketRequest::FriendPacketRequest(
+    ::google::protobuf::Arena* arena,
+    const FriendPacketRequest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  FriendPacketRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.header_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(
+                              arena, *from._impl_.header_)
+                        : nullptr;
+
+  // @@protoc_insertion_point(copy_constructor:im.friend_.FriendPacketRequest)
+}
+inline PROTOBUF_NDEBUG_INLINE FriendPacketRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        type_name_(arena),
+        payload_(arena) {}
+
+inline void FriendPacketRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.header_ = {};
+}
+FriendPacketRequest::~FriendPacketRequest() {
+  // @@protoc_insertion_point(destructor:im.friend_.FriendPacketRequest)
+  SharedDtor(*this);
+}
+inline void FriendPacketRequest::SharedDtor(MessageLite& self) {
+  FriendPacketRequest& this_ = static_cast<FriendPacketRequest&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.type_name_.Destroy();
+  this_._impl_.payload_.Destroy();
+  delete this_._impl_.header_;
+  this_._impl_.~Impl_();
+}
+
+inline void* FriendPacketRequest::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) FriendPacketRequest(arena);
+}
+constexpr auto FriendPacketRequest::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(FriendPacketRequest),
+                                            alignof(FriendPacketRequest));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull FriendPacketRequest::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_FriendPacketRequest_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &FriendPacketRequest::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<FriendPacketRequest>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &FriendPacketRequest::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<FriendPacketRequest>(), &FriendPacketRequest::ByteSizeLong,
+            &FriendPacketRequest::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_._cached_size_),
+        false,
+    },
+    &FriendPacketRequest::kDescriptorMethods,
+    &descriptor_table_friend_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* FriendPacketRequest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 3, 1, 48, 2> FriendPacketRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    3, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967288,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    3,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::friend_::FriendPacketRequest>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // .im.base.IMHeader header = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_.header_)}},
+    // string type_name = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_.type_name_)}},
+    // bytes payload = 3;
+    {::_pbi::TcParser::FastBS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_.payload_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.IMHeader header = 1;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_.header_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // string type_name = 2;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_.type_name_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // bytes payload = 3;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketRequest, _impl_.payload_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBytes | ::_fl::kRepAString)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
+  }}, {{
+    "\36\0\11\0\0\0\0\0"
+    "im.friend_.FriendPacketRequest"
+    "type_name"
+  }},
+};
+
+PROTOBUF_NOINLINE void FriendPacketRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.friend_.FriendPacketRequest)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.type_name_.ClearToEmpty();
+  _impl_.payload_.ClearToEmpty();
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.header_ != nullptr);
+    _impl_.header_->Clear();
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* FriendPacketRequest::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const FriendPacketRequest& this_ = static_cast<const FriendPacketRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* FriendPacketRequest::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const FriendPacketRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.friend_.FriendPacketRequest)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.IMHeader header = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.header_, this_._impl_.header_->GetCachedSize(), target,
+                stream);
+          }
+
+          // string type_name = 2;
+          if (!this_._internal_type_name().empty()) {
+            const std::string& _s = this_._internal_type_name();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.friend_.FriendPacketRequest.type_name");
+            target = stream->WriteStringMaybeAliased(2, _s, target);
+          }
+
+          // bytes payload = 3;
+          if (!this_._internal_payload().empty()) {
+            const std::string& _s = this_._internal_payload();
+            target = stream->WriteBytesMaybeAliased(3, _s, target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.friend_.FriendPacketRequest)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t FriendPacketRequest::ByteSizeLong(const MessageLite& base) {
+          const FriendPacketRequest& this_ = static_cast<const FriendPacketRequest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t FriendPacketRequest::ByteSizeLong() const {
+          const FriendPacketRequest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.friend_.FriendPacketRequest)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // string type_name = 2;
+            if (!this_._internal_type_name().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_type_name());
+            }
+            // bytes payload = 3;
+            if (!this_._internal_payload().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::BytesSize(
+                                              this_._internal_payload());
+            }
+          }
+           {
+            // .im.base.IMHeader header = 1;
+            cached_has_bits = this_._impl_._has_bits_[0];
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.header_);
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void FriendPacketRequest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<FriendPacketRequest*>(&to_msg);
+  auto& from = static_cast<const FriendPacketRequest&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.friend_.FriendPacketRequest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_type_name().empty()) {
+    _this->_internal_set_type_name(from._internal_type_name());
+  }
+  if (!from._internal_payload().empty()) {
+    _this->_internal_set_payload(from._internal_payload());
+  }
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(from._impl_.header_ != nullptr);
+    if (_this->_impl_.header_ == nullptr) {
+      _this->_impl_.header_ =
+          ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(arena, *from._impl_.header_);
+    } else {
+      _this->_impl_.header_->MergeFrom(*from._impl_.header_);
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void FriendPacketRequest::CopyFrom(const FriendPacketRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.friend_.FriendPacketRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void FriendPacketRequest::InternalSwap(FriendPacketRequest* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.type_name_, &other->_impl_.type_name_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.payload_, &other->_impl_.payload_, arena);
+  swap(_impl_.header_, other->_impl_.header_);
+}
+
+::google::protobuf::Metadata FriendPacketRequest::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class FriendPacketResponse::_Internal {
+ public:
+  using HasBits =
+      decltype(std::declval<FriendPacketResponse>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_._has_bits_);
+};
+
+void FriendPacketResponse::clear_base() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.base_ != nullptr) _impl_.base_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
+}
+void FriendPacketResponse::clear_header() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (_impl_.header_ != nullptr) _impl_.header_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
+}
+FriendPacketResponse::FriendPacketResponse(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:im.friend_.FriendPacketResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE FriendPacketResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::im::friend_::FriendPacketResponse& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        type_name_(arena, from.type_name_),
+        payload_(arena, from.payload_) {}
+
+FriendPacketResponse::FriendPacketResponse(
+    ::google::protobuf::Arena* arena,
+    const FriendPacketResponse& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  FriendPacketResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.base_ = (cached_has_bits & 0x00000001u) ? ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(
+                              arena, *from._impl_.base_)
+                        : nullptr;
+  _impl_.header_ = (cached_has_bits & 0x00000002u) ? ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(
+                              arena, *from._impl_.header_)
+                        : nullptr;
+  _impl_.http_status_ = from._impl_.http_status_;
+
+  // @@protoc_insertion_point(copy_constructor:im.friend_.FriendPacketResponse)
+}
+inline PROTOBUF_NDEBUG_INLINE FriendPacketResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        type_name_(arena),
+        payload_(arena) {}
+
+inline void FriendPacketResponse::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, base_),
+           0,
+           offsetof(Impl_, http_status_) -
+               offsetof(Impl_, base_) +
+               sizeof(Impl_::http_status_));
+}
+FriendPacketResponse::~FriendPacketResponse() {
+  // @@protoc_insertion_point(destructor:im.friend_.FriendPacketResponse)
+  SharedDtor(*this);
+}
+inline void FriendPacketResponse::SharedDtor(MessageLite& self) {
+  FriendPacketResponse& this_ = static_cast<FriendPacketResponse&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.type_name_.Destroy();
+  this_._impl_.payload_.Destroy();
+  delete this_._impl_.base_;
+  delete this_._impl_.header_;
+  this_._impl_.~Impl_();
+}
+
+inline void* FriendPacketResponse::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) FriendPacketResponse(arena);
+}
+constexpr auto FriendPacketResponse::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(FriendPacketResponse),
+                                            alignof(FriendPacketResponse));
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull FriendPacketResponse::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_FriendPacketResponse_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &FriendPacketResponse::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<FriendPacketResponse>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &FriendPacketResponse::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<FriendPacketResponse>(), &FriendPacketResponse::ByteSizeLong,
+            &FriendPacketResponse::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_._cached_size_),
+        false,
+    },
+    &FriendPacketResponse::kDescriptorMethods,
+    &descriptor_table_friend_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* FriendPacketResponse::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 5, 2, 49, 2> FriendPacketResponse::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_._has_bits_),
+    0, // no _extensions_
+    5, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967264,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    5,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::im::friend_::FriendPacketResponse>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // .im.base.BaseResponse base = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.base_)}},
+    // .im.base.IMHeader header = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.header_)}},
+    // string type_name = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.type_name_)}},
+    // bytes payload = 4;
+    {::_pbi::TcParser::FastBS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.payload_)}},
+    // int32 http_status = 5;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(FriendPacketResponse, _impl_.http_status_), 63>(),
+     {40, 63, 0, PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.http_status_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .im.base.BaseResponse base = 1;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.base_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .im.base.IMHeader header = 2;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.header_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // string type_name = 3;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.type_name_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // bytes payload = 4;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.payload_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBytes | ::_fl::kRepAString)},
+    // int32 http_status = 5;
+    {PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.http_status_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::im::base::BaseResponse>()},
+    {::_pbi::TcParser::GetTable<::im::base::IMHeader>()},
+  }}, {{
+    "\37\0\0\11\0\0\0\0"
+    "im.friend_.FriendPacketResponse"
+    "type_name"
+  }},
+};
+
+PROTOBUF_NOINLINE void FriendPacketResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:im.friend_.FriendPacketResponse)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.type_name_.ClearToEmpty();
+  _impl_.payload_.ClearToEmpty();
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.base_ != nullptr);
+      _impl_.base_->Clear();
+    }
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.header_ != nullptr);
+      _impl_.header_->Clear();
+    }
+  }
+  _impl_.http_status_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* FriendPacketResponse::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const FriendPacketResponse& this_ = static_cast<const FriendPacketResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* FriendPacketResponse::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const FriendPacketResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:im.friend_.FriendPacketResponse)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          cached_has_bits = this_._impl_._has_bits_[0];
+          // .im.base.BaseResponse base = 1;
+          if (cached_has_bits & 0x00000001u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                1, *this_._impl_.base_, this_._impl_.base_->GetCachedSize(), target,
+                stream);
+          }
+
+          // .im.base.IMHeader header = 2;
+          if (cached_has_bits & 0x00000002u) {
+            target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                2, *this_._impl_.header_, this_._impl_.header_->GetCachedSize(), target,
+                stream);
+          }
+
+          // string type_name = 3;
+          if (!this_._internal_type_name().empty()) {
+            const std::string& _s = this_._internal_type_name();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "im.friend_.FriendPacketResponse.type_name");
+            target = stream->WriteStringMaybeAliased(3, _s, target);
+          }
+
+          // bytes payload = 4;
+          if (!this_._internal_payload().empty()) {
+            const std::string& _s = this_._internal_payload();
+            target = stream->WriteBytesMaybeAliased(4, _s, target);
+          }
+
+          // int32 http_status = 5;
+          if (this_._internal_http_status() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<5>(
+                    stream, this_._internal_http_status(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:im.friend_.FriendPacketResponse)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t FriendPacketResponse::ByteSizeLong(const MessageLite& base) {
+          const FriendPacketResponse& this_ = static_cast<const FriendPacketResponse&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t FriendPacketResponse::ByteSizeLong() const {
+          const FriendPacketResponse& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:im.friend_.FriendPacketResponse)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // string type_name = 3;
+            if (!this_._internal_type_name().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_type_name());
+            }
+            // bytes payload = 4;
+            if (!this_._internal_payload().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::BytesSize(
+                                              this_._internal_payload());
+            }
+          }
+          cached_has_bits = this_._impl_._has_bits_[0];
+          if (cached_has_bits & 0x00000003u) {
+            // .im.base.BaseResponse base = 1;
+            if (cached_has_bits & 0x00000001u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.base_);
+            }
+            // .im.base.IMHeader header = 2;
+            if (cached_has_bits & 0x00000002u) {
+              total_size += 1 +
+                            ::google::protobuf::internal::WireFormatLite::MessageSize(*this_._impl_.header_);
+            }
+          }
+           {
+            // int32 http_status = 5;
+            if (this_._internal_http_status() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_http_status());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void FriendPacketResponse::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<FriendPacketResponse*>(&to_msg);
+  auto& from = static_cast<const FriendPacketResponse&>(from_msg);
+  ::google::protobuf::Arena* arena = _this->GetArena();
+  // @@protoc_insertion_point(class_specific_merge_from_start:im.friend_.FriendPacketResponse)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_type_name().empty()) {
+    _this->_internal_set_type_name(from._internal_type_name());
+  }
+  if (!from._internal_payload().empty()) {
+    _this->_internal_set_payload(from._internal_payload());
+  }
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(from._impl_.base_ != nullptr);
+      if (_this->_impl_.base_ == nullptr) {
+        _this->_impl_.base_ =
+            ::google::protobuf::Message::CopyConstruct<::im::base::BaseResponse>(arena, *from._impl_.base_);
+      } else {
+        _this->_impl_.base_->MergeFrom(*from._impl_.base_);
+      }
+    }
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(from._impl_.header_ != nullptr);
+      if (_this->_impl_.header_ == nullptr) {
+        _this->_impl_.header_ =
+            ::google::protobuf::Message::CopyConstruct<::im::base::IMHeader>(arena, *from._impl_.header_);
+      } else {
+        _this->_impl_.header_->MergeFrom(*from._impl_.header_);
+      }
+    }
+  }
+  if (from._internal_http_status() != 0) {
+    _this->_impl_.http_status_ = from._impl_.http_status_;
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void FriendPacketResponse::CopyFrom(const FriendPacketResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:im.friend_.FriendPacketResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void FriendPacketResponse::InternalSwap(FriendPacketResponse* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.type_name_, &other->_impl_.type_name_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.payload_, &other->_impl_.payload_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.http_status_)
+      + sizeof(FriendPacketResponse::_impl_.http_status_)
+      - PROTOBUF_FIELD_OFFSET(FriendPacketResponse, _impl_.base_)>(
+          reinterpret_cast<char*>(&_impl_.base_),
+          reinterpret_cast<char*>(&other->_impl_.base_));
+}
+
+::google::protobuf::Metadata FriendPacketResponse::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================
 

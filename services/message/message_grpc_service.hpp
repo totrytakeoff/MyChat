@@ -17,6 +17,10 @@ class MessageGrpcService final : public im::message::MessageService::Service {
 public:
     explicit MessageGrpcService(MessageService* message_service);
 
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* context,
+                                 const im::message::MessagePacketRequest* request,
+                                 im::message::MessagePacketResponse* response) override;
+
     ::grpc::Status SendMessage(::grpc::ServerContext* context,
                                const im::message::SendMessageRequest* request,
                                im::message::SendMessageResponse* response) override;

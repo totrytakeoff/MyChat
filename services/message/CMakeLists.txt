@@ -4,6 +4,7 @@
 # Built only when ODB persistence layer (im::message_odb) is available.
 
 add_library(im_message_service STATIC
+    message_packet_dispatcher.cpp
     message_repository.cpp
     message_service.cpp
 )
@@ -11,8 +12,10 @@ add_library(im_message_service STATIC
 target_link_libraries(im_message_service
     PUBLIC
         im::message_odb
+        im::proto
     PRIVATE
         im::utils
+        nlohmann_json::nlohmann_json
 )
 
 target_include_directories(im_message_service

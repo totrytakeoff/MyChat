@@ -23,6 +23,7 @@ namespace im {
 namespace group {
 
 static const char* GroupService_method_names[] = {
+  "/im.group.GroupService/ForwardPacket",
   "/im.group.GroupService/CreateGroup",
   "/im.group.GroupService/JoinGroup",
   "/im.group.GroupService/LeaveGroup",
@@ -42,17 +43,41 @@ std::unique_ptr< GroupService::Stub> GroupService::NewStub(const std::shared_ptr
 }
 
 GroupService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
-  : channel_(channel), rpcmethod_CreateGroup_(GroupService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_JoinGroup_(GroupService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_LeaveGroup_(GroupService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetGroupInfo_(GroupService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SearchGroups_(GroupService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GroupExists_(GroupService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ListMyGroups_(GroupService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ListMembers_(GroupService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SendGroupMessage_(GroupService_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetGroupMessages_(GroupService_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  : channel_(channel), rpcmethod_ForwardPacket_(GroupService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CreateGroup_(GroupService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_JoinGroup_(GroupService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_LeaveGroup_(GroupService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetGroupInfo_(GroupService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SearchGroups_(GroupService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GroupExists_(GroupService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ListMyGroups_(GroupService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ListMembers_(GroupService_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendGroupMessage_(GroupService_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetGroupMessages_(GroupService_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
+
+::grpc::Status GroupService::Stub::ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::im::group::GroupPacketResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ForwardPacket_, context, request, response);
+}
+
+void GroupService::Stub::async::ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ForwardPacket_, context, request, response, std::move(f));
+}
+
+void GroupService::Stub::async::ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ForwardPacket_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>* GroupService::Stub::PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::group::GroupPacketResponse, ::im::group::GroupPacketRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ForwardPacket_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>* GroupService::Stub::AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncForwardPacketRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
 
 ::grpc::Status GroupService::Stub::CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::im::group::CreateGroupResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::im::group::CreateGroupRequest, ::im::group::CreateGroupResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_CreateGroup_, context, request, response);
@@ -288,6 +313,16 @@ GroupService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       GroupService_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](GroupService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::group::GroupPacketRequest* req,
+             ::im::group::GroupPacketResponse* resp) {
+               return service->ForwardPacket(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      GroupService_method_names[1],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::CreateGroupRequest, ::im::group::CreateGroupResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -296,7 +331,7 @@ GroupService::Service::Service() {
                return service->CreateGroup(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[1],
+      GroupService_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::JoinGroupRequest, ::im::group::GroupActionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -306,7 +341,7 @@ GroupService::Service::Service() {
                return service->JoinGroup(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[2],
+      GroupService_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::LeaveGroupRequest, ::im::group::GroupActionResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -316,7 +351,7 @@ GroupService::Service::Service() {
                return service->LeaveGroup(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[3],
+      GroupService_method_names[4],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GetGroupInfoRequest, ::im::group::GetGroupInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -326,7 +361,7 @@ GroupService::Service::Service() {
                return service->GetGroupInfo(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[4],
+      GroupService_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::SearchGroupsRequest, ::im::group::SearchGroupsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -336,7 +371,7 @@ GroupService::Service::Service() {
                return service->SearchGroups(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[5],
+      GroupService_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -346,7 +381,7 @@ GroupService::Service::Service() {
                return service->GroupExists(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[6],
+      GroupService_method_names[7],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GetGroupListRequest, ::im::group::GetGroupListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -356,7 +391,7 @@ GroupService::Service::Service() {
                return service->ListMyGroups(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[7],
+      GroupService_method_names[8],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GetGroupMembersRequest, ::im::group::GetGroupMembersResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -366,7 +401,7 @@ GroupService::Service::Service() {
                return service->ListMembers(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[8],
+      GroupService_method_names[9],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::SendGroupMessageRequest, ::im::group::SendGroupMessageResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -376,7 +411,7 @@ GroupService::Service::Service() {
                return service->SendGroupMessage(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      GroupService_method_names[9],
+      GroupService_method_names[10],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< GroupService::Service, ::im::group::GetGroupMessagesRequest, ::im::group::GetGroupMessagesResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](GroupService::Service* service,
@@ -388,6 +423,13 @@ GroupService::Service::Service() {
 }
 
 GroupService::Service::~Service() {
+}
+
+::grpc::Status GroupService::Service::ForwardPacket(::grpc::ServerContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
 ::grpc::Status GroupService::Service::CreateGroup(::grpc::ServerContext* context, const ::im::group::CreateGroupRequest* request, ::im::group::CreateGroupResponse* response) {
@@ -463,3 +505,4 @@ GroupService::Service::~Service() {
 
 }  // namespace im
 }  // namespace group
+

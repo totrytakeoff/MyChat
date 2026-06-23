@@ -143,6 +143,9 @@ std::unique_ptr<UnifiedMessage> MessageParser::parse_http_request(const httplib:
         context.http_method = req.method;
         context.original_path = req.path;
         context.raw_body = req.body;
+        for (const auto& param : req.params) {
+            context.query_params.emplace(param.first, param.second);
+        }
 
         message->set_session_context(std::move(context));
 
@@ -164,15 +167,6 @@ std::unique_ptr<UnifiedMessage> MessageParser::parse_http_request(const httplib:
             message_body = params_json.dump();
             message->set_json_body(message_body);
             logger->debug("Processed GET params, count: {}", req.params.size());
-        }
-
-        // 提取from_uid和to_uid
-        nlohmann::json get_uid = nlohmann::json::parse(message_body.c_str());
-        if (get_uid.contains("from_uid")) {
-            header.set_from_uid(get_uid["from_uid"].get<std::string>());
-        }
-        if (get_uid.contains("to_uid")) {
-            header.set_to_uid(get_uid["to_uid"].get<std::string>());
         }
 
         // 6. 设置IMHeader
@@ -248,6 +242,9 @@ ParseResult MessageParser::parse_http_request_enhanced(const httplib::Request& r
         context.http_method = req.method;
         context.original_path = req.path;
         context.raw_body = req.body;
+        for (const auto& param : req.params) {
+            context.query_params.emplace(param.first, param.second);
+        }
 
         message->set_session_context(std::move(context));
 
@@ -286,43 +283,6 @@ ParseResult MessageParser::parse_http_request_enhanced(const httplib::Request& r
             }
             message->set_json_body(params_json.dump());
             logger->debug("Processed GET params, count: {}", req.params.size());
-        }
-
-        // 提取from_uid和to_uid（仅在确有JSON内容时解析）
-        if (!message->get_json_body().empty()) {
-            try {
-                logger->debug("Parsing JSON body: {}", message->get_json_body());
-                nlohmann::json get_uid =
-                        nlohmann::json::parse(message->get_json_body().c_str());
-
-                if (get_uid.contains("from_uid")) {
-                    if (get_uid["from_uid"].is_string()) {
-                        header.set_from_uid(get_uid["from_uid"].get<std::string>());
-                    } else {
-                        logger->warn("from_uid is not a string type: {}",
-                                     get_uid["from_uid"].dump());
-                        // 尝试转换为字符串
-                        header.set_from_uid(std::to_string(get_uid["from_uid"].get<int>()));
-                    }
-                }
-                if (get_uid.contains("to_uid")) {
-                    if (get_uid["to_uid"].is_string()) {
-                        header.set_to_uid(get_uid["to_uid"].get<std::string>());
-                    } else {
-                        logger->warn("to_uid is not a string type: {}",
-                                     get_uid["to_uid"].dump());
-                        // 尝试转换为字符串
-                        header.set_to_uid(std::to_string(get_uid["to_uid"].get<int>()));
-                    }
-                }
-            } catch (const nlohmann::json::exception& e) {
-                // 仅当确实有内容但解析失败时才返回错误
-                logger->error("JSON parsing error: {}, raw body: {}", e.what(),
-                              message->get_json_body());
-                return ParseResult::error_result(ParseResult::PARSE_ERROR,
-                                                 "JSON parsing error: " +
-                                                         std::string(e.what()));
-            }
         }
 
         // 6. 设置IMHeader

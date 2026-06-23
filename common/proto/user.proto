@@ -121,11 +121,35 @@ message UpdateUserInfoResponse {
     UserInfo user = 2;
 }
 
+message UserPacketRequest {
+    im.base.IMHeader header = 1;
+    string type_name = 2;
+    bytes payload = 3;
+}
+
+message UserAuthTokenHint {
+    bool required = 1;
+    string uid = 2;
+    string account = 3;
+    string device_id = 4;
+    string platform = 5;
+}
+
+message UserPacketResponse {
+    im.base.BaseResponse base = 1;
+    im.base.IMHeader header = 2;
+    string type_name = 3;
+    bytes payload = 4;
+    int32 http_status = 5;
+    UserAuthTokenHint auth_token_hint = 6;
+}
+
 // UserService is the distributed gRPC boundary for core account workflows.
 // Gateway may keep using the in-process UserService while this boundary is
 // staged; service implementations should map this contract to the same core
 // UserService semantics.
 service UserService {
+    rpc ForwardPacket(UserPacketRequest) returns (UserPacketResponse);
     rpc Register(RegisterRequest) returns (RegisterResponse);
     rpc Login(LoginRequest) returns (LoginResponse);
     rpc GetUserInfo(GetUserInfoRequest) returns (GetUserInfoResponse);

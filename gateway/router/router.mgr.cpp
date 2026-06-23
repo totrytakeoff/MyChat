@@ -11,6 +11,8 @@
  *
  *****************************************************************************/
 
+#include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <nlohmann/json.hpp>
 #include "../../common/utils/config_mgr.hpp"
@@ -24,6 +26,20 @@ namespace gateway {
 using im::utils::ConfigManager;
 using im::utils::LogManager;
 using json = nlohmann::json;
+
+namespace {
+
+std::string normalize_method(std::string method) {
+    std::transform(method.begin(), method.end(), method.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+    return method;
+}
+
+std::string make_http_route_key(const std::string& method, const std::string& path) {
+    return normalize_method(method) + " " + path;
+}
+
+} // namespace
 
 
 // ===== HttpRouter 实现 =====
@@ -51,14 +67,22 @@ std::unique_ptr<HttpRouteResult> HttpRouter::parse_route(const std::string& meth
             route_path = "/" + route_path;
         }
 
-        if (!routes_.contains(route_path)) {
+        std::string route_key = make_http_route_key(method, route_path);
+        if (!routes_.contains(route_key)) {
+            const std::string fallback_key = make_http_route_key("ANY", route_path);
+            if (routes_.contains(fallback_key)) {
+                route_key = fallback_key;
+            }
+        }
+
+        if (!routes_.contains(route_key)) {
             result->status_code = 404;
-            result->err_msg = "Route not found: " + route_path;
+            result->err_msg = "Route not found: " + route_key;
             throw std::runtime_error(result->err_msg);
         }
 
         // 找到路由，返回成功结果
-        const auto& route_result = routes_[route_path];
+        const auto& route_result = routes_[route_key];
         return std::make_unique<HttpRouteResult>(route_result.cmd_id, route_result.service_name);
 
     } catch (const std::exception& e) {
@@ -77,6 +101,7 @@ bool HttpRouter::load_config(const std::string& config_file) {
         LogManager::GetLogger("http_router")
                 ->info("Loading HTTP router config, API prefix: {}", api_prefix_);
 
+        routes_.clear();
         int routes_size = config.get_array_size("http_router.routes");
         LogManager::GetLogger("http_router")->info("Found {} routes in config", routes_size);
 
@@ -89,6 +114,7 @@ bool HttpRouter::load_config(const std::string& config_file) {
             }
 
             std::string path = route.value("path", "");
+            std::string method = route.value("method", "ANY");
             uint32_t cmd_id = route.value("cmd_id", 0);
             std::string service_name = route.value("service_name", "");
 
@@ -100,10 +126,11 @@ bool HttpRouter::load_config(const std::string& config_file) {
 
             // 创建成功的路由结果
             HttpRouteResult routeResult(cmd_id, service_name);
-            routes_.emplace(path, routeResult);
+            const std::string route_key = make_http_route_key(method, path);
+            routes_.emplace(route_key, routeResult);
 
             LogManager::GetLogger("http_router")
-                    ->debug("Added route: {} -> CMD_ID: {}, Service: {}", path, cmd_id,
+                    ->debug("Added route: {} -> CMD_ID: {}, Service: {}", route_key, cmd_id,
                             service_name);
         }
 
@@ -129,6 +156,10 @@ bool ServiceRouter::load_config(const std::string& config_file) {
 
         LogManager::GetLogger("service_router")
                 ->info("Loading service router config from: {}", config_file);
+
+        services_.clear();
+        exact_cmds_.clear();
+        cmds_.clear();
 
         int services_size = config.get_array_size("service_router.services");
         LogManager::GetLogger("service_router")->info("Found {} services in config", services_size);
@@ -172,6 +203,24 @@ bool ServiceRouter::load_config(const std::string& config_file) {
                     ->debug("Added service: {} -> Endpoint: {}, Timeout: {}ms, MaxConn: {}",
                             service_name, endpoint, timeout_ms, max_connections);
         }
+
+        int routes_size = config.get_array_size("http_router.routes");
+        for (int i = 0; i < routes_size; i++) {
+            auto route = config.get_array_item<nlohmann::json>("http_router.routes", i, "");
+            if (route.empty()) {
+                continue;
+            }
+
+            uint32_t cmd_id = route.value("cmd_id", 0);
+            std::string service_name = route.value("service_name", "");
+            if (cmd_id == 0 || service_name.empty()) {
+                continue;
+            }
+            exact_cmds_[cmd_id] = service_name;
+        }
+        LogManager::GetLogger("service_router")
+                ->info("Loaded {} exact command mappings from http_router.routes",
+                       exact_cmds_.size());
 
         LogManager::GetLogger("service_router")
                 ->info("Successfully loaded {} services", services_.size());
@@ -219,11 +268,16 @@ std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(uint32_t cmd) {
 
     std::string service_name;
     try {
-        for (const auto& route : cmds_) {
-            const auto& range = route.first;
-            if (range.first <= cmd && cmd <= range.second) {
-                service_name = route.second;
-                break;
+        auto exact_it = exact_cmds_.find(cmd);
+        if (exact_it != exact_cmds_.end()) {
+            service_name = exact_it->second;
+        } else {
+            for (const auto& route : cmds_) {
+                const auto& range = route.first;
+                if (range.first <= cmd && cmd <= range.second) {
+                    service_name = route.second;
+                    break;
+                }
             }
         }
         if (service_name.empty()) {
@@ -231,12 +285,7 @@ std::unique_ptr<ServiceRouteResult> ServiceRouter::find_service(uint32_t cmd) {
             return result;
         }
 
-        // 找到服务，返回成功结果
-        const auto& service_result = services_[service_name];
-        return std::make_unique<ServiceRouteResult>(service_result.service_name,
-                                                    service_result.endpoint,
-                                                    service_result.timeout_ms,
-                                                    service_result.max_connections);
+        return find_service(service_name);
 
     } catch (const std::exception& e) {
         LogManager::GetLogger("service_router")

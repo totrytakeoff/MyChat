@@ -743,7 +743,7 @@ cmake --build build/remote-push-odb --target \
 cmake --build build/remote-push-odb --target test_push_runtime -j"$(nproc)"
 ./build/remote-push-odb/test/push/test_push_runtime
 ctest --test-dir build/remote-push-odb \
-  -R '^(PushRuntimeTest|PushGrpcServiceTest|RemotePushNotifierTest|GatewayMessageHttpTest|GatewayMessageWsTest|GatewayGroupMessageHttpTest|FriendGrpcServiceTest|RemoteFriendClientTest|GatewayUserHttpTest|RemoteUserClientTest)$' \
+  -R '^(PushRuntimeTest|PushGrpcServiceTest|RemotePushNotifierTest|GatewayMessageHttpTest|GatewayMessageWsTest|GatewayGroupMessageHttpTest|FriendGrpcServiceTest|RemoteFriendServiceAdapterTest|GatewayUserHttpTest|RemoteUserServiceAdapterTest)$' \
   --output-on-failure
 ```
 

@@ -6,6 +6,7 @@
 
 add_library(im_group_service STATIC
     group_repository.cpp
+    group_packet_dispatcher.cpp
     group_service.cpp
     group_message_repository.cpp
     group_message_service.cpp
@@ -15,9 +16,11 @@ target_link_libraries(im_group_service
     PUBLIC
         im::group_odb
         im::group_message_odb
+        im::proto
         im::user_service
     PRIVATE
         im::utils
+        nlohmann_json::nlohmann_json
 )
 
 target_include_directories(im_group_service

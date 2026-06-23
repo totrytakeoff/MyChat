@@ -17,6 +17,10 @@ class UserGrpcService final : public im::user::UserService::Service {
 public:
     explicit UserGrpcService(UserService* user_service);
 
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* context,
+                                 const im::user::UserPacketRequest* request,
+                                 im::user::UserPacketResponse* response) override;
+
     ::grpc::Status Register(::grpc::ServerContext* context,
                             const im::user::RegisterRequest* request,
                             im::user::RegisterResponse* response) override;

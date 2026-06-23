@@ -51,6 +51,7 @@ using im::gateway::UnifiedMessage;
  */
 struct ProcessorResult {
     int status_code;               ///< 状态码，0表示成功，其他表示错误类型
+    int http_status;               ///< HTTP写回状态码，0表示由上层按默认规则处理
     std::string error_message;     ///< 错误信息描述
     std::string protobuf_message;  ///< Protobuf格式的响应数据 (header + body
                                    ///< ,需配合protobufcodec进行使用)
@@ -59,7 +60,8 @@ struct ProcessorResult {
     /**
      * @brief 默认构造函数，创建成功状态的结果
      */
-    ProcessorResult() : status_code(0), error_message(), protobuf_message(), json_body() {}
+    ProcessorResult()
+            : status_code(0), http_status(0), error_message(), protobuf_message(), json_body() {}
 
     /**
      * @brief 构造错误结果
@@ -68,6 +70,7 @@ struct ProcessorResult {
      */
     ProcessorResult(int code, std::string err_msg)
             : status_code(code)
+            , http_status(0)
             , error_message(std::move(err_msg))
             , protobuf_message()
             , json_body() {}
@@ -81,9 +84,17 @@ struct ProcessorResult {
      */
     ProcessorResult(int code, std::string err_msg, std::string pb_msg, std::string json)
             : status_code(code)
+            , http_status(0)
             , error_message(std::move(err_msg))
             , protobuf_message(std::move(pb_msg))
             , json_body(std::move(json)) {}
+
+    static ProcessorResult http(int status, std::string body) {
+        ProcessorResult result;
+        result.http_status = status;
+        result.json_body = std::move(body);
+        return result;
+    }
 };
 
 /**
@@ -161,7 +172,7 @@ public:
      * @return std::future<ProcessorResult> 异步处理结果
      *
      * @details 处理流程：
-     *          1. 对于HTTP协议消息，验证Access Token
+     *          1. 由注册的业务handler按命令语义完成必要认证
      *          2. 根据cmd_id查找对应的处理函数
      *          3. 投递到全局线程池执行处理函数
      *          4. 返回处理结果的future对象
@@ -176,7 +187,7 @@ public:
      *
      * @details 供 Gateway WebSocket 路径在已受控的执行器任务中直接调用，
      *          避免 process_message() future 之外再额外创建等待线程。
-     *          HTTP消息在这里统一校验Token，WebSocket消息由handler负责。
+     *          HTTP与WebSocket消息均由handler负责按业务语义校验身份。
      */
     ProcessorResult process_message_sync(std::unique_ptr<UnifiedMessage> message);
 
@@ -185,9 +196,6 @@ public:
      * @return 当前注册的处理函数数量
      */
     int get_callback_count() const { return processor_map_.size(); }
-
-private:
-    bool verify_access_token(const UnifiedMessage& message);
 
 private:
     /// 路由管理器，用于服务发现和cmd_id到服务的映射

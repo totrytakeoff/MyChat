@@ -17,6 +17,23 @@ target_compile_features(test_user_service PRIVATE cxx_std_20)
 
 add_test(NAME UserServiceCoreTest COMMAND test_user_service)
 
+add_executable(test_user_packet_dispatcher
+    test_user_packet_dispatcher.cpp
+    ../support/postgres_schema.cpp
+)
+
+target_link_libraries(test_user_packet_dispatcher
+    PRIVATE
+        GTest::gtest
+        GTest::gtest_main
+        im::user_service
+        Threads::Threads
+)
+
+target_compile_features(test_user_packet_dispatcher PRIVATE cxx_std_20)
+
+add_test(NAME UserPacketDispatcherTest COMMAND test_user_packet_dispatcher)
+
 if(TARGET im::user_grpc_service)
     add_executable(test_user_grpc_service
         test_user_grpc_service.cpp

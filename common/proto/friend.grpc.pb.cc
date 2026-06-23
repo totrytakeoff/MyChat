@@ -23,6 +23,7 @@ namespace im {
 namespace friend_ {
 
 static const char* FriendService_method_names[] = {
+  "/im.friend_.FriendService/ForwardPacket",
   "/im.friend_.FriendService/SendRequest",
   "/im.friend_.FriendService/RespondToRequest",
   "/im.friend_.FriendService/GetFriends",
@@ -36,11 +37,35 @@ std::unique_ptr< FriendService::Stub> FriendService::NewStub(const std::shared_p
 }
 
 FriendService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
-  : channel_(channel), rpcmethod_SendRequest_(FriendService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RespondToRequest_(FriendService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetFriends_(FriendService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_GetPendingRequests_(FriendService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  : channel_(channel), rpcmethod_ForwardPacket_(FriendService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SendRequest_(FriendService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RespondToRequest_(FriendService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetFriends_(FriendService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetPendingRequests_(FriendService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
+
+::grpc::Status FriendService::Stub::ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::im::friend_::FriendPacketResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_ForwardPacket_, context, request, response);
+}
+
+void FriendService::Stub::async::ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ForwardPacket_, context, request, response, std::move(f));
+}
+
+void FriendService::Stub::async::ForwardPacket(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_ForwardPacket_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>* FriendService::Stub::PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::im::friend_::FriendPacketResponse, ::im::friend_::FriendPacketRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_ForwardPacket_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::im::friend_::FriendPacketResponse>* FriendService::Stub::AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::friend_::FriendPacketRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncForwardPacketRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
 
 ::grpc::Status FriendService::Stub::SendRequest(::grpc::ClientContext* context, const ::im::friend_::AddFriendRequest& request, ::im::friend_::AddFriendResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::im::friend_::AddFriendRequest, ::im::friend_::AddFriendResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_SendRequest_, context, request, response);
@@ -138,6 +163,16 @@ FriendService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       FriendService_method_names[0],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< FriendService::Service, ::im::friend_::FriendPacketRequest, ::im::friend_::FriendPacketResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](FriendService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::im::friend_::FriendPacketRequest* req,
+             ::im::friend_::FriendPacketResponse* resp) {
+               return service->ForwardPacket(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      FriendService_method_names[1],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< FriendService::Service, ::im::friend_::AddFriendRequest, ::im::friend_::AddFriendResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](FriendService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -146,7 +181,7 @@ FriendService::Service::Service() {
                return service->SendRequest(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      FriendService_method_names[1],
+      FriendService_method_names[2],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< FriendService::Service, ::im::friend_::HandleFriendRequest, ::im::friend_::HandleFriendResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](FriendService::Service* service,
@@ -156,7 +191,7 @@ FriendService::Service::Service() {
                return service->RespondToRequest(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      FriendService_method_names[2],
+      FriendService_method_names[3],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< FriendService::Service, ::im::friend_::GetFriendListRequest, ::im::friend_::GetFriendListResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](FriendService::Service* service,
@@ -166,7 +201,7 @@ FriendService::Service::Service() {
                return service->GetFriends(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      FriendService_method_names[3],
+      FriendService_method_names[4],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< FriendService::Service, ::im::friend_::GetFriendRequestsRequest, ::im::friend_::GetFriendRequestsResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](FriendService::Service* service,
@@ -178,6 +213,13 @@ FriendService::Service::Service() {
 }
 
 FriendService::Service::~Service() {
+}
+
+::grpc::Status FriendService::Service::ForwardPacket(::grpc::ServerContext* context, const ::im::friend_::FriendPacketRequest* request, ::im::friend_::FriendPacketResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
 ::grpc::Status FriendService::Service::SendRequest(::grpc::ServerContext* context, const ::im::friend_::AddFriendRequest* request, ::im::friend_::AddFriendResponse* response) {

@@ -55,6 +55,8 @@ enum CommandID {
     CMD_GET_GROUP_MESSAGES = 4010;      // 获取群消息
     CMD_TRANSFER_GROUP_OWNER = 4011;    // 转让群主
     CMD_SET_GROUP_ADMIN = 4012;         // 设置/取消管理员
+    CMD_SEARCH_GROUP = 4013;            // 搜索群组
+    CMD_SEND_GROUP_MESSAGE = 4014;      // 发送群消息
 
     // ================= 推送相关 =================
     CMD_PUSH_MESSAGE = 5001;            // 推送单条消息

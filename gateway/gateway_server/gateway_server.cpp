@@ -60,74 +60,31 @@
 // 主头文件和第三方库
 #include "gateway_server.hpp"
 #include "httplib.h"
-#include "../http/httplib_adapter.hpp"
+#include "../command_handlers/gateway_command_handler_registry.hpp"
 #include <nlohmann/json.hpp>
-
-namespace {
-
-template <typename Controller, typename Handler>
-void dispatch_http_controller(Controller& controller,
-                              Handler handler,
-                              const httplib::Request& req,
-                              httplib::Response& res) {
-    auto request = im::gateway::from_httplib_request(req);
-    im::gateway::HttpResponse response;
-    (controller.*handler)(request, response);
-    im::gateway::apply_http_response(response, res);
-}
-
-} // namespace
 
 #if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
 #include <odb/pgsql/database.hxx>
 #endif
 
 #ifdef IM_ENABLE_USER_HTTP
-#include "../http/user_http_controller.hpp"
-#include "../http/user_client.hpp"
+#include "../service_adapters/user_service_adapter.hpp"
 #include "../auth/multi_platform_auth.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
-
-// Free function: registers user HTTP routes on an httplib server.
-// Exposed as a unit seam for testing (see test/gateway_user/).
-void register_user_http_routes_on_server(httplib::Server& server,
-                                         im::gateway::UserHttpController& controller) {
-    server.Post("/api/v1/auth/register",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_register, req, res);
-        });
-    server.Post("/api/v1/auth/login",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_login, req, res);
-        });
-    server.Get("/api/v1/auth/info",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_profile, req, res);
-        });
-    server.Post("/api/v1/auth/profile",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_update_profile, req, res);
-        });
-    server.Get("/api/v1/users/search",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::UserHttpController::handle_search_user, req, res);
-        });
-}
 #endif
 
-#ifdef IM_ENABLE_REMOTE_USER_CLIENT
-#include "../http/remote_user_client.hpp"
+#ifdef IM_ENABLE_REMOTE_USER_ADAPTER
+#include "../service_adapters/remote_user_service_adapter.hpp"
 #endif
 
 #if defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_MESSAGE_WS)
-#include "../http/message_http_controller.hpp"
-#include "../http/message_client.hpp"
+#include "../service_adapters/message_service_adapter.hpp"
 #include "../../services/message/message_service.hpp"
 #endif
 
-#ifdef IM_ENABLE_REMOTE_MESSAGE_CLIENT
-#include "../http/remote_message_client.hpp"
+#ifdef IM_ENABLE_REMOTE_MESSAGE_ADAPTER
+#include "../service_adapters/remote_message_service_adapter.hpp"
 #endif
 
 #ifdef IM_ENABLE_PUSH_SERVICE
@@ -142,126 +99,38 @@ void register_user_http_routes_on_server(httplib::Server& server,
 #include "../push/remote_push_notifier.hpp"
 #endif
 
-// Free function: registers message HTTP routes on an httplib server.
-// Exposed as a unit seam for testing (see test/gateway_message/).
-#ifdef IM_ENABLE_MESSAGE_HTTP
-void register_message_http_routes_on_server(httplib::Server& server,
-                                            im::gateway::MessageHttpController& controller) {
-    server.Post("/api/v1/messages/send",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::MessageHttpController::handle_send, req, res);
-        });
-    server.Get("/api/v1/messages/history",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::MessageHttpController::handle_history, req, res);
-        });
-    server.Get("/api/v1/messages/offline",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::MessageHttpController::handle_offline, req, res);
-        });
-}
-#endif
-
 #ifdef IM_ENABLE_MESSAGE_WS
 #include "../ws/message_ws_handler.hpp"
 #endif
 
 #ifdef IM_ENABLE_FRIEND_HTTP
-#include "../http/friend_http_controller.hpp"
-#include "../http/friend_client.hpp"
+#include "../service_adapters/friend_service_adapter.hpp"
 #include "../../services/friend/friend_service.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
-
-void register_friend_http_routes_on_server(httplib::Server& server,
-                                           im::gateway::FriendHttpController& controller) {
-    server.Post("/api/v1/friends/request",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_send_request, req, res);
-        });
-    server.Post("/api/v1/friends/respond",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_respond_request, req, res);
-        });
-    server.Get("/api/v1/friends",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_list_friends, req, res);
-        });
-    server.Get("/api/v1/friends/pending",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::FriendHttpController::handle_pending_requests, req, res);
-        });
-}
 #endif
 
-#ifdef IM_ENABLE_REMOTE_FRIEND_CLIENT
-#include "../http/remote_friend_client.hpp"
+#ifdef IM_ENABLE_REMOTE_FRIEND_ADAPTER
+#include "../service_adapters/remote_friend_service_adapter.hpp"
 #endif
 
-#ifdef IM_ENABLE_REMOTE_GROUP_CLIENT
-#include "../http/remote_group_client.hpp"
+#ifdef IM_ENABLE_REMOTE_GROUP_ADAPTER
+#include "../service_adapters/remote_group_service_adapter.hpp"
 #endif
 
 #ifdef IM_ENABLE_GROUP_HTTP
-#include "../http/group_http_controller.hpp"
-#include "../http/group_client.hpp"
+#include "../service_adapters/group_service_adapter.hpp"
 #include "../../services/group/group_service.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
-
-void register_group_http_routes_on_server(httplib::Server& server,
-                                          im::gateway::GroupHttpController& controller) {
-    server.Post("/api/v1/groups",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_create_group, req, res);
-        });
-    server.Post("/api/v1/groups/join",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_join_group, req, res);
-        });
-    server.Post("/api/v1/groups/leave",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_leave_group, req, res);
-        });
-    server.Get("/api/v1/groups/info",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_group_info, req, res);
-        });
-    server.Get("/api/v1/groups/search",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_search_groups, req, res);
-        });
-    server.Get("/api/v1/groups",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_list_groups, req, res);
-        });
-    server.Get("/api/v1/groups/members",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupHttpController::handle_list_members, req, res);
-        });
-}
 #endif
 
 #ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-#include "../http/group_message_http_controller.hpp"
 #include "../push/push_service.hpp"
 #include "../../services/group/group_message_service.hpp"
 #include "../../services/group/group_service.hpp"
 #include "../../services/user/password_hasher.hpp"
 #include "../../services/user/user_service.hpp"
-
-void register_group_message_http_routes_on_server(
-    httplib::Server& server,
-    im::gateway::GroupMessageHttpController& controller) {
-    server.Post("/api/v1/groups/messages/send",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupMessageHttpController::handle_send_message, req, res);
-        });
-    server.Get("/api/v1/groups/messages/history",
-        [&](const httplib::Request& req, httplib::Response& res) {
-            dispatch_http_controller(controller, &im::gateway::GroupMessageHttpController::handle_get_history, req, res);
-        });
-}
 #endif
 
 namespace im {
@@ -311,7 +180,6 @@ std::string http_route_key(const httplib::Request& req) {
     return req.method + " " + req.path;
 }
 
-#if defined(IM_ENABLE_REMOTE_USER_CLIENT) || defined(IM_ENABLE_REMOTE_MESSAGE_CLIENT) || defined(IM_ENABLE_REMOTE_FRIEND_CLIENT) || defined(IM_ENABLE_REMOTE_GROUP_CLIENT) || defined(IM_ENABLE_REMOTE_PUSH_NOTIFIER)
 bool is_blank(const std::string& value) {
     return value.find_first_not_of(" \t\n\r\f\v") == std::string::npos;
 }
@@ -325,7 +193,6 @@ std::string require_non_blank_config(const im::utils::ConfigManager& config,
     }
     return value;
 }
-#endif
 
 } // namespace
 
@@ -335,6 +202,38 @@ using im::common::Task;
 using im::network::ProtobufCodec;
 using im::utils::HttpUtils;
 using im::utils::ServiceIdentityManager;
+
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
+void GatewayServer::ensure_user_service() {
+    if (runtime_registry_.user_service) {
+        return;
+    }
+    auto hasher = std::make_unique<im::service::user::PasswordHasher>();
+    runtime_registry_.user_service = std::make_shared<im::service::user::UserService>(
+        odb_db_, std::move(hasher));
+    server_logger->info("Local UserService initialized");
+}
+#endif
+
+#if defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
+void GatewayServer::ensure_group_services() {
+    if (runtime_registry_.group_service && runtime_registry_.group_message_service) {
+        return;
+    }
+    ensure_user_service();
+    if (!runtime_registry_.group_service) {
+        runtime_registry_.group_service = std::make_shared<im::service::group::GroupService>(
+            odb_db_, runtime_registry_.user_service);
+        server_logger->info("Local GroupService initialized");
+    }
+    if (!runtime_registry_.group_message_service) {
+        runtime_registry_.group_message_service =
+            std::make_shared<im::service::group::GroupMessageService>(
+                odb_db_, runtime_registry_.user_service, runtime_registry_.group_service);
+        server_logger->info("Local GroupMessageService initialized");
+    }
+}
+#endif
 
 
 // ==================== 构造函数和析构函数 ====================
@@ -418,6 +317,53 @@ std::string GatewayServer::format_http_route_stats() const {
         ss << " http.route." << route << ".max_ms: " << stats.max_ms << std::endl;
     }
     return ss.str();
+}
+
+GatewayServer::ServiceRuntimeState& GatewayServer::load_service_runtime_state(
+        const ConfigManager& config,
+        const std::string& name,
+        int default_timeout_ms) {
+    auto& state = service_runtime_[name];
+    state.name = name;
+    state.mode = config.get<std::string>(name + ".mode", "local");
+    state.timeout_ms = config.get<int>(name + ".timeout_ms", default_timeout_ms);
+    state.remote_endpoint = config.get<std::string>(name + ".remote_endpoint", "");
+    state.local_bound = false;
+    state.remote_bound = false;
+    return state;
+}
+
+void GatewayServer::mark_service_runtime_local(const std::string& name) {
+    auto& state = service_runtime_[name];
+    state.name = name;
+    state.local_bound = true;
+    state.remote_bound = false;
+}
+
+void GatewayServer::mark_service_runtime_remote(const std::string& name,
+                                                const std::string& endpoint) {
+    auto& state = service_runtime_[name];
+    state.name = name;
+    state.remote_endpoint = endpoint;
+    state.local_bound = false;
+    state.remote_bound = true;
+}
+
+bool GatewayServer::is_remote_mode(const ServiceRuntimeState& state) {
+    return state.mode == "remote";
+}
+
+bool GatewayServer::is_local_mode(const ServiceRuntimeState& state) {
+    return state.mode == "local";
+}
+
+void GatewayServer::warn_unknown_runtime_mode(const ServiceRuntimeState& state,
+                                              const std::string& fallback) const {
+    if (!server_logger || is_local_mode(state) || is_remote_mode(state)) {
+        return;
+    }
+    server_logger->warn("Unknown {}.mode='{}'; falling back to {}",
+                        state.name, state.mode, fallback);
 }
 
 // ==================== 服务器生命周期管理 ====================
@@ -673,6 +619,16 @@ std::string GatewayServer::get_server_stats() const {
     ss << " http.status_other: "
        << http_stats_.status_other.load(std::memory_order_relaxed) << std::endl;
     ss << format_http_route_stats();
+    for (const auto& [name, state] : service_runtime_) {
+        ss << " service." << name << ".mode: " << state.mode << std::endl;
+        ss << " service." << name << ".timeout_ms: " << state.timeout_ms << std::endl;
+        ss << " service." << name << ".remote_endpoint: "
+           << (state.remote_endpoint.empty() ? "<empty>" : state.remote_endpoint) << std::endl;
+        ss << " service." << name << ".local_bound: "
+           << (state.local_bound ? "true" : "false") << std::endl;
+        ss << " service." << name << ".remote_bound: "
+           << (state.remote_bound ? "true" : "false") << std::endl;
+    }
     ss << " thread_pool.threads: " << im::utils::ThreadPool::GetInstance().GetThreadCount()
        << std::endl;
     ss << " thread_pool.queued_or_running_tasks: "
@@ -723,282 +679,13 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         init_msg_parser();
         init_msg_processor();
 
-#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
-        // 步骤4: 初始化ODB数据库连接 (shared between User and Message HTTP controllers)。
-        // 必须早于 init_http_server()，否则专用路由会晚于 HTTP catch-all 注册。
-        try {
-            if (!odb_db_) {
-                ConfigManager cfg(config_path_);
-                std::string pg_host = cfg.get<std::string>("postgres.host", "127.0.0.1");
-                int pg_port = cfg.get<int>("postgres.port", 5432);
-                std::string pg_dbname = cfg.get<std::string>("postgres.database", "mychat");
-                std::string pg_user = cfg.get<std::string>("postgres.username", "mychat");
-                std::string pg_pass = cfg.get<std::string>("postgres.password", "mychat-dev-pass");
-                odb_db_ = std::make_shared<odb::pgsql::database>(
-                    pg_user, pg_pass, pg_dbname, pg_host, pg_port);
-            }
-        } catch (const std::exception& e) {
-            server_logger->error("Failed to initialize ODB database: {}", e.what());
-            throw;
-        }
-#endif
-
-#ifdef IM_ENABLE_USER_HTTP
-        try {
-            ConfigManager user_cfg(config_path_);
-            const std::string user_mode =
-                user_cfg.get<std::string>("user.mode", "local");
-            std::shared_ptr<UserClient> user_client;
-
-#ifdef IM_ENABLE_REMOTE_USER_CLIENT
-            if (user_mode == "remote") {
-                const int user_timeout_ms =
-                    user_cfg.get<int>("user.timeout_ms", 200);
-                const std::string endpoint =
-                    require_non_blank_config(user_cfg,
-                                             "user.remote_endpoint",
-                                             "user.mode=remote");
-                user_client = std::make_shared<RemoteUserClient>(
-                    endpoint, std::chrono::milliseconds(user_timeout_ms));
-                server_logger->info(
-                    "Remote User client initialized for endpoint {} with timeout {} ms",
-                    endpoint, user_timeout_ms);
-            }
-#else
-            if (user_mode == "remote") {
-                server_logger->warn(
-                    "user.mode=remote requested but RemoteUserClient is not compiled; "
-                    "falling back to local UserService");
-            }
-#endif
-
-            if (!user_client) {
-                if (user_mode != "local" && user_mode != "remote") {
-                    server_logger->warn(
-                        "Unknown user.mode='{}'; falling back to local UserService",
-                        user_mode);
-                }
-                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-                auto user_svc = std::make_shared<im::service::user::UserService>(
-                    odb_db_, std::move(hasher));
-                user_client = std::make_shared<LocalUserClient>(user_svc);
-                server_logger->info("Local User client initialized");
-            }
-
-            user_http_controller_ = std::make_unique<UserHttpController>(
-                user_client, auth_mgr_);
-            server_logger->info("User HTTP controller initialized");
-        } catch (const std::exception& e) {
-            server_logger->error("Failed to initialize User HTTP controller: {}", e.what());
-            throw;
-        }
-#endif
-
-#ifdef IM_ENABLE_MESSAGE_HTTP
-        try {
-            ConfigManager message_cfg(config_path_);
-            const std::string message_mode =
-                message_cfg.get<std::string>("message.mode", "local");
-
-#ifdef IM_ENABLE_REMOTE_MESSAGE_CLIENT
-            if (message_mode == "remote") {
-                const int message_timeout_ms =
-                    message_cfg.get<int>("message.timeout_ms", 200);
-                const std::string endpoint =
-                    require_non_blank_config(message_cfg,
-                                             "message.remote_endpoint",
-                                             "message.mode=remote");
-                message_client_ = std::make_shared<RemoteMessageClient>(
-                    endpoint, std::chrono::milliseconds(message_timeout_ms));
-                server_logger->info(
-                    "Remote Message client initialized for endpoint {} with timeout {} ms",
-                    endpoint, message_timeout_ms);
-            }
-#else
-            if (message_mode == "remote") {
-                server_logger->warn(
-                    "message.mode=remote requested but RemoteMessageClient is not compiled; "
-                    "falling back to local MessageService");
-            }
-#endif
-
-            if (!message_client_) {
-                if (message_mode != "local" && message_mode != "remote") {
-                    server_logger->warn(
-                        "Unknown message.mode='{}'; falling back to local MessageService",
-                        message_mode);
-                }
-                auto msg_svc =
-                    std::make_shared<im::service::message::MessageService>(odb_db_);
-                message_client_ = std::make_shared<LocalMessageClient>(msg_svc);
-                server_logger->info("Local Message client initialized");
-            }
-
-            message_http_controller_ = std::make_unique<MessageHttpController>(
-                message_client_, auth_mgr_);
-            server_logger->info("Message HTTP controller initialized");
-
-
-        } catch (const std::exception& e) {
-            server_logger->error("Failed to initialize Message HTTP controller: {}", e.what());
-            throw;
-        }
-#endif
-
-#ifdef IM_ENABLE_FRIEND_HTTP
-        try {
-            ConfigManager friend_cfg(config_path_);
-            const std::string friend_mode =
-                friend_cfg.get<std::string>("friend.mode", "local");
-
-#ifdef IM_ENABLE_REMOTE_FRIEND_CLIENT
-            if (friend_mode == "remote") {
-                const int friend_timeout_ms =
-                    friend_cfg.get<int>("friend.timeout_ms", 200);
-                const std::string endpoint =
-                    require_non_blank_config(friend_cfg,
-                                             "friend.remote_endpoint",
-                                             "friend.mode=remote");
-                friend_client_ = std::make_shared<RemoteFriendClient>(
-                    endpoint, std::chrono::milliseconds(friend_timeout_ms));
-                server_logger->info(
-                    "Remote Friend client initialized for endpoint {} with timeout {} ms",
-                    endpoint, friend_timeout_ms);
-            }
-#else
-            if (friend_mode == "remote") {
-                server_logger->warn(
-                    "friend.mode=remote requested but RemoteFriendClient is not compiled; "
-                    "falling back to local FriendService");
-            }
-#endif
-
-            if (!friend_client_) {
-                if (friend_mode != "local" && friend_mode != "remote") {
-                    server_logger->warn(
-                        "Unknown friend.mode='{}'; falling back to local FriendService",
-                        friend_mode);
-                }
-                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-                auto user_svc = std::make_shared<im::service::user::UserService>(
-                    odb_db_, std::move(hasher));
-                auto friend_svc = std::make_shared<im::service::friend_::FriendService>(
-                    odb_db_, user_svc);
-                friend_client_ = std::make_shared<LocalFriendClient>(friend_svc);
-                server_logger->info("Local Friend client initialized");
-            }
-
-            friend_http_controller_ = std::make_unique<FriendHttpController>(
-                friend_client_, auth_mgr_);
-            server_logger->info("Friend HTTP controller initialized");
-        } catch (const std::exception& e) {
-            server_logger->error("Failed to initialize Friend HTTP controller: {}", e.what());
-            throw;
-        }
-#endif
-
-#ifdef IM_ENABLE_GROUP_HTTP
-        try {
-            ConfigManager group_cfg(config_path_);
-            const std::string group_mode =
-                group_cfg.get<std::string>("group.mode", "local");
-
-#ifdef IM_ENABLE_REMOTE_GROUP_CLIENT
-            if (group_mode == "remote") {
-                const int group_timeout_ms =
-                    group_cfg.get<int>("group.timeout_ms", 200);
-                const std::string endpoint =
-                    require_non_blank_config(group_cfg,
-                                             "group.remote_endpoint",
-                                             "group.mode=remote");
-                group_client_ = std::make_shared<RemoteGroupClient>(
-                    endpoint, std::chrono::milliseconds(group_timeout_ms));
-                server_logger->info(
-                    "Remote Group client initialized for endpoint {} with timeout {} ms",
-                    endpoint, group_timeout_ms);
-            }
-#else
-            if (group_mode == "remote") {
-                server_logger->warn(
-                    "group.mode=remote requested but RemoteGroupClient is not compiled; "
-                    "falling back to local GroupService");
-            }
-#endif
-
-            if (!group_client_) {
-                if (group_mode != "local" && group_mode != "remote") {
-                    server_logger->warn(
-                        "Unknown group.mode='{}'; falling back to local GroupService",
-                        group_mode);
-                }
-                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-                auto user_svc = std::make_shared<im::service::user::UserService>(
-                    odb_db_, std::move(hasher));
-                auto group_svc = std::make_shared<im::service::group::GroupService>(
-                    odb_db_, user_svc);
-                auto group_msg_svc = std::make_shared<im::service::group::GroupMessageService>(
-                    odb_db_, user_svc, group_svc);
-                group_client_ = std::make_shared<LocalGroupClient>(group_svc, group_msg_svc);
-                server_logger->info("Local Group client initialized");
-            }
-            group_http_controller_ = std::make_unique<GroupHttpController>(
-                group_client_, auth_mgr_);
-            server_logger->info("Group HTTP controller initialized");
-        } catch (const std::exception& e) {
-            server_logger->error("Failed to initialize Group HTTP controller: {}", e.what());
-            throw;
-        }
-#endif
-
-#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-        try {
-            if (!group_client_) {
-                ConfigManager group_cfg(config_path_);
-                const std::string group_mode =
-                    group_cfg.get<std::string>("group.mode", "local");
-
-#ifdef IM_ENABLE_REMOTE_GROUP_CLIENT
-                if (group_mode == "remote") {
-                    const int group_timeout_ms =
-                        group_cfg.get<int>("group.timeout_ms", 200);
-                    const std::string endpoint =
-                        require_non_blank_config(group_cfg,
-                                                 "group.remote_endpoint",
-                                                 "group.mode=remote");
-                    group_client_ = std::make_shared<RemoteGroupClient>(
-                        endpoint, std::chrono::milliseconds(group_timeout_ms));
-                    server_logger->info(
-                        "Remote Group client initialized for endpoint {} with timeout {} ms",
-                        endpoint, group_timeout_ms);
-                }
-#else
-                if (group_mode == "remote") {
-                    server_logger->warn(
-                        "group.mode=remote requested but RemoteGroupClient is not compiled; "
-                        "falling back to local GroupService");
-                }
-#endif
-            }
-
-            if (!group_client_) {
-                auto hasher = std::make_unique<im::service::user::PasswordHasher>();
-                auto user_svc = std::make_shared<im::service::user::UserService>(
-                    odb_db_, std::move(hasher));
-                auto group_svc = std::make_shared<im::service::group::GroupService>(
-                    odb_db_, user_svc);
-                auto group_msg_svc = std::make_shared<im::service::group::GroupMessageService>(
-                    odb_db_, user_svc, group_svc);
-                group_client_ = std::make_shared<LocalGroupClient>(group_svc, group_msg_svc);
-                server_logger->info("Local Group client initialized");
-            }
-            group_message_http_controller_ = std::make_unique<GroupMessageHttpController>(
-                group_client_, auth_mgr_);
-            server_logger->info("Group Message HTTP controller initialized");
-        } catch (const std::exception& e) {
-            server_logger->error("Failed to initialize Group Message HTTP controller: {}", e.what());
-            throw;
-        }
-#endif
+        // 步骤4: 初始化业务运行时。各模块负责解析 local/remote 配置并装配依赖。
+        init_database_runtime();
+        init_user_runtime();
+        init_message_runtime();
+        init_friend_runtime();
+        init_group_runtime();
+        init_group_message_runtime();
 
         // 步骤5: 初始化网络服务器。HTTP初始化阶段会先注册专用路由，再注册 catch-all。
         init_ws_server(ws_port);
@@ -1007,87 +694,8 @@ bool GatewayServer::init_server(uint16_t ws_port, uint16_t http_port, const std:
         // 步骤6: 初始化连接管理器 (依赖websocket_server)
         init_conn_mgr();
 
-        // Initialize PushService and WS message handler after ConnectionManager and WebSocketServer are ready.
-#ifdef IM_ENABLE_MESSAGE_WS
-        try {
-            if (!message_client_) {
-                auto msg_svc =
-                    std::make_shared<im::service::message::MessageService>(odb_db_);
-                message_client_ = std::make_shared<LocalMessageClient>(msg_svc);
-                server_logger->info("Local Message client initialized for WS/Push");
-            }
-
-            ConfigManager push_cfg(config_path_);
-            const std::string push_mode =
-                push_cfg.get<std::string>("push.mode", "local");
-            bool use_remote_push = false;
-
-#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
-            if (push_mode == "remote") {
-                use_remote_push = true;
-            }
-#else
-            if (push_mode == "remote") {
-                server_logger->warn(
-                    "push.mode=remote requested but remote PushNotifier is not compiled; "
-                    "falling back to local PushService");
-            }
-#endif
-
-            if (push_mode != "local" && push_mode != "remote") {
-                server_logger->warn("Unknown push.mode='{}'; falling back to local PushService",
-                                    push_mode);
-            }
-
-            if (use_remote_push) {
-#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
-                const int push_timeout_ms =
-                    push_cfg.get<int>("push.timeout_ms", 200);
-                const std::string endpoint =
-                    require_non_blank_config(push_cfg,
-                                             "push.remote_endpoint",
-                                             "push.mode=remote");
-                const std::string delivery_listen_address =
-                    require_non_blank_config(push_cfg,
-                                             "push.gateway_delivery_listen_address",
-                                             "push.mode=remote");
-                push_service_ = std::make_unique<PushService>(
-                    conn_mgr_.get(), websocket_server_.get(), message_client_);
-                start_gateway_push_delivery_server(delivery_listen_address);
-                remote_push_notifier_ = std::make_unique<RemotePushNotifier>(
-                    endpoint, std::chrono::milliseconds(push_timeout_ms));
-                push_notifier_ = remote_push_notifier_.get();
-                server_logger->info(
-                    "Remote PushNotifier initialized for endpoint {} with timeout {} ms; "
-                    "Gateway delivery endpoint {} is available for push_server",
-                    endpoint, push_timeout_ms, delivery_listen_address);
-#endif
-            } else {
-                push_service_ = std::make_unique<PushService>(
-                    conn_mgr_.get(), websocket_server_.get(), message_client_);
-                push_notifier_ = push_service_.get();
-                server_logger->info("Local PushService initialized");
-            }
-
-            message_ws_handler_ = std::make_unique<MessageWsHandler>(
-                message_client_, auth_mgr_, push_notifier_);
-            server_logger->info("Message WS handler initialized with PushNotifier");
-        } catch (const std::exception& e) {
-            server_logger->error("Failed to initialize Message WS handler: {}", e.what());
-            throw;
-        }
-#endif
-
-#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-        if (group_message_http_controller_) {
-            group_message_http_controller_->set_push_notifier(push_notifier_);
-        }
-#endif
-#ifdef IM_ENABLE_MESSAGE_HTTP
-        if (message_http_controller_) {
-            message_http_controller_->set_push_notifier(push_notifier_);
-        }
-#endif
+        // WS/push runtime depends on websocket server and connection manager.
+        init_message_ws_runtime();
 
         // 步骤7: 注册消息处理器
         register_message_handlers();
@@ -1444,8 +1052,8 @@ void GatewayServer::init_http_server(uint16_t port) {
                                 parse_result.message ? parse_result.message->format_info().str()
                                                      : "unknown";
 
-                        // 第五步：使用协程消息处理器处理请求
-                        if (coro_msg_processor_) {
+                        // 第五步：通过统一 MessageProcessor 执行业务 handler。
+                        if (msg_processor_) {
                             server_logger->debug("Processing HTTP message: {}",
                                                  parse_result.message->format_info().str());
                             // HTTP需要同步等待结果，使用std::promise/std::future机制更安全
@@ -1463,7 +1071,10 @@ void GatewayServer::init_http_server(uint16_t port) {
                             auto final_result = future.get();
 
 
-                            if (final_result.status_code != 0) {
+                            if (final_result.http_status != 0) {
+                                res.status = final_result.http_status;
+                                res.set_content(final_result.json_body, "application/json");
+                            } else if (final_result.status_code != 0) {
                                 server_logger->error("处理消息时发生错误: {}",
                                                      final_result.error_message);
                                 // 将内部错误码映射为HTTP状态码，避免内部码泄露
@@ -1510,7 +1121,7 @@ void GatewayServer::init_http_server(uint16_t port) {
 
 
                         } else {
-                            server_logger->error("CoroMessageProcessor is not initialized.");
+                            server_logger->error("MessageProcessor is not initialized.");
                             HttpUtils::buildResponse(res, 500, "",
                                                      "MessageProcessor not initialized");
                         }
@@ -1542,31 +1153,8 @@ void GatewayServer::init_http_server(uint16_t port) {
             res.status = 200;
         });
 
-#ifdef IM_ENABLE_USER_HTTP
-        // 用户路由必须早于 catch-all 注册，否则 httplib 会先命中 ".*"。
-        register_user_http_routes();
-#endif
-
-#ifdef IM_ENABLE_MESSAGE_HTTP
-        // 消息路由同样必须早于 catch-all 注册。
-        register_message_http_routes();
-#endif
-
-#ifdef IM_ENABLE_FRIEND_HTTP
-        // 好友路由同样必须早于 catch-all 注册。
-        register_friend_http_routes();
-#endif
-
-#ifdef IM_ENABLE_GROUP_HTTP
-        // 群组路由同样必须早于 catch-all 注册。
-        register_group_http_routes();
-#endif
-
-#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-        // 群组消息路由同样必须早于 catch-all 注册。
-        register_group_message_http_routes();
-#endif
-
+        // 业务 HTTP 入口统一进入 MessageParser -> MessageProcessor。
+        // 模块级显式业务路由已移除，避免绕过统一消息处理链路。
         http_server_->Get(".*", http_callback);
         http_server_->Post(".*", http_callback);
         http_server_->bind_to_port("0.0.0.0", port);
@@ -1610,67 +1198,304 @@ void GatewayServer::init_msg_processor() {
     msg_processor_ = std::make_unique<MessageProcessor>(router_mgr_, auth_mgr_);
 }
 
+void GatewayServer::init_database_runtime() {
+#if defined(IM_ENABLE_USER_HTTP) || defined(IM_ENABLE_MESSAGE_HTTP) || defined(IM_ENABLE_FRIEND_HTTP) || defined(IM_ENABLE_GROUP_HTTP) || defined(IM_ENABLE_GROUP_MESSAGE_HTTP)
+    try {
+        if (!odb_db_) {
+            ConfigManager cfg(config_path_);
+            const std::string pg_host = cfg.get<std::string>("postgres.host", "127.0.0.1");
+            const int pg_port = cfg.get<int>("postgres.port", 5432);
+            const std::string pg_dbname = cfg.get<std::string>("postgres.database", "mychat");
+            const std::string pg_user = cfg.get<std::string>("postgres.username", "mychat");
+            const std::string pg_pass = cfg.get<std::string>("postgres.password", "mychat-dev-pass");
+            odb_db_ = std::make_shared<odb::pgsql::database>(
+                pg_user, pg_pass, pg_dbname, pg_host, pg_port);
+        }
+    } catch (const std::exception& e) {
+        server_logger->error("Failed to initialize ODB database: {}", e.what());
+        throw;
+    }
+#endif
+}
+
+void GatewayServer::init_user_runtime() {
 #ifdef IM_ENABLE_USER_HTTP
-void GatewayServer::register_user_http_routes() {
-    if (!user_http_controller_) {
-        server_logger->warn("User HTTP controller not available — skipping route registration");
-        return;
-    }
-    register_user_http_routes_on_server(*http_server_, *user_http_controller_);
-    server_logger->info("User HTTP endpoints registered "
-        "(/api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/info, /api/v1/users/search)");
-}
+    try {
+        ConfigManager user_cfg(config_path_);
+        auto& user_config = load_service_runtime_state(user_cfg, "user");
+
+#ifdef IM_ENABLE_REMOTE_USER_ADAPTER
+        if (is_remote_mode(user_config)) {
+            const std::string endpoint = require_non_blank_config(
+                user_cfg, "user.remote_endpoint", "user.mode=remote");
+            runtime_registry_.remote_user_adapter = std::make_shared<RemoteUserServiceAdapter>(
+                endpoint, std::chrono::milliseconds(user_config.timeout_ms));
+            mark_service_runtime_remote("user", endpoint);
+            server_logger->info(
+                "Remote User service adapter initialized for endpoint {} with timeout {} ms",
+                endpoint, user_config.timeout_ms);
+        }
+#else
+        if (is_remote_mode(user_config)) {
+            server_logger->warn(
+                "user.mode=remote requested but RemoteUserServiceAdapter is not compiled; "
+                "falling back to local UserService");
+        }
 #endif
 
+        if (!runtime_registry_.remote_user_adapter) {
+            warn_unknown_runtime_mode(user_config, "local UserService");
+            ensure_user_service();
+            mark_service_runtime_local("user");
+        }
+
+        server_logger->info("User gateway adapter initialized");
+    } catch (const std::exception& e) {
+        server_logger->error("Failed to initialize User gateway adapter: {}", e.what());
+        throw;
+    }
+#endif
+}
+
+void GatewayServer::init_message_runtime() {
 #ifdef IM_ENABLE_MESSAGE_HTTP
-void GatewayServer::register_message_http_routes() {
-    if (!message_http_controller_) {
-        server_logger->warn("Message HTTP controller not available — skipping route registration");
-        return;
-    }
-    register_message_http_routes_on_server(*http_server_, *message_http_controller_);
-    server_logger->info("Message HTTP endpoints registered "
-        "(/api/v1/messages/send, /api/v1/messages/history, /api/v1/messages/offline)");
-}
+    try {
+        ConfigManager message_cfg(config_path_);
+        auto& message_config = load_service_runtime_state(message_cfg, "message");
+
+#ifdef IM_ENABLE_REMOTE_MESSAGE_ADAPTER
+        if (is_remote_mode(message_config)) {
+            const std::string endpoint = require_non_blank_config(
+                message_cfg, "message.remote_endpoint", "message.mode=remote");
+            runtime_registry_.remote_message_adapter = std::make_shared<RemoteMessageServiceAdapter>(
+                endpoint, std::chrono::milliseconds(message_config.timeout_ms));
+            mark_service_runtime_remote("message", endpoint);
+            server_logger->info(
+                "Remote Message service adapter initialized for endpoint {} with timeout {} ms",
+                endpoint, message_config.timeout_ms);
+        }
+#else
+        if (is_remote_mode(message_config)) {
+            server_logger->warn(
+                "message.mode=remote requested but RemoteMessageServiceAdapter is not compiled; "
+                "falling back to local MessageService");
+        }
 #endif
 
-#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
-void GatewayServer::register_group_message_http_routes() {
-    if (!group_message_http_controller_) {
-        server_logger->warn("Group Message HTTP controller not available — skipping route registration");
-        return;
-    }
-    register_group_message_http_routes_on_server(*http_server_, *group_message_http_controller_);
-    server_logger->info("Group Message HTTP endpoints registered "
-        "(/api/v1/groups/messages/send, /api/v1/groups/messages/history)");
-}
-#endif
+        if (!runtime_registry_.remote_message_adapter) {
+            warn_unknown_runtime_mode(message_config, "local MessageService");
+            if (!runtime_registry_.message_service) {
+                runtime_registry_.message_service =
+                    std::make_shared<im::service::message::MessageService>(odb_db_);
+                server_logger->info("Local MessageService initialized");
+            }
+            mark_service_runtime_local("message");
+        }
 
-#ifdef IM_ENABLE_GROUP_HTTP
-void GatewayServer::register_group_http_routes() {
-    if (!group_http_controller_) {
-        server_logger->warn("Group HTTP controller not available — skipping route registration");
-        return;
+        server_logger->info("Message gateway adapter initialized");
+    } catch (const std::exception& e) {
+        server_logger->error("Failed to initialize Message gateway adapter: {}", e.what());
+        throw;
     }
-    register_group_http_routes_on_server(*http_server_, *group_http_controller_);
-    server_logger->info("Group HTTP endpoints registered "
-        "(/api/v1/groups, /api/v1/groups/join, /api/v1/groups/leave, "
-        "/api/v1/groups, /api/v1/groups/members)");
-}
 #endif
+}
 
+void GatewayServer::init_friend_runtime() {
 #ifdef IM_ENABLE_FRIEND_HTTP
-void GatewayServer::register_friend_http_routes() {
-    if (!friend_http_controller_) {
-        server_logger->warn("Friend HTTP controller not available — skipping route registration");
-        return;
-    }
-    register_friend_http_routes_on_server(*http_server_, *friend_http_controller_);
-    server_logger->info("Friend HTTP endpoints registered "
-        "(/api/v1/friends/request, /api/v1/friends/respond, "
-        "/api/v1/friends, /api/v1/friends/pending)");
-}
+    try {
+        ConfigManager friend_cfg(config_path_);
+        auto& friend_config = load_service_runtime_state(friend_cfg, "friend");
+
+#ifdef IM_ENABLE_REMOTE_FRIEND_ADAPTER
+        if (is_remote_mode(friend_config)) {
+            const std::string endpoint = require_non_blank_config(
+                friend_cfg, "friend.remote_endpoint", "friend.mode=remote");
+            runtime_registry_.remote_friend_adapter = std::make_shared<RemoteFriendServiceAdapter>(
+                endpoint, std::chrono::milliseconds(friend_config.timeout_ms));
+            mark_service_runtime_remote("friend", endpoint);
+            server_logger->info(
+                "Remote Friend service adapter initialized for endpoint {} with timeout {} ms",
+                endpoint, friend_config.timeout_ms);
+        }
+#else
+        if (is_remote_mode(friend_config)) {
+            server_logger->warn(
+                "friend.mode=remote requested but RemoteFriendServiceAdapter is not compiled; "
+                "falling back to local FriendService");
+        }
 #endif
+
+        if (!runtime_registry_.remote_friend_adapter) {
+            warn_unknown_runtime_mode(friend_config, "local FriendService");
+            ensure_user_service();
+            if (!runtime_registry_.friend_service) {
+                runtime_registry_.friend_service =
+                    std::make_shared<im::service::friend_::FriendService>(
+                        odb_db_, runtime_registry_.user_service);
+                server_logger->info("Local FriendService initialized");
+            }
+            mark_service_runtime_local("friend");
+        }
+
+        server_logger->info("Friend gateway adapter initialized");
+    } catch (const std::exception& e) {
+        server_logger->error("Failed to initialize Friend gateway adapter: {}", e.what());
+        throw;
+    }
+#endif
+}
+
+void GatewayServer::init_group_runtime() {
+#ifdef IM_ENABLE_GROUP_HTTP
+    try {
+        ConfigManager group_cfg(config_path_);
+        auto& group_config = load_service_runtime_state(group_cfg, "group");
+
+#ifdef IM_ENABLE_REMOTE_GROUP_ADAPTER
+        if (is_remote_mode(group_config)) {
+            const std::string endpoint = require_non_blank_config(
+                group_cfg, "group.remote_endpoint", "group.mode=remote");
+            runtime_registry_.remote_group_adapter = std::make_shared<RemoteGroupServiceAdapter>(
+                endpoint, std::chrono::milliseconds(group_config.timeout_ms));
+            mark_service_runtime_remote("group", endpoint);
+            server_logger->info(
+                "Remote Group service adapter initialized for endpoint {} with timeout {} ms",
+                endpoint, group_config.timeout_ms);
+        }
+#else
+        if (is_remote_mode(group_config)) {
+            server_logger->warn(
+                "group.mode=remote requested but RemoteGroupServiceAdapter is not compiled; "
+                "falling back to local GroupService");
+        }
+#endif
+
+        if (!runtime_registry_.remote_group_adapter) {
+            warn_unknown_runtime_mode(group_config, "local GroupService");
+            ensure_group_services();
+            mark_service_runtime_local("group");
+        }
+        server_logger->info("Group gateway adapter initialized");
+    } catch (const std::exception& e) {
+        server_logger->error("Failed to initialize Group gateway adapter: {}", e.what());
+        throw;
+    }
+#endif
+}
+
+void GatewayServer::init_group_message_runtime() {
+#ifdef IM_ENABLE_GROUP_MESSAGE_HTTP
+    try {
+        if (!runtime_registry_.remote_group_adapter && !runtime_registry_.group_service) {
+            ConfigManager group_cfg(config_path_);
+            auto& group_config = load_service_runtime_state(group_cfg, "group");
+
+#ifdef IM_ENABLE_REMOTE_GROUP_ADAPTER
+            if (is_remote_mode(group_config)) {
+                const std::string endpoint = require_non_blank_config(
+                    group_cfg, "group.remote_endpoint", "group.mode=remote");
+                runtime_registry_.remote_group_adapter = std::make_shared<RemoteGroupServiceAdapter>(
+                    endpoint, std::chrono::milliseconds(group_config.timeout_ms));
+                mark_service_runtime_remote("group", endpoint);
+                server_logger->info(
+                    "Remote Group service adapter initialized for endpoint {} with timeout {} ms",
+                    endpoint, group_config.timeout_ms);
+            }
+#else
+            if (is_remote_mode(group_config)) {
+                server_logger->warn(
+                    "group.mode=remote requested but RemoteGroupServiceAdapter is not compiled; "
+                    "falling back to local GroupService");
+            }
+#endif
+        }
+
+        if (!runtime_registry_.remote_group_adapter) {
+            ensure_group_services();
+            mark_service_runtime_local("group");
+        }
+        server_logger->info("Group Message gateway entrypoint initialized");
+    } catch (const std::exception& e) {
+        server_logger->error("Failed to initialize Group Message gateway entrypoint: {}",
+                             e.what());
+        throw;
+    }
+#endif
+}
+
+void GatewayServer::init_message_ws_runtime() {
+#ifdef IM_ENABLE_MESSAGE_WS
+    try {
+        if (!runtime_registry_.remote_message_adapter && !runtime_registry_.message_service) {
+            runtime_registry_.message_service =
+                std::make_shared<im::service::message::MessageService>(odb_db_);
+            server_logger->info("Local MessageService initialized for WS/Push");
+        }
+
+        ConfigManager push_cfg(config_path_);
+        auto& push_config = load_service_runtime_state(push_cfg, "push");
+        bool use_remote_push = false;
+
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+        if (is_remote_mode(push_config)) {
+            use_remote_push = true;
+        }
+#else
+        if (is_remote_mode(push_config)) {
+            server_logger->warn(
+                "push.mode=remote requested but remote PushNotifier is not compiled; "
+                "falling back to local PushService");
+        }
+#endif
+
+        warn_unknown_runtime_mode(push_config, "local PushService");
+
+        if (use_remote_push) {
+#ifdef IM_ENABLE_REMOTE_PUSH_NOTIFIER
+            const std::string endpoint = require_non_blank_config(
+                push_cfg, "push.remote_endpoint", "push.mode=remote");
+            const std::string delivery_listen_address = require_non_blank_config(
+                push_cfg,
+                "push.gateway_delivery_listen_address",
+                "push.mode=remote");
+            push_service_ = std::make_unique<PushService>(
+                conn_mgr_.get(), websocket_server_.get(),
+                runtime_registry_.message_service, runtime_registry_.remote_message_adapter);
+            start_gateway_push_delivery_server(delivery_listen_address);
+            remote_push_notifier_ = std::make_unique<RemotePushNotifier>(
+                endpoint, std::chrono::milliseconds(push_config.timeout_ms));
+            push_notifier_ = remote_push_notifier_.get();
+            mark_service_runtime_remote("push", endpoint);
+            server_logger->info(
+                "Remote PushNotifier initialized for endpoint {} with timeout {} ms; "
+                "Gateway delivery endpoint {} is available for push_server",
+                endpoint, push_config.timeout_ms, delivery_listen_address);
+#endif
+        } else {
+            push_service_ = std::make_unique<PushService>(
+                conn_mgr_.get(), websocket_server_.get(),
+                runtime_registry_.message_service, runtime_registry_.remote_message_adapter);
+            push_notifier_ = push_service_.get();
+            mark_service_runtime_local("push");
+            server_logger->info("Local PushService initialized");
+        }
+
+        message_ws_handler_ = std::make_unique<MessageWsHandler>(
+            runtime_registry_.message_service, runtime_registry_.remote_message_adapter,
+            auth_mgr_, push_notifier_);
+        server_logger->info("Message WS handler initialized with PushNotifier");
+    } catch (const std::exception& e) {
+        server_logger->error("Failed to initialize Message WS handler: {}", e.what());
+        throw;
+    }
+#endif
+}
+
+void GatewayServer::refresh_runtime_registry() {
+    runtime_registry_.auth_mgr = auth_mgr_.get();
+    runtime_registry_.push_notifier = push_notifier_;
+    runtime_registry_.message_ws = message_ws_handler_.get();
+}
 
 // ==================== 消息处理器注册 ====================
 
@@ -1818,24 +1643,12 @@ void GatewayServer::register_message_handlers() {
             });
         server_logger->info("WebSocket heartbeat handler registered for CMD_HEARTBEAT");
 
-#ifdef IM_ENABLE_MESSAGE_WS
-        if (message_ws_handler_) {
-            server_logger->info("Registering WebSocket message handler for CMD_SEND_MESSAGE");
+        refresh_runtime_registry();
 
-            register_message_handlers(im::command::CMD_SEND_MESSAGE,
-                [this](const UnifiedMessage& msg) -> ProcessorResult {
-                    return message_ws_handler_->handle_send(msg);
-                });
+        GatewayCommandHandlerContext context;
+        context.runtime = &runtime_registry_;
 
-            server_logger->info("WebSocket message handler registered");
-        } else {
-            server_logger->warn("MessageWsHandler not available — skipping WS handler registration");
-        }
-#else
-        // Skip when message service is not available
-        server_logger->info("Message service not available — skipping WS message handler registration");
-#endif
-
+        register_gateway_command_handlers(*msg_processor_, context);
         server_logger->info("Message handlers registered successfully");
     } catch (const std::exception& e) {
         server_logger->error("Failed to register message handlers: {}", e.what());

@@ -5,6 +5,7 @@
 # (im::user_service) are both available.
 
 add_library(im_friend_service STATIC
+    friend_packet_dispatcher.cpp
     friend_repository.cpp
     friend_service.cpp
 )
@@ -12,9 +13,11 @@ add_library(im_friend_service STATIC
 target_link_libraries(im_friend_service
     PUBLIC
         im::friend_odb
+        im::proto
         im::user_service
     PRIVATE
         im::utils
+        nlohmann_json::nlohmann_json
 )
 
 target_include_directories(im_friend_service

@@ -94,6 +94,26 @@ public:
                                std::string& type_name_out,
                                std::string& message_bytes_out);
 
+    /**
+     * @brief 直接编码已序列化的消息体
+     *
+     * 用于 Gateway 转发场景：Gateway 只持有 header、type_name 和业务
+     * payload bytes，不解析具体业务 protobuf 类型。
+     *
+     * 布局与 encode() 完全一致：
+     * [header_size(varint)][type_name_size(varint)][type_name_string][header_data][message_data][CRC32]
+     *
+     * @param header 消息头
+     * @param type_name 业务 protobuf 类型全名
+     * @param message_bytes 已序列化的业务消息体
+     * @param output 输出统一二进制帧
+     * @return 是否编码成功
+     */
+    static bool encodeEnvelope(const im::base::IMHeader& header,
+                               const std::string& type_name,
+                               const std::string& message_bytes,
+                               std::string& output);
+
     // 根据请求header构建返回header
     static base::IMHeader returnHeaderBuilder(base::IMHeader header,std::string device_id,std::string platform);
     

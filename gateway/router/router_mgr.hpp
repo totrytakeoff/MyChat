@@ -160,7 +160,7 @@ public:
 
 private:
     std::string api_prefix_;                                   ///< API前缀，默认为"/api/v1"
-    std::unordered_map<std::string, HttpRouteResult> routes_;  ///< 路由映射表：路径 -> 路由结果
+    std::unordered_map<std::string, HttpRouteResult> routes_;  ///< 路由映射表：METHOD path -> 路由结果
 };
 
 /**
@@ -212,6 +212,9 @@ public:
 private:
     std::unordered_map<std::string, ServiceRouteResult>
             services_;  ///< 服务映射表：服务名 -> 服务信息
+
+    std::unordered_map<uint32_t, std::string>
+            exact_cmds_{};  ///< 精确cmd映射表，优先来自http_router.routes
 
     std::unordered_map<std::pair<uint32_t, uint32_t>, std::string, PairHash>
             cmds_{};  ///< cmd映射表 cmdRange -> 服务名

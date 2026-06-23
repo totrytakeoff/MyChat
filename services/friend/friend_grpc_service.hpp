@@ -17,6 +17,10 @@ class FriendGrpcService final : public im::friend_::FriendService::Service {
 public:
     explicit FriendGrpcService(FriendService* friend_service);
 
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* context,
+                                 const im::friend_::FriendPacketRequest* request,
+                                 im::friend_::FriendPacketResponse* response) override;
+
     ::grpc::Status SendRequest(::grpc::ServerContext* context,
                                const im::friend_::AddFriendRequest* request,
                                im::friend_::AddFriendResponse* response) override;

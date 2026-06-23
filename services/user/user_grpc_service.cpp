@@ -1,5 +1,6 @@
 #include "user_grpc_service.hpp"
 
+#include "user_packet_dispatcher.hpp"
 #include "user_service.hpp"
 
 #include <chrono>
@@ -100,6 +101,32 @@ void fill_user_info(const UserProfile& profile, im::user::UserInfo* user) {
 
 UserGrpcService::UserGrpcService(UserService* user_service)
     : user_service_(user_service) {}
+
+::grpc::Status UserGrpcService::ForwardPacket(
+    ::grpc::ServerContext* /*context*/,
+    const im::user::UserPacketRequest* request,
+    im::user::UserPacketResponse* response) {
+    if (!response) {
+        return ::grpc::Status::OK;
+    }
+    if (!user_service_) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, "UserService is not available");
+        return ::grpc::Status::OK;
+    }
+    if (!request) {
+        set_base(response->mutable_base(), im::base::PARAM_ERROR, "im::user::UserPacketRequest request is null");
+        return ::grpc::Status::OK;
+    }
+
+    try {
+        UserPacketDispatcher dispatcher(user_service_);
+        response->CopyFrom(dispatcher.handle(*request));
+        return ::grpc::Status::OK;
+    } catch (const std::exception& e) {
+        set_base(response->mutable_base(), im::base::SERVER_ERROR, e.what());
+        return ::grpc::Status::OK;
+    }
+}
 
 ::grpc::Status UserGrpcService::Register(::grpc::ServerContext* /*context*/,
                                          const im::user::RegisterRequest* request,

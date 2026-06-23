@@ -8,11 +8,39 @@ import "base.proto";
 // boundary is staged, then switch to RPC without changing the external HTTP/WS
 // contract.
 service MessageService {
+    rpc ForwardPacket(MessagePacketRequest) returns (MessagePacketResponse);
     rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
     rpc GetConversation(GetConversationRequest) returns (GetConversationResponse);
     rpc PullOffline(PullOfflineRequest) returns (PullOfflineResponse);
     rpc MarkDelivered(MarkMessageDeliveredRequest) returns (MarkMessageDeliveredResponse);
     rpc MarkRead(MarkMessageReadRequest) returns (MarkMessageReadResponse);
+}
+
+// Gateway 到 MessageService 的统一 packet 边界。Gateway 只填充 envelope，
+// MessageService 负责解析 payload、执行业务并返回响应 packet。
+message MessagePacketRequest {
+    im.base.IMHeader header = 1;
+    string type_name = 2;
+    bytes payload = 3;
+}
+
+message MessagePushEvent {
+    bool enabled = 1;
+    string receiver_uid = 2;
+    uint64 msg_id = 3;
+    string content = 4;
+    string sender_uid = 5;
+    string conversation_type = 6;
+    string conversation_id = 7;
+}
+
+message MessagePacketResponse {
+    im.base.BaseResponse base = 1;
+    im.base.IMHeader header = 2;
+    string type_name = 3;
+    bytes payload = 4;
+    int32 http_status = 5;
+    MessagePushEvent push_event = 6;
 }
 
 // 消息类型枚举

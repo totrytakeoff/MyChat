@@ -40,6 +40,13 @@ class GroupService final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
+    virtual ::grpc::Status ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::im::group::GroupPacketResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::group::GroupPacketResponse>> AsyncForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::group::GroupPacketResponse>>(AsyncForwardPacketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::group::GroupPacketResponse>> PrepareAsyncForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::group::GroupPacketResponse>>(PrepareAsyncForwardPacketRaw(context, request, cq));
+    }
     virtual ::grpc::Status CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::im::group::CreateGroupResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::group::CreateGroupResponse>> AsyncCreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::group::CreateGroupResponse>>(AsyncCreateGroupRaw(context, request, cq));
@@ -113,6 +120,8 @@ class GroupService final {
     class async_interface {
      public:
       virtual ~async_interface() {}
+      virtual void ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest* request, ::im::group::CreateGroupResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest* request, ::im::group::CreateGroupResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void JoinGroup(::grpc::ClientContext* context, const ::im::group::JoinGroupRequest* request, ::im::group::GroupActionResponse* response, std::function<void(::grpc::Status)>) = 0;
@@ -138,6 +147,8 @@ class GroupService final {
     virtual class async_interface* async() { return nullptr; }
     class async_interface* experimental_async() { return async(); }
    private:
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::group::GroupPacketResponse>* AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::group::GroupPacketResponse>* PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::group::CreateGroupResponse>* AsyncCreateGroupRaw(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::group::CreateGroupResponse>* PrepareAsyncCreateGroupRaw(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::group::GroupActionResponse>* AsyncJoinGroupRaw(::grpc::ClientContext* context, const ::im::group::JoinGroupRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -162,6 +173,13 @@ class GroupService final {
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+    ::grpc::Status ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::im::group::GroupPacketResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>> AsyncForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>>(AsyncForwardPacketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>> PrepareAsyncForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>>(PrepareAsyncForwardPacketRaw(context, request, cq));
+    }
     ::grpc::Status CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::im::group::CreateGroupResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::group::CreateGroupResponse>> AsyncCreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::group::CreateGroupResponse>>(AsyncCreateGroupRaw(context, request, cq));
@@ -235,6 +253,8 @@ class GroupService final {
     class async final :
       public StubInterface::async_interface {
      public:
+      void ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response, std::function<void(::grpc::Status)>) override;
+      void ForwardPacket(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest* request, ::im::group::CreateGroupResponse* response, std::function<void(::grpc::Status)>) override;
       void CreateGroup(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest* request, ::im::group::CreateGroupResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void JoinGroup(::grpc::ClientContext* context, const ::im::group::JoinGroupRequest* request, ::im::group::GroupActionResponse* response, std::function<void(::grpc::Status)>) override;
@@ -266,6 +286,8 @@ class GroupService final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class async async_stub_{this};
+    ::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>* AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::group::GroupPacketResponse>* PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::group::GroupPacketRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::group::CreateGroupResponse>* AsyncCreateGroupRaw(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::group::CreateGroupResponse>* PrepareAsyncCreateGroupRaw(::grpc::ClientContext* context, const ::im::group::CreateGroupRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::group::GroupActionResponse>* AsyncJoinGroupRaw(::grpc::ClientContext* context, const ::im::group::JoinGroupRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -286,6 +308,7 @@ class GroupService final {
     ::grpc::ClientAsyncResponseReader< ::im::group::SendGroupMessageResponse>* PrepareAsyncSendGroupMessageRaw(::grpc::ClientContext* context, const ::im::group::SendGroupMessageRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::group::GetGroupMessagesResponse>* AsyncGetGroupMessagesRaw(::grpc::ClientContext* context, const ::im::group::GetGroupMessagesRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::group::GetGroupMessagesResponse>* PrepareAsyncGetGroupMessagesRaw(::grpc::ClientContext* context, const ::im::group::GetGroupMessagesRequest& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_ForwardPacket_;
     const ::grpc::internal::RpcMethod rpcmethod_CreateGroup_;
     const ::grpc::internal::RpcMethod rpcmethod_JoinGroup_;
     const ::grpc::internal::RpcMethod rpcmethod_LeaveGroup_;
@@ -303,6 +326,7 @@ class GroupService final {
    public:
     Service();
     virtual ~Service();
+    virtual ::grpc::Status ForwardPacket(::grpc::ServerContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response);
     virtual ::grpc::Status CreateGroup(::grpc::ServerContext* context, const ::im::group::CreateGroupRequest* request, ::im::group::CreateGroupResponse* response);
     virtual ::grpc::Status JoinGroup(::grpc::ServerContext* context, const ::im::group::JoinGroupRequest* request, ::im::group::GroupActionResponse* response);
     virtual ::grpc::Status LeaveGroup(::grpc::ServerContext* context, const ::im::group::LeaveGroupRequest* request, ::im::group::GroupActionResponse* response);
@@ -315,12 +339,32 @@ class GroupService final {
     virtual ::grpc::Status GetGroupMessages(::grpc::ServerContext* context, const ::im::group::GetGroupMessagesRequest* request, ::im::group::GetGroupMessagesResponse* response);
   };
   template <class BaseClass>
+  class WithAsyncMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodAsync(0);
+    }
+    ~WithAsyncMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::group::GroupPacketRequest* /*request*/, ::im::group::GroupPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestForwardPacket(::grpc::ServerContext* context, ::im::group::GroupPacketRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GroupPacketResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_CreateGroup : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_CreateGroup() {
-      ::grpc::Service::MarkMethodAsync(0);
+      ::grpc::Service::MarkMethodAsync(1);
     }
     ~WithAsyncMethod_CreateGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -331,7 +375,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCreateGroup(::grpc::ServerContext* context, ::im::group::CreateGroupRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::CreateGroupResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -340,7 +384,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_JoinGroup() {
-      ::grpc::Service::MarkMethodAsync(1);
+      ::grpc::Service::MarkMethodAsync(2);
     }
     ~WithAsyncMethod_JoinGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -351,7 +395,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestJoinGroup(::grpc::ServerContext* context, ::im::group::JoinGroupRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GroupActionResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -360,7 +404,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_LeaveGroup() {
-      ::grpc::Service::MarkMethodAsync(2);
+      ::grpc::Service::MarkMethodAsync(3);
     }
     ~WithAsyncMethod_LeaveGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -371,7 +415,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestLeaveGroup(::grpc::ServerContext* context, ::im::group::LeaveGroupRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GroupActionResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -380,7 +424,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetGroupInfo() {
-      ::grpc::Service::MarkMethodAsync(3);
+      ::grpc::Service::MarkMethodAsync(4);
     }
     ~WithAsyncMethod_GetGroupInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -391,7 +435,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetGroupInfo(::grpc::ServerContext* context, ::im::group::GetGroupInfoRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GetGroupInfoResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -400,7 +444,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SearchGroups() {
-      ::grpc::Service::MarkMethodAsync(4);
+      ::grpc::Service::MarkMethodAsync(5);
     }
     ~WithAsyncMethod_SearchGroups() override {
       BaseClassMustBeDerivedFromService(this);
@@ -411,7 +455,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSearchGroups(::grpc::ServerContext* context, ::im::group::SearchGroupsRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::SearchGroupsResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -420,7 +464,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GroupExists() {
-      ::grpc::Service::MarkMethodAsync(5);
+      ::grpc::Service::MarkMethodAsync(6);
     }
     ~WithAsyncMethod_GroupExists() override {
       BaseClassMustBeDerivedFromService(this);
@@ -431,7 +475,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGroupExists(::grpc::ServerContext* context, ::im::group::GroupExistsRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GroupExistsResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -440,7 +484,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ListMyGroups() {
-      ::grpc::Service::MarkMethodAsync(6);
+      ::grpc::Service::MarkMethodAsync(7);
     }
     ~WithAsyncMethod_ListMyGroups() override {
       BaseClassMustBeDerivedFromService(this);
@@ -451,7 +495,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestListMyGroups(::grpc::ServerContext* context, ::im::group::GetGroupListRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GetGroupListResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -460,7 +504,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ListMembers() {
-      ::grpc::Service::MarkMethodAsync(7);
+      ::grpc::Service::MarkMethodAsync(8);
     }
     ~WithAsyncMethod_ListMembers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -471,7 +515,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestListMembers(::grpc::ServerContext* context, ::im::group::GetGroupMembersRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GetGroupMembersResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -480,7 +524,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SendGroupMessage() {
-      ::grpc::Service::MarkMethodAsync(8);
+      ::grpc::Service::MarkMethodAsync(9);
     }
     ~WithAsyncMethod_SendGroupMessage() override {
       BaseClassMustBeDerivedFromService(this);
@@ -491,7 +535,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendGroupMessage(::grpc::ServerContext* context, ::im::group::SendGroupMessageRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::SendGroupMessageResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -500,7 +544,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetGroupMessages() {
-      ::grpc::Service::MarkMethodAsync(9);
+      ::grpc::Service::MarkMethodAsync(10);
     }
     ~WithAsyncMethod_GetGroupMessages() override {
       BaseClassMustBeDerivedFromService(this);
@@ -511,23 +555,50 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetGroupMessages(::grpc::ServerContext* context, ::im::group::GetGroupMessagesRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::group::GetGroupMessagesResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_CreateGroup<WithAsyncMethod_JoinGroup<WithAsyncMethod_LeaveGroup<WithAsyncMethod_GetGroupInfo<WithAsyncMethod_SearchGroups<WithAsyncMethod_GroupExists<WithAsyncMethod_ListMyGroups<WithAsyncMethod_ListMembers<WithAsyncMethod_SendGroupMessage<WithAsyncMethod_GetGroupMessages<Service > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_ForwardPacket<WithAsyncMethod_CreateGroup<WithAsyncMethod_JoinGroup<WithAsyncMethod_LeaveGroup<WithAsyncMethod_GetGroupInfo<WithAsyncMethod_SearchGroups<WithAsyncMethod_GroupExists<WithAsyncMethod_ListMyGroups<WithAsyncMethod_ListMembers<WithAsyncMethod_SendGroupMessage<WithAsyncMethod_GetGroupMessages<Service > > > > > > > > > > > AsyncService;
+  template <class BaseClass>
+  class WithCallbackMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::group::GroupPacketRequest* request, ::im::group::GroupPacketResponse* response) { return this->ForwardPacket(context, request, response); }));}
+    void SetMessageAllocatorFor_ForwardPacket(
+        ::grpc::MessageAllocator< ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::group::GroupPacketRequest* /*request*/, ::im::group::GroupPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ForwardPacket(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::group::GroupPacketRequest* /*request*/, ::im::group::GroupPacketResponse* /*response*/)  { return nullptr; }
+  };
   template <class BaseClass>
   class WithCallbackMethod_CreateGroup : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_CreateGroup() {
-      ::grpc::Service::MarkMethodCallback(0,
+      ::grpc::Service::MarkMethodCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::CreateGroupRequest, ::im::group::CreateGroupResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::CreateGroupRequest* request, ::im::group::CreateGroupResponse* response) { return this->CreateGroup(context, request, response); }));}
     void SetMessageAllocatorFor_CreateGroup(
         ::grpc::MessageAllocator< ::im::group::CreateGroupRequest, ::im::group::CreateGroupResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::CreateGroupRequest, ::im::group::CreateGroupResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -548,13 +619,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_JoinGroup() {
-      ::grpc::Service::MarkMethodCallback(1,
+      ::grpc::Service::MarkMethodCallback(2,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::JoinGroupRequest, ::im::group::GroupActionResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::JoinGroupRequest* request, ::im::group::GroupActionResponse* response) { return this->JoinGroup(context, request, response); }));}
     void SetMessageAllocatorFor_JoinGroup(
         ::grpc::MessageAllocator< ::im::group::JoinGroupRequest, ::im::group::GroupActionResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::JoinGroupRequest, ::im::group::GroupActionResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -575,13 +646,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_LeaveGroup() {
-      ::grpc::Service::MarkMethodCallback(2,
+      ::grpc::Service::MarkMethodCallback(3,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::LeaveGroupRequest, ::im::group::GroupActionResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::LeaveGroupRequest* request, ::im::group::GroupActionResponse* response) { return this->LeaveGroup(context, request, response); }));}
     void SetMessageAllocatorFor_LeaveGroup(
         ::grpc::MessageAllocator< ::im::group::LeaveGroupRequest, ::im::group::GroupActionResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::LeaveGroupRequest, ::im::group::GroupActionResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -602,13 +673,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetGroupInfo() {
-      ::grpc::Service::MarkMethodCallback(3,
+      ::grpc::Service::MarkMethodCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupInfoRequest, ::im::group::GetGroupInfoResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::GetGroupInfoRequest* request, ::im::group::GetGroupInfoResponse* response) { return this->GetGroupInfo(context, request, response); }));}
     void SetMessageAllocatorFor_GetGroupInfo(
         ::grpc::MessageAllocator< ::im::group::GetGroupInfoRequest, ::im::group::GetGroupInfoResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupInfoRequest, ::im::group::GetGroupInfoResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -629,13 +700,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SearchGroups() {
-      ::grpc::Service::MarkMethodCallback(4,
+      ::grpc::Service::MarkMethodCallback(5,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::SearchGroupsRequest, ::im::group::SearchGroupsResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::SearchGroupsRequest* request, ::im::group::SearchGroupsResponse* response) { return this->SearchGroups(context, request, response); }));}
     void SetMessageAllocatorFor_SearchGroups(
         ::grpc::MessageAllocator< ::im::group::SearchGroupsRequest, ::im::group::SearchGroupsResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::SearchGroupsRequest, ::im::group::SearchGroupsResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -656,13 +727,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GroupExists() {
-      ::grpc::Service::MarkMethodCallback(5,
+      ::grpc::Service::MarkMethodCallback(6,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::GroupExistsRequest* request, ::im::group::GroupExistsResponse* response) { return this->GroupExists(context, request, response); }));}
     void SetMessageAllocatorFor_GroupExists(
         ::grpc::MessageAllocator< ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -683,13 +754,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_ListMyGroups() {
-      ::grpc::Service::MarkMethodCallback(6,
+      ::grpc::Service::MarkMethodCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupListRequest, ::im::group::GetGroupListResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::GetGroupListRequest* request, ::im::group::GetGroupListResponse* response) { return this->ListMyGroups(context, request, response); }));}
     void SetMessageAllocatorFor_ListMyGroups(
         ::grpc::MessageAllocator< ::im::group::GetGroupListRequest, ::im::group::GetGroupListResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(6);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupListRequest, ::im::group::GetGroupListResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -710,13 +781,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_ListMembers() {
-      ::grpc::Service::MarkMethodCallback(7,
+      ::grpc::Service::MarkMethodCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupMembersRequest, ::im::group::GetGroupMembersResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::GetGroupMembersRequest* request, ::im::group::GetGroupMembersResponse* response) { return this->ListMembers(context, request, response); }));}
     void SetMessageAllocatorFor_ListMembers(
         ::grpc::MessageAllocator< ::im::group::GetGroupMembersRequest, ::im::group::GetGroupMembersResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(7);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupMembersRequest, ::im::group::GetGroupMembersResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -737,13 +808,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SendGroupMessage() {
-      ::grpc::Service::MarkMethodCallback(8,
+      ::grpc::Service::MarkMethodCallback(9,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::SendGroupMessageRequest, ::im::group::SendGroupMessageResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::SendGroupMessageRequest* request, ::im::group::SendGroupMessageResponse* response) { return this->SendGroupMessage(context, request, response); }));}
     void SetMessageAllocatorFor_SendGroupMessage(
         ::grpc::MessageAllocator< ::im::group::SendGroupMessageRequest, ::im::group::SendGroupMessageResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::SendGroupMessageRequest, ::im::group::SendGroupMessageResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -764,13 +835,13 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetGroupMessages() {
-      ::grpc::Service::MarkMethodCallback(9,
+      ::grpc::Service::MarkMethodCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupMessagesRequest, ::im::group::GetGroupMessagesResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::group::GetGroupMessagesRequest* request, ::im::group::GetGroupMessagesResponse* response) { return this->GetGroupMessages(context, request, response); }));}
     void SetMessageAllocatorFor_GetGroupMessages(
         ::grpc::MessageAllocator< ::im::group::GetGroupMessagesRequest, ::im::group::GetGroupMessagesResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::group::GetGroupMessagesRequest, ::im::group::GetGroupMessagesResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -785,15 +856,32 @@ class GroupService final {
     virtual ::grpc::ServerUnaryReactor* GetGroupMessages(
       ::grpc::CallbackServerContext* /*context*/, const ::im::group::GetGroupMessagesRequest* /*request*/, ::im::group::GetGroupMessagesResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_CreateGroup<WithCallbackMethod_JoinGroup<WithCallbackMethod_LeaveGroup<WithCallbackMethod_GetGroupInfo<WithCallbackMethod_SearchGroups<WithCallbackMethod_GroupExists<WithCallbackMethod_ListMyGroups<WithCallbackMethod_ListMembers<WithCallbackMethod_SendGroupMessage<WithCallbackMethod_GetGroupMessages<Service > > > > > > > > > > CallbackService;
+  typedef WithCallbackMethod_ForwardPacket<WithCallbackMethod_CreateGroup<WithCallbackMethod_JoinGroup<WithCallbackMethod_LeaveGroup<WithCallbackMethod_GetGroupInfo<WithCallbackMethod_SearchGroups<WithCallbackMethod_GroupExists<WithCallbackMethod_ListMyGroups<WithCallbackMethod_ListMembers<WithCallbackMethod_SendGroupMessage<WithCallbackMethod_GetGroupMessages<Service > > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
+  class WithGenericMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
+    ~WithGenericMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::group::GroupPacketRequest* /*request*/, ::im::group::GroupPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
   template <class BaseClass>
   class WithGenericMethod_CreateGroup : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_CreateGroup() {
-      ::grpc::Service::MarkMethodGeneric(0);
+      ::grpc::Service::MarkMethodGeneric(1);
     }
     ~WithGenericMethod_CreateGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -810,7 +898,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_JoinGroup() {
-      ::grpc::Service::MarkMethodGeneric(1);
+      ::grpc::Service::MarkMethodGeneric(2);
     }
     ~WithGenericMethod_JoinGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -827,7 +915,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_LeaveGroup() {
-      ::grpc::Service::MarkMethodGeneric(2);
+      ::grpc::Service::MarkMethodGeneric(3);
     }
     ~WithGenericMethod_LeaveGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -844,7 +932,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetGroupInfo() {
-      ::grpc::Service::MarkMethodGeneric(3);
+      ::grpc::Service::MarkMethodGeneric(4);
     }
     ~WithGenericMethod_GetGroupInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -861,7 +949,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SearchGroups() {
-      ::grpc::Service::MarkMethodGeneric(4);
+      ::grpc::Service::MarkMethodGeneric(5);
     }
     ~WithGenericMethod_SearchGroups() override {
       BaseClassMustBeDerivedFromService(this);
@@ -878,7 +966,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GroupExists() {
-      ::grpc::Service::MarkMethodGeneric(5);
+      ::grpc::Service::MarkMethodGeneric(6);
     }
     ~WithGenericMethod_GroupExists() override {
       BaseClassMustBeDerivedFromService(this);
@@ -895,7 +983,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ListMyGroups() {
-      ::grpc::Service::MarkMethodGeneric(6);
+      ::grpc::Service::MarkMethodGeneric(7);
     }
     ~WithGenericMethod_ListMyGroups() override {
       BaseClassMustBeDerivedFromService(this);
@@ -912,7 +1000,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ListMembers() {
-      ::grpc::Service::MarkMethodGeneric(7);
+      ::grpc::Service::MarkMethodGeneric(8);
     }
     ~WithGenericMethod_ListMembers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -929,7 +1017,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SendGroupMessage() {
-      ::grpc::Service::MarkMethodGeneric(8);
+      ::grpc::Service::MarkMethodGeneric(9);
     }
     ~WithGenericMethod_SendGroupMessage() override {
       BaseClassMustBeDerivedFromService(this);
@@ -946,7 +1034,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetGroupMessages() {
-      ::grpc::Service::MarkMethodGeneric(9);
+      ::grpc::Service::MarkMethodGeneric(10);
     }
     ~WithGenericMethod_GetGroupMessages() override {
       BaseClassMustBeDerivedFromService(this);
@@ -958,12 +1046,32 @@ class GroupService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
+    ~WithRawMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::group::GroupPacketRequest* /*request*/, ::im::group::GroupPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestForwardPacket(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_CreateGroup : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_CreateGroup() {
-      ::grpc::Service::MarkMethodRaw(0);
+      ::grpc::Service::MarkMethodRaw(1);
     }
     ~WithRawMethod_CreateGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -974,7 +1082,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCreateGroup(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -983,7 +1091,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_JoinGroup() {
-      ::grpc::Service::MarkMethodRaw(1);
+      ::grpc::Service::MarkMethodRaw(2);
     }
     ~WithRawMethod_JoinGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -994,7 +1102,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestJoinGroup(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1003,7 +1111,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_LeaveGroup() {
-      ::grpc::Service::MarkMethodRaw(2);
+      ::grpc::Service::MarkMethodRaw(3);
     }
     ~WithRawMethod_LeaveGroup() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1014,7 +1122,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestLeaveGroup(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1023,7 +1131,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetGroupInfo() {
-      ::grpc::Service::MarkMethodRaw(3);
+      ::grpc::Service::MarkMethodRaw(4);
     }
     ~WithRawMethod_GetGroupInfo() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1034,7 +1142,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetGroupInfo(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1043,7 +1151,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SearchGroups() {
-      ::grpc::Service::MarkMethodRaw(4);
+      ::grpc::Service::MarkMethodRaw(5);
     }
     ~WithRawMethod_SearchGroups() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1054,7 +1162,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSearchGroups(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1063,7 +1171,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GroupExists() {
-      ::grpc::Service::MarkMethodRaw(5);
+      ::grpc::Service::MarkMethodRaw(6);
     }
     ~WithRawMethod_GroupExists() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1074,7 +1182,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGroupExists(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1083,7 +1191,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ListMyGroups() {
-      ::grpc::Service::MarkMethodRaw(6);
+      ::grpc::Service::MarkMethodRaw(7);
     }
     ~WithRawMethod_ListMyGroups() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1094,7 +1202,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestListMyGroups(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(6, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1103,7 +1211,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ListMembers() {
-      ::grpc::Service::MarkMethodRaw(7);
+      ::grpc::Service::MarkMethodRaw(8);
     }
     ~WithRawMethod_ListMembers() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1114,7 +1222,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestListMembers(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(7, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1123,7 +1231,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SendGroupMessage() {
-      ::grpc::Service::MarkMethodRaw(8);
+      ::grpc::Service::MarkMethodRaw(9);
     }
     ~WithRawMethod_SendGroupMessage() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1134,7 +1242,7 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendGroupMessage(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1143,7 +1251,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetGroupMessages() {
-      ::grpc::Service::MarkMethodRaw(9);
+      ::grpc::Service::MarkMethodRaw(10);
     }
     ~WithRawMethod_GetGroupMessages() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1154,8 +1262,30 @@ class GroupService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetGroupMessages(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ForwardPacket(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::group::GroupPacketRequest* /*request*/, ::im::group::GroupPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ForwardPacket(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithRawCallbackMethod_CreateGroup : public BaseClass {
@@ -1163,7 +1293,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_CreateGroup() {
-      ::grpc::Service::MarkMethodRawCallback(0,
+      ::grpc::Service::MarkMethodRawCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->CreateGroup(context, request, response); }));
@@ -1185,7 +1315,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_JoinGroup() {
-      ::grpc::Service::MarkMethodRawCallback(1,
+      ::grpc::Service::MarkMethodRawCallback(2,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->JoinGroup(context, request, response); }));
@@ -1207,7 +1337,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_LeaveGroup() {
-      ::grpc::Service::MarkMethodRawCallback(2,
+      ::grpc::Service::MarkMethodRawCallback(3,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->LeaveGroup(context, request, response); }));
@@ -1229,7 +1359,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetGroupInfo() {
-      ::grpc::Service::MarkMethodRawCallback(3,
+      ::grpc::Service::MarkMethodRawCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetGroupInfo(context, request, response); }));
@@ -1251,7 +1381,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SearchGroups() {
-      ::grpc::Service::MarkMethodRawCallback(4,
+      ::grpc::Service::MarkMethodRawCallback(5,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SearchGroups(context, request, response); }));
@@ -1273,7 +1403,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GroupExists() {
-      ::grpc::Service::MarkMethodRawCallback(5,
+      ::grpc::Service::MarkMethodRawCallback(6,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GroupExists(context, request, response); }));
@@ -1295,7 +1425,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_ListMyGroups() {
-      ::grpc::Service::MarkMethodRawCallback(6,
+      ::grpc::Service::MarkMethodRawCallback(7,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ListMyGroups(context, request, response); }));
@@ -1317,7 +1447,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_ListMembers() {
-      ::grpc::Service::MarkMethodRawCallback(7,
+      ::grpc::Service::MarkMethodRawCallback(8,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ListMembers(context, request, response); }));
@@ -1339,7 +1469,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SendGroupMessage() {
-      ::grpc::Service::MarkMethodRawCallback(8,
+      ::grpc::Service::MarkMethodRawCallback(9,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendGroupMessage(context, request, response); }));
@@ -1361,7 +1491,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetGroupMessages() {
-      ::grpc::Service::MarkMethodRawCallback(9,
+      ::grpc::Service::MarkMethodRawCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetGroupMessages(context, request, response); }));
@@ -1378,12 +1508,39 @@ class GroupService final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodStreamed(0,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::group::GroupPacketRequest, ::im::group::GroupPacketResponse>* streamer) {
+                       return this->StreamedForwardPacket(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::group::GroupPacketRequest* /*request*/, ::im::group::GroupPacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedForwardPacket(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::group::GroupPacketRequest,::im::group::GroupPacketResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_CreateGroup : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_CreateGroup() {
-      ::grpc::Service::MarkMethodStreamed(0,
+      ::grpc::Service::MarkMethodStreamed(1,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::CreateGroupRequest, ::im::group::CreateGroupResponse>(
             [this](::grpc::ServerContext* context,
@@ -1410,7 +1567,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_JoinGroup() {
-      ::grpc::Service::MarkMethodStreamed(1,
+      ::grpc::Service::MarkMethodStreamed(2,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::JoinGroupRequest, ::im::group::GroupActionResponse>(
             [this](::grpc::ServerContext* context,
@@ -1437,7 +1594,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_LeaveGroup() {
-      ::grpc::Service::MarkMethodStreamed(2,
+      ::grpc::Service::MarkMethodStreamed(3,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::LeaveGroupRequest, ::im::group::GroupActionResponse>(
             [this](::grpc::ServerContext* context,
@@ -1464,7 +1621,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetGroupInfo() {
-      ::grpc::Service::MarkMethodStreamed(3,
+      ::grpc::Service::MarkMethodStreamed(4,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::GetGroupInfoRequest, ::im::group::GetGroupInfoResponse>(
             [this](::grpc::ServerContext* context,
@@ -1491,7 +1648,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SearchGroups() {
-      ::grpc::Service::MarkMethodStreamed(4,
+      ::grpc::Service::MarkMethodStreamed(5,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::SearchGroupsRequest, ::im::group::SearchGroupsResponse>(
             [this](::grpc::ServerContext* context,
@@ -1518,7 +1675,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GroupExists() {
-      ::grpc::Service::MarkMethodStreamed(5,
+      ::grpc::Service::MarkMethodStreamed(6,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::GroupExistsRequest, ::im::group::GroupExistsResponse>(
             [this](::grpc::ServerContext* context,
@@ -1545,7 +1702,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ListMyGroups() {
-      ::grpc::Service::MarkMethodStreamed(6,
+      ::grpc::Service::MarkMethodStreamed(7,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::GetGroupListRequest, ::im::group::GetGroupListResponse>(
             [this](::grpc::ServerContext* context,
@@ -1572,7 +1729,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ListMembers() {
-      ::grpc::Service::MarkMethodStreamed(7,
+      ::grpc::Service::MarkMethodStreamed(8,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::GetGroupMembersRequest, ::im::group::GetGroupMembersResponse>(
             [this](::grpc::ServerContext* context,
@@ -1599,7 +1756,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SendGroupMessage() {
-      ::grpc::Service::MarkMethodStreamed(8,
+      ::grpc::Service::MarkMethodStreamed(9,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::SendGroupMessageRequest, ::im::group::SendGroupMessageResponse>(
             [this](::grpc::ServerContext* context,
@@ -1626,7 +1783,7 @@ class GroupService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetGroupMessages() {
-      ::grpc::Service::MarkMethodStreamed(9,
+      ::grpc::Service::MarkMethodStreamed(10,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::group::GetGroupMessagesRequest, ::im::group::GetGroupMessagesResponse>(
             [this](::grpc::ServerContext* context,
@@ -1647,9 +1804,9 @@ class GroupService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedGetGroupMessages(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::group::GetGroupMessagesRequest,::im::group::GetGroupMessagesResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_CreateGroup<WithStreamedUnaryMethod_JoinGroup<WithStreamedUnaryMethod_LeaveGroup<WithStreamedUnaryMethod_GetGroupInfo<WithStreamedUnaryMethod_SearchGroups<WithStreamedUnaryMethod_GroupExists<WithStreamedUnaryMethod_ListMyGroups<WithStreamedUnaryMethod_ListMembers<WithStreamedUnaryMethod_SendGroupMessage<WithStreamedUnaryMethod_GetGroupMessages<Service > > > > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_ForwardPacket<WithStreamedUnaryMethod_CreateGroup<WithStreamedUnaryMethod_JoinGroup<WithStreamedUnaryMethod_LeaveGroup<WithStreamedUnaryMethod_GetGroupInfo<WithStreamedUnaryMethod_SearchGroups<WithStreamedUnaryMethod_GroupExists<WithStreamedUnaryMethod_ListMyGroups<WithStreamedUnaryMethod_ListMembers<WithStreamedUnaryMethod_SendGroupMessage<WithStreamedUnaryMethod_GetGroupMessages<Service > > > > > > > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_CreateGroup<WithStreamedUnaryMethod_JoinGroup<WithStreamedUnaryMethod_LeaveGroup<WithStreamedUnaryMethod_GetGroupInfo<WithStreamedUnaryMethod_SearchGroups<WithStreamedUnaryMethod_GroupExists<WithStreamedUnaryMethod_ListMyGroups<WithStreamedUnaryMethod_ListMembers<WithStreamedUnaryMethod_SendGroupMessage<WithStreamedUnaryMethod_GetGroupMessages<Service > > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_ForwardPacket<WithStreamedUnaryMethod_CreateGroup<WithStreamedUnaryMethod_JoinGroup<WithStreamedUnaryMethod_LeaveGroup<WithStreamedUnaryMethod_GetGroupInfo<WithStreamedUnaryMethod_SearchGroups<WithStreamedUnaryMethod_GroupExists<WithStreamedUnaryMethod_ListMyGroups<WithStreamedUnaryMethod_ListMembers<WithStreamedUnaryMethod_SendGroupMessage<WithStreamedUnaryMethod_GetGroupMessages<Service > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace group

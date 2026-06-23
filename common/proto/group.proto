@@ -4,10 +4,38 @@ package im.group;
 
 import "base.proto";
 
+// Gateway 到 GroupService 的统一 packet 边界。Gateway 只填充 envelope，
+// GroupService 负责解析 payload、执行业务并返回响应 packet。
+message GroupPacketRequest {
+    im.base.IMHeader header = 1;
+    string type_name = 2;
+    bytes payload = 3;
+}
+
+message GroupPushEvent {
+    bool enabled = 1;
+    string receiver_uid = 2;
+    uint64 msg_id = 3;
+    string content = 4;
+    string sender_uid = 5;
+    string conversation_type = 6;
+    string conversation_id = 7;
+}
+
+message GroupPacketResponse {
+    im.base.BaseResponse base = 1;
+    im.base.IMHeader header = 2;
+    string type_name = 3;
+    bytes payload = 4;
+    int32 http_status = 5;
+    repeated GroupPushEvent push_events = 6;
+}
+
 // GroupService is the distributed gRPC boundary for the current Group MVP.
 // It mirrors the existing Gateway HTTP surface: create/join/leave/list,
 // member listing, group message send, and group message history.
 service GroupService {
+    rpc ForwardPacket(GroupPacketRequest) returns (GroupPacketResponse);
     rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
     rpc JoinGroup(JoinGroupRequest) returns (GroupActionResponse);
     rpc LeaveGroup(LeaveGroupRequest) returns (GroupActionResponse);

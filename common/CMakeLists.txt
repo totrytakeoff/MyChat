@@ -8,6 +8,7 @@ add_library(im_network STATIC
     network/websocket_server.cpp
     network/websocket_session.cpp
     network/protobuf_codec.cpp
+    network/packet_error_builder.cpp
 )
 
 target_compile_options(im_network PRIVATE -fcoroutines)
@@ -19,6 +20,7 @@ target_link_libraries(im_network
         OpenSSL::SSL
         OpenSSL::Crypto
         ${Protobuf_LIBRARIES}
+        nlohmann_json::nlohmann_json
 )
 
 target_include_directories(im_network

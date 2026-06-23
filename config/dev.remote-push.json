@@ -119,34 +119,130 @@
     "api_prefix": "/api/v1",
     "routes": [
       {
+        "method": "POST",
+        "path": "/auth/register",
+        "cmd_id": 1003,
+        "service_name": "user_service"
+      },
+      {
+        "method": "POST",
         "path": "/auth/login",
         "cmd_id": 1001,
         "service_name": "user_service"
       },
       {
-        "path": "/auth/logout",
-        "cmd_id": 1002,
-        "service_name": "user_service"
-      },
-      {
-        "path": "/auth/refresh",
-        "cmd_id": 1003,
-        "service_name": "user_service"
-      },
-      {
+        "method": "GET",
         "path": "/auth/info",
         "cmd_id": 1004,
         "service_name": "user_service"
       },
       {
-        "path": "/message/send",
+        "method": "POST",
+        "path": "/auth/profile",
+        "cmd_id": 1005,
+        "service_name": "user_service"
+      },
+      {
+        "method": "GET",
+        "path": "/users/search",
+        "cmd_id": 3006,
+        "service_name": "user_service"
+      },
+      {
+        "method": "POST",
+        "path": "/friends/request",
+        "cmd_id": 3001,
+        "service_name": "friend_service"
+      },
+      {
+        "method": "POST",
+        "path": "/friends/respond",
+        "cmd_id": 3005,
+        "service_name": "friend_service"
+      },
+      {
+        "method": "GET",
+        "path": "/friends",
+        "cmd_id": 3003,
+        "service_name": "friend_service"
+      },
+      {
+        "method": "GET",
+        "path": "/friends/pending",
+        "cmd_id": 3004,
+        "service_name": "friend_service"
+      },
+      {
+        "method": "POST",
+        "path": "/messages/send",
         "cmd_id": 2001,
         "service_name": "message_service"
       },
       {
-        "path": "/message/history",
+        "method": "GET",
+        "path": "/messages/history",
+        "cmd_id": 2007,
+        "service_name": "message_service"
+      },
+      {
+        "method": "GET",
+        "path": "/messages/offline",
         "cmd_id": 2002,
         "service_name": "message_service"
+      },
+      {
+        "method": "POST",
+        "path": "/groups",
+        "cmd_id": 4001,
+        "service_name": "group_service"
+      },
+      {
+        "method": "GET",
+        "path": "/groups/search",
+        "cmd_id": 4013,
+        "service_name": "group_service"
+      },
+      {
+        "method": "GET",
+        "path": "/groups/info",
+        "cmd_id": 4002,
+        "service_name": "group_service"
+      },
+      {
+        "method": "GET",
+        "path": "/groups",
+        "cmd_id": 4003,
+        "service_name": "group_service"
+      },
+      {
+        "method": "POST",
+        "path": "/groups/join",
+        "cmd_id": 4007,
+        "service_name": "group_service"
+      },
+      {
+        "method": "POST",
+        "path": "/groups/leave",
+        "cmd_id": 4008,
+        "service_name": "group_service"
+      },
+      {
+        "method": "GET",
+        "path": "/groups/members",
+        "cmd_id": 4009,
+        "service_name": "group_service"
+      },
+      {
+        "method": "POST",
+        "path": "/groups/messages/send",
+        "cmd_id": 4014,
+        "service_name": "group_service"
+      },
+      {
+        "method": "GET",
+        "path": "/groups/messages/history",
+        "cmd_id": 4010,
+        "service_name": "group_service"
       }
     ]
   },
@@ -170,6 +266,26 @@
         "cmd_range": [
           2001,
           2010
+        ]
+      },
+      {
+        "service_name": "friend_service",
+        "endpoint": "localhost:9003",
+        "timeout_ms": 3000,
+        "max_connections": 5,
+        "cmd_range": [
+          3001,
+          3010
+        ]
+      },
+      {
+        "service_name": "group_service",
+        "endpoint": "localhost:9004",
+        "timeout_ms": 3000,
+        "max_connections": 5,
+        "cmd_range": [
+          4001,
+          4020
         ]
       }
     ]

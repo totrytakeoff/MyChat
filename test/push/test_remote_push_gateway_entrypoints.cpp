@@ -12,16 +12,17 @@
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
-#include <httplib.h>
 #include <nlohmann/json.hpp>
 #include <odb/pgsql/database.hxx>
 #include <odb/transaction.hxx>
 
 #include <database/redis/redis_mgr.hpp>
 #include <gateway/auth/multi_platform_auth.hpp>
-#include <gateway/http/group_client.hpp>
-#include <gateway/http/group_message_http_controller.hpp>
-#include <gateway/http/message_client.hpp>
+#include <gateway/command_handlers/gateway_command_handler_registry.hpp>
+#include <gateway/service_adapters/group_service_adapter.hpp>
+#include <gateway/service_adapters/message_service_adapter.hpp>
+#include <gateway/message_processor/message_processor.hpp>
+#include <gateway/router/router_mgr.hpp>
 #include <gateway/push/gateway_push_delivery_service.hpp>
 #include <gateway/push/remote_push_notifier.hpp>
 #include <gateway/ws/message_ws_handler.hpp>
@@ -47,14 +48,15 @@ using json = nlohmann::json;
 using im::db::RedisConfig;
 using im::db::redis_manager;
 using im::gateway::GatewayPushDeliveryService;
-using im::gateway::GroupMessageHttpController;
-using im::gateway::LocalGroupClient;
-using im::gateway::LocalMessageClient;
+using im::gateway::GatewayCommandHandlerContext;
 using im::gateway::MessageWsHandler;
+using im::gateway::MessageProcessor;
 using im::gateway::MultiPlatformAuthManager;
 using im::gateway::ProcessorResult;
 using im::gateway::RemotePushNotifier;
+using im::gateway::RouterManager;
 using im::gateway::UnifiedMessage;
+using im::gateway::register_gateway_command_handlers;
 using im::network::ProtobufCodec;
 using im::service::group::CreateGroupRequest;
 using im::service::group::GroupMessageService;
@@ -197,8 +199,6 @@ protected:
         msg_svc_ = std::make_shared<im::service::message::MessageService>(db_);
         group_svc_ = std::make_shared<GroupService>(db_, user_svc_);
         group_msg_svc_ = std::make_shared<GroupMessageService>(db_, user_svc_, group_svc_);
-        message_client_ = std::make_shared<LocalMessageClient>(msg_svc_);
-        group_client_ = std::make_shared<LocalGroupClient>(group_svc_, group_msg_svc_);
 
         gateway_endpoint_ = std::make_unique<GatewayDeliveryEndpoint>(
             &sessions_, &payload_sender_, &delivery_marker_);
@@ -225,8 +225,6 @@ protected:
         push_server_.reset();
         gateway_endpoint_.reset();
         CleanupTestData();
-        group_client_.reset();
-        message_client_.reset();
         group_msg_svc_.reset();
         group_svc_.reset();
         msg_svc_.reset();
@@ -337,14 +335,43 @@ protected:
         return msg;
     }
 
+    std::unique_ptr<UnifiedMessage> make_group_http_message(const std::string& token,
+                                                            uint64_t group_id,
+                                                            const std::string& content) {
+        auto msg = std::make_unique<UnifiedMessage>();
+
+        im::base::IMHeader header;
+        header.set_version("1.0");
+        header.set_seq(43);
+        header.set_cmd_id(im::command::CMD_SEND_GROUP_MESSAGE);
+        header.set_token(token);
+        header.set_device_id("remote-entry-device");
+        header.set_platform("web");
+        header.set_timestamp(static_cast<uint64_t>(now_ms()));
+        msg->set_header(std::move(header));
+
+        const std::string body =
+            json{{"group_id", group_id}, {"content", content}}.dump();
+        msg->set_json_body(body);
+
+        UnifiedMessage::SessionContext ctx;
+        ctx.protocol = UnifiedMessage::Protocol::HTTP;
+        ctx.session_id = "remote-entry-http-session";
+        ctx.http_method = "POST";
+        ctx.original_path = "/api/v1/groups/messages/send";
+        ctx.raw_body = body;
+        ctx.receive_time = std::chrono::system_clock::now();
+        msg->set_session_context(std::move(ctx));
+
+        return msg;
+    }
+
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MultiPlatformAuthManager> auth_mgr_;
     std::shared_ptr<UserService> user_svc_;
     std::shared_ptr<im::service::message::MessageService> msg_svc_;
     std::shared_ptr<GroupService> group_svc_;
     std::shared_ptr<GroupMessageService> group_msg_svc_;
-    std::shared_ptr<LocalMessageClient> message_client_;
-    std::shared_ptr<LocalGroupClient> group_client_;
     RecordingSessionProvider sessions_;
     RecordingPayloadSender payload_sender_;
     RecordingDeliveryMarker delivery_marker_;
@@ -358,7 +385,7 @@ TEST_F(RemotePushGatewayEntrypointsTest, DirectMessageWsUsesRemotePushPath) {
     const std::string receiver = "remote-push-entry-direct-receiver";
     sessions_.add_session(receiver, "direct-session-1");
 
-    MessageWsHandler handler(message_client_, auth_mgr_, remote_notifier_.get());
+    MessageWsHandler handler(msg_svc_, nullptr, auth_mgr_, remote_notifier_.get());
     auto msg = make_send_message(
         make_token(sender), sender, receiver, "direct remote payload");
 
@@ -389,7 +416,7 @@ TEST_F(RemotePushGatewayEntrypointsTest, DirectMessageWsUsesRemotePushPath) {
     EXPECT_EQ(push_request.body().related_message_id(), std::to_string(msg_id));
 }
 
-TEST_F(RemotePushGatewayEntrypointsTest, GroupMessageHttpUsesRemotePushForMembersOnly) {
+TEST_F(RemotePushGatewayEntrypointsTest, GroupMessageCommandUsesRemotePushForMembersOnly) {
     const std::string owner = create_user("remote-push-entry-group-owner");
     const std::string member1 = create_user("remote-push-entry-group-member1");
     const std::string member2 = create_user("remote-push-entry-group-member2");
@@ -401,19 +428,21 @@ TEST_F(RemotePushGatewayEntrypointsTest, GroupMessageHttpUsesRemotePushForMember
     sessions_.add_session(member2, "group-session-2");
     sessions_.add_session(owner, "owner-should-not-receive");
 
-    GroupMessageHttpController controller(
-        group_client_, auth_mgr_, remote_notifier_.get());
+    auto router_mgr = std::make_shared<RouterManager>(config_path());
+    MessageProcessor processor(router_mgr, auth_mgr_);
+    GatewayCommandHandlerContext context;
+    context.group_service = group_svc_.get();
+    context.group_message_service = group_msg_svc_.get();
+    context.auth_mgr = auth_mgr_.get();
+    context.push_notifier = remote_notifier_.get();
+    register_gateway_command_handlers(processor, context);
 
-    httplib::Request request;
-    request.method = "POST";
-    request.headers.emplace("Authorization", "Bearer " + make_token(owner));
-    request.body = json{{"group_id", group_id}, {"content", "group remote payload"}}.dump();
-    httplib::Response response;
+    auto msg = make_group_http_message(
+        make_token(owner), group_id, "group remote payload");
+    ProcessorResult result = processor.process_message_sync(std::move(msg));
 
-    controller.handle_send_message(request, response);
-
-    ASSERT_EQ(response.status, 201);
-    const auto body = json::parse(response.body);
+    ASSERT_EQ(result.http_status, 201) << result.error_message;
+    const auto body = json::parse(result.json_body);
     const uint64_t msg_id = body["msg_id"].get<uint64_t>();
 
     ASSERT_EQ(sessions_.requested_uids.size(), 2u);

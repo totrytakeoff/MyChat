@@ -46,6 +46,14 @@ endif()
 if(TARGET im::group_service AND TARGET im::gateway_core)
     add_subdirectory(gateway_group_message)
 endif()
+if(TARGET im::gateway_core
+   AND TARGET im::user_service
+   AND TARGET im::message_service
+   AND TARGET im::friend_service
+   AND TARGET im::group_service
+   AND TARGET im::push_service)
+    add_subdirectory(gateway_local)
+endif()
 if(TARGET im::gateway_auth)
     add_subdirectory(auth)
 endif()

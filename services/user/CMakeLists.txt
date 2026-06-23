@@ -5,6 +5,7 @@
 
 add_library(im_user_service STATIC
     password_hasher.cpp
+    user_packet_dispatcher.cpp
     user_repository.cpp
     user_service.cpp
 )
@@ -12,9 +13,11 @@ add_library(im_user_service STATIC
 target_link_libraries(im_user_service
     PUBLIC
         im::user_odb
+        im::proto
         OpenSSL::Crypto
     PRIVATE
         im::utils
+        nlohmann_json::nlohmann_json
 )
 
 target_include_directories(im_user_service

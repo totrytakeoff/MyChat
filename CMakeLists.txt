@@ -192,6 +192,54 @@ if(MYCHAT_BUILD_PGSQL_ODB)
             )
 
             find_package(PostgreSQL QUIET)
+            if(PostgreSQL_FOUND AND TARGET PostgreSQL::PostgreSQL)
+                if(TARGET OpenSSL::SSL AND TARGET OpenSSL::Crypto)
+                    set_property(TARGET PostgreSQL::PostgreSQL APPEND PROPERTY
+                        INTERFACE_LINK_LIBRARIES OpenSSL::SSL OpenSSL::Crypto)
+                endif()
+
+                set(_mychat_postgresql_library "")
+                foreach(_mychat_pg_lib_var IN ITEMS
+                        PostgreSQL_LIBRARY_RELEASE
+                        PostgreSQL_LIBRARY
+                        PostgreSQL_LIBRARIES)
+                    if(NOT "${${_mychat_pg_lib_var}}" STREQUAL "")
+                        set(_mychat_postgresql_library "${${_mychat_pg_lib_var}}")
+                        break()
+                    endif()
+                endforeach()
+
+                if(EXISTS "${_mychat_postgresql_library}")
+                    get_filename_component(_mychat_postgresql_lib_dir
+                        "${_mychat_postgresql_library}" DIRECTORY)
+                    find_library(MYCHAT_POSTGRESQL_PGCOMMON_LIBRARY
+                        NAMES pgcommon
+                        PATHS "${_mychat_postgresql_lib_dir}"
+                        NO_DEFAULT_PATH)
+                    find_library(MYCHAT_POSTGRESQL_PGPORT_LIBRARY
+                        NAMES pgport
+                        PATHS "${_mychat_postgresql_lib_dir}"
+                        NO_DEFAULT_PATH)
+
+                    set(_mychat_postgresql_static_extra_libs "")
+                    if(MYCHAT_POSTGRESQL_PGCOMMON_LIBRARY)
+                        list(APPEND _mychat_postgresql_static_extra_libs
+                            "${MYCHAT_POSTGRESQL_PGCOMMON_LIBRARY}")
+                    endif()
+                    if(MYCHAT_POSTGRESQL_PGPORT_LIBRARY)
+                        list(APPEND _mychat_postgresql_static_extra_libs
+                            "${MYCHAT_POSTGRESQL_PGPORT_LIBRARY}")
+                    endif()
+                    if(_mychat_postgresql_static_extra_libs)
+                        set_property(TARGET PostgreSQL::PostgreSQL APPEND PROPERTY
+                            INTERFACE_LINK_LIBRARIES
+                                ${_mychat_postgresql_static_extra_libs})
+                        message(STATUS
+                            "PostgreSQL static extra libraries: "
+                            "${_mychat_postgresql_static_extra_libs}")
+                    endif()
+                endif()
+            endif()
 
             add_library(odb::libodb-pgsql STATIC IMPORTED GLOBAL)
             set_property(TARGET odb::libodb-pgsql PROPERTY IMPORTED_LOCATION

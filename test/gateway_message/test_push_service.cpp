@@ -19,7 +19,7 @@
 
 #include <database/redis/redis_mgr.hpp>
 
-#include <gateway/http/message_client.hpp>
+#include <gateway/service_adapters/message_service_adapter.hpp>
 #include <gateway/push/push_service.hpp>
 #include <gateway/connection_manager/connection_manager.hpp>
 #include <fanout_policy.hpp>
@@ -31,7 +31,6 @@
 namespace {
 
 using im::gateway::ConnectionManager;
-using im::gateway::LocalMessageClient;
 using im::gateway::PushService;
 using im::db::RedisConfig;
 using im::db::redis_manager;
@@ -86,7 +85,6 @@ protected:
         CleanupRedisTestData();
 
         msg_service_ = std::make_shared<MessageService>(db_);
-        msg_client_ = std::make_shared<LocalMessageClient>(msg_service_);
     }
 
     void TearDown() override {
@@ -94,7 +92,6 @@ protected:
         CleanupTestData();
         push_service_.reset();
         conn_mgr_.reset();
-        msg_client_.reset();
         msg_service_.reset();
         redis_manager().shutdown();
     }
@@ -157,7 +154,6 @@ protected:
 
     std::shared_ptr<odb::pgsql::database> db_;
     std::shared_ptr<MessageService> msg_service_;
-    std::shared_ptr<LocalMessageClient> msg_client_;
     std::unique_ptr<ConnectionManager> conn_mgr_;
     std::unique_ptr<PushService> push_service_;
 };
@@ -165,17 +161,18 @@ protected:
 // --- PushService integration tests ---
 
 TEST_F(PushServiceTest, NullDepsReturnsSilently) {
-    push_service_ = std::make_unique<PushService>(nullptr, nullptr, nullptr);
+    push_service_ = std::make_unique<PushService>(nullptr, nullptr, nullptr, nullptr);
     push_service_->push_to_user("task8-test-user", 1, "hello");
 
     push_service_.reset();
-    push_service_ = std::make_unique<PushService>(nullptr, nullptr, msg_client_);
+    push_service_ = std::make_unique<PushService>(nullptr, nullptr, msg_service_, nullptr);
     push_service_->push_to_user("task8-test-user", 1, "hello");
 }
 
 TEST_F(PushServiceTest, NoActiveSessions) {
     conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
-    push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_client_);
+    push_service_ = std::make_unique<PushService>(
+        conn_mgr_.get(), nullptr, msg_service_, nullptr);
 
     auto result = msg_service_->send_text_message({
         .sender_uid = "task8-test-push-sender",
@@ -239,7 +236,8 @@ TEST_F(PushServiceTest, ConcurrentConnectionManagerSessionReadsUseRedisPool) {
 
 TEST_F(PushServiceTest, ConcurrentPushSessionLookupUsesRedisPoolWithoutLiveSessions) {
     conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
-    push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_client_);
+    push_service_ = std::make_unique<PushService>(
+        conn_mgr_.get(), nullptr, msg_service_, nullptr);
 
     constexpr int kUsers = 8;
     std::vector<uint64_t> msg_ids;
@@ -397,7 +395,8 @@ TEST_F(PushServiceTest, NewestSessionNoSessions) {
 
 TEST_F(PushServiceTest, CustomFanoutPolicyInjection) {
     conn_mgr_ = std::make_unique<ConnectionManager>(config_path(), nullptr);
-    push_service_ = std::make_unique<PushService>(conn_mgr_.get(), nullptr, msg_client_);
+    push_service_ = std::make_unique<PushService>(
+        conn_mgr_.get(), nullptr, msg_service_, nullptr);
 
     auto custom_policy = std::make_unique<PlatformFilterFanoutPolicy>(
         std::vector<std::string>{"web"});

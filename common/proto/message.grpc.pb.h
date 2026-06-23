@@ -41,6 +41,13 @@ class MessageService final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
+    virtual ::grpc::Status ForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::im::message::MessagePacketResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::message::MessagePacketResponse>> AsyncForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::message::MessagePacketResponse>>(AsyncForwardPacketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::message::MessagePacketResponse>> PrepareAsyncForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::message::MessagePacketResponse>>(PrepareAsyncForwardPacketRaw(context, request, cq));
+    }
     virtual ::grpc::Status SendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::im::message::SendMessageResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::message::SendMessageResponse>> AsyncSendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::im::message::SendMessageResponse>>(AsyncSendMessageRaw(context, request, cq));
@@ -79,6 +86,8 @@ class MessageService final {
     class async_interface {
      public:
       virtual ~async_interface() {}
+      virtual void ForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest* request, ::im::message::MessagePacketResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void ForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest* request, ::im::message::MessagePacketResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void SendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest* request, ::im::message::SendMessageResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void SendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest* request, ::im::message::SendMessageResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void GetConversation(::grpc::ClientContext* context, const ::im::message::GetConversationRequest* request, ::im::message::GetConversationResponse* response, std::function<void(::grpc::Status)>) = 0;
@@ -94,6 +103,8 @@ class MessageService final {
     virtual class async_interface* async() { return nullptr; }
     class async_interface* experimental_async() { return async(); }
    private:
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::message::MessagePacketResponse>* AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::message::MessagePacketResponse>* PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::message::SendMessageResponse>* AsyncSendMessageRaw(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::message::SendMessageResponse>* PrepareAsyncSendMessageRaw(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::im::message::GetConversationResponse>* AsyncGetConversationRaw(::grpc::ClientContext* context, const ::im::message::GetConversationRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -108,6 +119,13 @@ class MessageService final {
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
+    ::grpc::Status ForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::im::message::MessagePacketResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::message::MessagePacketResponse>> AsyncForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::message::MessagePacketResponse>>(AsyncForwardPacketRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::message::MessagePacketResponse>> PrepareAsyncForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::message::MessagePacketResponse>>(PrepareAsyncForwardPacketRaw(context, request, cq));
+    }
     ::grpc::Status SendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::im::message::SendMessageResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::message::SendMessageResponse>> AsyncSendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::im::message::SendMessageResponse>>(AsyncSendMessageRaw(context, request, cq));
@@ -146,6 +164,8 @@ class MessageService final {
     class async final :
       public StubInterface::async_interface {
      public:
+      void ForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest* request, ::im::message::MessagePacketResponse* response, std::function<void(::grpc::Status)>) override;
+      void ForwardPacket(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest* request, ::im::message::MessagePacketResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void SendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest* request, ::im::message::SendMessageResponse* response, std::function<void(::grpc::Status)>) override;
       void SendMessage(::grpc::ClientContext* context, const ::im::message::SendMessageRequest* request, ::im::message::SendMessageResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void GetConversation(::grpc::ClientContext* context, const ::im::message::GetConversationRequest* request, ::im::message::GetConversationResponse* response, std::function<void(::grpc::Status)>) override;
@@ -167,6 +187,8 @@ class MessageService final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class async async_stub_{this};
+    ::grpc::ClientAsyncResponseReader< ::im::message::MessagePacketResponse>* AsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::im::message::MessagePacketResponse>* PrepareAsyncForwardPacketRaw(::grpc::ClientContext* context, const ::im::message::MessagePacketRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::message::SendMessageResponse>* AsyncSendMessageRaw(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::message::SendMessageResponse>* PrepareAsyncSendMessageRaw(::grpc::ClientContext* context, const ::im::message::SendMessageRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::message::GetConversationResponse>* AsyncGetConversationRaw(::grpc::ClientContext* context, const ::im::message::GetConversationRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -177,6 +199,7 @@ class MessageService final {
     ::grpc::ClientAsyncResponseReader< ::im::message::MarkMessageDeliveredResponse>* PrepareAsyncMarkDeliveredRaw(::grpc::ClientContext* context, const ::im::message::MarkMessageDeliveredRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::message::MarkMessageReadResponse>* AsyncMarkReadRaw(::grpc::ClientContext* context, const ::im::message::MarkMessageReadRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::im::message::MarkMessageReadResponse>* PrepareAsyncMarkReadRaw(::grpc::ClientContext* context, const ::im::message::MarkMessageReadRequest& request, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_ForwardPacket_;
     const ::grpc::internal::RpcMethod rpcmethod_SendMessage_;
     const ::grpc::internal::RpcMethod rpcmethod_GetConversation_;
     const ::grpc::internal::RpcMethod rpcmethod_PullOffline_;
@@ -189,6 +212,7 @@ class MessageService final {
    public:
     Service();
     virtual ~Service();
+    virtual ::grpc::Status ForwardPacket(::grpc::ServerContext* context, const ::im::message::MessagePacketRequest* request, ::im::message::MessagePacketResponse* response);
     virtual ::grpc::Status SendMessage(::grpc::ServerContext* context, const ::im::message::SendMessageRequest* request, ::im::message::SendMessageResponse* response);
     virtual ::grpc::Status GetConversation(::grpc::ServerContext* context, const ::im::message::GetConversationRequest* request, ::im::message::GetConversationResponse* response);
     virtual ::grpc::Status PullOffline(::grpc::ServerContext* context, const ::im::message::PullOfflineRequest* request, ::im::message::PullOfflineResponse* response);
@@ -196,12 +220,32 @@ class MessageService final {
     virtual ::grpc::Status MarkRead(::grpc::ServerContext* context, const ::im::message::MarkMessageReadRequest* request, ::im::message::MarkMessageReadResponse* response);
   };
   template <class BaseClass>
+  class WithAsyncMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodAsync(0);
+    }
+    ~WithAsyncMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::message::MessagePacketRequest* /*request*/, ::im::message::MessagePacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestForwardPacket(::grpc::ServerContext* context, ::im::message::MessagePacketRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::message::MessagePacketResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_SendMessage : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_SendMessage() {
-      ::grpc::Service::MarkMethodAsync(0);
+      ::grpc::Service::MarkMethodAsync(1);
     }
     ~WithAsyncMethod_SendMessage() override {
       BaseClassMustBeDerivedFromService(this);
@@ -212,7 +256,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessage(::grpc::ServerContext* context, ::im::message::SendMessageRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::message::SendMessageResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -221,7 +265,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_GetConversation() {
-      ::grpc::Service::MarkMethodAsync(1);
+      ::grpc::Service::MarkMethodAsync(2);
     }
     ~WithAsyncMethod_GetConversation() override {
       BaseClassMustBeDerivedFromService(this);
@@ -232,7 +276,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetConversation(::grpc::ServerContext* context, ::im::message::GetConversationRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::message::GetConversationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -241,7 +285,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_PullOffline() {
-      ::grpc::Service::MarkMethodAsync(2);
+      ::grpc::Service::MarkMethodAsync(3);
     }
     ~WithAsyncMethod_PullOffline() override {
       BaseClassMustBeDerivedFromService(this);
@@ -252,7 +296,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPullOffline(::grpc::ServerContext* context, ::im::message::PullOfflineRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::message::PullOfflineResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -261,7 +305,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_MarkDelivered() {
-      ::grpc::Service::MarkMethodAsync(3);
+      ::grpc::Service::MarkMethodAsync(4);
     }
     ~WithAsyncMethod_MarkDelivered() override {
       BaseClassMustBeDerivedFromService(this);
@@ -272,7 +316,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestMarkDelivered(::grpc::ServerContext* context, ::im::message::MarkMessageDeliveredRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::message::MarkMessageDeliveredResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -281,7 +325,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_MarkRead() {
-      ::grpc::Service::MarkMethodAsync(4);
+      ::grpc::Service::MarkMethodAsync(5);
     }
     ~WithAsyncMethod_MarkRead() override {
       BaseClassMustBeDerivedFromService(this);
@@ -292,23 +336,50 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestMarkRead(::grpc::ServerContext* context, ::im::message::MarkMessageReadRequest* request, ::grpc::ServerAsyncResponseWriter< ::im::message::MarkMessageReadResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_SendMessage<WithAsyncMethod_GetConversation<WithAsyncMethod_PullOffline<WithAsyncMethod_MarkDelivered<WithAsyncMethod_MarkRead<Service > > > > > AsyncService;
+  typedef WithAsyncMethod_ForwardPacket<WithAsyncMethod_SendMessage<WithAsyncMethod_GetConversation<WithAsyncMethod_PullOffline<WithAsyncMethod_MarkDelivered<WithAsyncMethod_MarkRead<Service > > > > > > AsyncService;
+  template <class BaseClass>
+  class WithCallbackMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::im::message::MessagePacketRequest, ::im::message::MessagePacketResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::im::message::MessagePacketRequest* request, ::im::message::MessagePacketResponse* response) { return this->ForwardPacket(context, request, response); }));}
+    void SetMessageAllocatorFor_ForwardPacket(
+        ::grpc::MessageAllocator< ::im::message::MessagePacketRequest, ::im::message::MessagePacketResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::im::message::MessagePacketRequest, ::im::message::MessagePacketResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::message::MessagePacketRequest* /*request*/, ::im::message::MessagePacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ForwardPacket(
+      ::grpc::CallbackServerContext* /*context*/, const ::im::message::MessagePacketRequest* /*request*/, ::im::message::MessagePacketResponse* /*response*/)  { return nullptr; }
+  };
   template <class BaseClass>
   class WithCallbackMethod_SendMessage : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_SendMessage() {
-      ::grpc::Service::MarkMethodCallback(0,
+      ::grpc::Service::MarkMethodCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::im::message::SendMessageRequest, ::im::message::SendMessageResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::message::SendMessageRequest* request, ::im::message::SendMessageResponse* response) { return this->SendMessage(context, request, response); }));}
     void SetMessageAllocatorFor_SendMessage(
         ::grpc::MessageAllocator< ::im::message::SendMessageRequest, ::im::message::SendMessageResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::message::SendMessageRequest, ::im::message::SendMessageResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -329,13 +400,13 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_GetConversation() {
-      ::grpc::Service::MarkMethodCallback(1,
+      ::grpc::Service::MarkMethodCallback(2,
           new ::grpc::internal::CallbackUnaryHandler< ::im::message::GetConversationRequest, ::im::message::GetConversationResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::message::GetConversationRequest* request, ::im::message::GetConversationResponse* response) { return this->GetConversation(context, request, response); }));}
     void SetMessageAllocatorFor_GetConversation(
         ::grpc::MessageAllocator< ::im::message::GetConversationRequest, ::im::message::GetConversationResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::message::GetConversationRequest, ::im::message::GetConversationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -356,13 +427,13 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_PullOffline() {
-      ::grpc::Service::MarkMethodCallback(2,
+      ::grpc::Service::MarkMethodCallback(3,
           new ::grpc::internal::CallbackUnaryHandler< ::im::message::PullOfflineRequest, ::im::message::PullOfflineResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::message::PullOfflineRequest* request, ::im::message::PullOfflineResponse* response) { return this->PullOffline(context, request, response); }));}
     void SetMessageAllocatorFor_PullOffline(
         ::grpc::MessageAllocator< ::im::message::PullOfflineRequest, ::im::message::PullOfflineResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::message::PullOfflineRequest, ::im::message::PullOfflineResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -383,13 +454,13 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_MarkDelivered() {
-      ::grpc::Service::MarkMethodCallback(3,
+      ::grpc::Service::MarkMethodCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::im::message::MarkMessageDeliveredRequest, ::im::message::MarkMessageDeliveredResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::message::MarkMessageDeliveredRequest* request, ::im::message::MarkMessageDeliveredResponse* response) { return this->MarkDelivered(context, request, response); }));}
     void SetMessageAllocatorFor_MarkDelivered(
         ::grpc::MessageAllocator< ::im::message::MarkMessageDeliveredRequest, ::im::message::MarkMessageDeliveredResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(3);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::message::MarkMessageDeliveredRequest, ::im::message::MarkMessageDeliveredResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -410,13 +481,13 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_MarkRead() {
-      ::grpc::Service::MarkMethodCallback(4,
+      ::grpc::Service::MarkMethodCallback(5,
           new ::grpc::internal::CallbackUnaryHandler< ::im::message::MarkMessageReadRequest, ::im::message::MarkMessageReadResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::im::message::MarkMessageReadRequest* request, ::im::message::MarkMessageReadResponse* response) { return this->MarkRead(context, request, response); }));}
     void SetMessageAllocatorFor_MarkRead(
         ::grpc::MessageAllocator< ::im::message::MarkMessageReadRequest, ::im::message::MarkMessageReadResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(4);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::im::message::MarkMessageReadRequest, ::im::message::MarkMessageReadResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -431,15 +502,32 @@ class MessageService final {
     virtual ::grpc::ServerUnaryReactor* MarkRead(
       ::grpc::CallbackServerContext* /*context*/, const ::im::message::MarkMessageReadRequest* /*request*/, ::im::message::MarkMessageReadResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_SendMessage<WithCallbackMethod_GetConversation<WithCallbackMethod_PullOffline<WithCallbackMethod_MarkDelivered<WithCallbackMethod_MarkRead<Service > > > > > CallbackService;
+  typedef WithCallbackMethod_ForwardPacket<WithCallbackMethod_SendMessage<WithCallbackMethod_GetConversation<WithCallbackMethod_PullOffline<WithCallbackMethod_MarkDelivered<WithCallbackMethod_MarkRead<Service > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
+  template <class BaseClass>
+  class WithGenericMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
+    ~WithGenericMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::message::MessagePacketRequest* /*request*/, ::im::message::MessagePacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
   template <class BaseClass>
   class WithGenericMethod_SendMessage : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_SendMessage() {
-      ::grpc::Service::MarkMethodGeneric(0);
+      ::grpc::Service::MarkMethodGeneric(1);
     }
     ~WithGenericMethod_SendMessage() override {
       BaseClassMustBeDerivedFromService(this);
@@ -456,7 +544,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_GetConversation() {
-      ::grpc::Service::MarkMethodGeneric(1);
+      ::grpc::Service::MarkMethodGeneric(2);
     }
     ~WithGenericMethod_GetConversation() override {
       BaseClassMustBeDerivedFromService(this);
@@ -473,7 +561,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_PullOffline() {
-      ::grpc::Service::MarkMethodGeneric(2);
+      ::grpc::Service::MarkMethodGeneric(3);
     }
     ~WithGenericMethod_PullOffline() override {
       BaseClassMustBeDerivedFromService(this);
@@ -490,7 +578,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_MarkDelivered() {
-      ::grpc::Service::MarkMethodGeneric(3);
+      ::grpc::Service::MarkMethodGeneric(4);
     }
     ~WithGenericMethod_MarkDelivered() override {
       BaseClassMustBeDerivedFromService(this);
@@ -507,7 +595,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_MarkRead() {
-      ::grpc::Service::MarkMethodGeneric(4);
+      ::grpc::Service::MarkMethodGeneric(5);
     }
     ~WithGenericMethod_MarkRead() override {
       BaseClassMustBeDerivedFromService(this);
@@ -519,12 +607,32 @@ class MessageService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
+    ~WithRawMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::message::MessagePacketRequest* /*request*/, ::im::message::MessagePacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestForwardPacket(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_SendMessage : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_SendMessage() {
-      ::grpc::Service::MarkMethodRaw(0);
+      ::grpc::Service::MarkMethodRaw(1);
     }
     ~WithRawMethod_SendMessage() override {
       BaseClassMustBeDerivedFromService(this);
@@ -535,7 +643,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSendMessage(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -544,7 +652,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_GetConversation() {
-      ::grpc::Service::MarkMethodRaw(1);
+      ::grpc::Service::MarkMethodRaw(2);
     }
     ~WithRawMethod_GetConversation() override {
       BaseClassMustBeDerivedFromService(this);
@@ -555,7 +663,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestGetConversation(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -564,7 +672,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_PullOffline() {
-      ::grpc::Service::MarkMethodRaw(2);
+      ::grpc::Service::MarkMethodRaw(3);
     }
     ~WithRawMethod_PullOffline() override {
       BaseClassMustBeDerivedFromService(this);
@@ -575,7 +683,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestPullOffline(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -584,7 +692,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_MarkDelivered() {
-      ::grpc::Service::MarkMethodRaw(3);
+      ::grpc::Service::MarkMethodRaw(4);
     }
     ~WithRawMethod_MarkDelivered() override {
       BaseClassMustBeDerivedFromService(this);
@@ -595,7 +703,7 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestMarkDelivered(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(3, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -604,7 +712,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_MarkRead() {
-      ::grpc::Service::MarkMethodRaw(4);
+      ::grpc::Service::MarkMethodRaw(5);
     }
     ~WithRawMethod_MarkRead() override {
       BaseClassMustBeDerivedFromService(this);
@@ -615,8 +723,30 @@ class MessageService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestMarkRead(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(4, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
+  };
+  template <class BaseClass>
+  class WithRawCallbackMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodRawCallback(0,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->ForwardPacket(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::message::MessagePacketRequest* /*request*/, ::im::message::MessagePacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* ForwardPacket(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
   class WithRawCallbackMethod_SendMessage : public BaseClass {
@@ -624,7 +754,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_SendMessage() {
-      ::grpc::Service::MarkMethodRawCallback(0,
+      ::grpc::Service::MarkMethodRawCallback(1,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->SendMessage(context, request, response); }));
@@ -646,7 +776,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_GetConversation() {
-      ::grpc::Service::MarkMethodRawCallback(1,
+      ::grpc::Service::MarkMethodRawCallback(2,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->GetConversation(context, request, response); }));
@@ -668,7 +798,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_PullOffline() {
-      ::grpc::Service::MarkMethodRawCallback(2,
+      ::grpc::Service::MarkMethodRawCallback(3,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->PullOffline(context, request, response); }));
@@ -690,7 +820,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_MarkDelivered() {
-      ::grpc::Service::MarkMethodRawCallback(3,
+      ::grpc::Service::MarkMethodRawCallback(4,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->MarkDelivered(context, request, response); }));
@@ -712,7 +842,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_MarkRead() {
-      ::grpc::Service::MarkMethodRawCallback(4,
+      ::grpc::Service::MarkMethodRawCallback(5,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->MarkRead(context, request, response); }));
@@ -729,12 +859,39 @@ class MessageService final {
       ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_ForwardPacket : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_ForwardPacket() {
+      ::grpc::Service::MarkMethodStreamed(0,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::im::message::MessagePacketRequest, ::im::message::MessagePacketResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::im::message::MessagePacketRequest, ::im::message::MessagePacketResponse>* streamer) {
+                       return this->StreamedForwardPacket(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_ForwardPacket() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* /*context*/, const ::im::message::MessagePacketRequest* /*request*/, ::im::message::MessagePacketResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedForwardPacket(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::message::MessagePacketRequest,::im::message::MessagePacketResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_SendMessage : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_SendMessage() {
-      ::grpc::Service::MarkMethodStreamed(0,
+      ::grpc::Service::MarkMethodStreamed(1,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::message::SendMessageRequest, ::im::message::SendMessageResponse>(
             [this](::grpc::ServerContext* context,
@@ -761,7 +918,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_GetConversation() {
-      ::grpc::Service::MarkMethodStreamed(1,
+      ::grpc::Service::MarkMethodStreamed(2,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::message::GetConversationRequest, ::im::message::GetConversationResponse>(
             [this](::grpc::ServerContext* context,
@@ -788,7 +945,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_PullOffline() {
-      ::grpc::Service::MarkMethodStreamed(2,
+      ::grpc::Service::MarkMethodStreamed(3,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::message::PullOfflineRequest, ::im::message::PullOfflineResponse>(
             [this](::grpc::ServerContext* context,
@@ -815,7 +972,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_MarkDelivered() {
-      ::grpc::Service::MarkMethodStreamed(3,
+      ::grpc::Service::MarkMethodStreamed(4,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::message::MarkMessageDeliveredRequest, ::im::message::MarkMessageDeliveredResponse>(
             [this](::grpc::ServerContext* context,
@@ -842,7 +999,7 @@ class MessageService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_MarkRead() {
-      ::grpc::Service::MarkMethodStreamed(4,
+      ::grpc::Service::MarkMethodStreamed(5,
         new ::grpc::internal::StreamedUnaryHandler<
           ::im::message::MarkMessageReadRequest, ::im::message::MarkMessageReadResponse>(
             [this](::grpc::ServerContext* context,
@@ -863,9 +1020,9 @@ class MessageService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedMarkRead(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::im::message::MarkMessageReadRequest,::im::message::MarkMessageReadResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_SendMessage<WithStreamedUnaryMethod_GetConversation<WithStreamedUnaryMethod_PullOffline<WithStreamedUnaryMethod_MarkDelivered<WithStreamedUnaryMethod_MarkRead<Service > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_ForwardPacket<WithStreamedUnaryMethod_SendMessage<WithStreamedUnaryMethod_GetConversation<WithStreamedUnaryMethod_PullOffline<WithStreamedUnaryMethod_MarkDelivered<WithStreamedUnaryMethod_MarkRead<Service > > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_SendMessage<WithStreamedUnaryMethod_GetConversation<WithStreamedUnaryMethod_PullOffline<WithStreamedUnaryMethod_MarkDelivered<WithStreamedUnaryMethod_MarkRead<Service > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_ForwardPacket<WithStreamedUnaryMethod_SendMessage<WithStreamedUnaryMethod_GetConversation<WithStreamedUnaryMethod_PullOffline<WithStreamedUnaryMethod_MarkDelivered<WithStreamedUnaryMethod_MarkRead<Service > > > > > > StreamedService;
 };
 
 }  // namespace message

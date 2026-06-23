@@ -19,6 +19,10 @@ public:
     GroupGrpcService(GroupService* group_service,
                      GroupMessageService* group_message_service);
 
+    ::grpc::Status ForwardPacket(::grpc::ServerContext* context,
+                                 const im::group::GroupPacketRequest* request,
+                                 im::group::GroupPacketResponse* response) override;
+
     ::grpc::Status CreateGroup(::grpc::ServerContext* context,
                                const im::group::CreateGroupRequest* request,
                                im::group::CreateGroupResponse* response) override;

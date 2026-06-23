@@ -375,6 +375,62 @@ bool ProtobufCodec::decodeEnvelope(const std::string& input,
     }
 }
 
+bool ProtobufCodec::encodeEnvelope(const im::base::IMHeader& header,
+                                   const std::string& type_name,
+                                   const std::string& message_bytes,
+                                   std::string& output) {
+    try {
+        if (type_name.empty()) {
+            LogManager::GetLogger("protobuf_codec")->error("encodeEnvelope type_name is empty");
+            return false;
+        }
+
+        std::string header_data;
+        if (!header.SerializeToString(&header_data)) {
+            LogManager::GetLogger("protobuf_codec")->error("Failed to serialize IMHeader");
+            return false;
+        }
+
+        const uint32_t header_size = static_cast<uint32_t>(header_data.size());
+        const uint32_t type_name_size = static_cast<uint32_t>(type_name.size());
+
+        output.clear();
+        output.reserve(header_data.size() + message_bytes.size() + type_name.size() + 20 + 4);
+
+        char header_size_buffer[10];
+        ArrayOutputStream header_size_stream(header_size_buffer, sizeof(header_size_buffer));
+        CodedOutputStream header_size_coded(&header_size_stream);
+        header_size_coded.WriteVarint32(header_size);
+        header_size_coded.Trim();
+        output.append(header_size_buffer, header_size_coded.ByteCount());
+
+        char type_name_size_buffer[10];
+        ArrayOutputStream type_name_size_stream(type_name_size_buffer,
+                                                sizeof(type_name_size_buffer));
+        CodedOutputStream type_name_size_coded(&type_name_size_stream);
+        type_name_size_coded.WriteVarint32(type_name_size);
+        type_name_size_coded.Trim();
+        output.append(type_name_size_buffer, type_name_size_coded.ByteCount());
+
+        output.append(type_name);
+        output.append(header_data);
+        output.append(message_bytes);
+
+        uint32_t crc = calculateCRC32(output.data(), output.size());
+        char crc_buffer[4];
+        memcpy(crc_buffer, &crc, 4);
+        output.append(crc_buffer, 4);
+
+        LogManager::GetLogger("protobuf_codec")
+                ->debug("Encoded envelope: cmd_id={}, type={}, payload_size={}",
+                        header.cmd_id(), type_name, message_bytes.size());
+        return true;
+    } catch (const std::exception& e) {
+        LogManager::GetLogger("protobuf_codec")->error("encodeEnvelope error: {}", e.what());
+        return false;
+    }
+}
+
 /**
  * @brief 计算数据的CRC32校验值
  *

@@ -6,11 +6,11 @@ Gateway 是 MyChat 的统一客户端接入层，负责对外暴露 HTTP 与 Web
 
 当前 Gateway 负责：
 
-- HTTP API 路由注册和响应整形。
+- HTTP API 统一路由、命令解析和统一 packet 响应回写。
 - WebSocket 连接接入、token 认证、会话注册和超时关闭。
 - 访问令牌验证，信任 token 中的用户身份，不信任客户端传入的 sender_uid。
-- 通过 local/remote facade 调用 User、Message、Friend、Group、Push。
-- WebSocket `CMD_SEND_MESSAGE` 的消息解析、持久化调用、ack 返回和在线推送触发。
+- 按 local/remote 模式将 `XxxPacketRequest` 转发到本地 service packet dispatcher 或远程 `ForwardPacket` gRPC。
+- WebSocket `CMD_SEND_MESSAGE` 的 token/device 校验、packet 转发、ack 回写和在线推送触发。
 - 对 Web 客户端隐藏后端是本地服务还是远程 gRPC 服务。
 
 Gateway 不应负责：
@@ -18,6 +18,8 @@ Gateway 不应负责：
 - 用户账号持久化规则。
 - 消息持久化业务规则。
 - 好友/群组关系的领域规则。
+- 业务 payload 字段解析和业务 DTO 构造。
+- 业务 DTO 到 JSON 的响应 mapper。
 - Push fanout 策略本身。
 
 这些逻辑由对应服务模块负责。
@@ -26,7 +28,21 @@ Gateway 不应负责：
 
 ### Auth/User
 
-注册在 `gateway/gateway_server/gateway_server.cpp`：
+这些业务接口不再注册为模块级显式路由，而是由
+`GatewayServer::init_http_server()` 的 HTTP catch-all 统一进入：
+
+```text
+HTTP request
+-> MessageParser::parse_http_request_enhanced
+-> UnifiedMessage
+-> MessageProcessor::process_message
+-> GatewayCommandHandlerRegistry
+-> service adapter
+```
+
+路由映射来自 `config/*.json` 的 `http_router.routes`。
+
+### Auth/User
 
 ```text
 POST /api/v1/auth/register
@@ -36,10 +52,14 @@ POST /api/v1/auth/profile
 GET  /api/v1/users/search
 ```
 
-对应控制器：
+对应命令：
 
 ```text
-gateway/http/user_http_controller.*
+CMD_REGISTER
+CMD_LOGIN
+CMD_GET_USER_INFO
+CMD_UPDATE_USER_INFO
+CMD_SEARCH_USER
 ```
 
 ### Message
@@ -50,10 +70,12 @@ GET  /api/v1/messages/history
 GET  /api/v1/messages/offline
 ```
 
-对应控制器：
+对应命令：
 
 ```text
-gateway/http/message_http_controller.*
+CMD_SEND_MESSAGE
+CMD_MESSAGE_HISTORY
+CMD_PULL_MESSAGE
 ```
 
 ### Friend
@@ -65,10 +87,13 @@ GET  /api/v1/friends
 GET  /api/v1/friends/pending
 ```
 
-对应控制器：
+对应命令：
 
 ```text
-gateway/http/friend_http_controller.*
+CMD_ADD_FRIEND
+CMD_HANDLE_FRIEND_REQUEST
+CMD_GET_FRIEND_LIST
+CMD_GET_FRIEND_REQUESTS
 ```
 
 ### Group
@@ -85,17 +110,25 @@ POST /api/v1/groups/messages/send
 GET  /api/v1/groups/messages/history
 ```
 
-对应控制器：
+对应命令：
 
 ```text
-gateway/http/group_http_controller.*
-gateway/http/group_message_http_controller.*
+CMD_CREATE_GROUP
+CMD_APPLY_JOIN_GROUP
+CMD_QUIT_GROUP
+CMD_GET_GROUP_INFO
+CMD_SEARCH_GROUP
+CMD_GET_GROUP_LIST
+CMD_GET_GROUP_MEMBERS
+CMD_SEND_GROUP_MESSAGE
+CMD_GET_GROUP_MESSAGES
 ```
 
-### Health
+### Health / Stats
 
 ```text
 GET /api/v1/health
+GET /api/v1/stats
 ```
 
 ## WebSocket 链路
@@ -111,12 +144,13 @@ CMD_PUSH_MESSAGE -> im.push.PushRequest
 
 ```text
 WebSocket binary frame
--> MessageParser / Processor
+-> MessageParser / MessageProcessor
 -> MessageWsHandler::handle_send
--> MessageClient local/remote facade
--> MessageService 持久化
--> SendMessageResponse ack
--> PushNotifier local/remote facade
+-> MessagePacketRequest
+-> MessagePacketDispatcher / RemoteMessageServiceAdapter::forward
+-> Message service 解析业务 protobuf 并持久化
+-> MessagePacketResponse ack
+-> PushNotifier
 -> 在线用户收到 PushRequest
 ```
 
@@ -174,17 +208,26 @@ thread_pool.queued_or_running_tasks
 当前流控是 inflight cap，还不是独立业务 executor 的严格 bounded queue。
 后续压测专项可以继续拆出 Gateway 专用 executor、拒绝计数、处理耗时分位数。
 
-## Local/Remote Facade
+## Local/Remote Service Adapter
 
-Gateway 对每个服务使用客户端 facade：
+Gateway 对每个服务使用 local service / remote adapter 边界：
 
-- `UserClient`
-- `MessageClient`
-- `FriendClient`
-- `GroupClient`
-- `PushNotifier`
+- local 模式：handler 补齐 header 后调用 `UserPacketDispatcher`、`MessagePacketDispatcher`、`FriendPacketDispatcher`、`GroupPacketDispatcher`。
+- remote 模式：通过 `RemoteUserServiceAdapter`、`RemoteMessageServiceAdapter`、`RemoteFriendServiceAdapter`、`RemoteGroupServiceAdapter` 调用远程 gRPC `ForwardPacket`。
+- `PushNotifier` 负责屏蔽本地 Push 与远程 PushNotifier 差异。
 
-本地模式调用进程内 service 对象；远程模式调用 gRPC stub。这样 Gateway 的 HTTP/WS 外部契约保持稳定，服务是否拆成独立进程由配置决定。
+这样 Gateway 的 HTTP/WS 外部契约保持稳定，服务是否拆成独立进程由配置决定。
+
+当前 service adapter 已位于 `gateway/service_adapters/`；`gateway/http/` 只保留 HTTP 协议辅助类型。
+
+启动层当前状态：
+
+- `GatewayServer::init_server()` 已按数据库、user/message/friend/group/group-message、WS/push runtime 拆分为独立初始化方法。
+- `user.mode`、`message.mode`、`friend.mode`、`group.mode`、`push.mode` 的读取已统一为 service runtime config helper。
+- `GatewayServer::service_runtime_` 统一记录各服务 mode、endpoint、timeout、local/remote bound 状态，并通过 `/api/v1/stats` 输出。
+- `GatewayServer::runtime_registry_` 已承载 handler 注册所需的运行时依赖：user/message/friend/group 的 local service 与 remote adapter 由 registry 持有，push/ws/auth 以生命周期受控的裸指针形式挂入 registry。
+- `GatewayCommandHandlerContext` 已收敛为单一 `runtime` 指针，handler 不再从 context 中展开各模块 service/adapter，也不再维护第二份 `auth_mgr` 来源。
+- 后续目标是继续收敛为更泛化的 runtime service registry / endpoint map，进一步减少 `GatewayServer` 对具体服务类型和 `IM_ENABLE_*` 宏的硬编码。
 
 典型配置项：
 
@@ -200,7 +243,7 @@ push.mode
 
 - Gateway 为什么是统一入口，而不是前端直连每个服务。
 - HTTP 与 WebSocket 为什么都放在 Gateway。
-- local/remote facade 如何支持从单进程开发演进到分布式部署。
+- local/remote service adapter 如何支持从单进程开发演进到分布式部署。
 - WebSocket 连接由 Gateway 持有时，远程 Push 服务为什么需要 callback。
 - 为什么 Gateway 只做协议/鉴权/编排，不做核心领域规则。
 

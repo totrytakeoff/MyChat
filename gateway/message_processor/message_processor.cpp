@@ -121,13 +121,8 @@ ProcessorResult MessageProcessor::process_message_sync(std::unique_ptr<UnifiedMe
             return ProcessorResult(ErrorCode::INVALID_REQUEST, "Invalid message");
         }
 
-        // 2. HTTP 入口在通用处理器统一校验 token；WebSocket 命令由具体
-        //    WS handler 基于连接/业务语义校验，避免热路径重复验签。
-        if (message->is_http() && !verify_access_token(*message.get())) {
-            return ProcessorResult(ErrorCode::AUTH_FAILED, " AUTH_FAILED!");
-        }
-
-        // 3. 查找对应的处理函数
+        // 2. 查找对应的处理函数。认证校验交给具体handler按命令语义执行：
+        //    注册/登录等公开HTTP入口不能在通用层强制验签，WS热路径也避免重复验签。
         uint32_t cmd_id = message->get_cmd_id();
         auto processor_it = processor_map_.find(cmd_id);
 
@@ -139,7 +134,7 @@ ProcessorResult MessageProcessor::process_message_sync(std::unique_ptr<UnifiedMe
                                    "Unknown command: " + std::to_string(cmd_id));
         }
 
-        // 4. 执行注册的处理函数
+        // 3. 执行注册的处理函数
         LogManager::GetLogger("message_processor")
                 ->debug("MessageProcessor::process_message_sync: executing processor for cmd_id: {}",
                         cmd_id);
@@ -154,23 +149,5 @@ ProcessorResult MessageProcessor::process_message_sync(std::unique_ptr<UnifiedMe
                                std::string("Exception: ") + e.what());
     }
 }
-
-bool MessageProcessor::verify_access_token(const UnifiedMessage& message) {
-    if (message.get_token().empty()) {
-        LogManager::GetLogger("message_processor")
-                ->warn("MessageProcessor::verify_access_token: empty token in message");
-        return false;
-    }
-    if (!auth_mgr_) {
-        LogManager::GetLogger("message_processor")->error("AuthManager is null");
-        return false;
-    }
-    LogManager::GetLogger("message_processor")
-            ->info("MessageProcessor::verify_access_token: verifying token: {}",
-                    message.get_token());
-                    
-    return auth_mgr_->verify_access_token(message.get_token(), message.get_device_id());
-}
-
 
 }  // namespace im::gateway
