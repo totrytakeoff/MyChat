@@ -63,12 +63,14 @@ Client
 Gateway Service
   |-- Auth token manager
   |-- Connection manager
-  |-- Message parser / protobuf codec
-  |-- Router manager
+  |-- MessageParser / UnifiedMessage
+  |-- MessageProcessor
+  |-- GatewayCommandHandlerRegistry
+  |-- GatewayRuntimeRegistry
   |
-  | service calls
-  | default: local/in-process facades
-  | explicit gRPC builds: remote service processes
+  | packet forwarding
+  | local: service packet dispatchers
+  | remote: ForwardPacket gRPC
   v
 +----------------+     +------------------+
 | User Service   |     | Message Service  |
@@ -87,22 +89,21 @@ Shared dependencies:
   Protobuf/gRPC contracts
 ```
 
-> **MVP Decision (updated 2026-06-07):** Repository defaults still favor a
-> fast local topology: service modules are linked into Gateway through local
-> facades unless an explicit gRPC build switch is enabled. The distributed
-> direction is no longer deferred, though: User, Message, Friend, Group, and
-> Push now have generated gRPC service boundaries, standalone server apps, and
-> Gateway remote facades behind explicit build/config switches. The codec gRPC
-> target (`MYCHAT_BUILD_CODEC_SERVICE`) remains OFF by default; active generated
-> outputs are canonical under `common/proto` and must be regenerated through
-> CMake `generate_proto`.
+> **MVP Decision (updated 2026-06-23):** Repository defaults still favor a
+> fast local topology, but the Gateway main path is now a unified packet
+> boundary. Local mode calls service-owned packet dispatchers in process;
+> remote mode calls each service's `ForwardPacket` gRPC endpoint. Gateway
+> should not parse business payloads or own business DTO mappers. Active
+> generated outputs are canonical under `common/proto` and must be regenerated
+> through CMake `generate_proto`.
 
 ## Service MVP Boundaries
 
 `gateway`
 : The client-facing service. It owns HTTP/WebSocket entry, request parsing,
-  token verification, connection lifecycle, routing, and response shaping. It
-  should not own durable user/message business rules.
+  token verification, connection lifecycle, cmd routing, packet forwarding,
+  push-event handoff, and response shaping. It should not own durable
+  user/message/friend/group business rules or parse service payload fields.
 
 `services/user`
 : Owns account registration, login credential checks, user profile lookup, and
@@ -198,8 +199,8 @@ Completed baseline:
   independently tested service libraries and integrated through Gateway HTTP
   and WebSocket paths.
 - User, Message, Friend, Group, and Push have explicit gRPC service
-  boundaries, standalone service-server apps, and Gateway remote facades behind
-  explicit gRPC builds.
+  boundaries, standalone service-server apps, service packet dispatchers, and
+  remote ForwardPacket endpoints behind explicit gRPC builds.
 - Push owns the service `PushNotifier`/`PushRuntime` contract, gRPC
   `PushService.NotifyUser`, standalone `push_server`, Gateway
   `RemotePushNotifier`, and Gateway delivery callback channel.

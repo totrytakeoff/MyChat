@@ -36,13 +36,13 @@ im.push.GatewayPushDeliveryService.MarkMessageDelivered
 ### 本地模式
 
 ```text
-Gateway Message/Group entrypoint
+Gateway Message/Group packet handler
 -> PushNotifier
 -> gateway/push/PushService
 -> services/push/PushRuntime
 -> ConnectionManager 查询 session
 -> WebSocketServer 发送 payload
--> MessageClient 标记 delivered
+-> Gateway delivery marker 标记 delivered
 ```
 
 ### 远程模式

@@ -188,8 +188,8 @@ Scope:
 
 - Keep default builds local/gRPC-off for fast development.
 - Keep explicit gRPC builds for User, Message, Friend, Group, and Push.
-- Verify Gateway local and remote facades preserve the same HTTP/WS external
-  contracts.
+- Verify Gateway local packet dispatchers and remote ForwardPacket gRPC
+  endpoints preserve the same HTTP/WS external contracts.
 - Keep schema migration and Redis/PostgreSQL startup explicit through local
   scripts.
 - Make heavy ODB/gRPC regression repeatable and document serial test rules.
@@ -227,7 +227,8 @@ Scope:
   - group create/join/leave/list/member list;
   - group message send/history and online group fanout.
 - Keep backend local/remote mode transparent to the UI. The Web client talks to
-  Gateway only; Gateway decides local facades vs. remote gRPC services.
+  Gateway only; GatewayRuntimeRegistry decides local service packet dispatchers
+  vs. remote ForwardPacket gRPC endpoints.
 - Document and preserve the API adapter shape so future Qt and Electron
   clients can reuse the same interaction model.
 

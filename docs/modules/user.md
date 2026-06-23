@@ -57,8 +57,11 @@ services/user/user_server
 ```text
 Web 客户端
 -> Gateway POST /api/v1/auth/register
--> UserHttpController
--> UserClient local/remote facade
+-> MessageParser / UnifiedMessage
+-> GatewayCommandHandlerRegistry
+-> GatewayRuntimeRegistry
+-> local UserPacketDispatcher 或 remote UserService.ForwardPacket
+-> UserPacketDispatcher 解析 user protobuf payload
 -> UserService::register_user
 -> UserRepository
 -> PostgreSQL/ODB
@@ -70,6 +73,7 @@ Web 客户端
 
 ```text
 Gateway POST /api/v1/auth/login
+-> Gateway packet 链路转发到 User Service
 -> UserService 校验账号密码
 -> PasswordHasher 校验 PBKDF2-HMAC-SHA256
 -> Gateway 生成 token
@@ -80,8 +84,8 @@ Gateway POST /api/v1/auth/login
 ```text
 Gateway POST /api/v1/auth/profile
 -> token 解析得到当前 uid
--> UserClient::update_user_info
--> UserService / UserRepository 更新资料
+-> Gateway packet 链路转发到 User Service
+-> UserPacketDispatcher 调用 UserService / UserRepository 更新资料
 ```
 
 资料更新不信任客户端传入 uid，当前用户身份以 token 为准。
@@ -117,7 +121,7 @@ Gateway POST /api/v1/auth/profile
 - 为什么服务层不信任客户端传入的 uid。
 - PBKDF2-HMAC-SHA256 密码哈希的意义。
 - avatar 当前用文本字段的 MVP 取舍，以及生产环境如何演进到对象存储。
-- User Service 如何通过同一套业务逻辑支持 local 和 remote gRPC 调用。
+- User Service 如何通过 packet dispatcher + ForwardPacket 支持 local 和 remote gRPC 调用。
 
 ## 后续扩展
 

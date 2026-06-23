@@ -49,22 +49,26 @@ im.message.MessageService.MarkRead
 POST /api/v1/messages/send
 -> Gateway 验证 token
 -> sender_uid 使用 token uid
--> MessageClient local/remote facade
+-> MessageParser / UnifiedMessage
+-> GatewayCommandHandlerRegistry
+-> GatewayRuntimeRegistry
+-> local MessagePacketDispatcher 或 remote MessageService.ForwardPacket
 -> MessageService 持久化
--> 返回 message
+-> 返回 message 和可选 push_event
 ```
 
 ### WebSocket 单聊发送
 
 ```text
 WebSocket CMD_SEND_MESSAGE
--> MessageWsHandler
--> 校验 cmd_id 和 protobuf type
--> 解析 SendMessageRequest
+-> MessageParser / UnifiedMessage
+-> Gateway 校验 cmd_id、token 和连接身份
 -> 使用 token uid 作为 sender_uid
--> MessageClient 持久化
--> 返回 SendMessageResponse ack
--> PushNotifier best-effort 推送给接收者
+-> GatewayRuntimeRegistry 转发 packet 到 Message Service
+-> MessagePacketDispatcher 解析 SendMessageRequest
+-> MessageService 持久化
+-> 返回 SendMessageResponse ack 和 push_event
+-> Gateway 将 push_event 交给 PushNotifier best-effort 推送给接收者
 ```
 
 ### 离线拉取
@@ -82,6 +86,7 @@ GET /api/v1/messages/offline
 - 发送 ack 表示服务端已经接受并保存消息，不等价于对方已读。
 - Push 失败不回滚消息，消息仍可通过离线拉取补偿。
 - sender_uid 由 Gateway token 决定，避免客户端伪造发送者。
+- Gateway 不解析 `SendMessageRequest` 业务字段，业务 payload 解析在 Message Service 侧完成。
 
 ## 数据与依赖
 

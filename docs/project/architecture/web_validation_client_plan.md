@@ -93,11 +93,12 @@ Developer panel or environment defaults. The normal auth screen, chat
 workspace, and account settings page should not expose endpoint fields. It
 should work against both:
 
-- `config/dev.json` default local-facade Gateway mode;
+- `config/dev.json` default local packet-dispatch Gateway mode;
 - `config/dev.remote-all.json` all-service remote mode.
 
-The client should not know whether Gateway is calling local services or remote
-gRPC services. That is a backend deployment detail.
+The client should not know whether GatewayRuntimeRegistry is using local
+service packet dispatchers or remote ForwardPacket gRPC endpoints. That is a
+backend deployment detail.
 
 ## Supported Gateway HTTP Contracts
 

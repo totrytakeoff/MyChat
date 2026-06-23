@@ -1,23 +1,29 @@
 # Gateway 统一接入与服务编排分析
 
-日期：2026-06-16
+日期：2026-06-23
 
-## 1. 这篇文档先回答什么
+## 1. 这篇文档回答什么
 
-MyChat 的第一入口不是某个 service，而是 Gateway。
+MyChat 的第一入口是 Gateway。理解项目时必须先从 Gateway 入手，再进入 User、Message、Friend、Group、Push 等服务。
 
-如果只看业务名词，很容易把项目理解成“User、Message、Friend、Group、Push 一堆服务拼起来”；但真正的调用路径应该先从 Gateway 读起，因为它负责：
-
-- HTTP 和 WebSocket 的统一接入。
-- Access Token 校验和当前用户身份提取。
-- local/remote facade 的选择。
-- Push 在线投递和 Gateway callback。
-- 把客户端请求转成服务层调用。
-
-一句话概括：
+当前 Gateway 的核心定位是：
 
 ```text
-Gateway 是 MyChat 的协议边界和服务编排层。
+协议入口 + 鉴权边界 + 连接管理 + cmd 路由 + packet 转发
+```
+
+它不再是旧文档中描述的“HTTP controller 集合”，也不再通过 `Local*Client / Remote*Client facade` 作为主链路。
+
+当前主链路是：
+
+```text
+HTTP / WebSocket
+-> MessageParser
+-> UnifiedMessage
+-> MessageProcessor
+-> GatewayCommandHandlerRegistry
+-> GatewayRuntimeRegistry
+-> local service packet dispatcher 或 remote ForwardPacket gRPC
 ```
 
 ## 2. 先看哪些代码
@@ -26,260 +32,467 @@ Gateway 是 MyChat 的协议边界和服务编排层。
 
 1. `gateway/main.cpp`
 2. `gateway/gateway_server/gateway_server.cpp`
-3. `gateway/README.md`
-4. `gateway/http/user_http_controller.cpp`
-5. `gateway/http/message_http_controller.cpp`
-6. `gateway/http/friend_http_controller.cpp`
-7. `gateway/http/group_http_controller.cpp`
-8. `gateway/http/remote_*_client.cpp`
-9. `gateway/http/*_client.cpp`
-10. `gateway/push/remote_push_notifier.cpp`
-11. `gateway/push/gateway_push_delivery_service.cpp`
-12. `services/push/push_server_app.cpp`
+3. `gateway/message_processor/message_parser.cpp`
+4. `gateway/message_processor/message_processor.cpp`
+5. `gateway/command_handlers/gateway_command_handler_registry.cpp`
+6. `gateway/command_handlers/gateway_command_handler_registry.hpp`
+7. `gateway/command_handlers/user_command_handlers.cpp`
+8. `gateway/command_handlers/message_command_handlers.cpp`
+9. `gateway/command_handlers/friend_command_handlers.cpp`
+10. `gateway/command_handlers/group_command_handlers.cpp`
+11. `gateway/ws/message_ws_handler.cpp`
+12. `gateway/service_adapters/remote_*_service_adapter.cpp`
+13. `services/*/*_packet_dispatcher.cpp`
 
-## 3. 启动入口
+阅读原则：
 
-`gateway/main.cpp` 做的是进程级启动：
+- 先看 Gateway 如何把 HTTP/WS 统一成 `UnifiedMessage`。
+- 再看 handler 如何只做鉴权、补 header、转发 packet。
+- 最后看各 service packet dispatcher 如何解析 payload 并处理业务。
+
+## 3. Gateway 启动入口
+
+`gateway/main.cpp` 负责进程级启动：
 
 - 解析命令行参数。
 - 读取 config。
+- 设置最大打开文件数。
 - 初始化 Redis。
 - 构造 `GatewayServer`。
-- 注册优雅退出。
+- 注册信号处理和优雅退出。
 - 启动 WebSocket 和 HTTP 服务。
 
-这里最关键的不是参数多，而是它把 Gateway 作为一个完整进程启动，而不是“某个业务模块的附属代码”。
+当前有一个待修工程问题：
+
+- 压测中发现 `gateway_server -w/-H` 端口可能被配置文件 `gateway.websocket_port/http_port` 覆盖。
+- 后续应明确为命令行参数优先级高于配置文件，避免部署时误判监听端口。
 
 ## 4. GatewayServer 初始化顺序
 
-`gateway/gateway_server/gateway_server.cpp` 是真正的编排中心。
+`gateway/gateway_server/gateway_server.cpp` 是 Gateway 的运行时编排中心。
 
-初始化顺序大致是：
+当前初始化大致顺序：
 
 ```text
-logger
--> thread pool
--> IO service pool
--> message parser / processor
--> ODB database
--> service facade 选择
--> HTTP / WS server
--> connection manager
--> push notifier / delivery service
--> message handlers
+init_logger
+-> init_io_service_pool
+-> ThreadPool::Init
+-> init_msg_parser
+-> init_msg_processor
+-> init_database_runtime
+-> init_user_runtime
+-> init_message_runtime
+-> init_friend_runtime
+-> init_group_runtime
+-> init_group_message_runtime
+-> init_ws_server
+-> init_http_server
+-> init_conn_mgr
+-> init_message_ws_runtime
+-> register_message_handlers
 ```
 
-这里有两个面试重点：
+关键点：
 
-- 依赖顺序是固定的，不能乱调。
-- 不是所有逻辑都在 Gateway 里实现，很多只是 facade 选择和请求编排。
+- service runtime 先初始化，再注册 command handlers。
+- `GatewayRuntimeRegistry` 持有 user/message/friend/group 的 local service 或 remote adapter。
+- `register_gateway_command_handlers()` 根据 runtime registry 注册 user/message/friend/group 命令。
+- HTTP 和 WebSocket 最终都进入同一套 `MessageProcessor` 命令分发模型。
 
-## 5. HTTP 入口怎么进来
+## 5. HTTP 请求链路
 
-Gateway 的 HTTP 路由不是散落在控制器里，而是先在 `GatewayServer` 里注册，再转进 controller：
-
-- `/api/v1/auth/register`
-- `/api/v1/auth/login`
-- `/api/v1/auth/info`
-- `/api/v1/auth/profile`
-- `/api/v1/users/search`
-- `/api/v1/messages/*`
-- `/api/v1/friends/*`
-- `/api/v1/groups/*`
-- `/api/v1/groups/messages/*`
-
-以 `UserHttpController` 为例：
+HTTP 入口当前不是每个业务模块单独注册 controller route，而是：
 
 ```text
-HTTP request
--> UserHttpController
--> UserClient
--> LocalUserClient or RemoteUserClient
--> UserService or gRPC user_server
+httplib catch-all
+-> MessageParser::parse_http_request_enhanced(req)
+-> RouterManager::parse_http_route(method, path)
+-> UnifiedMessage
+-> MessageProcessor::process_message()
+-> MessageProcessor::process_message_sync()
+-> command handler
+-> service packet dispatcher 或 remote ForwardPacket
+-> ProcessorResult::http(...)
+-> httplib::Response
 ```
 
-controller 只负责：
+代码点：
 
-- 解析请求体。
-- 读 Authorization header。
-- 生成 token。
-- 映射业务错误为 HTTP 状态码。
+- `GatewayServer::init_http_server()`：注册 `/api/v1/health`、`/api/v1/stats` 和 catch-all。
+- `MessageParser::parse_http_request_enhanced()`：解析 method/path/token/device/platform/body/query。
+- `RouterManager::parse_http_route()`：根据配置得到 `cmd_id`。
+- `MessageProcessor::process_message()`：投递线程池。
+- `MessageProcessor::process_message_sync()`：按 `cmd_id` 找 handler。
 
-它不直接碰持久化细节。
+HTTP 业务路由来自配置，不再来自旧的 `register_*_http_routes()`：
 
-## 6. local / remote facade 怎么切
+- `config/dev.json`
+- `config/dev.remote-push.json`
+- `config/dev.remote-all.json`
+- `config/benchmark.json`
 
-Gateway 不直接依赖“某个服务是本地还是远程”，而是先选择 facade：
+## 6. WebSocket 请求链路
 
-- `LocalUserClient`
-- `RemoteUserClient`
-- `LocalMessageClient`
-- `RemoteMessageClient`
-- `LocalFriendClient`
-- `RemoteFriendClient`
-- `LocalGroupClient`
-- `RemoteGroupClient`
-- `PushService`
-- `RemotePushNotifier`
-
-选择逻辑来自 config：
-
-- `user.mode`
-- `message.mode`
-- `friend.mode`
-- `group.mode`
-- `push.mode`
-
-核心行为：
-
-- `local` 时直接调用进程内 service。
-- `remote` 时走 gRPC client。
-- 如果编译时没打开对应 remote client，即使配置写了 remote，也会回退到 local，并打 warning。
-
-这就是本项目的兼容策略：
+WebSocket 入口当前链路：
 
 ```text
-配置决定意图，编译开关决定能力，Gateway 负责兜底。
-```
-
-## 7. WebSocket 入口怎么进来
-
-WebSocket 处理在 `gateway_server.cpp` 中绑定：
-
-- 先解析 protobuf/协议包。
-- 再交给 message processor。
-- 再由 `MessageWsHandler` 做发送、ack、鉴权和错误处理。
-- 成功后可能触发 push。
-
-这条链路里最重要的是：
-
-- WebSocket 不只是“消息通道”，它也是在线态入口。
-- 消息推送是否成功，和消息是否持久化是两件事。
-- 失败后仍应保留离线拉取能力。
-
-### 7.1 WebSocket 调度与背压修复
-
-压测后对 WSS 链路做过一次关键收口。修复前的路径是：
-
-```text
-WSS frame
--> MessageProcessor::process_message
--> std::async(std::launch::async)
--> Gateway 再创建 std::thread(...).detach() 等待 future
--> 发送响应
-```
-
-这个设计在低频场景下能工作，但高频消息下会带来大量线程创建、销毁和上下文切换。更严重的是，过载时没有明确的并发上限和拒绝策略，消息会持续堆积，最后表现为 RTT 秒级、错误数上升。
-
-当前修复后的路径是：
-
-```text
-WSS frame
--> parse protobuf envelope
--> Gateway inflight limit check
+WebSocket frame
+-> ProtobufCodec::decodeEnvelope
+-> MessageParser::parse_websocket_message_enhanced
+-> UnifiedMessage
+-> Gateway WSS inflight limit
 -> ThreadPool::Enqueue(one business task)
 -> MessageProcessor::process_message_sync
+-> CMD_SEND_MESSAGE handler
 -> MessageWsHandler::handle_send
--> protobuf ack / protobuf error response
+-> message service packet dispatcher 或 remote ForwardPacket
+-> protobuf envelope ack/error
 ```
 
-对应代码点：
+代码点：
 
-- `gateway/gateway_server/gateway_server.cpp`：WSS 回调、`ws_inflight_messages_`、`max_ws_inflight_messages_`、`schedule_delayed_close()`。
-- `gateway/message_processor/message_processor.cpp`：`process_message()` 投递线程池，`process_message_sync()` 执行同步核心。
-- `config/dev.json` / `config/benchmark.json`：`gateway.max_ws_inflight_messages`。
+- `GatewayServer::init_ws_server()`：绑定 WSS frame callback。
+- `gateway/ws/message_ws_handler.cpp`：处理 `CMD_SEND_MESSAGE` 的 WS 发送。
+- `common/network/packet_error_builder.*`：构造 Gateway 本地拦截错误的 packet response。
 
-这里的设计取舍是：
+WSS 当前已经补齐：
 
-- 先把不可控的“每消息动态线程”改成固定线程池调度。
-- 先用 inflight cap 兜住排队中和执行中的消息数量。
-- 过载时快速返回 overload，而不是继续把请求堆到系统资源耗尽。
-- WebSocket token 校验放在具体 handler 中完成，因为 handler 需要从 token 中提取真实 sender；通用 processor 不再重复验签。
+- TLS/WS handshake 观测。
+- session add/remove 观测。
+- idle timeout。
+- keepalive ping。
+- `CMD_HEARTBEAT`。
+- `max_ws_inflight_messages` 初步背压。
+- 压测结束后 session 清理。
 
-这不是最终版性能架构。后续还应该把全局 `ThreadPool` 演进为 Gateway 专用业务 executor，并补充真正 bounded queue、拒绝计数和处理耗时分位数。但作为第一阶段修复，它已经把 WSS 主链路从不可控并发模型拉回了可控并发模型。
+## 7. MessageProcessor 的职责
 
-面试里可以这样讲：
+`MessageProcessor` 当前非常关键，但职责很窄：
+
+- 保存 `cmd_id -> handler` 映射。
+- 将消息处理投递到全局线程池。
+- 同步执行对应 handler。
+- 处理无 handler、空消息、异常等通用错误。
+
+它不再做统一强制 token 校验。
+
+原因：
+
+- 注册/登录是公开入口，不能在通用层强制验签。
+- HTTP 和 WS 的鉴权语义不同。
+- handler 需要按命令语义决定是否鉴权，并把 token uid 写入 service packet header。
+
+所以当前鉴权位置在 command handler / WS handler 中。
+
+## 8. GatewayCommandHandlerRegistry
+
+`GatewayCommandHandlerRegistry` 负责集中注册业务命令：
 
 ```text
-我在压测后发现 WSS 高负载下 RTT 会进入秒级，不是因为某个算法特别慢，而是 Gateway 的调度模型有问题：每条消息先 std::async，再额外创建 detached thread 等待 future。后来我把这条链路收敛为固定线程池执行，并加入 max_ws_inflight_messages 做初步背压，超过上限直接返回 overload。这样系统在过载时会可控退化，而不是无限创建线程和堆积任务。
+register_gateway_command_handlers
+-> register_user_command_handlers
+-> register_message_command_handlers
+-> register_friend_command_handlers
+-> register_group_command_handlers
 ```
 
-### 7.2 当前 Gateway 压测基线
+核心上下文：
 
-最新可引用压测报告：
+```cpp
+struct GatewayCommandHandlerContext {
+    const GatewayRuntimeRegistry* runtime = nullptr;
+};
+```
+
+`GatewayRuntimeRegistry` 中保存：
+
+- local `UserService`
+- remote `UserServiceAdapter`
+- local `MessageService`
+- remote `MessageServiceAdapter`
+- local `FriendService`
+- remote `FriendServiceAdapter`
+- local `GroupService`
+- local `GroupMessageService`
+- remote `GroupServiceAdapter`
+- `MultiPlatformAuthManager`
+- `PushNotifier`
+- `MessageWsHandler`
+
+这比旧的展开式 context 更收敛：handler 不再持有一堆散落成员，而是统一从 runtime registry 取依赖。
+
+## 9. Command Handler 的边界
+
+handler 可以做：
+
+- 检查 service/adapter 是否存在。
+- 校验 HTTP token 或 WS token。
+- 从 token 中提取可信 `uid/device/platform`。
+- 把可信身份写入 packet header。
+- 构造 `XxxPacketRequest`。
+- 调用 local packet dispatcher 或 remote adapter。
+- 根据 service 返回的 `http_status/payload/base` 构造 HTTP/WS 响应。
+- 消费 `auth_token_hint` 生成 token。
+- 消费 `push_event` 转交 PushNotifier。
+
+handler 不应该做：
+
+- 解析注册字段、好友字段、群字段、消息正文等业务 payload。
+- 构造业务 DTO。
+- 查询业务 repository。
+- 实现好友、群成员、消息状态等业务规则。
+- 自己计算群 fanout 成员。
+- 维护业务 response mapper。
+
+一句话：
 
 ```text
-docs/benchmark/benchmark_report_20260622_full_retest/benchmark_report_20260622_full_retest.md
+Gateway handler 是 packet 转发边界，不是业务 service。
 ```
 
-| 场景 | 结果 | 说明 |
-| --- | ---: | --- |
-| HTTP ramp | 500 VU，46230 请求，失败率 0%，p95 5.81ms | HTTP 接入层修复后稳定 |
-| WSS 建连 | 200 连接，失败 0，connect p95 约 15ms | 200 连接规模内建连稳定 |
-| WSS 消息 | 200 用户 / 1s，RTT p95 12.60ms | 常规实时聊天压力稳定 |
-| WSS 消息 | 200 用户 / 500ms，RTT p95 21.92ms | 高频聊天仍保持低延迟 |
-| WSS 极限 | 200 用户 / 250ms，RTT p95 2628.05ms | 进入当前吞吐拐点 |
+## 10. User 命令链路
 
-这组数据的解读要克制：可以说当前 MVP 在 200 在线用户、0.5-1s 发一条消息的场景下实时链路体感流畅，也可以说 HTTP keep-alive worker 占用问题已经收敛；但不能说已经达到商业 IM 或百万连接能力。250ms 间隔极限场景暴露的不是建连或解码失败，而是消息处理、持久化、push 或写队列中的某个环节开始排队。
+HTTP user 请求：
 
-## 8. Push 的双向链路
+```text
+HTTP /api/v1/auth/register 或 /login 等
+-> MessageParser
+-> CMD_REGISTER / CMD_LOGIN / CMD_GET_USER_INFO / CMD_UPDATE_USER_INFO / CMD_SEARCH_USER
+-> user_command_handlers.cpp
+-> UserPacketRequest
+-> local UserPacketDispatcher 或 remote UserService::ForwardPacket
+-> UserPacketResponse
+-> Gateway 注入 token 或直接返回 payload
+```
 
-远程 Push 是 Gateway 里最能体现分布式边界的一段。
+特殊点：
 
-正常链路：
+- 注册/登录不要求已有 access token。
+- 资料查询、资料更新、用户搜索需要 access token。
+- token 仍由 Gateway 签发，这是鉴权边界的一部分。
+- User service 返回 `auth_token_hint`，Gateway 根据 hint 生成 access/refresh token 并注入响应。
+
+## 11. Message 命令链路
+
+HTTP message：
+
+```text
+HTTP /api/v1/messages/*
+-> CMD_SEND_MESSAGE / CMD_MESSAGE_HISTORY / CMD_PULL_MESSAGE
+-> message_command_handlers.cpp
+-> MessagePacketRequest(application/json)
+-> local MessagePacketDispatcher 或 remote MessageService::ForwardPacket
+-> MessagePacketResponse
+-> optional push_event
+```
+
+WebSocket message：
+
+```text
+WS CMD_SEND_MESSAGE
+-> message_command_handlers.cpp
+-> MessageWsHandler::handle_send
+-> MessagePacketRequest(protobuf payload)
+-> local MessagePacketDispatcher 或 remote MessageService::ForwardPacket
+-> MessagePacketResponse
+-> protobuf envelope ack
+-> optional push_event
+```
+
+关键边界：
+
+- Gateway 只校验 token 和 header 级 receiver。
+- 发送消息 payload 的 protobuf 解析在 Message service packet dispatcher。
+- delivered 状态更新不在 Gateway 中做。
+
+## 12. Friend 命令链路
+
+```text
+HTTP /api/v1/friends/*
+-> CMD_ADD_FRIEND / CMD_HANDLE_FRIEND_REQUEST / CMD_GET_FRIEND_LIST / CMD_GET_FRIEND_REQUESTS
+-> friend_command_handlers.cpp
+-> FriendPacketRequest(application/json)
+-> local FriendPacketDispatcher 或 remote FriendService::ForwardPacket
+-> FriendPacketResponse
+```
+
+好友业务规则全部在 Friend service 内：
+
+- 是否能添加自己。
+- 目标用户是否存在。
+- 是否重复申请。
+- 是否有权限处理申请。
+- pending 状态是否可变更。
+
+## 13. Group 命令链路
+
+```text
+HTTP /api/v1/groups/*
+-> group_command_handlers.cpp
+-> GroupPacketRequest(application/json)
+-> local GroupPacketDispatcher 或 remote GroupService::ForwardPacket
+-> GroupPacketResponse
+-> optional push_events
+```
+
+Group service 负责：
+
+- 群资料解析。
+- 群成员校验。
+- 群成员列表。
+- 群消息保存。
+- 群消息 fanout 成员计算。
+
+Gateway 只把 `push_events` 转给 PushNotifier，不自己展开群成员。
+
+## 14. Push 链路
+
+Push 的输入来自 Message/Group service 返回的 `push_event` 或 `push_events`。
+
+local push：
+
+```text
+Gateway command handler / MessageWsHandler
+-> PushNotifier
+-> PushRuntime
+-> ConnectionManager
+-> WebSocketServer::send
+```
+
+remote push：
 
 ```text
 Gateway
 -> RemotePushNotifier
 -> push_server NotifyUser
+-> PushRuntime
+-> GatewayPushDeliveryService callback
+-> Gateway session lookup / send payload
 ```
 
-但 PushServer 不能直接拿 Gateway 内存里的 WebSocket session，所以又需要反向 callback：
+为什么需要 callback：
 
 ```text
-push_server
--> GatewayPushDeliveryService
--> session lookup / payload send / delivered mark
+WebSocket session 属于 Gateway 进程内存。
+远程 push_server 不能直接访问 Gateway 的 session map。
+所以 remote push 只能通过 Gateway 暴露的 delivery callback 回到 Gateway 投递。
 ```
 
-也就是说，远程 Push 不是单向 RPC，而是双向协作。
+这是项目里很值得讲的分布式边界设计。
 
-这段设计的本质原因是：
+## 15. Local / Remote 怎么切
 
-- session 的归属在 Gateway。
-- Push 服务只负责投递调度。
-- 真正的连接操作必须回到 Gateway。
+当前不要再用旧说法“local/remote facade”作为主叙事。更准确是：
 
-## 9. local / remote 运行模式
+```text
+GatewayRuntimeRegistry
+-> local service instance
+或
+-> remote service adapter
+```
 
-当前项目有三种常见运行形态：
+remote adapter 做的事情也很窄：
 
-- 默认 local：所有服务在进程内调用，最适合开发和调试。
-- remote push：只有 Push 拆出去，验证 Gateway callback。
-- remote-all：User / Message / Friend / Group / Push 全部拆成独立进程。
+- 接收 `XxxPacketRequest`。
+- 调用远程 gRPC `ForwardPacket`。
+- 返回 `XxxPacketResponse`。
+- 做 deadline/status/base error 的传输适配。
 
-对应配置：
+remote adapter 不应该重新暴露业务方法，比如 `send_text_message`、`create_group`、`send_request` 这类旧接口已经删除。
 
-- `config/dev.json`
-- `config/dev.remote-push.json`
-- `config/dev.remote-all.json`
+## 16. Gateway 当前观测能力
 
-对应脚本：
+`GET /api/v1/stats` 当前输出：
 
-- `scripts/dev/run_remote_push_stack.sh`
-- `scripts/dev/run_remote_services_stack.sh`
+- WSS accept 成功/失败。
+- 当前 session 数。
+- TLS/HTTP upgrade/WS accept/session add 耗时。
+- HTTP worker、queue、keep-alive 配置。
+- HTTP 请求数、inflight、状态码统计。
+- HTTP route 级 count/avg/max。
+- parser decode/routing 失败数。
+- WSS inflight 消息数。
+- 线程池线程数、排队/运行任务数。
+- service runtime mode/local/remote bound 状态。
 
-## 10. 面试时怎么讲
+这让压测时可以把“客户端看到 timeout”和“Gateway 内部是否有堆积”对应起来。
+
+## 17. 重构后压测基线
+
+最新完整压测：
+
+```text
+docs/benchmark/benchmark_report_20260623_gateway_refactor_full/benchmark_report_20260623_gateway_refactor_full.md
+docs/benchmark/benchmark_report_20260623_gateway_refactor_full/performance_before_after_comparison.md
+```
+
+核心结果：
+
+| 指标 | 结果 |
+| --- | ---: |
+| WSS `conn-200` | 200/200 |
+| WSS 最重消息场景 | `200 users / 250ms` |
+| WSS 吞吐 | `714.4 msg/s` |
+| WSS RTT p95 | `35.91ms` |
+| HTTP ramp 请求数 | `46296` |
+| HTTP 平均 RPS | `306.86/s` |
+| HTTP 失败率 | `0.00%` |
+| HTTP p95 | `3.75ms` |
+
+对比重构前 HTTP ramp：
+
+| 指标 | 重构前 | 重构后 |
+| --- | ---: | ---: |
+| 平均 RPS | 14.44/s | 306.86/s |
+| 失败率 | 56.03% | 0.00% |
+| p95 | 59.99s | 3.75ms |
+
+这里的正确表达是：
+
+```text
+重构没有引入性能退化，并且在统一入口、HTTP 接入修复、WSS 生命周期修复后，
+当前 Gateway MVP 已有一组稳定压测基准。
+```
+
+不要夸大为“生产级百万连接”。
+
+## 18. 面试时怎么讲
 
 可以这样说：
 
 ```text
-我把 Gateway 作为统一接入层和服务编排层，HTTP 和 WebSocket 都先进入 Gateway。Gateway 不直接写死业务逻辑，而是通过 local/remote facade 把请求转到进程内 service 或远程 gRPC service。这样既保留了本地开发效率，也保留了分布式服务边界。Push 是最典型的一段，因为 WebSocket session 在 Gateway，所以远程 Push 不能直接操作连接，必须通过 Gateway callback 完成 session lookup 和 payload 投递。
+MyChat 的 Gateway 不是传统意义上的一堆 HTTP controller。
+我把 HTTP 和 WebSocket 都统一成 UnifiedMessage，然后通过 MessageProcessor 按 cmd_id 分发。
+Gateway handler 只做鉴权、身份注入、packet 转发和 push event 转交，
+真正的业务 payload 解析在各 service 的 packet dispatcher 中完成。
+这样 Gateway 的职责很清楚：它是协议入口和服务路由层，不是业务处理层。
+同时，GatewayRuntimeRegistry 让同一套 handler 可以选择 local service 或 remote ForwardPacket gRPC，
+所以项目可以从 all-in-one 开发模式平滑切到多进程分布式服务模式。
 ```
 
-## 11. 这篇之后怎么读
+如果被追问“为什么要重构掉 controller/client”：
 
-读完这篇，再往后应该按下面顺序：
+```text
+因为原来的 controller/client 链路让 HTTP 和 WS 走了两套模型，
+而且 Gateway 中出现了业务字段解析、业务 DTO 构造和 response mapper。
+这违背了我最初对 Gateway 的设计：Gateway 只做协议入口、鉴权、路由和转发。
+重构后 HTTP/WS 都回到 MessageParser + MessageProcessor + command handler registry，
+业务解析下沉到 service packet dispatcher，Gateway 边界更干净，也更利于讲清分布式服务边界。
+```
+
+## 19. 当前仍需注意的问题
+
+后续仍有改进项，但不阻塞当前 MVP：
+
+- `XxxPacketRequest/Response` 仍和业务 proto 混放在同一个 proto 文件中，长期应拆出 `*_packet.proto` 或统一 `gateway_packet.proto`。
+- `GatewayRuntimeRegistry` 仍是显式字段，未来可进一步收敛为泛化 endpoint map。
+- Push/WS/Auth 的生命周期还可以继续纳入更统一的 runtime 管理。
+- `/api/v1/stats` 目前是文本输出，后续应改为 JSON 便于 benchmark 自动解析。
+- CLI/config 优先级需要修复，避免压测端口被配置覆盖。
+
+## 20. 这篇之后怎么读
+
+读完 Gateway 后，再按业务链路进入：
 
 1. `05_注册登录与鉴权链路分析.md`
 2. `06_单聊消息链路分析.md`

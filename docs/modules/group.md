@@ -56,7 +56,10 @@ proto 中还保留了一些未来群管理消息结构，但当前 MVP 主要实
 ```text
 POST /api/v1/groups
 -> Gateway 验证 token
--> GroupClient local/remote facade
+-> MessageParser / UnifiedMessage
+-> GatewayCommandHandlerRegistry
+-> GatewayRuntimeRegistry
+-> local GroupPacketDispatcher 或 remote GroupService.ForwardPacket
 -> GroupService 创建群资料
 -> 创建者加入成员表
 ```
@@ -67,6 +70,7 @@ POST /api/v1/groups
 GET /api/v1/groups/search
 -> 展示群资料
 -> POST /api/v1/groups/join
+-> Gateway packet 链路转发到 Group Service
 -> GroupService 写入成员关系
 ```
 
@@ -75,9 +79,10 @@ GET /api/v1/groups/search
 ```text
 POST /api/v1/groups/messages/send
 -> Gateway 验证 token
+-> Gateway packet 链路转发到 Group Service
 -> GroupMessageService 持久化群消息
--> GroupService 查询成员
--> PushNotifier 对成员 fanout
+-> Group Service 返回群消息结果和 push_events
+-> Gateway 将 push_events 交给 PushNotifier 对成员 fanout
 -> 默认不向发送者重复推送
 ```
 
@@ -105,6 +110,7 @@ Web 端已经有群资料页、成员展示、加入/退出、群消息验证入
 - 群和群成员为什么需要独立建模。
 - 群消息 fanout 为什么不向发送者重复推送。
 - 成员权限校验应该放在 Group Service，而不是前端。
+- Gateway 不展开群成员列表和群消息业务 payload，只处理鉴权、路由和 push_event handoff。
 - 当前群设置 UI 和后端 MVP 能力的边界。
 - 后续做群管理时如何扩展角色、邀请、踢人、禁言。
 

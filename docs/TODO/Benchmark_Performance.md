@@ -10,6 +10,8 @@
 - [ ] 调整 gateway 启动脚本，确保进程 soft `ulimit -n` 至少为 65535。
 - [ ] 修复 HTTP 10002 listen backlog 过小问题，目标 backlog 1024 或 4096。
 - [ ] 统一记录 WSS/HTTP 监听参数，压测前自动采集 `ss -ltnp` 与 `/proc/<pid>/limits`。
+- [ ] 修正 `gateway_server` CLI 参数与配置文件优先级：压测中发现 `-w/-H` 会被 `benchmark.json` 的 `gateway.websocket_port/http_port` 覆盖，建议明确为命令行覆盖配置。
+- [ ] 统一压测环境 Redis 配置：SUT 当前 Redis 无密码，但本地 `config/benchmark.json` 仍配置 `mychat-dev-pass`，后续应避免远端临时改配置。
 - [ ] 将 benchmark 脚本中的公网 IP、PVE 密码、私有机器信息迁移到 env/config，避免写死。
 - [ ] 清理 benchmark 构建产物，避免提交二进制文件。
 
@@ -94,6 +96,8 @@ ctest --test-dir build/remote-push-odb -R GatewayMessageWsTest --output-on-failu
 - [x] WSS 建连指标拆分：resolve、TCP connect、TLS handshake、WS handshake、失败阶段分类。
 - [x] Gateway WSS handshake 链路增加服务端观测：accept、TLS、HTTP upgrade、WS accept、session add。
 - [x] 增加 `GET /api/v1/stats` 只读观测入口，便于远端压测抓取 Gateway 内部状态。
+- [x] 2026-06-23 完成 Gateway 统一 packet 重构后的完整 WSS + HTTP 压测，报告见 `docs/benchmark/benchmark_report_20260623_gateway_refactor_full/benchmark_report_20260623_gateway_refactor_full.md`。
+- [x] 补充 Gateway 重构前后性能对比分析，报告见 `docs/benchmark/benchmark_report_20260623_gateway_refactor_full/performance_before_after_comparison.md`。
 - [ ] 修复 WSS 消息压测归档：每个场景必须完整保存 `bench_ws stdout/stderr`，并在 `messages_sent=0` 时直接判定场景无效。
 - [ ] WSS 消息指标拆分：ack RTT、push latency、业务持久化成功数。
 - [ ] HTTP 指标拆分：连接失败、HTTP 非 2xx、业务错误、请求超时。
@@ -133,8 +137,8 @@ ctest --test-dir build/remote-push-odb -R GatewayMessageWsTest --output-on-failu
 
 ## 当前建议执行顺序
 
-1. 先修压测工具链有效性：WSS 消息场景必须有完整日志，且 `messages_sent=0` 不能进入吞吐结论。
-2. 专项处理 HTTP `/health` 与 `/auth/info` 高并发 timeout，先拆分接口和 loopback/public 路径，再补 Gateway HTTP 侧观测。
+1. 先修压测部署确定性：CLI/config 优先级、Redis 密码策略、压测前配置快照必须固定，避免复测结果被运行环境误导。
+2. 将 2026-06-23 重构后完整压测作为当前稳定基准：WSS `200 users / 250ms` 场景 `714.4 msg/s`、RTT p95 `35.91ms`、HTTP ramp 失败率 `0.00%`。
 3. 保留 PVE 公网建连专项，但优先级下调；当前已有 SUT loopback 与 `lzr-host` public 双重证据说明 Gateway 不是 125 阈值主因。
-4. 再回到消息链路压测：ack RTT、push latency、DB 持久化耗时。
-5. 性能专项不阻塞当前项目总结与面试准备，但结论要写入最终面试材料：当前瓶颈定位方法和证据链比单纯 QPS 数字更重要。
+4. 再回到真实业务混合压测：好友申请、加群、群聊、历史拉取、ack RTT、push latency、DB 持久化耗时。
+5. 性能专项不阻塞当前项目总结与面试准备，但结论要写入最终面试材料：当前瓶颈定位方法、重构前后对比和稳定性证据链比单纯 QPS 数字更重要。

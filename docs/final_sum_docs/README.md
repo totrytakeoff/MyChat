@@ -7,10 +7,12 @@
 当前文档不只是面试稿，也作为源码导读使用。阅读顺序必须先从 Gateway 入手：
 
 - 先读 `01_项目整体架构总览.md`，建立项目全局视角。
-- 再读 `04_Gateway统一接入与服务编排分析.md`，弄清 HTTP/WS 入口、local/remote facade、Push callback。
+- 再读 `04_Gateway统一接入与服务编排分析.md`，弄清 HTTP/WS 入口、统一 `MessageParser -> MessageProcessor -> GatewayCommandHandlerRegistry` 链路、local service/remote adapter 切换和 Push callback。
 - 再进入 `05-11` 的业务链路和工程链路文档。
-- 阅读每篇末尾的“源码导读”，按调用栈从 Gateway 入口追到 service/repository/runtime。
+- 阅读每篇末尾的“源码导读”，按调用栈从 Gateway 入口追到 command handler、service packet dispatcher、repository/runtime。
 - 最后看 `面试追问如何指回代码`，把回答落到具体函数。
+
+当前最终总结文档已经统一到 Gateway packet 架构。若历史上下文中提到 `UserHttpController`、`Local*Client`、`Remote*Client`，只能作为重构前方案或反例理解；当前权威链路以 `01`、`04` 和 `docs/project/architecture/gateway_protobuf_packet_boundary_baseline.md` 为准。
 
 ## 当前文档
 

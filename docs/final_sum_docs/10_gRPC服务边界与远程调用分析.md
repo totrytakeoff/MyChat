@@ -1,75 +1,117 @@
-# MyChat gRPC 服务边界与远程调用分析
+# gRPC 服务边界与远程调用分析
 
-日期：2026-06-16
+日期：2026-06-23
 
 ## 1. 文档目标
 
-阅读这篇之前，建议先读 `04_Gateway统一接入与服务编排分析.md`。gRPC 边界不是孤立存在的，它是 Gateway facade 在 remote 模式下的另一条实现路径。
+这篇文档解释 MyChat 当前的分布式服务边界。
 
-这份文档分析 MyChat 从本地服务调用演进到分布式 gRPC 边界的设计：
+当前不要再把 gRPC 边界讲成旧的：
 
-- 为什么不让 Gateway 直接写死所有业务逻辑。
-- local/remote facade 是怎么工作的。
-- User/Message/Friend/Group/Push 的 gRPC 边界分别解决什么问题。
-- remote-all 本地多进程栈如何支撑分布式验证。
-- 当前距离生产级服务治理还差什么。
+```text
+Gateway Controller -> Local*Client / Remote*Client -> Service
+```
+
+当前权威模型是：
+
+```text
+Gateway command handler
+-> GatewayRuntimeRegistry
+-> local service packet dispatcher
+或
+-> remote service adapter
+-> XxxService::ForwardPacket(XxxPacketRequest)
+-> service server packet dispatcher
+```
 
 一句话概括：
 
 ```text
-MyChat 用 Gateway facade 把外部 HTTP/WebSocket 契约和内部服务部署方式解耦；
-同一个 Gateway controller 可以调用本地 Service，也可以切到远程 gRPC stub，从而平滑演进到分布式服务。
+MyChat 用统一 packet 契约把 Gateway 外部 HTTP/WS 协议和内部服务部署方式解耦；
+local 模式直接调用 service packet dispatcher，remote 模式通过 gRPC ForwardPacket 到独立服务进程，
+两种模式共享同一套业务解析和业务规则。
 ```
 
-## 2. 整体调用模型
+## 2. 为什么用 ForwardPacket
 
-统一模型：
+如果 Gateway 直接调用一堆业务 RPC，比如：
 
 ```text
-Web Client
--> Gateway HTTP Controller / WebSocket Handler
--> Gateway Client Facade
--> Local Service 或 Remote gRPC Client
--> Service Core
--> Repository / Runtime
--> PostgreSQL / Redis / WebSocket
+SendMessage
+GetConversation
+CreateGroup
+JoinGroup
+SendRequest
 ```
 
-核心点：
+Gateway 就需要：
+
+- 解析业务 payload。
+- 构造业务 request DTO。
+- 映射业务 response。
+- 为每个服务维护一套 local/remote 业务方法。
+
+这会让 Gateway 重新变成业务编排层，违背当前边界。
+
+当前 `ForwardPacket` 的目标是：
 
 ```text
-Gateway 对外协议不变，内部服务部署方式可切换。
+Gateway 只认识统一 packet，不认识业务 payload。
+Service 自己解析 payload、执行业务、构造响应。
 ```
 
-## 3. 为什么需要 facade
+## 3. 当前统一模型
 
-如果 Gateway controller 直接调用 gRPC stub，会带来：
-
-- controller 充满 proto 转换逻辑。
-- local 单进程调试困难。
-- 单元测试要启动远程服务。
-- gRPC 错误处理污染 HTTP controller。
-
-facade 解决：
-
-- controller 只面向领域接口。
-- local client 调进程内 service。
-- remote client 调 gRPC。
-- 错误映射集中在 remote client。
-- 测试边界更清晰。
-
-示例：
+HTTP：
 
 ```text
-UserHttpController
--> UserClient
-   -> LocalUserClient
-   -> RemoteUserClient
+HTTP request
+-> MessageParser
+-> UnifiedMessage
+-> command handler
+-> XxxPacketRequest(type_name=application/json, payload=raw json)
+-> local dispatcher 或 remote ForwardPacket
+-> XxxPacketResponse(payload=json, http_status)
 ```
 
-## 4. 当前 gRPC 服务边界
+WebSocket：
 
-### 4.1 User Service
+```text
+WebSocket envelope
+-> MessageParser
+-> UnifiedMessage
+-> command handler / MessageWsHandler
+-> XxxPacketRequest(type_name=protobuf type, payload=protobuf bytes)
+-> local dispatcher 或 remote ForwardPacket
+-> XxxPacketResponse(type_name=protobuf response type, payload=protobuf bytes)
+-> Gateway encode envelope
+```
+
+## 4. GatewayRuntimeRegistry
+
+`GatewayRuntimeRegistry` 是 Gateway 当前的运行时依赖表。
+
+它保存：
+
+- local `UserService` 或 remote `UserServiceAdapter`。
+- local `MessageService` 或 remote `MessageServiceAdapter`。
+- local `FriendService` 或 remote `FriendServiceAdapter`。
+- local `GroupService/GroupMessageService` 或 remote `GroupServiceAdapter`。
+- auth manager。
+- push notifier。
+- message ws handler。
+
+handler 只拿一个 `GatewayCommandHandlerContext`：
+
+```cpp
+struct GatewayCommandHandlerContext {
+    const GatewayRuntimeRegistry* runtime = nullptr;
+};
+```
+
+这比旧的展开式 service/client 成员更清晰，也减少了 handler 注册函数的参数爆炸。
+
+## 5. User Service 边界
 
 proto：
 
@@ -77,25 +119,38 @@ proto：
 common/proto/user.proto
 ```
 
-RPC：
+packet RPC：
 
-```text
-Register
-Login
-GetUserInfo
-SearchUsers
-UpdateUserInfo
+```proto
+rpc ForwardPacket(UserPacketRequest) returns (UserPacketResponse);
 ```
 
-职责：
+当前 User packet 覆盖：
 
-- 账号注册。
-- 登录凭证校验。
-- 用户资料查询。
-- 用户搜索。
-- 资料更新。
+- `CMD_REGISTER`
+- `CMD_LOGIN`
+- `CMD_GET_USER_INFO`
+- `CMD_UPDATE_USER_INFO`
+- `CMD_SEARCH_USER`
 
-### 4.2 Message Service
+remote 链路：
+
+```text
+user_command_handlers.cpp
+-> RemoteUserServiceAdapter::forward
+-> UserService::ForwardPacket
+-> user_grpc_service.cpp
+-> UserPacketDispatcher::handle
+-> UserService
+```
+
+特殊边界：
+
+- User service 返回 `UserAuthTokenHint`。
+- Gateway 根据 hint 生成 access/refresh token。
+- token 签发仍属于 Gateway 鉴权边界。
+
+## 6. Message Service 边界
 
 proto：
 
@@ -103,24 +158,37 @@ proto：
 common/proto/message.proto
 ```
 
-RPC：
+packet RPC：
 
-```text
-SendMessage
-GetConversation
-PullOffline
-MarkDelivered
-MarkRead
+```proto
+rpc ForwardPacket(MessagePacketRequest) returns (MessagePacketResponse);
 ```
 
-职责：
+当前 Message packet 覆盖：
 
-- 单聊消息持久化。
-- 历史查询。
-- 离线拉取。
-- 状态标记。
+- `CMD_SEND_MESSAGE`
+- `CMD_MESSAGE_HISTORY`
+- `CMD_PULL_MESSAGE`
 
-### 4.3 Friend Service
+remote 链路：
+
+```text
+message_command_handlers.cpp 或 MessageWsHandler
+-> RemoteMessageServiceAdapter::forward
+-> MessageService::ForwardPacket
+-> message_grpc_service.cpp
+-> MessagePacketDispatcher::handle
+-> MessageService
+```
+
+特殊边界：
+
+- HTTP payload 是 JSON。
+- WS payload 是 `im.message.SendMessageRequest` protobuf bytes。
+- Message service 返回 `MessagePushEvent`。
+- Gateway 只消费 `push_event` 并转交 PushNotifier。
+
+## 7. Friend Service 边界
 
 proto：
 
@@ -128,23 +196,31 @@ proto：
 common/proto/friend.proto
 ```
 
-RPC：
+packet RPC：
 
-```text
-SendRequest
-RespondToRequest
-GetFriends
-GetPendingRequests
+```proto
+rpc ForwardPacket(FriendPacketRequest) returns (FriendPacketResponse);
 ```
 
-职责：
+当前 Friend packet 覆盖：
 
-- 好友申请。
-- 申请处理。
-- 好友列表。
-- 待处理申请。
+- `CMD_ADD_FRIEND`
+- `CMD_HANDLE_FRIEND_REQUEST`
+- `CMD_GET_FRIEND_LIST`
+- `CMD_GET_FRIEND_REQUESTS`
 
-### 4.4 Group Service
+remote 链路：
+
+```text
+friend_command_handlers.cpp
+-> RemoteFriendServiceAdapter::forward
+-> FriendService::ForwardPacket
+-> friend_grpc_service.cpp
+-> FriendPacketDispatcher::handle
+-> FriendService
+```
+
+## 8. Group Service 边界
 
 proto：
 
@@ -152,458 +228,218 @@ proto：
 common/proto/group.proto
 ```
 
-RPC：
+packet RPC：
 
-```text
-CreateGroup
-JoinGroup
-LeaveGroup
-GetGroupInfo
-SearchGroups
-GroupExists
-ListMyGroups
-ListMembers
-SendGroupMessage
-GetGroupMessages
+```proto
+rpc ForwardPacket(GroupPacketRequest) returns (GroupPacketResponse);
 ```
 
-职责：
+当前 Group packet 覆盖：
 
-- 群资料。
-- 群成员。
-- 群消息。
+- `CMD_CREATE_GROUP`
+- `CMD_SEARCH_GROUP`
+- `CMD_GET_GROUP_INFO`
+- `CMD_GET_GROUP_LIST`
+- `CMD_APPLY_JOIN_GROUP`
+- `CMD_QUIT_GROUP`
+- `CMD_GET_GROUP_MEMBERS`
+- `CMD_SEND_GROUP_MESSAGE`
+- `CMD_GET_GROUP_MESSAGES`
 
-### 4.5 Push Service
-
-proto：
-
-```text
-common/proto/push.proto
-```
-
-RPC：
+remote 链路：
 
 ```text
-PushService.NotifyUser
-GatewayPushDeliveryService.ListUserSessions
-GatewayPushDeliveryService.SendSessionPayload
-GatewayPushDeliveryService.MarkMessageDelivered
+group_command_handlers.cpp
+-> RemoteGroupServiceAdapter::forward
+-> GroupService::ForwardPacket
+-> group_grpc_service.cpp
+-> GroupPacketDispatcher::handle
+-> GroupService / GroupMessageService
 ```
 
-职责：
+特殊边界：
 
-- Push Service 接收投递请求。
-- Gateway callback 负责实际 WebSocket session 操作。
+- Group service 返回 `repeated GroupPushEvent push_events`。
+- Gateway 不计算群成员 fanout。
+- Gateway 只遍历 push_events 并调用 PushNotifier。
 
-## 5. local 模式
+## 9. Push Service 边界
 
-local 模式调用链：
+Push 和其他业务服务不同，因为 WebSocket session 在 Gateway 进程内。
+
+remote push 链路：
 
 ```text
 Gateway
--> LocalUserClient / LocalMessageClient / LocalFriendClient / LocalGroupClient / PushService
--> in-process Service
-```
-
-优点：
-
-- 本地启动简单。
-- 调试断点方便。
-- 单元测试快。
-- 少网络故障变量。
-
-适合：
-
-- 早期功能开发。
-- controller/service 单元测试。
-- 快速复现问题。
-
-## 6. remote 模式
-
-remote 模式调用链：
-
-```text
-Gateway
--> RemoteUserClient / RemoteMessageClient / RemoteFriendClient / RemoteGroupClient / RemotePushNotifier
--> gRPC
--> user_server / message_server / friend_server / group_server / push_server
--> Service Core
-```
-
-优点：
-
-- 服务可以独立部署。
-- 更接近分布式架构。
-- 可以验证网络边界、序列化、错误映射。
-- 为多机器测试做准备。
-
-代价：
-
-- 启动进程更多。
-- 需要 endpoint 配置。
-- 需要处理 gRPC 超时和错误。
-- 测试和排查复杂度上升。
-
-## 7. remote client 的职责
-
-remote client 不只是 gRPC stub 包装，它还承担：
-
-- 构造 proto request。
-- 设置 deadline。
-- 调用 gRPC。
-- 判断 transport status。
-- 判断业务 BaseResponse。
-- proto DTO 转 service DTO。
-- gRPC/业务错误映射为服务层错误码。
-
-例如 RemoteMessageClient：
-
-```text
-SendRequest
--> im.message.SendMessageRequest
--> stub->SendMessage
--> im.message.SendMessageResponse
--> MessageData
-```
-
-这样 Gateway controller 不需要知道 proto 细节。
-
-## 8. 错误处理边界
-
-gRPC 调用有两层错误：
-
-### 8.1 transport 错误
-
-例如：
-
-- 服务不可达。
-- 连接超时。
-- endpoint 配置错误。
-- gRPC status 非 OK。
-
-remote client 映射为：
-
-```text
-REMOTE_*_UNAVAILABLE
-```
-
-### 8.2 业务错误
-
-例如：
-
-- 参数错误。
-- 用户不存在。
-- 群不存在。
-- 权限不足。
-
-通过 proto `BaseResponse.error_code` 表达，再映射回服务层错误。
-
-这种区分很重要：
-
-```text
-网络失败和业务拒绝不是一类问题。
-```
-
-## 9. remote-all 本地栈
-
-当前脚本：
-
-```text
-scripts/dev/run_remote_services_stack.sh
-```
-
-启动：
-
-```text
-user_server:    127.0.0.1:9001
-message_server: 127.0.0.1:9002
-friend_server:  127.0.0.1:9003
-group_server:   127.0.0.1:9004
-push_server:    127.0.0.1:9101
-gateway_server: HTTP 8102 / WebSocket 8101 / Push callback 9102
-```
-
-启动前：
-
-```text
-scripts/dev/prepare_runtime.sh
-```
-
-会准备：
-
-- Redis。
-- PostgreSQL。
-- migrations。
-
-这套 remote-all 是后续多机器测试的本地版本。
-
-## 10. Push 的特殊远程边界
-
-User/Message/Friend/Group 基本是：
-
-```text
-Gateway -> Service
-```
-
-Push 是双向边界：
-
-```text
-Gateway -> PushService.NotifyUser
-PushService -> GatewayPushDeliveryService callback
-```
-
-原因：
-
-- Push 决策可以远程。
-- WebSocket session 必须留在 Gateway。
-- 远程 Push 需要回调 Gateway 完成实际发送。
-
-这比普通 CRUD gRPC 更有分布式设计含金量。
-
-## 11. 当前优势
-
-- Gateway 外部接口稳定。
-- local/remote 可切换。
-- 各服务有明确 `.proto` 契约。
-- remote client 集中处理 proto 转换和错误映射。
-- 支持本地多进程 remote-all 验证。
-- Push callback 解决跨进程 WebSocket session 所有权问题。
-
-## 12. 当前不足和后续优化
-
-当前不足：
-
-- endpoint 仍偏静态配置。
-- 没有完整服务发现。
-- 没有统一熔断、重试、负载均衡策略。
-- 没有统一 trace id 贯穿 gRPC。
-- 远程服务健康检查和自动恢复还不完整。
-- proto 中还有部分未来字段和当前实现存在能力差异，需要文档中明确边界。
-
-后续优化：
-
-- 引入服务发现，例如 Consul/Etcd。
-- Gateway 按服务名发现 endpoint。
-- gRPC client 加统一 deadline、retry、circuit breaker。
-- 加 trace id 和结构化日志。
-- 增加健康检查和 readiness。
-- 多机器部署验证。
-- proto 按 MVP 和 future 字段分层整理。
-
-## 13. 面试问答准备
-
-### 13.1 为什么不一开始就全远程
-
-回答思路：
-
-```text
-一开始全远程会增加调试和测试成本。MyChat 通过 facade 先保留 local 模式快速开发，
-再用 remote client 切到 gRPC。这样既保证迭代效率，也保留分布式演进路径。
-```
-
-### 13.2 facade 解决了什么问题
-
-回答思路：
-
-```text
-facade 把 Gateway controller 和具体调用方式解耦。
-controller 不关心本地对象还是远程 gRPC，remote client 负责 proto 转换和错误映射。
-```
-
-### 13.3 gRPC 错误和业务错误怎么区分
-
-回答思路：
-
-```text
-gRPC status 表示传输层是否成功，BaseResponse.error_code 表示业务是否成功。
-网络不可达和参数错误不能混在一起处理。
-```
-
-### 13.4 Push 为什么是双向 gRPC
-
-回答思路：
-
-```text
-Gateway 调 Push 是请求投递；Push 回调 Gateway 是因为 WebSocket session 在 Gateway 内存中。
-远程 Push 不能直接访问 Gateway session，所以需要 GatewayPushDeliveryService。
-```
-
-### 13.5 后续多机器怎么做
-
-回答思路：
-
-```text
-先把 remote-all 单机多进程跑稳，再把 user/message/friend/group/push/gateway 分配到不同机器。
-接下来要补服务发现、配置管理、连接路由、日志追踪和健康检查。
-```
-
-## 14. 一句话总结
-
-```text
-MyChat 的 gRPC 设计不是简单“把函数远程化”，而是通过 Gateway facade 保持外部接口稳定，
-用 `.proto` 明确内部服务契约，使系统能在 local 调试和 remote 分布式部署之间平滑切换。
-```
-
-## 附录：源码导读
-
-### A. 源码阅读地图
-
-| 服务 | proto | Gateway remote client | gRPC server |
-| --- | --- | --- | --- |
-| User | `common/proto/user.proto` | `gateway/http/remote_user_client.cpp` | `services/user/user_grpc_service.cpp` |
-| Message | `common/proto/message.proto` | `gateway/http/remote_message_client.cpp` | `services/message/message_grpc_service.cpp` |
-| Friend | `common/proto/friend.proto` | `gateway/http/remote_friend_client.cpp` | `services/friend/friend_grpc_service.cpp` |
-| Group | `common/proto/group.proto` | `gateway/http/remote_group_client.cpp` | `services/group/group_grpc_service.cpp` |
-| Push | `common/proto/push.proto` | `gateway/push/remote_push_notifier.cpp` | `services/push/push_grpc_service.cpp` |
-| Gateway callback | `common/proto/push.proto` | push_server 内部调用 | `gateway/push/gateway_push_delivery_service.cpp` |
-
-### B. remote client 通用代码模式
-
-以 `RemoteUserClient::login_by_account` 为例：
-
-```text
-检查 client_ 是否存在
--> 构造 im::user::LoginRequest
--> 填 account/password
--> grpc::ClientContext context
--> apply_deadline(context)
--> client_->login(&context, rpc_request, &rpc_response)
--> if !status.ok(): REMOTE_USER_UNAVAILABLE
--> if base.error_code != SUCCESS: 映射业务错误
--> proto UserInfo -> UserProfile
-```
-
-其他 remote client 也是这个模式：
-
-```text
-service DTO -> proto request -> gRPC call -> BaseResponse -> service DTO
-```
-
-面试重点：
-
-```text
-remote client 是边界适配层，不是业务层。
-```
-
-### C. gRPC server 通用代码模式
-
-以 `UserGrpcService::Login` 为例：
-
-```text
-检查 response/user_service/request
--> 从 proto request 提取 account/password
--> 参数校验
--> user_service_->login_by_account
--> result.ok ? SUCCESS : login_error_code(result.error_code)
--> fill_user_info
--> return grpc::Status::OK
-```
-
-注意这里：
-
-- gRPC status 返回 OK，不代表业务成功。
-- 业务成功/失败在 `BaseResponse.error_code`。
-- 这让调用方可以区分传输层错误和业务错误。
-
-### D. User remote 调用栈
-
-```text
-UserHttpController::handle_login
--> UserClient::login_by_account
--> RemoteUserClient::login_by_account
--> im.user.UserService::Stub::Login
--> UserGrpcService::Login
--> UserService::login_by_account
--> UserRepository::find_by_account
-```
-
-对应代码要点：
-
-- Gateway controller 不知道 gRPC 细节。
-- RemoteUserClient 处理 proto 转换。
-- UserGrpcService 处理 proto 到 service request 的转换。
-
-### E. Message remote 调用栈
-
-```text
-MessageHttpController::handle_send 或 MessageWsHandler::handle_send
--> MessageClient::send_text_message
--> RemoteMessageClient::send_text_message
--> im.message.MessageService::Stub::SendMessage
--> MessageGrpcService::SendMessage
--> MessageService::send_text_message
--> MessageRepository::create
-```
-
-阅读重点：
-
-- `RemoteMessageClient::to_data` 把 proto `MessageBody` 转回 `MessageData`。
-- `MessageGrpcService::fill_message_body` 把 service `MessageData` 转 proto。
-- delivered/read 也有对应 RPC。
-
-### F. Push remote 的特殊双向调用栈
-
-普通服务是：
-
-```text
-Gateway -> remote service
-```
-
-Push 是：
-
-```text
-Gateway
--> RemotePushNotifier::notify_user
--> PushService.NotifyUser
--> push_server PushRuntime
+-> RemotePushNotifier
+-> push_server PushService.NotifyUser
+-> PushRuntime
 -> GatewayPushDeliveryService.ListUserSessions
 -> GatewayPushDeliveryService.SendSessionPayload
 -> GatewayPushDeliveryService.MarkMessageDelivered
+-> Gateway session lookup / payload send
 ```
 
-这体现：
-
-- Push server 独立部署。
-- Gateway 仍持有 WebSocket session。
-- callback 是跨进程访问 Gateway 连接能力的边界。
-
-### G. remote-all 脚本按代码读
+为什么需要 Gateway callback：
 
 ```text
-scripts/dev/run_remote_services_stack.sh
--> scripts/dev/prepare_runtime.sh
--> 检查 user/message/friend/group/push/gateway 二进制
--> 启动 user_server 9001
--> 启动 message_server 9002
--> 启动 friend_server 9003
--> 启动 group_server 9004
--> 启动 push_server 9101
--> 启动 gateway_server 8102/8101/9102
+远程 push_server 无法直接访问 Gateway 内存中的 WebSocket session map。
+所以它只能通过 Gateway 暴露的 delivery service 回调完成实际投递。
 ```
 
-这就是本地多进程分布式验证入口。
+这是项目里最典型的分布式边界取舍。
 
-### H. 面试追问如何指回代码
+## 10. local 模式
 
-| 追问 | 指向代码 |
-| --- | --- |
-| local/remote 怎么切 | `Local*Client` vs `Remote*Client` |
-| proto 契约在哪 | `common/proto/*.proto` |
-| remote 错误怎么处理 | `Remote*Client` 中 `status.ok()` 与 `base.error_code()` |
-| gRPC server 怎么复用 service | `*GrpcService` 调 `*Service` |
-| Push 为什么特殊 | `RemotePushNotifier` + `GatewayPushDeliveryService` |
-| remote-all 怎么跑 | `scripts/dev/run_remote_services_stack.sh` |
+local 模式：
 
-## I. Proto 生成链路怎么保证一致
-
-这类 C++ 项目里，protobuf 生成文件和 protobuf headers/runtime 必须来自兼容版本。MyChat 当前把 proto 源文件和 checked-in 生成文件都收敛在 `common/proto/`，并通过 CMake target `generate_proto` 统一生成：
-
-```bash
-cmake --build build/remote-push-odb --target generate_proto -j2
+```text
+Gateway command handler
+-> GatewayRuntimeRegistry local service pointer
+-> XxxPacketDispatcher::handle(packet)
+-> Service core
+-> Repository / Redis / Push runtime
 ```
 
-根 `CMakeLists.txt` 会优先从 active vcpkg installed tree 选择 `tools/protobuf/protoc` 和 `tools/grpc/grpc_cpp_plugin`，避免系统 `protoc` 混入。这个约束的价值在于：服务边界不是只写 `.proto`，还要保证生成链路可重复，否则 CI、本地和远程部署很容易因为 protobuf 版本不一致而编译失败。
+优点：
 
-面试中可以这样讲：
+- 启动简单。
+- 本地调试方便。
+- 不需要多个服务进程。
+- 适合单机 MVP 验证和快速开发。
 
-> 我没有依赖开发机 PATH 中的 protoc，而是通过 CMake 绑定 vcpkg 管理的 protoc 和 grpc_cpp_plugin，并把 `generate_proto` 作为唯一生成入口。这样 proto 契约、gRPC stub 和链接时的 protobuf runtime 保持一致，避免生成文件与运行库版本错配。
+## 11. remote 模式
+
+remote 模式：
+
+```text
+Gateway command handler
+-> RemoteXxxServiceAdapter::forward(packet)
+-> gRPC ForwardPacket
+-> standalone service process
+-> XxxPacketDispatcher::handle(packet)
+-> Service core
+```
+
+优点：
+
+- 更接近真实分布式服务。
+- 可以把 User/Message/Friend/Group/Push 分进程部署。
+- 可以验证 protobuf、gRPC deadline、服务不可用、网络错误等边界。
+- Gateway 对外 HTTP/WS 协议不变。
+
+代价：
+
+- 启动和排查复杂度更高。
+- 需要 endpoint 配置。
+- 需要处理 gRPC 超时和 transport error。
+- 多进程日志和数据一致性排查更复杂。
+
+## 12. Remote Service Adapter 的职责
+
+remote adapter 当前职责很窄：
+
+- 接收 `XxxPacketRequest`。
+- 设置 gRPC deadline。
+- 调用 `ForwardPacket`。
+- 检查 transport status。
+- 返回 `XxxPacketResponse`。
+
+remote adapter 不应该：
+
+- 暴露 `send_text_message`、`create_group`、`send_request` 等业务方法。
+- 解析业务 JSON/protobuf payload。
+- 构造业务 DTO。
+- 做业务错误 mapper 之外的业务逻辑。
+
+## 13. proto 当前状态
+
+当前 `user.proto/message.proto/friend.proto/group.proto` 同时包含：
+
+- packet contract：`XxxPacketRequest/Response`。
+- 历史业务 RPC：`Register`、`SendMessage`、`CreateGroup` 等。
+- 业务 DTO：`RegisterRequest`、`MessageBody`、`GroupInfo` 等。
+
+当前 Gateway 主链路只应依赖 packet contract。长期优化方向：
+
+```text
+拆出 *_packet.proto 或统一 gateway_packet.proto，
+让 Gateway 编译期只接触 packet contract，
+不接触业务 request/response DTO。
+```
+
+## 14. remote-all 验证
+
+remote-all 模式目标：
+
+```text
+Gateway
+-> remote UserService
+-> remote MessageService
+-> remote FriendService
+-> remote GroupService
+-> remote PushService
+```
+
+配置：
+
+- `config/dev.remote-all.json`
+
+相关服务进程：
+
+- `user_server`
+- `message_server`
+- `friend_server`
+- `group_server`
+- `push_server`
+- `gateway_server`
+
+验证重点：
+
+- 注册/登录 token 签发是否正常。
+- HTTP route 是否都能通过 Gateway 进入 remote `ForwardPacket`。
+- WS 单聊是否能通过 remote message service。
+- 群消息是否能通过 remote group service 返回 push_events。
+- remote push callback 是否能回到 Gateway 投递 WebSocket session。
+
+## 15. 源码导读
+
+| 服务 | proto | Gateway remote adapter | service gRPC |
+| --- | --- | --- | --- |
+| User | `common/proto/user.proto` | `gateway/service_adapters/remote_user_service_adapter.cpp` | `services/user/user_grpc_service.cpp` |
+| Message | `common/proto/message.proto` | `gateway/service_adapters/remote_message_service_adapter.cpp` | `services/message/message_grpc_service.cpp` |
+| Friend | `common/proto/friend.proto` | `gateway/service_adapters/remote_friend_service_adapter.cpp` | `services/friend/friend_grpc_service.cpp` |
+| Group | `common/proto/group.proto` | `gateway/service_adapters/remote_group_service_adapter.cpp` | `services/group/group_grpc_service.cpp` |
+| Push | `common/proto/push.proto` | `gateway/push/remote_push_notifier.cpp` | `services/push/push_grpc_service.cpp` |
+
+核心代码：
+
+- `gateway/gateway_server/gateway_server.cpp`
+  - `init_user_runtime`
+  - `init_message_runtime`
+  - `init_friend_runtime`
+  - `init_group_runtime`
+  - `init_message_ws_runtime`
+  - `refresh_runtime_registry`
+- `gateway/command_handlers/*_command_handlers.cpp`
+- `gateway/service_adapters/remote_*_service_adapter.cpp`
+- `services/*/*_grpc_service.cpp`
+- `services/*/*_packet_dispatcher.cpp`
+
+## 16. 面试追问
+
+### Q: 为什么不让 Gateway 直接调用业务 RPC？
+
+因为直接调用业务 RPC 会迫使 Gateway 解析 payload、构造业务 DTO、维护 response mapper。当前项目希望 Gateway 只做协议入口和 packet 转发，所以统一使用 `ForwardPacket` 把业务解析下沉到 service。
+
+### Q: local 和 remote 怎么保证行为一致？
+
+local 和 remote 都使用同一个 `XxxPacketRequest/XxxPacketResponse` 契约，并最终进入同一个 `XxxPacketDispatcher::handle`。区别只是 dispatcher 在 Gateway 进程内执行，还是在远程 service 进程内执行。
+
+### Q: 当前 gRPC 边界还不完美在哪里？
+
+packet contract 和业务 proto 仍混在同一个文件里，Gateway 编译期仍可能接触业务 DTO。后续应拆出独立 packet proto，让 Gateway 只依赖 packet contract。
+
+### Q: Push 为什么不是简单 remote ForwardPacket？
+
+因为 Push 的实际投递对象是 Gateway 内存里的 WebSocket session。远程 Push 只能调度投递，最终发送 payload 必须通过 Gateway callback 回到 Gateway 完成。

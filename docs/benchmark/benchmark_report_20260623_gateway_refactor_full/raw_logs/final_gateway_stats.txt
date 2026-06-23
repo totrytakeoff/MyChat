@@ -1,0 +1,76 @@
+GatewayServer stats:
+  Running: true
+online user count:0
+ ws.accept_ok: 1570
+ ws.accept_fail: 0
+ ws.active_handshakes: 0
+ ws.current_sessions: 0
+ ws.ssl_handshake.count: 1570
+ ws.ssl_handshake.avg_ms: 4.82484
+ ws.ssl_handshake.max_ms: 31
+ ws.upgrade_read.count: 1570
+ ws.upgrade_read.avg_ms: 2.00573
+ ws.upgrade_read.max_ms: 7
+ ws.accept_handshake.count: 1570
+ ws.accept_handshake.avg_ms: 0
+ ws.accept_handshake.max_ms: 0
+ ws.session_add.count: 1570
+ ws.session_add.avg_ms: 0.0802548
+ ws.session_add.max_ms: 3
+ processed message count:23548
+  processed websocket message count:68556
+ parse.decode failed count: 0
+ parse.routing failed count:1
+ ws.inflight_messages: 0
+ ws.max_inflight_messages: 4096
+ http.worker_threads: 64
+ http.max_queued_requests: 1024
+ http.keep_alive_timeout_sec: 1
+ http.keep_alive_max_count: 1
+ http.total_requests: 46723
+ http.inflight_requests: 1
+ http.status_2xx: 46521
+ http.status_4xx: 200
+ http.status_5xx: 1
+ http.status_other: 0
+ http.route.GET /api/v1/stats.count: 23
+ http.route.GET /api/v1/stats.avg_ms: 0
+ http.route.GET /api/v1/stats.max_ms: 0
+ http.route.GET .*.count: 23149
+ http.route.GET .*.avg_ms: 0.462828
+ http.route.GET .*.max_ms: 12
+ http.route.POST .*.count: 400
+ http.route.POST .*.avg_ms: 46.49
+ http.route.POST .*.max_ms: 126
+ http.route.GET /api/v1/health.count: 23150
+ http.route.GET /api/v1/health.avg_ms: 0
+ http.route.GET /api/v1/health.max_ms: 0
+ service.push.mode: local
+ service.push.timeout_ms: 200
+ service.push.remote_endpoint: 127.0.0.1:9101
+ service.push.local_bound: true
+ service.push.remote_bound: false
+ service.group.mode: local
+ service.group.timeout_ms: 200
+ service.group.remote_endpoint: 127.0.0.1:9004
+ service.group.local_bound: true
+ service.group.remote_bound: false
+ service.friend.mode: local
+ service.friend.timeout_ms: 200
+ service.friend.remote_endpoint: 127.0.0.1:9003
+ service.friend.local_bound: true
+ service.friend.remote_bound: false
+ service.message.mode: local
+ service.message.timeout_ms: 200
+ service.message.remote_endpoint: 127.0.0.1:9002
+ service.message.local_bound: true
+ service.message.remote_bound: false
+ service.user.mode: local
+ service.user.timeout_ms: 200
+ service.user.remote_endpoint: 127.0.0.1:9001
+ service.user.local_bound: true
+ service.user.remote_bound: false
+ thread_pool.threads: 4
+ thread_pool.queued_or_running_tasks: 0
+ processor.coro_callback_count: 0
+ processor.get_active_task_count:0

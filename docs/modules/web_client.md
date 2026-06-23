@@ -41,7 +41,9 @@ Web 客户端只访问 Gateway：
 ```text
 Web Client
 -> Gateway HTTP / WebSocket
--> Gateway local/remote facade
+-> Gateway MessageParser / UnifiedMessage
+-> GatewayRuntimeRegistry
+-> local service packet dispatcher 或 remote ForwardPacket gRPC
 -> 后端服务
 ```
 
