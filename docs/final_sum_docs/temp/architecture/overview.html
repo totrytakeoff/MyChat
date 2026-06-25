@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目整体架构总览 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="read-progress"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link active" href="overview.html">架构</a>
+      <a class="nav-link" href="gateway.html">Gateway</a>
+      <a class="nav-link" href="grpc.html">gRPC</a>
+      <a class="nav-link" href="storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§01 · 架构篇</div>
+    <h1 class="reveal reveal-d1">项目整体架构总览</h1>
+    <p class="desc reveal reveal-d2">MyChat 是一个 C++ 分布式 IM 后端，核心入口是 Gateway。它统一接入 HTTP 和 WebSocket，把请求解析成统一消息模型后按 cmd_id 分发；后端按服务边界拆分，支持本地 in-process 与 gRPC ForwardPacket 远程两种运行模式。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+
+<!-- ============ TOC ============ -->
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#position">一句话定位</a>
+  <a href="#stage">当前阶段</a>
+  <a href="#arch">总架构图</a>
+  <a href="#change">关键架构变化</a>
+  <a href="#modules">模块职责</a>
+  <a href="#mode">Local / Remote</a>
+  <a href="#data">数据与缓存</a>
+  <a href="#done">功能完成度</a>
+  <a href="#bench">压测基准</a>
+  <a href="#highlights">项目亮点</a>
+</aside>
+
+<main>
+
+<!-- §1 定位 -->
+<section id="position">
+  <div class="section-title"><span class="num">§01.1</span><h2 style="margin-top:0">一句话定位</h2></div>
+  <p>Gateway 统一接入 HTTP 和 WebSocket，把请求解析成统一消息模型后按 <code>cmd_id</code> 分发；后端按 User、Message、Friend、Group、Push 等服务边界拆分，支持本地 in-process 运行，也支持通过 gRPC <code>ForwardPacket</code> 调用远程服务；Redis 管理 token/session 等临时状态，PostgreSQL/ODB 持久化用户、消息、好友和群组数据。</p>
+  <div class="quote reveal">
+    <span class="quote-label">面试压缩版</span>
+    我做了一个 C++ 分布式 IM 后端，核心是 Gateway 统一接入 HTTP/WebSocket，内部通过 MessageParser、MessageProcessor 和 command handler registry 做统一命令分发。Gateway 只负责协议入口、鉴权、路由、连接管理和 packet 转发，真正的业务解析和业务规则在各 service 的 packet dispatcher 中完成。项目覆盖注册登录、好友、单聊、群聊、在线推送，并支持 local 和 remote gRPC 两种运行模式。
+  </div>
+</section>
+
+<!-- §2 阶段 -->
+<section id="stage">
+  <div class="section-title"><span class="num">§01.2</span><h2>当前项目阶段</h2></div>
+  <div class="steps reveal">
+    <div class="step active"><div class="step-title">MVP 功能稳定</div><div class="step-desc">注册登录、好友、单聊、群聊、在线推送主链路闭环</div></div>
+    <div class="step"><div class="step-title">Gateway 架构拨乱反正</div><div class="step-desc">从旧 controller/client 链路重构为统一 packet 架构</div></div>
+    <div class="step"><div class="step-title">压测基准归档</div><div class="step-desc">重构后完整压测，WSS 与 HTTP 双场景稳定</div></div>
+    <div class="step"><div class="step-title">文档重写 + 手工/多机验证</div><div class="step-desc">统一到 packet 架构叙事，remote-all 多进程验证</div></div>
+    <div class="step"><div class="step-title">简历与面试准备</div><div class="step-desc">沉淀亮点、技术难点、取舍理由、追问答案</div></div>
+  </div>
+</section>
+
+<!-- §3 总架构 -->
+<section id="arch">
+  <div class="section-title"><span class="num">§01.3</span><h2>当前总架构</h2></div>
+  <div class="flow reveal reveal-d1">
+    <div class="flow-title">四层架构 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","service","store"],"nodes":[{"id":"web","label":"Web Client","group":"client"},{"id":"gw","label":"Gateway","group":"gateway"},{"id":"user","label":"User","group":"service"},{"id":"msg","label":"Message","group":"service"},{"id":"friend","label":"Friend","group":"service"},{"id":"group","label":"Group","group":"service"},{"id":"push","label":"Push","group":"service"},{"id":"pg","label":"PostgreSQL","group":"store"},{"id":"redis","label":"Redis","group":"store"}],"edges":[["web","gw"],["gw","user"],["gw","msg"],["gw","friend"],["gw","group"],["gw","push"],["gw","redis"],["user","pg"],["msg","pg"],["friend","pg"],["group","pg"],["push","redis"]],"notes":{"web":"<div class=note-title>Web Client · React</div>中文桌面 IM 风格验证客户端，只访问 Gateway。","gw":"<div class=note-title>Gateway</div>协议入口 + 鉴权 + cmd 路由 + 连接管理 + packet 转发 + push 转交。","user":"<div class=note-title>User Service</div>账号与用户资料。","msg":"<div class=note-title>Message Service</div>单聊消息与状态。","friend":"<div class=note-title>Friend Service</div>好友关系与申请。","group":"<div class=note-title>Group Service</div>群资料、成员、群消息。","push":"<div class=note-title>Push Service</div>在线投递与 fanout。","pg":"<div class=note-title>PostgreSQL + ODB</div>用户、消息、好友、群组持久化。","redis":"<div class=note-title>Redis</div>token、在线状态、session 映射。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+    <div class="flow-controls">
+      <button class="flow-btn active" data-action="toggle">暂停流光</button>
+      <button class="flow-btn" data-action="replay">重放粒子</button>
+    </div>
+  </div>
+</section>
+
+<!-- §4 架构变化 -->
+<section id="change">
+  <div class="section-title"><span class="num">§01.4</span><h2>最关键的架构变化</h2></div>
+  <p>之前文档里大量提到的 <code>HTTP Controller → Local*Client / Remote*Client facade → Service</code> 已经不是当前主架构。</p>
+  <div class="compare reveal">
+    <div class="compare-col compare-old">
+      <div class="compare-label">✕ 重构前</div>
+      <p class="strike">HTTP Controller</p>
+      <p class="strike">→ Local*Client / Remote*Client facade</p>
+      <p class="strike">→ Service</p>
+      <p style="color:var(--ink-3);font-size:var(--fs-sm);margin-top:var(--sp-3)">HTTP 与 WS 是两套割裂入口；Gateway 出现业务字段解析、业务 DTO 构造和 response mapper。</p>
+    </div>
+    <div class="compare-col compare-new">
+      <div class="compare-label">✓ 重构后</div>
+      <p>HTTP / WebSocket</p>
+      <p>→ <b>MessageParser → UnifiedMessage</b></p>
+      <p>→ <b>MessageProcessor</b></p>
+      <p>→ <b>CommandHandlerRegistry</b></p>
+      <p>→ <b>RuntimeRegistry</b></p>
+      <p>→ local dispatcher 或 remote ForwardPacket</p>
+      <p style="color:var(--ink-2);font-size:var(--fs-sm);margin-top:var(--sp-3)"><span class="check">✓</span> HTTP/WS 统一 · <span class="check">✓</span> Gateway 不解析业务 payload · <span class="check">✓</span> 边界更干净</p>
+    </div>
+  </div>
+
+  <h3 style="margin-top:var(--sp-6)">交互演示 · 点击切换旧/新链路</h3>
+  <div class="boundary-anim reveal">
+    <div class="boundary-toggle">
+      <span class="mode-opt active" data-bt="old"><span class="dot"></span>重构前 controller/client</span>
+      <span class="mode-opt" data-bt="new"><span class="dot"></span>重构后统一 packet</span>
+    </div>
+    <div class="boundary-stage show-old" id="boundaryStage">
+      <div class="boundary-layer boundary-old">
+        <div style="font-family:var(--font-mono);font-size:var(--fs-sm);line-height:2;color:var(--ink-3)">
+          <p class="strike-line">HTTP Controller（每模块单独注册 route）</p>
+          <p class="strike-line">→ Local*Client / Remote*Client facade</p>
+          <p class="strike-line">→ Service（Gateway 解析业务 payload、构造 DTO、维护 mapper）</p>
+          <p class="strike-line">→ WebSocket 走另一套入口</p>
+          <p style="margin-top:var(--sp-3);color:var(--red)">✕ HTTP 与 WS 割裂 · ✕ Gateway 混入业务逻辑 · ✕ 新增服务需成套维护 controller/client/DTO</p>
+        </div>
+      </div>
+      <div class="boundary-layer boundary-new">
+        <div style="font-family:var(--font-mono);font-size:var(--fs-sm);line-height:2;color:var(--ink)">
+          <p>HTTP / WebSocket <span style="color:var(--accent)">（统一入口）</span></p>
+          <p>→ <b>MessageParser → UnifiedMessage</b></p>
+          <p>→ <b>MessageProcessor</b>（按 cmd_id 分发）</p>
+          <p>→ <b>CommandHandlerRegistry</b>（鉴权 + 身份注入）</p>
+          <p>→ <b>RuntimeRegistry</b>（选 local / remote）</p>
+          <p>→ local dispatcher 或 remote ForwardPacket</p>
+          <p style="margin-top:var(--sp-3);color:var(--green)">✓ HTTP/WS 统一 · ✓ Gateway 不解析业务 payload · ✓ 新增服务只需注册 cmd_id</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+  <div class="section-title"><span class="num">§01.5</span><h2>模块职责总览</h2></div>
+
+  <h3>Web Client</h3>
+  <p>后端能力验证入口，不是后台管理系统。提供中文桌面 IM 风格的登录、聊天、联系人、群聊、资料页，验证 Gateway HTTP API 与 WebSocket 二进制 protobuf 收发。</p>
+  <div class="quote"><span class="quote-label">关键边界</span>Web 只访问 Gateway；不直接访问各业务服务；不关心后面是 local 还是 remote。</div>
+
+  <h3>Gateway</h3>
+  <p>整个系统的统一外部入口。</p>
+  <div class="grid grid-2 reveal" style="margin:var(--sp-4) 0">
+    <div class="card"><div class="card-title">职责 ✓</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+        <li>暴露 HTTP API 和 WebSocket 入口</li>
+        <li>转成 UnifiedMessage，按 cmd_id 调 handler</li>
+        <li>校验 access token，提取可信 uid/device/platform</li>
+        <li>管理 WS session、心跳、背压</li>
+        <li>packet 转发到 local/remote</li>
+        <li>消费 auth_token_hint 与 push_event</li>
+      </ul>
+    </div>
+    <div class="card"><div class="card-title">不负责 ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+        <li>解析注册/好友/群/消息正文等业务 payload</li>
+        <li>构造业务 DTO</li>
+        <li>维护业务 response mapper</li>
+        <li>实现好友状态机、群成员规则</li>
+        <li>直接操作业务表</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>五大业务服务</h3>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>服务</th><th>核心能力</th><th>gRPC 边界</th><th>关键设计</th></tr></thead>
+      <tbody>
+        <tr><td><b>User</b></td><td>注册、登录、资料、搜索</td><td><code>ForwardPacket(UserPacketRequest)</code></td><td>PBKDF2-HMAC-SHA256；返回 auth_token_hint 交 Gateway 签发 token</td></tr>
+        <tr><td><b>Message</b></td><td>单聊发送、历史、离线、delivered/read</td><td><code>ForwardPacket(MessagePacketRequest)</code></td><td>先持久化再 ack；返回 push_event；push 失败不回滚</td></tr>
+        <tr><td><b>Friend</b></td><td>申请、处理、好友列表、待处理</td><td><code>ForwardPacket(FriendPacketRequest)</code></td><td>防重复、防自加、目标存在校验、状态机闭环</td></tr>
+        <tr><td><b>Group</b></td><td>建群、搜索、加入、退出、群消息</td><td><code>ForwardPacket(GroupPacketRequest)</code></td><td>群成员 fanout 在 service 内算；返回 push_events 列表</td></tr>
+        <tr><td><b>Push</b></td><td>在线投递、fanout</td><td><code>NotifyUser</code> + Gateway callback</td><td>远程 Push 必须回调 Gateway 投递 WS session</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="quote reveal"><span class="quote-label">面试表达</span>Gateway 是协议接入层、鉴权边界和命令分发层，不是业务处理层。业务 payload 的解析和业务规则都在 service packet dispatcher 内完成。</div>
+</section>
+
+<!-- §6 local/remote -->
+<section id="mode">
+  <div class="section-title"><span class="num">§01.6</span><h2>Local / Remote 运行模式</h2></div>
+  <p>同一套 handler 通过 <code>GatewayRuntimeRegistry</code> 选择 local service 或 remote adapter，外部 HTTP/WS 协议不变。</p>
+
+  <div class="reveal" style="margin:var(--sp-5) 0">
+    <div class="mode-switch" id="modeSwitch">
+      <span class="mode-opt active" data-mode="local"><span class="dot"></span>Local all-in-one</span>
+      <span class="mode-opt" data-mode="remote"><span class="dot"></span>Remote gRPC 分布式</span>
+    </div>
+  </div>
+
+  <div class="compare reveal">
+    <div class="compare-col compare-new" id="modeLocal">
+      <div class="compare-label">Local 模式</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">local</span></div>
+<pre><code>Gateway command handler
+  → <span class="tok-fn">GatewayRuntimeRegistry</span>
+  → <span class="tok-fn">service instance</span>      <span class="tok-cmt"># 进程内持有</span>
+  → <span class="tok-fn">XxxPacketDispatcher::handle</span>(packet)
+
+<span class="tok-cmt"># 优点：启动简单、本地调试方便、单机 MVP</span></code></pre>
+      </div>
+    </div>
+    <div class="compare-col compare-old" id="modeRemote" style="display:none">
+      <div class="compare-label">Remote 模式</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">remote</span></div>
+<pre><code>Gateway command handler
+  → <span class="tok-fn">GatewayRuntimeRegistry</span>
+  → <span class="tok-fn">RemoteXxxServiceAdapter</span>
+  → <span class="tok-fn">XxxService::ForwardPacket</span>  <span class="tok-cmt"># gRPC</span>
+  → service server <span class="tok-fn">XxxPacketDispatcher::handle</span>
+
+<span class="tok-cmt"># 优点：分进程部署、验证 gRPC deadline/网络错误</span></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="card-title">配置文件</div>
+    <div class="grid grid-4" style="margin-top:var(--sp-2)">
+      <div><code>dev.json</code><br><small>本地 all-in-one</small></div>
+      <div><code>dev.remote-push.json</code><br><small>Push 远程化</small></div>
+      <div><code>dev.remote-all.json</code><br><small>全远程验证</small></div>
+      <div><code>benchmark.json</code><br><small>压测配置</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- §7 数据与缓存 -->
+<section id="data">
+  <div class="section-title"><span class="num">§01.7</span><h2>数据与缓存</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col" style="background:var(--blue-soft);border:1px solid var(--blue-soft)">
+      <div class="compare-label" style="color:var(--blue)">PostgreSQL + ODB · 持久态</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+        <li>用户账号和资料</li><li>单聊消息</li><li>好友申请和好友关系</li><li>群资料和群成员</li><li>群消息</li>
+      </ul>
+    </div>
+    <div class="compare-col" style="background:var(--amber-soft);border:1px solid var(--amber-soft)">
+      <div class="compare-label" style="color:var(--amber)">Redis · 临时态</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+        <li>access/refresh token 相关状态</li><li>Gateway connection/session 映射</li><li>在线状态辅助信息</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">取舍原则</span>持久化状态放 PostgreSQL；临时态、在线态、token 态放 Redis；Gateway 不直接成为业务数据持久化层。</div>
+</section>
+
+<!-- §8 功能完成度 -->
+<section id="done">
+  <div class="section-title"><span class="num">§01.8</span><h2>当前功能完成度</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">已完成 MVP 主链路</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-3)">
+        <span class="tag tag-green">注册/登录/token 鉴权</span>
+        <span class="tag tag-green">用户资料查询更新</span>
+        <span class="tag tag-green">用户搜索</span>
+        <span class="tag tag-green">好友申请/处理/列表</span>
+        <span class="tag tag-green">单聊发送/历史/离线/推送</span>
+        <span class="tag tag-green">群创建/搜索/加入/退出</span>
+        <span class="tag tag-green">群消息发送/历史/推送</span>
+        <span class="tag tag-green">local/remote gRPC 边界</span>
+        <span class="tag tag-green">Web 双账号验证</span>
+        <span class="tag tag-green">WSS 生命周期/心跳/背压</span>
+        <span class="tag tag-green">重构后压测基准</span>
+      </div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--ink-4)">
+      <div class="card-title" style="color:var(--ink-3)">暂不作为 MVP 核心项</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-3)">
+        <span class="tag tag-ghost">多 Gateway 跨网路由</span>
+        <span class="tag tag-ghost">消息 sequence/严格有序</span>
+        <span class="tag tag-ghost">client_msg_id 幂等去重</span>
+        <span class="tag tag-ghost">大群 fanout 优化</span>
+        <span class="tag tag-ghost">群权限/管理员/禁言</span>
+        <span class="tag tag-ghost">文件/图片消息</span>
+        <span class="tag tag-ghost">生产级监控/链路追踪</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §9 压测 -->
+<section id="bench">
+  <div class="section-title"><span class="num">§01.9</span><h2>压测基准</h2></div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>指标</th><th class="num">结果</th></tr></thead>
+      <tbody>
+        <tr><td>WSS conn-200</td><td class="num">200 / 200 成功</td></tr>
+        <tr><td>WSS 200 users / 250ms 吞吐</td><td class="num"><b style="color:var(--accent-deep)">714.4 msg/s</b></td></tr>
+        <tr><td>WSS RTT p95</td><td class="num">35.91ms</td></tr>
+        <tr><td>HTTP ramp 请求数</td><td class="num">46296</td></tr>
+        <tr><td>HTTP 平均 RPS</td><td class="num"><b style="color:var(--accent-deep)">306.86 / s</b></td></tr>
+        <tr><td>HTTP 失败率</td><td class="num"><b style="color:var(--green)">0.00%</b></td></tr>
+        <tr><td>HTTP p95</td><td class="num">3.75ms</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="quote"><span class="quote-label">克制表达</span>这不是生产级百万连接结论，而是说明当前 MVP 在 200 在线用户、HTTP 500 VU ramp 的验证口径下，Gateway 主链路稳定，没有连接残留、线程池堆积和 HTTP timeout。</div>
+</section>
+
+<!-- §10 亮点 -->
+<section id="highlights">
+  <div class="section-title"><span class="num">§01.10</span><h2>项目亮点</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card card-hover"><div class="card-title">统一接入层</div><p class="card-text">C++ 实现 Gateway 兼容 HTTP 和 WebSocket</p></div>
+    <div class="card card-hover"><div class="card-title">统一消息模型</div><p class="card-text">MessageParser + MessageProcessor + CommandHandlerRegistry</p></div>
+    <div class="card card-hover"><div class="card-title">packet boundary 清晰</div><p class="card-text">Gateway 不解析业务 payload</p></div>
+    <div class="card card-hover"><div class="card-title">local/remote 可切</div><p class="card-text">all-in-one 演进到 gRPC 分布式</p></div>
+    <div class="card card-hover"><div class="card-title">Push remote callback</div><p class="card-text">解决 Gateway session 归属问题</p></div>
+    <div class="card card-hover"><div class="card-title">持久态/临时态拆分</div><p class="card-text">PostgreSQL/ODB + Redis 职责清晰</p></div>
+    <div class="card card-hover"><div class="card-title">真实业务验证客户端</div><p class="card-text">Web 不是摆设，驱动完整业务流</p></div>
+    <div class="card card-hover"><div class="card-title">压测定位修复</div><p class="card-text">有数据支撑的 WSS/HTTP 问题修复过程</p></div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="../index.html"><div class="label">← 返回</div><div class="title">首页概览</div></a>
+  <a class="next" href="gateway.html"><div class="label">下一篇 →</div><div class="title">Gateway 统一接入与编排</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§01 · 项目整体架构总览</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>
+/* local/remote 模式切换 */
+document.querySelectorAll('#modeSwitch .mode-opt').forEach(function(opt){
+  opt.addEventListener('click', function(){
+    document.querySelectorAll('#modeSwitch .mode-opt').forEach(function(o){o.classList.remove('active');});
+    opt.classList.add('active');
+    var mode = opt.getAttribute('data-mode');
+    document.getElementById('modeLocal').style.display = mode==='local'?'':'none';
+    document.getElementById('modeRemote').style.display = mode==='remote'?'':'none';
+  });
+});
+/* packet boundary 旧/新切换动画 */
+document.querySelectorAll('.boundary-toggle .mode-opt').forEach(function(opt){
+  opt.addEventListener('click', function(){
+    document.querySelectorAll('.boundary-toggle .mode-opt').forEach(function(o){o.classList.remove('active');});
+    opt.classList.add('active');
+    var stage = document.getElementById('boundaryStage');
+    var bt = opt.getAttribute('data-bt');
+    stage.classList.remove('show-old','show-new');
+    stage.classList.add('show-' + bt);
+  });
+});
+</script>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>

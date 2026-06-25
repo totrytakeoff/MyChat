@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高频问答与架构追问 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+</head>
+<body>
+<div class="read-progress"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+      <a class="nav-link active" href="qa.html">面试</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§19+20 · 面试篇</div>
+    <h1 class="reveal reveal-d1">高频问答与架构追问</h1>
+    <p class="desc reveal reveal-d2">交互式折叠面板，模拟被追问的递进回答。重点不是背概念，而是说明 MyChat 在 Gateway、服务边界、Push、存储和性能之间做了哪些具体取舍。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#q1">项目整体</a>
+  <a href="#q2">Gateway 与架构</a>
+  <a href="#q3">消息系统</a>
+  <a href="#q4">好友关系</a>
+  <a href="#q5">群聊</a>
+  <a href="#q6">Push 与分布式</a>
+  <a href="#q7">存储与工程</a>
+  <a href="#q8">不足与规划</a>
+  <a href="#drill">架构追问链</a>
+</aside>
+
+<main>
+
+<section id="q1">
+  <div class="qa-filters reveal" id="qaFilters">
+    <span class="qa-filter active" data-filter="all">全部</span>
+    <span class="qa-filter" data-filter="q1">项目整体</span>
+    <span class="qa-filter" data-filter="q2">Gateway与架构</span>
+    <span class="qa-filter" data-filter="q3">消息系统</span>
+    <span class="qa-filter" data-filter="q4">好友关系</span>
+    <span class="qa-filter" data-filter="q5">群聊</span>
+    <span class="qa-filter" data-filter="q6">Push与分布式</span>
+    <span class="qa-filter" data-filter="q7">存储与工程</span>
+    <span class="qa-filter" data-filter="q8">不足与规划</span>
+    <span class="qa-filter" data-filter="drill">架构追问</span>
+  </div>
+  <div class="section-title"><span class="num">Q1</span><h2 style="margin-top:0">项目整体类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q1">
+      <button class="qa-q">简单介绍一下 MyChat？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>MyChat 是一个 C++ 分布式 IM 后端项目。它用 Gateway 统一接入 HTTP 和 WebSocket，后端按 User、Message、Friend、Group、Push 拆分服务边界。当前功能覆盖注册登录、个人资料、好友、单聊、群聊、在线推送和离线补偿，并配有 React Web 验证客户端。</p><p>架构上最核心的是 Gateway 统一 packet 链路：HTTP/WS 请求都会被转换成 UnifiedMessage，再由 cmd_id 路由到对应服务。Gateway 只负责鉴权、路由、连接管理和 packet 转发，业务 protobuf 解析和业务判断都在服务侧完成。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q1">
+      <button class="qa-q">这个项目解决了什么问题？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>它不是单纯做一个聊天页面，而是验证一个 C++ IM 后端如何从单机开发演进到分布式服务：</p><p>1. 客户端只依赖 Gateway，不直接感知后端服务地址。<br>2. HTTP 和 WebSocket 共享同一套鉴权、路由和服务转发模型。<br>3. 服务既可以本地进程内运行，也可以通过 gRPC ForwardPacket 独立部署。<br>4. 消息先持久化再推送，Push 失败后能通过历史/离线拉取补偿。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q1">
+      <button class="qa-q">为什么用 C++ 做 IM 后端？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>IM 后端天然涉及网络 IO、连接管理、二进制协议、并发调度、服务边界和性能压测。C++ 能比较直接地展示这些底层工程能力。这个项目的重点不是"用 C++ 写聊天软件"，而是把 C++ 项目做成有网关、有服务拆分、有存储、有 gRPC 边界、有压测依据的工程。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="q2">
+  <div class="section-title"><span class="num">Q2</span><h2>Gateway 与架构类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q2">
+      <button class="qa-q">为什么需要 Gateway？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>如果客户端直接调用各服务，客户端就需要知道每个服务的地址，还要分别处理 token、错误码和网络状态。WebSocket 连接也会变得难管理。Gateway 把客户端接入问题统一收口：对外暴露 HTTP/WS，对内通过 cmd_id 和 packet 路由到服务。这样后端服务的部署方式变化不会影响客户端。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q2">
+      <button class="qa-q">当前 Gateway 主链路是什么？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>HTTP / WebSocket → MessageParser → UnifiedMessage → MessageProcessor → GatewayCommandHandlerRegistry → GatewayRuntimeRegistry → local service packet dispatcher 或 remote ForwardPacket gRPC。</p><p>MessageParser 负责把不同协议入口转成统一消息；MessageProcessor 负责统一调度和执行；CommandHandlerRegistry 负责 cmd_id 到 handler 的注册；RuntimeRegistry 负责运行时选择本地还是远程 endpoint；service packet dispatcher 才解析业务 payload。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q2">
+      <button class="qa-q">为什么不再使用 controller/client facade 作为主架构？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>旧模式的问题是每新增一个服务或接口，Gateway 就要增加 controller、client、remote client 和大量 DTO/mapper。Gateway 会越来越像业务聚合层，和"只做接入与路由"的目标冲突。改成统一 packet boundary 后，Gateway 只处理 envelope、cmd_id、auth metadata 和 transport metadata，业务字段不在 Gateway 展开，服务侧自己解析 protobuf。这让 HTTP、WebSocket、local 和 remote 可以共享同一套服务入口。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q2">
+      <button class="qa-q">Gateway 会不会太重？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Gateway 的职责边界现在很清晰，只保留五类：协议接入、鉴权（token 校验和 actor uid 注入）、连接管理（WS session 生命周期）、路由（cmd_id 到服务 endpoint）、转发（packet 转发和响应回写）。它不处理好友申请状态机、群成员权限、消息持久化这些业务逻辑。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q2">
+      <button class="qa-q">local 和 remote 模式如何兼容？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Gateway 外部契约不变，差异在 RuntimeRegistry 选择的 endpoint：local 调用进程内服务的 packet dispatcher；remote 调用服务的 ForwardPacket gRPC。两种模式都以 packet 作为边界，因此 Gateway 不需要理解服务内部业务 DTO。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="q3">
+  <div class="section-title"><span class="num">Q3</span><h2>消息系统类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q3">
+      <button class="qa-q">为什么消息要先持久化再推送？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>如果先推送再落库，推送成功但数据库写入失败，用户会看到一条刷新后消失的消息。这对 IM 来说比延迟更难接受。MyChat 选择先落库再推送。持久化成功后返回 ack，Push 是 best-effort。Push 失败不回滚消息，接收方后续可以通过历史消息或离线拉取补偿。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q3">
+      <button class="qa-q">WebSocket ack、delivered、read 有什么区别？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p><b>ack</b>：服务端已收到并持久化发送请求。<br><b>delivered</b>：消息至少成功投递到接收方一个在线 session。<br><b>read</b>：接收方明确阅读后标记。<br>ack 是发送侧语义，delivered/read 是接收侧状态。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q3">
+      <button class="qa-q">如何防止客户端伪造 sender_uid？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Gateway 不信任请求体中的 sender_uid。发送者身份来自 access token。Gateway 鉴权后把 actor uid 作为 metadata 传给服务，服务侧以这个 actor uid 作为当前用户。这样客户端即使在 payload 中伪造 sender_uid，也不会被当作可信身份。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q3">
+      <button class="qa-q">离线消息怎么实现？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>离线消息不是单独的队列表，而是持久化消息中的状态视图。消息写入后初始是 SENT；在线 Push 成功后标记 DELIVERED。用户上线或进入会话时拉取未投递/历史消息，服务根据 receiver、状态和时间查询。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q3">
+      <button class="qa-q">当前性能基准如何？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>2026-06-23 重构后基准：HTTP 500 VU ramp 46296 次请求，约 306.86 req/s，失败率 0，p95 约 3.75ms；WebSocket 200 连接 200/200 成功，建连 p95 约 14ms；WebSocket 200 用户每 250ms 一条消息约 714.4 msg/s，RTT p95 约 35.91ms，错误 0。这说明当前 MVP 已具备稳定验证能力，但还不能宣称生产级容量。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="q4">
+  <div class="section-title"><span class="num">Q4</span><h2>好友关系类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q4">
+      <button class="qa-q">好友申请和好友关系如何建模？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Friend Service 维护好友关系和申请生命周期。当前通过状态区分 PENDING、ACCEPTED、REJECTED 等关系。申请被接受后状态流转为 ACCEPTED，不需要把申请记录迁移到另一张表。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q4">
+      <button class="qa-q">好友申请有哪些校验？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>服务侧会校验：1. 不能添加自己；2. 目标用户必须存在；3. 不能重复申请；4. 不能反向重复申请；5. 只有被申请者可以处理申请；6. 只有 pending 状态能被处理。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q4">
+      <button class="qa-q">为什么用户搜索不放在 Friend Service？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>用户资料属于 User Service，好友关系属于 Friend Service。添加好友的用户体验是"先搜索用户，再发申请"，但搜索用户本身不是好友关系逻辑。因此搜索由 User Service 提供，Friend Service 只负责创建和处理关系。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="q5">
+  <div class="section-title"><span class="num">Q5</span><h2>群聊类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q5">
+      <button class="qa-q">群消息如何发送？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Group Service 校验成员身份并持久化群消息，然后返回消息结果和 push_events。Gateway 不展开群成员业务逻辑，只把服务返回的 push_events 交给 Push 服务 fanout。默认不向发送者重复推送。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q5">
+      <button class="qa-q">大群 fanout 有什么问题？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>当前 MVP 适合中小规模验证。大群 fanout 会带来成员查询、在线状态查询、消息投递和状态标记的放大。后续优化方向包括：群成员缓存、在线成员预过滤、Push 异步队列、批量 session 查询和批量投递、热点大群特殊通道。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q5">
+      <button class="qa-q">群资料 UI 中哪些是后续扩展？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>当前后端已经支持建群、搜索、加入、退出、成员列表、群消息和历史。群公告、群昵称、群备注、免打扰、置顶、复杂通知设置等属于后续产品能力，Web 端可以先作为展示形态存在，但不要在面试中说成后端已经完整实现。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="q6">
+  <div class="section-title"><span class="num">Q6</span><h2>Push 与分布式类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q6">
+      <button class="qa-q">为什么 Push 要独立出来？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Push 不只是 Message 的附属逻辑。单聊、群聊、系统通知都可能触发在线投递。把 PushRuntime 和 FanoutPolicy 独立出来，可以统一多端 fanout、payload 构造、投递结果处理和未来的异步队列/重试策略。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q6">
+      <button class="qa-q">为什么远程 Push 需要回调 Gateway？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>WebSocket session 在 Gateway 进程里。远程 Push 服务不能直接访问 Gateway 内存。所以 Push 通过 GatewayPushDeliveryService 回调 Gateway：ListUserSessions 查连接，SendSessionPayload 发送 payload，MarkMessageDelivered 标记投递。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q6">
+      <button class="qa-q">多 Gateway 如何扩展？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>当前 MVP 主要验证单 Gateway。多 Gateway 需要 uid → gateway 实例的全局连接索引。用户连接 Gateway 后写入 Redis 或服务注册中心，Push 先查用户在哪个 Gateway，再回调对应 Gateway。连接断开时清理索引，并处理过期和异常断连。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="q7">
+  <div class="section-title"><span class="num">Q7</span><h2>存储与工程类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q7">
+      <button class="qa-q">Redis 和 PostgreSQL 如何分工？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Redis 存 token、session、撤销状态等临时状态，特点是高频、可过期、可重建。PostgreSQL 存用户、消息、好友、群组等持久业务数据，特点是需要事务、查询和长期保存。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q7">
+      <button class="qa-q">为什么用 ODB？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>ODB 让 C++ domain model 和 PostgreSQL 表结构建立映射，减少手写 SQL 样板。代价是工具链更重，生成文件和版本依赖需要管理。当前项目通过 ODB 2.5.0、CMake gate、迁移脚本和 focused tests 来降低这部分风险。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q7">
+      <button class="qa-q">为什么 proto 放在 common/proto？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>common/proto 是唯一权威 IDL 来源。Gateway、服务端、远程 adapter 和测试都使用同一套生成文件。这样可以避免多个目录里生成文件漂移，也方便通过 generate_proto 统一再生成。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="q8">
+  <div class="section-title"><span class="num">Q8</span><h2>不足与规划类</h2></div>
+  <div class="reveal">
+    <div class="qa-item" data-cat="q8">
+      <button class="qa-q">当前项目最大不足是什么？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>从生产角度看，主要不足是多 Gateway 连接路由、消息队列化、监控告警、部署编排和富媒体能力还没做。从面试项目角度看，当前已经是完整可演示 MVP，下一步重点是把架构讲清楚、把压测数据讲明白，再补少量高价值稳定性验证。</p></div></div>
+    </div>
+    <div class="qa-item" data-cat="q8">
+      <button class="qa-q">如果继续优化，你优先做什么？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>1. 多 Gateway 连接路由：解决横向扩展。2. Push 异步队列：削峰填谷，降低发送链路尾延迟。3. 消息序列号：增强会话内顺序语义。4. 对象存储：支持头像、图片、文件。5. 更完整压测和链路 tracing：定位瓶颈和给容量规划提供依据。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="drill">
+  <div class="section-title"><span class="num">§追问</span><h2>架构追问链 · 连续追问</h2></div>
+  <p>回答架构追问时按这个结构：<b>先说目标 → 再说方案 → 再说代价 → 最后说演进</b>。</p>
+
+  <div class="card reveal" style="margin-top:var(--sp-4);border-left:3px solid var(--accent)">
+    <div class="card-title">追问链 1 · Gateway 统一接入</div>
+    <div class="quote" style="margin:0;border:none;padding:0">
+      <p style="margin:0 0 var(--sp-2)"><b>为什么 Gateway 同时处理 HTTP 和 WebSocket？</b></p>
+      <p style="margin:0 0 var(--sp-2)">→ 合在一个 Gateway 的收益是鉴权逻辑统一、WS session 与用户身份绑定更直接、Push 投递能回到同一个连接管理边界、客户端只需感知一个统一入口。如果拆成两个入口，token 校验、用户状态、连接状态都需要跨进程同步，MVP 阶段复杂度更高。</p>
+      <p style="margin:0 0 var(--sp-2)"><b>→ Gateway 会不会太重？</b></p>
+      <p style="margin:0 0 var(--sp-2)">→ Gateway 重不重取决于职责是否外溢。当前只保留五类职责，不做好友状态机、群成员权限、消息落库等业务逻辑。</p>
+      <p style="margin:0 0 var(--sp-2)"><b>→ 多 Gateway 如何扩展？</b></p>
+      <p style="margin:0">→ 需要 uid→gateway instance 全局连接索引，Push 根据索引回调对应 Gateway，session 上线/断线时注册与清理。这个扩展方向和当前 Push callback 设计兼容。</p>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:var(--sp-4);border-left:3px solid var(--blue)">
+    <div class="card-title">追问链 2 · 统一 Packet Boundary</div>
+    <div class="quote" style="margin:0;border:none;padding:0">
+      <p style="margin:0 0 var(--sp-2)"><b>为什么不保留 controller/client facade？</b></p>
+      <p style="margin:0 0 var(--sp-2)">→ 旧方案新增服务需要成套维护 controller、local/remote client、DTO 转换、Gateway 内业务字段解析，会让 Gateway 逐渐变成业务聚合层。</p>
+      <p style="margin:0 0 var(--sp-2)"><b>→ 统一 packet 会不会太抽象？</b></p>
+      <p style="margin:0 0 var(--sp-2)">→ 统一 packet 后 Gateway 主流程稳定：读 envelope/metadata → 校验 token → 根据 cmd_id 找 endpoint → 转发 packet → 写回 response/handoff push_event。业务解析下沉到服务侧 dispatcher。</p>
+      <p style="margin:0 0 var(--sp-2)"><b>→ Gateway 完全不解析业务 payload 是否可行？</b></p>
+      <p style="margin:0">→ 可行。代价是 cmd_id 规划稳定、envelope 设计清楚、服务侧 dispatcher 维护业务解析、客户端和服务端遵守统一错误模型。但这些代价比 Gateway 到处散落业务 DTO 更可控。</p>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:var(--sp-4);border-left:3px solid var(--green)">
+    <div class="card-title">追问链 3 · 先持久化再推送</div>
+    <div class="quote" style="margin:0;border:none;padding:0">
+      <p style="margin:0 0 var(--sp-2)"><b>为什么先持久化再推送？</b></p>
+      <p style="margin:0 0 var(--sp-2)">→ IM 中"发送成功后刷新消失"比"实时推送稍慢"更不可接受。</p>
+      <p style="margin:0 0 var(--sp-2)"><b>→ Push 失败怎么办？</b></p>
+      <p style="margin:0 0 var(--sp-2)">→ Push 失败不回滚已持久化消息。接收方可以通过历史消息或离线拉取补偿。持久化成功=服务端已接收；Push 成功=实时性更好；Push 失败=退化为拉取。</p>
+      <p style="margin:0 0 var(--sp-2)"><b>→ 是否需要 MQ？</b></p>
+      <p style="margin:0">→ 生产级 IM 通常会引入消息队列让持久化后的 push/fanout 异步化。当前 MVP 暂时直接调用 Push 是为了减少部署复杂度。后续引入 MQ 后：Message/Group 落库 → 写入 MQ → Push Worker 消费 → Gateway callback 投递，收益是削峰填谷、失败重试和更低尾延迟。</p>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:var(--sp-4);border-left:3px solid var(--amber)">
+    <div class="card-title">取舍表达模板</div>
+    <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">template</span><button class="code-copy">复制</button></div>
+<pre><code><span class="tok-cmt"># 回答架构追问的结构</span>
+先说目标：这个设计解决什么问题
+再说方案：当前代码如何做
+再说代价：它带来什么复杂度
+最后说演进：生产级会怎么继续优化
+
+<span class="tok-cmt"># 示例</span>
+Gateway 统一 packet boundary 的目标是避免网关理解业务 DTO。
+当前通过 MessageParser、UnifiedMessage、CommandHandlerRegistry 和
+RuntimeRegistry 做到 HTTP/WS/local/remote 的统一转发。
+代价是 cmd_id 和 envelope 契约要设计稳定。
+后续如果服务数量更多，可以把 RuntimeRegistry 与服务发现、
+动态配置结合起来。</code></pre></div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="../engineering/stack.html"><div class="label">← 上一篇</div><div class="title">核心技术栈与选型</div></a>
+  <a class="next" href="resume.html"><div class="label">下一篇 →</div><div class="title">简历与自我介绍</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§19+20 · 高频问答与架构追问</span>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script>
+document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});
+/* QA 分类筛选 */
+document.querySelectorAll('#qaFilters .qa-filter').forEach(function(f){
+  f.addEventListener('click',function(){
+    document.querySelectorAll('#qaFilters .qa-filter').forEach(function(o){o.classList.remove('active');});
+    f.classList.add('active');
+    var cat=f.getAttribute('data-filter');
+    document.querySelectorAll('.qa-item').forEach(function(item){
+      var show = cat==='all' || item.getAttribute('data-cat')===cat;
+      item.classList.toggle('hidden', !show);
+    });
+  });
+});
+</script>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>

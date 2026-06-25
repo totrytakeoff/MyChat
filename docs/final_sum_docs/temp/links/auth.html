@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注册登录与鉴权链路 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="read-progress"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link active" href="auth.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§05 · 业务链路篇</div>
+    <h1 class="reveal reveal-d1">注册登录与鉴权链路</h1>
+    <p class="desc reveal reveal-d2">MyChat 采用 JWT access token + Redis refresh token 的双 token 多端方案。密码校验属于 User service 业务规则，token 签发与校验属于 Gateway 鉴权边界 —— 这条边界把"账号业务"和"接入层鉴权"清晰分开。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#register">注册链路</a>
+  <a href="#login">登录链路</a>
+  <a href="#password">密码安全</a>
+  <a href="#tokens">双 Token</a>
+  <a href="#auth">鉴权链路</a>
+  <a href="#profile">资料与搜索</a>
+  <a href="#qa">面试追问</a>
+</aside>
+
+<main>
+
+<section id="register">
+  <div class="section-title"><span class="num">§05.1</span><h2 style="margin-top:0">注册链路</h2></div>
+  <p>注册不要求已有 access token；Gateway 不解析 account/password/nickname，这些字段由 <code>UserPacketDispatcher::handle_register</code> 解析；User service 完成账号重复检查、密码哈希、用户落库，只返回 <code>auth_token_hint</code>，Gateway 据此签发 token。</p>
+
+  <div class="flow reveal">
+    <div class="flow-title">注册链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","gateway","service","store"],"nodes":[{"id":"req","label":"POST /auth/register","group":"client"},{"id":"parse","label":"MessageParser","group":"gateway"},{"id":"handler","label":"CMD_REGISTER handler","group":"gateway"},{"id":"disp","label":"UserPacketDispatcher","group":"service"},{"id":"db","label":"UserRepository / PG","group":"store"}],"edges":[["req","parse"],["parse","handler"],["handler","disp"],["disp","db"]],"notes":{"req":"<div class=note-title>POST /api/v1/auth/register</div>{ account, password, nickname, device_id, platform }","parse":"<div class=note-title>MessageParser</div>解析 method/path/token/device/platform/body，转 UnifiedMessage，路由到 CMD_REGISTER。","handler":"<div class=note-title>CMD_REGISTER handler</div>构造 UserPacketRequest(payload=raw JSON)，调 local dispatcher 或 remote ForwardPacket。","disp":"<div class=note-title>UserPacketDispatcher::handle_register</div>解析 JSON 字段，账号重复检查，密码哈希，返回 UserPacketResponse + auth_token_hint。","db":"<div class=note-title>UserRepository / PostgreSQL</div>ODB transaction + persist(user)。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+
+  <div class="card reveal" style="margin-top:var(--sp-4);border-left:3px solid var(--accent)">
+    <div class="card-title">token 签发回流</div>
+    <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">回流</span></div>
+<pre><code>UserPacketResponse(auth_token_hint.required=<span class="tok-kw">true</span>)
+  → <span class="tok-fn">append_tokens_and_respond</span>
+  → <span class="tok-fn">MultiPlatformAuthManager::generate_tokens</span>
+  → HTTP response (profile + access_token + refresh_token)</code></pre></div>
+    <p class="card-text">User service 不直接签发 token，只返回 hint；Gateway 作为鉴权边界统一签发，保证所有业务入口使用同一套多端 token 策略。</p>
+  </div>
+</section>
+
+<section id="login">
+  <div class="section-title"><span class="num">§05.2</span><h2>登录链路</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">登录链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","service","service","store"],"nodes":[{"id":"req","label":"POST /auth/login","group":"client"},{"id":"handler","label":"CMD_LOGIN handler","group":"gateway"},{"id":"disp","label":"UserPacketDispatcher","group":"service"},{"id":"svc","label":"UserService::login_by_account","group":"service"},{"id":"db","label":"UserRepository","group":"store"}],"edges":[["req","handler"],["handler","disp"],["disp","svc"],["svc","db"]],"notes":{"req":"<div class=note-title>POST /api/v1/auth/login</div>{ account, password, device_id, platform }","handler":"<div class=note-title>CMD_LOGIN handler</div>构造 UserPacketRequest，转发 packet。","disp":"<div class=note-title>UserPacketDispatcher::handle_login</div>解析 JSON，调用 UserService。","svc":"<div class=note-title>UserService::login_by_account</div>find_by_account → PasswordHasher::verify → update_last_login。","db":"<div class=note-title>UserRepository</div>查用户、更新 last_login。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+
+  <h3>登录失败场景</h3>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>场景</th><th>处理位置</th><th>HTTP</th></tr></thead>
+      <tbody>
+        <tr><td>JSON 非法</td><td>UserPacketDispatcher</td><td><span class="tag tag-amber">400</span></td></tr>
+        <tr><td>缺少 account/password</td><td>UserPacketDispatcher / UserService</td><td><span class="tag tag-amber">400</span></td></tr>
+        <tr><td>账号不存在</td><td>UserService</td><td><span class="tag tag-red">401</span></td></tr>
+        <tr><td>密码错误</td><td>UserService</td><td><span class="tag tag-red">401</span></td></tr>
+        <tr><td>数据库异常</td><td>UserService / Repository</td><td><span class="tag tag-red">500</span></td></tr>
+        <tr><td>Gateway 未初始化 User runtime</td><td>Gateway handler</td><td><span class="tag tag-red">500</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="password">
+  <div class="section-title"><span class="num">§05.3</span><h2>密码安全 · PBKDF2</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">PBKDF2-HMAC-SHA256</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>每个用户独立 salt</li>
+        <li>存储格式含算法/迭代次数/salt/hash</li>
+        <li>校验时相同参数重新计算</li>
+        <li>常量时间比较，防时序泄露</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)"><div class="card-title">边界划分</div>
+      <div class="quote" style="margin:0;border:none;padding:0">
+        <p style="margin:0">密码校验是账号业务规则 → <b>User service</b></p>
+        <p style="margin:var(--sp-2) 0 0">token 签发和校验是接入层鉴权 → <b>Gateway</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tokens">
+  <div class="section-title"><span class="num">§05.4</span><h2>Access Token 与 Refresh Token</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col" style="background:var(--accent-soft);border:1px solid var(--accent-soft)">
+      <div class="compare-label" style="color:var(--accent-deep)">Access Token · JWT</div>
+      <p style="font-size:var(--fs-sm);color:var(--ink-2);margin-bottom:var(--sp-3)"><b>短期、轻量、本地可验</b></p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        <span class="tag tag-accent">uid</span><span class="tag tag-accent">account</span><span class="tag tag-accent">device_id</span><span class="tag tag-accent">platform</span><span class="tag tag-accent">jti</span><span class="tag tag-accent">expires_at</span>
+      </div>
+    </div>
+    <div class="compare-col" style="background:var(--amber-soft);border:1px solid var(--amber-soft)">
+      <div class="compare-label" style="color:var(--amber)">Refresh Token · Redis</div>
+      <p style="font-size:var(--fs-sm);color:var(--ink-2);margin-bottom:var(--sp-3)"><b>长生命周期、可撤销</b></p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        <span class="tag tag-amber">user_id</span><span class="tag tag-amber">device_id</span><span class="tag tag-amber">platform</span><span class="tag tag-amber">revoked</span><span class="tag tag-amber">last_used</span><span class="tag tag-amber">expire_time</span>
+      </div>
+    </div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">设计目的</span>access token 保持短期、轻量、本地可验；refresh token 生命周期更长，需要服务端可撤销；多端登录态和撤销状态适合放 Redis（天然 TTL）。</div>
+</section>
+
+<section id="auth">
+  <div class="section-title"><span class="num">§05.5</span><h2>鉴权链路 · 写操作不信任客户端 uid</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">鉴权链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","gateway","gateway","service"],"nodes":[{"id":"hdr","label":"Bearer token","group":"client"},{"id":"verify","label":"verify_http_user","group":"gateway"},{"id":"auth","label":"AuthManager::verify_access_token","group":"gateway"},{"id":"inject","label":"注入 packet header","group":"gateway"},{"id":"svc","label":"service dispatcher","group":"service"}],"edges":[["hdr","verify"],["verify","auth"],["auth","inject"],["inject","svc"]],"notes":{"hdr":"<div class=note-title>Authorization: Bearer &lt;access_token&gt;</div>每个需要鉴权的请求都带 token。","verify":"<div class=note-title>verify_http_user</div>handler 内调用，按命令语义决定是否鉴权。","auth":"<div class=note-title>MultiPlatformAuthManager::verify_access_token</div>JWT 验签 + 撤销检查，返回 UserTokenInfo。","inject":"<div class=note-title>注入可信身份</div>packet.header.from_uid = token uid；device_id / platform 同理。","svc":"<div class=note-title>service dispatcher</div>只使用 header 身份作为当前操作者，不信任 body 中的 uid。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">为什么不信任客户端传 uid</span>客户端 body/header 都可以伪造；只有 token 经过 Gateway 验签；后端写操作必须使用 token 派生身份。</div>
+</section>
+
+<section id="profile">
+  <div class="section-title"><span class="num">§05.6</span><h2>资料查询、更新、搜索</h2></div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>功能</th><th>cmd_id</th><th>Service dispatcher</th><th>鉴权</th></tr></thead>
+      <tbody>
+        <tr><td>注册</td><td>CMD_REGISTER</td><td>handle_register</td><td><span class="tag tag-ghost">无需</span></td></tr>
+        <tr><td>登录</td><td>CMD_LOGIN</td><td>handle_login</td><td><span class="tag tag-ghost">无需</span></td></tr>
+        <tr><td>用户资料</td><td>CMD_GET_USER_INFO</td><td>handle_profile</td><td><span class="tag tag-accent">需 token</span></td></tr>
+        <tr><td>更新资料</td><td>CMD_UPDATE_USER_INFO</td><td>handle_update_profile</td><td><span class="tag tag-accent">需 token</span></td></tr>
+        <tr><td>搜索用户</td><td>CMD_SEARCH_USER</td><td>handle_search_user</td><td><span class="tag tag-accent">需 token</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="section-title"><span class="num">§05.7</span><h2>面试追问 · 点击展开</h2></div>
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">为什么 token 由 Gateway 生成，而不是 User service？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为 token 是接入层能力。User service 只证明账号密码校验成功，并返回 <code>auth_token_hint</code>。Gateway 统一签发 token，可以保证所有业务入口使用同一套多端 token 策略、Redis refresh token 管理和 access token 校验逻辑。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">Gateway 为什么还要解析 User service 返回的 JSON？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>当前仅在登录/注册成功后，为响应体注入 <code>access_token</code> 和 <code>refresh_token</code>。这是鉴权边界例外，不应扩展为 Gateway 解析用户业务字段。长期可以进一步把 token 字段作为 packet response 的边界字段，减少 JSON parse/dump。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">local 和 remote 怎么保证行为一致？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>两者都走同一个 <code>UserPacketRequest/UserPacketResponse</code> 契约。local 直接调用 <code>UserPacketDispatcher::handle</code>，remote 通过 gRPC <code>ForwardPacket</code> 到远端服务后再调用同一个 dispatcher，因此业务解析和规则复用。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="../architecture/storage.html"><div class="label">← 上一篇</div><div class="title">数据持久化与缓存</div></a>
+  <a class="next" href="message.html"><div class="label">下一篇 →</div><div class="title">单聊消息链路</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§05 · 注册登录与鉴权链路</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>压测基准与可视化 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="read-progress"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link active" href="benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">工程篇 · 压测基准</div>
+    <h1 class="reveal reveal-d1">压测基准与可视化</h1>
+    <p class="desc reveal reveal-d2">2026-06-23 Gateway 重构后完整压测。这不是生产级百万连接结论，而是说明当前 MVP 在 200 在线用户、HTTP 500 VU ramp 的验证口径下，Gateway 主链路稳定、无连接残留、无线程池堆积。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#summary">核心指标</a>
+  <a href="#http-compare">HTTP 重构对比</a>
+  <a href="#wss-msg">WSS 消息吞吐</a>
+  <a href="#wss-conn">WSS 建连</a>
+  <a href="#history">历史异常参考</a>
+  <a href="#state">Gateway 最终状态</a>
+  <a href="#interpret">正确表述</a>
+</aside>
+
+<main>
+
+<section id="summary">
+  <div class="section-title"><span class="num">§压测.1</span><h2 style="margin-top:0">核心指标 · 数字滚动</h2></div>
+  <div class="grid grid-4 reveal">
+    <div class="card metric accent">
+      <div class="value" data-count="714.4" data-decimals="1" data-unit=" msg/s">0</div>
+      <div class="label">WSS 吞吐峰值 · 200u/250ms</div>
+    </div>
+    <div class="card metric">
+      <div class="value" data-count="35.91" data-decimals="2" data-unit="ms">0</div>
+      <div class="label">WSS RTT p95</div>
+    </div>
+    <div class="card metric">
+      <div class="value" data-count="306.86" data-decimals="2" data-unit="/s">0</div>
+      <div class="label">HTTP 平均 RPS</div>
+    </div>
+    <div class="card metric accent">
+      <div class="value" data-count="0" data-decimals="0" data-unit="%">0</div>
+      <div class="label">HTTP 失败率 · 46296 请求</div>
+    </div>
+  </div>
+  <div class="grid grid-3 reveal reveal-d1" style="margin-top:var(--sp-4)">
+    <div class="card metric"><div class="value" data-count="3.75" data-decimals="2" data-unit="ms">0</div><div class="label">HTTP p95</div></div>
+    <div class="card metric"><div class="value" data-count="14" data-decimals="0" data-unit="ms">0</div><div class="label">WSS Connect p95</div></div>
+    <div class="card metric"><div class="value" data-count="200" data-decimals="0" data-unit="/200">0</div><div class="label">WSS 建连成功</div></div>
+  </div>
+</section>
+
+<section id="http-compare">
+  <div class="section-title"><span class="num">§压测.2</span><h2>HTTP Ramp · 重构前 vs 重构后</h2></div>
+  <p>重构前 HTTP 的核心问题不是所有接口都慢，而是高并发阶段大量请求长时间拿不到响应，最终触发 k6 的 60s timeout。重构后 46296 个请求全部通过。</p>
+
+  <div class="card reveal" style="margin-top:var(--sp-5)">
+    <div class="card-title">平均 RPS · 14.44 → 306.86（约 21.3x）</div>
+    <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin:var(--sp-3) 0 6px"><span style="color:var(--ink-4)">重构前 2026-06-22</span><span style="color:var(--ink-4)">重构后 2026-06-23</span></div>
+    <div class="bar-track"><div class="bar-fill muted" style="--w:4.7%"></div></div>
+    <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="--w:100%"></div></div>
+  </div>
+
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="card-title">失败率 · 56.03% → 0.00%</div>
+    <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin:var(--sp-3) 0 6px"><span style="color:var(--red)">重构前 56.03%</span><span style="color:var(--green)">重构后 0.00%</span></span></div>
+    <div class="bar-track"><div class="bar-fill" style="--w:56%;background:linear-gradient(90deg,var(--red),#d97757)"></div></div>
+    <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="--w:0.5%;background:var(--green)"></div></div>
+  </div>
+
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="card-title">p95 延迟 · 59.99s → 3.75ms</div>
+    <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin:var(--sp-3) 0 6px"><span style="color:var(--red)">重构前 59.99s（60s timeout）</span><span style="color:var(--accent-deep)">重构后 3.75ms</span></div>
+    <div class="bar-track"><div class="bar-fill" style="--w:100%;background:linear-gradient(90deg,var(--red),#d97757)"></div></div>
+    <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="--w:0.01%"></div></div>
+  </div>
+
+  <div class="tbl-wrap reveal" style="margin-top:var(--sp-5)">
+    <table>
+      <thead><tr><th>指标</th><th class="num">重构前 06-22</th><th class="num">重构后 06-23</th><th>变化</th></tr></thead>
+      <tbody>
+        <tr><td>HTTP 请求数</td><td class="num">2595</td><td class="num"><b>46296</b></td><td><span class="tag tag-accent">约 17.8x</span></td></tr>
+        <tr><td>平均 RPS</td><td class="num">14.44/s</td><td class="num"><b>306.86/s</b></td><td><span class="tag tag-accent">约 21.3x</span></td></tr>
+        <tr><td>失败率</td><td class="num" style="color:var(--red)">56.03%</td><td class="num" style="color:var(--green)"><b>0.00%</b></td><td><span class="tag tag-green">timeout 消失</span></td></tr>
+        <tr><td>平均延迟</td><td class="num">8.23s</td><td class="num">2.86ms</td><td><span class="tag tag-green">秒级→毫秒级</span></td></tr>
+        <tr><td>p90</td><td class="num">59.99s</td><td class="num">3.55ms</td><td><span class="tag tag-green">长尾消失</span></td></tr>
+        <tr><td>p95</td><td class="num" style="color:var(--red)">59.99s</td><td class="num"><b>3.75ms</b></td><td><span class="tag tag-green">长尾消失</span></td></tr>
+        <tr><td>max</td><td class="num">59.99s</td><td class="num">16.84ms</td><td><span class="tag tag-green">timeout 消失</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="quote reveal"><span class="quote-label">解读</span>重构前 <code>/health</code> 轻量健康检查仍出现 p95=59998ms，因此问题更像 HTTP 接入层调度、连接处理、keep-alive、线程队列或入口状态，而不是业务 SQL/Redis 慢查询。重构后 HTTP 接入层已从"高并发大量 timeout"回到"可稳定压测"状态。</div>
+</section>
+
+<section id="wss-msg">
+  <div class="section-title"><span class="num">§压测.3</span><h2>WSS 消息吞吐 · 三档场景</h2></div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>场景</th><th class="num">用户</th><th class="num">间隔</th><th class="num">发送</th><th class="num">接收</th><th class="num">吞吐</th><th class="num">p50</th><th class="num">p95</th><th class="num">p99</th><th class="num">错误</th></tr></thead>
+      <tbody>
+        <tr><td>ws-200u-1s</td><td class="num">200</td><td class="num">1s</td><td class="num">12890</td><td class="num">25780</td><td class="num">186.8 msg/s</td><td class="num">6.28ms</td><td class="num">8.84ms</td><td class="num">12.35ms</td><td class="num"><b style="color:var(--green)">0</b></td></tr>
+        <tr><td>ws-200u-500ms</td><td class="num">200</td><td class="num">500ms</td><td class="num">13880</td><td class="num">27760</td><td class="num">355.9 msg/s</td><td class="num">9.89ms</td><td class="num">15.55ms</td><td class="num">20.44ms</td><td class="num"><b style="color:var(--green)">0</b></td></tr>
+        <tr><td><b>ws-200u-250ms</b></td><td class="num">200</td><td class="num">250ms</td><td class="num">27860</td><td class="num">55707</td><td class="num"><b>714.4 msg/s</b></td><td class="num">20.36ms</td><td class="num"><b>35.91ms</b></td><td class="num">45.98ms</td><td class="num"><b style="color:var(--green)">0</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>吞吐对比柱状图</h3>
+  <div class="card reveal">
+    <div style="display:grid;gap:var(--sp-4);margin-top:var(--sp-3)">
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:6px"><span>200u / 1s</span><span><b style="color:var(--accent-deep)">186.8</b> msg/s</span></div>
+        <div class="bar-track"><div class="bar-fill" style="--w:26%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:6px"><span>200u / 500ms</span><span><b style="color:var(--accent-deep)">355.9</b> msg/s</span></div>
+        <div class="bar-track"><div class="bar-fill" style="--w:50%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:6px"><span>200u / 250ms · 峰值</span><span><b style="color:var(--accent-deep)">714.4</b> msg/s</span></div>
+        <div class="bar-track"><div class="bar-fill" style="--w:100%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>RTT 分位数对比</h3>
+  <div class="card reveal">
+    <div class="mermaid">
+xychart-beta
+    title "WSS RTT 分位数 (ms)"
+    x-axis ["p50-1s", "p95-1s", "p99-1s", "p50-500ms", "p95-500ms", "p99-500ms", "p50-250ms", "p95-250ms", "p99-250ms"]
+    y-axis "延迟(ms)" 0 --> 50
+    bar [6.28, 8.84, 12.35, 9.89, 15.55, 20.44, 20.36, 35.91, 45.98]
+    </div>
+  </div>
+</section>
+
+<section id="wss-conn">
+  <div class="section-title"><span class="num">§压测.4</span><h2>WSS 建连能力</h2></div>
+  <div class="grid grid-4 reveal">
+    <div class="card metric"><div class="value" data-count="10" data-decimals="0" data-unit="/10">0</div><div class="label">conn-10</div></div>
+    <div class="card metric"><div class="value" data-count="50" data-decimals="0" data-unit="/50">0</div><div class="label">conn-50</div></div>
+    <div class="card metric"><div class="value" data-count="100" data-decimals="0" data-unit="/100">0</div><div class="label">conn-100</div></div>
+    <div class="card metric accent"><div class="value" data-count="200" data-decimals="0" data-unit="/200">0</div><div class="label">conn-200</div></div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">关键</span>Gateway accept fail = 0；压测结束 session 残留 = 0；线程池任务残留 = 0。本轮重构改动了 Gateway 主链路、handler 注册和 service 转发边界，但没有破坏 WSS accept、session add、关闭清理和线程池状态。</div>
+</section>
+
+<section id="history">
+  <div class="section-title"><span class="num">§压测.5</span><h2>历史异常参考 · 脱离早期问题状态</h2></div>
+  <p>2026-06-21 旧压测中 ws-200u-250ms 的参考数据（非严格 A/B，但能说明系统已脱离早期"连接建不上、关不干净"的状态）：</p>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>指标</th><th class="num">2026-06-21 历史异常</th><th class="num">2026-06-23 重构后</th></tr></thead>
+      <tbody>
+        <tr><td>成功连接</td><td class="num" style="color:var(--red)">36/200</td><td class="num" style="color:var(--green)"><b>200/200</b></td></tr>
+        <tr><td>失败连接</td><td class="num" style="color:var(--red)">164</td><td class="num" style="color:var(--green)"><b>0</b></td></tr>
+        <tr><td>发送吞吐</td><td class="num">97.1/s</td><td class="num"><b>714.4 msg/s</b></td></tr>
+        <tr><td>RTT p95</td><td class="num">65.45ms</td><td class="num"><b>35.91ms</b></td></tr>
+        <tr><td>压测后连接残留</td><td class="num" style="color:var(--red)">98 ESTAB + 21 CLOSE-WAIT</td><td class="num" style="color:var(--green)"><b>current_sessions=0</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="state">
+  <div class="section-title"><span class="num">§压测.6</span><h2>Gateway 最终状态 · 压测后清零</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">重构后完整压测</span></div>
+<pre><code>ws.accept_ok: <span style="color:var(--green)">1570</span>
+ws.accept_fail: <span style="color:var(--green)">0</span>
+ws.current_sessions: <span style="color:var(--green)">0</span>
+processed websocket message count: <span style="color:var(--accent-deep)">68556</span>
+parse.decode failed count: <span style="color:var(--green)">0</span>
+parse.routing failed count: 1
+ws.inflight_messages: <span style="color:var(--green)">0</span>
+http.total_requests: 46723
+http.status_2xx: 46521
+http.status_4xx: 200
+http.status_5xx: 1
+thread_pool.queued_or_running_tasks: <span style="color:var(--green)">0</span></code></pre></div>
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">关键点</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+        <li>WSS 有真实消息处理样本：<b>68556</b></li>
+        <li>解码失败为 0，统一 packet 链路无协议解析问题</li>
+        <li>压测结束 session/inflight/线程池任务<b>全部清零</b></li>
+        <li>少量 4xx/5xx 来自准备/探测阶段，非 ramp 失败</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="interpret">
+  <div class="section-title"><span class="num">§压测.7</span><h2>正确表述与归因</h2></div>
+  <div class="quote reveal"><span class="quote-label">不能简单归因</span>性能改善不能简单归因于"少了一层 controller 所以更快"。更准确的说法是<b>多轮压测定位 + Gateway 入口收口 + 生命周期修复 + HTTP 接入修复后的综合结果</b>。</div>
+  <div class="grid grid-2 reveal" style="margin-top:var(--sp-4)">
+    <div class="card" style="border-left:3px solid var(--green)"><div class="card-title" style="color:var(--green)">可以讲 ✓</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>完成 Gateway 重构后完整压测和性能对比分析</li>
+        <li>重构后链路稳定性明显提升</li>
+        <li>HTTP 不再出现旧压测中的大面积失败</li>
+        <li>WSS 200 并发用户下稳定完成在线消息收发</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--red)"><div class="card-title" style="color:var(--red)">不要讲 ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>百万连接</li><li>生产级高并发</li><li>商业 SLA</li><li>万人群</li>
+        <li>单次重构带来的纯性能提升</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card reveal" style="margin-top:var(--sp-4);border-left:3px solid var(--amber)">
+    <div class="card-title" style="color:var(--amber)">后续建议</div>
+    <ol style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-5)">
+      <li>修复 gateway_server CLI/config 优先级</li>
+      <li>统一压测环境 Redis 密码策略</li>
+      <li>stats 输出改为 JSON，方便自动采集</li>
+      <li>补充混合真实业务压测：好友申请、加群、群聊、历史拉取</li>
+      <li>补充 ack RTT、push latency、DB 持久化耗时拆分指标</li>
+    </ol>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="../links/push.html"><div class="label">← 上一篇</div><div class="title">实时推送与 Push 服务</div></a>
+  <a class="next" href="completeness.html"><div class="label">下一篇 →</div><div class="title">功能完成度分析</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>工程篇 · 压测基准与可视化</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>

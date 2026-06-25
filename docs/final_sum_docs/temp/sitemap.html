@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>站点地图 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/animations.css">
+</head>
+<body>
+<div class="read-progress"></div>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="index.html">概览</a>
+      <a class="nav-link" href="architecture/overview.html">架构</a>
+      <a class="nav-link" href="architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="architecture/storage.html">存储</a>
+      <a class="nav-link" href="links/message.html">业务链路</a>
+      <a class="nav-link" href="engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">导航</div>
+    <h1 class="reveal reveal-d1">站点地图</h1>
+    <p class="desc reveal reveal-d2">全站 18 个页面的鸟瞰总览，按主题色分组，便于快速定位与跳转。</p>
+  </div>
+</header>
+
+<div class="container" style="padding-bottom:var(--sp-8)">
+
+  <h2 class="reveal" style="margin-top:var(--sp-2)"><span style="color:var(--accent)">●</span> 首页</h2>
+  <div class="grid grid-auto reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+    <a class="card card-hover doc-card" href="index.html">
+      <div class="tag-row"><span class="tag tag-accent">入口</span></div>
+      <div class="card-title">首页概览</div>
+      <p class="card-text">动态架构总图、统一 packet 链路、压测亮点、文档导航。</p>
+      <span class="go">前往 <span class="arrow">→</span></span>
+    </a>
+    <a class="card card-hover doc-card" href="glossary.html">
+      <div class="tag-row"><span class="tag tag-accent">工具</span></div>
+      <div class="card-title">术语表</div>
+      <p class="card-text">packet boundary、cmd_id、UnifiedMessage 等项目术语速查。</p>
+      <span class="go">前往 <span class="arrow">→</span></span>
+    </a>
+  </div>
+
+  <h2 class="reveal"><span style="color:var(--accent)">●</span> 架构篇</h2>
+  <div class="grid grid-auto reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+    <a class="card card-hover doc-card" href="architecture/overview.html"><div class="tag-row"><span class="tag tag-accent">§01</span><span class="tag tag-ghost">必读</span></div><div class="card-title">项目整体架构总览</div><p class="card-text">四层架构、模块职责、local/remote 模式。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="architecture/gateway.html"><div class="tag-row"><span class="tag tag-accent">§04</span><span class="tag tag-ghost">核心</span></div><div class="card-title">Gateway 统一接入与编排</div><p class="card-text">HTTP/WS 链路、Handler 边界、Push 时序图。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="architecture/grpc.html"><div class="tag-row"><span class="tag tag-accent">§10</span></div><div class="card-title">gRPC 服务边界</div><p class="card-text">ForwardPacket、RuntimeRegistry、Push callback。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="architecture/storage.html"><div class="tag-row"><span class="tag tag-accent">§11</span></div><div class="card-title">数据持久化与缓存</div><p class="card-text">PostgreSQL/ODB 与 Redis 分工、各业务数据建模。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+  </div>
+
+  <h2 class="reveal"><span style="color:var(--blue)">●</span> 业务链路篇</h2>
+  <div class="grid grid-auto reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+    <a class="card card-hover doc-card" href="links/auth.html"><div class="tag-row"><span class="tag tag-blue">§05</span></div><div class="card-title">注册登录与鉴权</div><p class="card-text">双 token、PBKDF2、身份注入。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="links/message.html"><div class="tag-row"><span class="tag tag-blue">§06</span><span class="tag tag-ghost">核心</span></div><div class="card-title">单聊消息链路</div><p class="card-text">先持久化再 ack、push 语义、历史离线。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="links/friend.html"><div class="tag-row"><span class="tag tag-blue">§07</span></div><div class="card-title">好友关系链路</div><p class="card-text">申请状态机、4 条业务规则。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="links/group.html"><div class="tag-row"><span class="tag tag-blue">§08</span></div><div class="card-title">群聊链路</div><p class="card-text">三类数据分离、fanout 边界。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="links/push.html"><div class="tag-row"><span class="tag tag-blue">§09</span><span class="tag tag-ghost">亮点</span></div><div class="card-title">实时推送与 Push 服务</div><p class="card-text">回调 Gateway 的分布式边界。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+  </div>
+
+  <h2 class="reveal"><span style="color:var(--green)">●</span> 工程篇</h2>
+  <div class="grid grid-auto reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+    <a class="card card-hover doc-card" href="engineering/benchmark.html"><div class="tag-row"><span class="tag tag-green">压测</span></div><div class="card-title">压测基准与可视化</div><p class="card-text">重构前后对比、WSS/HTTP 全场景。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="engineering/completeness.html"><div class="tag-row"><span class="tag tag-green">§02</span></div><div class="card-title">功能完成度分析</div><p class="card-text">各模块完成度、MVP 边界。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="engineering/stack.html"><div class="tag-row"><span class="tag tag-green">§03</span></div><div class="card-title">核心技术栈与选型</div><p class="card-text">C++20/Boost/gRPC/Redis 选型理由。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="engineering/operations.html"><div class="tag-row"><span class="tag tag-green">§12-16</span></div><div class="card-title">验证与运维</div><p class="card-text">单机测试、双账号验证、多机部署、故障排查。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+  </div>
+
+  <h2 class="reveal"><span style="color:var(--amber)">●</span> 面试篇</h2>
+  <div class="grid grid-auto reveal reveal-d1">
+    <a class="card card-hover doc-card" href="interview/qa.html"><div class="tag-row"><span class="tag tag-amber">§19+20</span></div><div class="card-title">高频问答与架构追问</div><p class="card-text">27 个 QA + 3 条追问链，可筛选。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+    <a class="card card-hover doc-card" href="interview/resume.html"><div class="tag-row"><span class="tag tag-amber">§17+18</span></div><div class="card-title">简历与自我介绍</div><p class="card-text">简历描述、亮点分层、三档自我介绍。</p><span class="go">前往 <span class="arrow">→</span></span></a>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>站点地图 · 共 18 页</span>
+  </div>
+</footer>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

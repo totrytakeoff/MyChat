@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gRPC 服务边界与远程调用 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="read-progress"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="overview.html">架构</a>
+      <a class="nav-link" href="gateway.html">Gateway</a>
+      <a class="nav-link active" href="grpc.html">gRPC</a>
+      <a class="nav-link" href="storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§10 · 架构篇</div>
+    <h1 class="reveal reveal-d1">gRPC 服务边界与远程调用</h1>
+    <p class="desc reveal reveal-d2">MyChat 用统一 packet 契约把 Gateway 外部 HTTP/WS 协议和内部服务部署方式解耦；local 模式直接调用 service packet dispatcher，remote 模式通过 gRPC ForwardPacket 到独立服务进程，两种模式共享同一套业务解析和业务规则。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#model">权威模型</a>
+  <a href="#why">为什么用 ForwardPacket</a>
+  <a href="#unified">统一 packet 模型</a>
+  <a href="#registry">RuntimeRegistry</a>
+  <a href="#services">五大服务边界</a>
+  <a href="#push">Push 边界</a>
+  <a href="#modes">Local / Remote</a>
+  <a href="#adapter">Remote Adapter</a>
+  <a href="#proto">proto 状态</a>
+  <a href="#remote-all">remote-all 验证</a>
+  <a href="#qa">面试追问</a>
+</aside>
+
+<main>
+
+<section id="model">
+  <div class="section-title"><span class="num">§10.1</span><h2 style="margin-top:0">当前权威模型</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col compare-old">
+      <div class="compare-label">✕ 旧模型</div>
+      <p class="strike">Gateway Controller</p>
+      <p class="strike">→ Local*Client / Remote*Client</p>
+      <p class="strike">→ Service</p>
+    </div>
+    <div class="compare-col compare-new">
+      <div class="compare-label">✓ 当前模型</div>
+      <p>Gateway command handler</p>
+      <p>→ <b>GatewayRuntimeRegistry</b></p>
+      <p>→ local service packet dispatcher</p>
+      <p><b>或</b> → remote service adapter</p>
+      <p>→ <b>XxxService::ForwardPacket</b></p>
+      <p>→ service server packet dispatcher</p>
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">一句话</span>Gateway 只认识统一 packet，不认识业务 payload；Service 自己解析 payload、执行业务、构造响应。</div>
+</section>
+
+<section id="why">
+  <div class="section-title"><span class="num">§10.2</span><h2>为什么用 ForwardPacket</h2></div>
+  <p>如果 Gateway 直接调用一堆业务 RPC（SendMessage / GetConversation / CreateGroup / JoinGroup / SendRequest…），Gateway 就需要解析业务 payload、构造业务 request DTO、映射业务 response、为每个服务维护一套 local/remote 业务方法 —— 这会让 Gateway 重新变成业务编排层，违背当前边界。</p>
+  <div class="compare reveal">
+    <div class="compare-col compare-old">
+      <div class="compare-label">直接调业务 RPC ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>Gateway 解析业务 payload</li>
+        <li>构造业务 request DTO</li>
+        <li>映射业务 response</li>
+        <li>每服务维护一套 local/remote 业务方法</li>
+        <li>Gateway 重新变成业务编排层</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-new">
+      <div class="compare-label">统一 ForwardPacket ✓</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>Gateway 只认识 packet</li>
+        <li>Service 自己解析 payload</li>
+        <li>local 和 remote 共用同一个 dispatcher</li>
+        <li>外部 HTTP/WS 协议不受部署方式影响</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="unified">
+  <div class="section-title"><span class="num">§10.3</span><h2>统一 packet 模型</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">HTTP</span></div>
+<pre><code>HTTP request
+  → MessageParser → UnifiedMessage
+  → command handler
+  → <span class="tok-type">XxxPacketRequest</span>(
+      type_name=<span class="tok-str">"application/json"</span>,
+      payload=<span class="tok-str">raw json</span>)
+  → local dispatcher 或 remote ForwardPacket
+  → <span class="tok-type">XxxPacketResponse</span>(
+      payload=json, http_status)</code></pre></div>
+    <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">WebSocket</span></div>
+<pre><code>WebSocket envelope
+  → MessageParser → UnifiedMessage
+  → command handler / MessageWsHandler
+  → <span class="tok-type">XxxPacketRequest</span>(
+      type_name=<span class="tok-str">protobuf type</span>,
+      payload=<span class="tok-str">protobuf bytes</span>)
+  → local dispatcher 或 remote ForwardPacket
+  → <span class="tok-type">XxxPacketResponse</span>(protobuf)
+  → Gateway encode envelope</code></pre></div>
+  </div>
+</section>
+
+<section id="registry">
+  <div class="section-title"><span class="num">§10.4</span><h2>GatewayRuntimeRegistry</h2></div>
+  <p>Gateway 当前的运行时依赖表。handler 只拿一个收敛的 context，比旧的展开式 service/client 成员更清晰，也减少了 handler 注册函数的参数爆炸。</p>
+  <div class="code-block reveal"><div class="code-head"><span class="code-lang">cpp</span><button class="code-copy">复制</button></div>
+<pre><code><span class="tok-kw">struct</span> <span class="tok-type">GatewayCommandHandlerContext</span> {
+    <span class="tok-kw">const</span> <span class="tok-type">GatewayRuntimeRegistry</span>* runtime = <span class="tok-kw">nullptr</span>;
+};</code></pre></div>
+</section>
+
+<section id="services">
+  <div class="section-title"><span class="num">§10.5</span><h2>五大服务边界</h2></div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>服务</th><th>proto</th><th>packet RPC</th><th>覆盖 cmd</th></tr></thead>
+      <tbody>
+        <tr><td><b>User</b></td><td>user.proto</td><td><code>ForwardPacket(UserPacketRequest)</code></td><td>REGISTER / LOGIN / GET_USER_INFO / UPDATE_USER_INFO / SEARCH_USER</td></tr>
+        <tr><td><b>Message</b></td><td>message.proto</td><td><code>ForwardPacket(MessagePacketRequest)</code></td><td>SEND_MESSAGE / MESSAGE_HISTORY / PULL_MESSAGE</td></tr>
+        <tr><td><b>Friend</b></td><td>friend.proto</td><td><code>ForwardPacket(FriendPacketRequest)</code></td><td>ADD_FRIEND / HANDLE_FRIEND_REQUEST / GET_FRIEND_LIST / GET_FRIEND_REQUESTS</td></tr>
+        <tr><td><b>Group</b></td><td>group.proto</td><td><code>ForwardPacket(GroupPacketRequest)</code></td><td>CREATE_GROUP / SEARCH / GET_INFO / GET_LIST / APPLY_JOIN / QUIT / GET_MEMBERS / SEND_GROUP_MESSAGE / GET_GROUP_MESSAGES</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Remote 链路（以 User 为例）</h3>
+  <div class="flow reveal">
+    <div class="flow-title">User remote 链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["gateway","gateway","remote","remote","remote"],"nodes":[{"id":"h","label":"user_command_handlers","group":"gateway"},{"id":"ad","label":"RemoteUserServiceAdapter","group":"gateway"},{"id":"rpc","label":"UserService::ForwardPacket","group":"service"},{"id":"grpc","label":"user_grpc_service","group":"service"},{"id":"disp","label":"UserPacketDispatcher","group":"service"}],"edges":[["h","ad"],["ad","rpc"],["rpc","grpc"],["grpc","disp"]],"notes":{"h":"<div class=note-title>user_command_handlers</div>构造 UserPacketRequest，选 remote adapter。","ad":"<div class=note-title>RemoteUserServiceAdapter::forward</div>设置 gRPC deadline，调用 ForwardPacket。","rpc":"<div class=note-title>UserService::ForwardPacket</div>gRPC 服务端入口。","grpc":"<div class=note-title>user_grpc_service</div>解包 packet，交给 dispatcher。","disp":"<div class=note-title>UserPacketDispatcher::handle</div>解析 payload，执行业务，返回 UserPacketResponse + auth_token_hint。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <div class="quote"><span class="quote-label">特殊边界</span>User service 返回 <code>UserAuthTokenHint</code>，Gateway 根据 hint 生成 access/refresh token —— token 签发仍属于 Gateway 鉴权边界。Message service 返回 <code>MessagePushEvent</code>，Gateway 只消费并转交 PushNotifier。Group service 返回 <code>repeated GroupPushEvent</code>，Gateway 只遍历调用 PushNotifier，不自己算 fanout。</div>
+</section>
+
+<section id="push">
+  <div class="section-title"><span class="num">§10.6</span><h2>Push 边界 · 最典型的分布式取舍</h2></div>
+  <p>Push 和其他业务服务不同，因为 WebSocket session 在 Gateway 进程内。</p>
+  <div class="flow reveal">
+    <div class="flow-title">Remote Push 链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["gateway","remote","remote","gateway","gateway"],"nodes":[{"id":"gw","label":"Gateway","group":"gateway"},{"id":"rpn","label":"RemotePushNotifier","group":"service"},{"id":"ps","label":"push_server NotifyUser","group":"service"},{"id":"cb","label":"GatewayPushDeliveryService","group":"gateway"},{"id":"send","label":"Gateway session send","group":"gateway"}],"edges":[["gw","rpn"],["rpn","ps"],["ps","cb"],["cb","send"]],"notes":{"gw":"<div class=note-title>Gateway</div>触发 remote push。","rpn":"<div class=note-title>RemotePushNotifier</div>调用 push_server。","ps":"<div class=note-title>push_server NotifyUser</div>PushRuntime fanout + payload 构造。","cb":"<div class=note-title>GatewayPushDeliveryService</div>ListUserSessions / SendSessionPayload / MarkMessageDelivered 三个回调。","send":"<div class=note-title>Gateway session lookup / send</div>实际投递 WebSocket payload，session 只在 Gateway 内存中。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <div class="quote"><span class="quote-label">为什么需要 callback</span>远程 push_server 无法直接访问 Gateway 内存中的 WebSocket session map，所以它只能通过 Gateway 暴露的 delivery service 回调完成实际投递。</div>
+</section>
+
+<section id="modes">
+  <div class="section-title"><span class="num">§10.7</span><h2>Local / Remote 模式对比</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col compare-new">
+      <div class="compare-label">Local 模式</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">local</span></div>
+<pre><code>Gateway command handler
+  → RuntimeRegistry local service pointer
+  → <span class="tok-fn">XxxPacketDispatcher::handle</span>(packet)
+  → Service core → Repository/Redis/Push</code></pre></div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc;margin-top:var(--sp-3)">
+        <li>启动简单、本地调试方便</li><li>不需要多个服务进程</li><li>适合单机 MVP 验证</li>
+      </ul>
+    </div>
+    <div class="compare-col" style="background:var(--blue-soft);border:1px solid var(--blue-soft)">
+      <div class="compare-label" style="color:var(--blue)">Remote 模式</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">remote</span></div>
+<pre><code>Gateway command handler
+  → <span class="tok-fn">RemoteXxxServiceAdapter::forward</span>(packet)
+  → gRPC ForwardPacket → 独立服务进程
+  → <span class="tok-fn">XxxPacketDispatcher::handle</span>(packet)</code></pre></div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc;margin-top:var(--sp-3)">
+        <li>更接近真实分布式服务</li><li>分进程部署、验证 gRPC deadline/网络错误</li><li>Gateway 对外 HTTP/WS 协议不变</li>
+        <li>代价：启动排查复杂、需 endpoint 配置、多进程日志</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">一致性保证</span>local 和 remote 都使用同一个 XxxPacketRequest/Response 契约，并最终进入同一个 XxxPacketDispatcher::handle。区别只是 dispatcher 在 Gateway 进程内执行，还是在远程 service 进程内执行。</div>
+</section>
+
+<section id="adapter">
+  <div class="section-title"><span class="num">§10.8</span><h2>Remote Service Adapter 的职责</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col compare-new">
+      <div class="compare-label">adapter 职责 ✓</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>接收 XxxPacketRequest</li>
+        <li>设置 gRPC deadline</li>
+        <li>调用 ForwardPacket</li>
+        <li>检查 transport status</li>
+        <li>返回 XxxPacketResponse</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-old">
+      <div class="compare-label">adapter 不应该 ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>暴露 send_text_message / create_group 等业务方法</li>
+        <li>解析业务 JSON/protobuf payload</li>
+        <li>构造业务 DTO</li>
+        <li>做业务错误 mapper 之外的业务逻辑</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="proto">
+  <div class="section-title"><span class="num">§10.9</span><h2>proto 当前状态与优化方向</h2></div>
+  <p>当前 user/message/friend/group.proto 同时包含三类内容：</p>
+  <div class="grid grid-3 reveal" style="margin:var(--sp-4) 0">
+    <div class="card"><div class="card-title">packet contract</div><p class="card-text">XxxPacketRequest / Response</p></div>
+    <div class="card"><div class="card-title">历史业务 RPC</div><p class="card-text">Register、SendMessage、CreateGroup 等</p></div>
+    <div class="card"><div class="card-title">业务 DTO</div><p class="card-text">RegisterRequest、MessageBody、GroupInfo 等</p></div>
+  </div>
+  <div class="quote"><span class="quote-label">长期优化</span>拆出 *_packet.proto 或统一 gateway_packet.proto，让 Gateway 编译期只接触 packet contract，不接触业务 request/response DTO。</div>
+</section>
+
+<section id="remote-all">
+  <div class="section-title"><span class="num">§10.10</span><h2>remote-all 验证</h2></div>
+  <div class="card reveal">
+    <div class="card-title">目标：证明不是"只在单进程里跑得通"</div>
+    <div class="code-block" style="margin:var(--sp-4) 0"><div class="code-head"><span class="code-lang">config</span></div>
+<pre><code>Gateway
+  → remote UserService
+  → remote MessageService
+  → remote FriendService
+  → remote GroupService
+  → remote PushService
+
+<span class="tok-cmt"># config/dev.remote-all.json</span></code></pre></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-3)">
+      <span class="tag tag-blue">user_server</span><span class="tag tag-blue">message_server</span><span class="tag tag-blue">friend_server</span><span class="tag tag-blue">group_server</span><span class="tag tag-blue">push_server</span><span class="tag tag-blue">gateway_server</span>
+    </div>
+  </div>
+  <h3>验证重点</h3>
+  <div class="grid grid-2 reveal">
+    <div class="card"><ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc"><li>注册/登录 token 签发是否正常</li><li>HTTP route 是否都能进入 remote ForwardPacket</li></ul></div>
+    <div class="card"><ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc"><li>WS 单聊能否通过 remote message service</li><li>群消息 push_events 能否通过 remote group service</li><li>remote push callback 能否回到 Gateway 投递 WS session</li></ul></div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="section-title"><span class="num">§10.11</span><h2>面试追问 · 点击展开</h2></div>
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">为什么不让 Gateway 直接调用业务 RPC？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为直接调用业务 RPC 会迫使 Gateway 解析 payload、构造业务 DTO、维护 response mapper。当前项目希望 Gateway 只做协议入口和 packet 转发，所以统一使用 <code>ForwardPacket</code> 把业务解析下沉到 service。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">local 和 remote 怎么保证行为一致？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>local 和 remote 都使用同一个 <code>XxxPacketRequest/XxxPacketResponse</code> 契约，并最终进入同一个 <code>XxxPacketDispatcher::handle</code>。区别只是 dispatcher 在 Gateway 进程内执行，还是在远程 service 进程内执行。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">当前 gRPC 边界还不完美在哪里？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>packet contract 和业务 proto 仍混在同一个文件里，Gateway 编译期仍可能接触业务 DTO。后续应拆出独立 packet proto，让 Gateway 只依赖 packet contract。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">Push 为什么不是简单 remote ForwardPacket？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为 Push 的实际投递对象是 Gateway 内存里的 WebSocket session。远程 Push 只能调度投递，最终发送 payload 必须通过 Gateway callback 回到 Gateway 完成。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<h3>源码导读</h3>
+<div class="tbl-wrap reveal">
+  <table>
+    <thead><tr><th>服务</th><th>proto</th><th>Gateway remote adapter</th><th>service gRPC</th></tr></thead>
+    <tbody>
+      <tr><td>User</td><td>common/proto/user.proto</td><td>remote_user_service_adapter.cpp</td><td>user_grpc_service.cpp</td></tr>
+      <tr><td>Message</td><td>common/proto/message.proto</td><td>remote_message_service_adapter.cpp</td><td>message_grpc_service.cpp</td></tr>
+      <tr><td>Friend</td><td>common/proto/friend.proto</td><td>remote_friend_service_adapter.cpp</td><td>friend_grpc_service.cpp</td></tr>
+      <tr><td>Group</td><td>common/proto/group.proto</td><td>remote_group_service_adapter.cpp</td><td>group_grpc_service.cpp</td></tr>
+      <tr><td>Push</td><td>common/proto/push.proto</td><td>remote_push_notifier.cpp</td><td>push_grpc_service.cpp</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pager">
+  <a href="gateway.html"><div class="label">← 上一篇</div><div class="title">Gateway 统一接入与编排</div></a>
+  <a class="next" href="storage.html"><div class="label">下一篇 →</div><div class="title">数据持久化与缓存设计</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§10 · gRPC 服务边界与远程调用</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>
+/* QA 折叠面板 */
+document.querySelectorAll('.qa-q').forEach(function(q){
+  q.addEventListener('click', function(){ q.parentElement.classList.toggle('open'); });
+});
+</script>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>验证与运维 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+</head>
+<body>
+<div class="read-progress"></div>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link active" href="benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§12-16 · 工程篇</div>
+    <h1 class="reveal reveal-d1">验证与运维</h1>
+    <p class="desc reveal reveal-d2">单机 MVP 手工测试清单、Web 双账号验证、后端接口测试、多机器分布式部署、故障场景排查 —— 证明项目不是"只在单进程里跑得通"。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#smoke">冒烟检查</a>
+  <a href="#dual">Web 双账号验证</a>
+  <a href="#api">接口测试清单</a>
+  <a href="#multi">多机分布式部署</a>
+  <a href="#trouble">故障排查手册</a>
+  <a href="#pass">通过标准</a>
+</aside>
+
+<main>
+
+<section id="smoke">
+  <div class="section-title"><span class="num">§12</span><h2 style="margin-top:0">单机 MVP 冒烟检查</h2></div>
+  <p>单机测试不是压测，关注的是：后端基础依赖能启动、Gateway 能同时提供 HTTP 和 WebSocket、Web 能完成正常 IM 操作、local/remote-all 模式下核心链路不退化。</p>
+
+  <h3>环境准备</h3>
+  <div class="code-block reveal"><div class="code-head"><span class="code-lang">bash</span><button class="code-copy">复制</button></div>
+<pre><code><span class="tok-cmt"># 基础依赖</span>
+docker compose up -d redis postgres
+
+<span class="tok-cmt"># 推荐 remote-all（最接近分布式形态）</span>
+scripts/dev/run_remote_services_stack.sh
+
+<span class="tok-cmt"># Web 客户端</span>
+scripts/dev/run_web_stack.sh
+
+<span class="tok-cmt"># 或快速验证 local 模式</span>
+gateway_server -c config/dev.json</code></pre></div>
+
+  <h3>冒烟检查表</h3>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>检查项</th><th>预期结果</th></tr></thead>
+      <tbody>
+        <tr><td>Redis / PostgreSQL 容器</td><td>healthy 或可连接</td></tr>
+        <tr><td>User / Message / Friend / Group / Push Service</td><td>端口监听，日志无启动异常</td></tr>
+        <tr><td>Gateway HTTP</td><td><code>/api/v1/health</code> 返回 200</td></tr>
+        <tr><td>Gateway WebSocket</td><td>Web 客户端能建立连接</td></tr>
+        <tr><td>Web Client</td><td>登录/注册页面可访问</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="quote reveal"><span class="quote-label">优先级</span>优先检查 Gateway，因为它是所有客户端请求的第一入口。</div>
+
+  <h3>核心链路测试动作</h3>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">账号与资料</div><p class="card-text">注册 A/B → 登录 → 修改昵称签名头像 → 刷新重登验证持久化</p></div>
+    <div class="card"><div class="card-title">好友链路</div><p class="card-text">A 搜索 B → 申请 → B 待处理可见 → 接受 → 双方列表出现对方</p></div>
+    <div class="card"><div class="card-title">单聊链路</div><p class="card-text">A 发消息 → B 在线收 WS push → B 回复 → A 收 push → 刷新看历史</p></div>
+    <div class="card"><div class="card-title">离线消息</div><p class="card-text">B 退出 → A 发多条 → B 重登 → 离线拉取补偿，A 发送不依赖 B 在线</p></div>
+    <div class="card"><div class="card-title">群聊链路</div><p class="card-text">A 建群 → B 搜群 → 查看资料 → 加入 → 双方见成员 → A 发群消息 → B 在线收 → B 退群</p></div>
+    <div class="card" style="border-left:3px solid var(--accent)"><div class="card-title">关键校验</div><p class="card-text">消息发送使用 token 中真实 uid，不能相信客户端传入 sender_uid</p></div>
+  </div>
+</section>
+
+<section id="dual">
+  <div class="section-title"><span class="num">§13</span><h2>Web 双账号验证流程</h2></div>
+  <p>从真实用户视角验证，准备两个浏览器窗口：窗口 A（用户 A）、窗口 B（用户 B）。重点验证前端是否符合正常聊天软件使用习惯、后端 HTTP/WS 链路是否闭环。</p>
+
+  <div class="flow reveal">
+    <div class="flow-title">双账号验证顺序 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["a","b","c","d"],"nodes":[{"id":"reg","label":"注册登录","group":"client"},{"id":"friend","label":"好友验证","group":"gateway"},{"id":"chat","label":"单聊+离线","group":"service"},{"id":"group","label":"群聊验证","group":"store"}],"edges":[["reg","friend"],["friend","chat"],["chat","group"]],"notes":{"reg":"<div class=note-title>注册登录验证</div>窗口 A 注册 alice_test，窗口 B 注册 bob_test。验证 token 过期回登录页、不暴露 device_id 等调试字段。","friend":"<div class=note-title>好友验证</div>A 搜索 B → 申请 → B 待处理 → 接受。验证中间列表展示好友而非消息列表、不直接暴露内部 uid。","chat":"<div class=note-title>单聊+离线验证</div>A 发消息 B 不刷新即收（WS push）；B 退出 A 发多条 B 重登能拉取。会话红点未读计数正确。","group":"<div class=note-title>群聊验证</div>A 建群 → B 搜群查看资料 → 加入 → A 发群消息 B 在线收 → B 退群。群聊 tab 中间栏展示群列表。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+
+  <h3>WebSocket 推送观察点</h3>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">前端可观察</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>不刷新也能收到单聊/群聊消息</li><li>红点和未读计数更新</li>
+      </ul>
+    </div>
+    <div class="card"><div class="card-title">后端 GET /api/v1/stats</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:var(--sp-2)">
+        <span class="tag tag-ghost">ws.current_sessions</span><span class="tag tag-ghost">processed websocket message count</span><span class="tag tag-ghost">parse.decode failed</span><span class="tag tag-ghost">ws.inflight_messages</span>
+      </div>
+    </div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">前端必须刷新才看到消息时排查</span>① WS 是否连接成功 ② token 是否过期 ③ Push 是否调用 Gateway callback ④ Gateway 是否持有目标 session ⑤ 前端是否正确订阅合并 push。</div>
+</section>
+
+<section id="api">
+  <div class="section-title"><span class="num">§14</span><h2>后端接口测试清单</h2></div>
+  <p>每条核心链路至少有一类验证：HTTP 接口、WebSocket 协议、gRPC remote、数据库状态、Redis token/session、压测基线。</p>
+
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>模块</th><th>接口</th><th>核心验证</th></tr></thead>
+      <tbody>
+        <tr><td>health</td><td><code>GET /api/v1/health</code></td><td>Gateway HTTP 存活</td></tr>
+        <tr><td>stats</td><td><code>GET /api/v1/stats</code></td><td>HTTP/WSS 观测数据</td></tr>
+        <tr><td>auth</td><td><code>POST /auth/register</code> · <code>POST /auth/login</code> · <code>GET /auth/info</code> · <code>POST /auth/profile</code></td><td>注册重复账号、错误密码、token 鉴权</td></tr>
+        <tr><td>user</td><td><code>GET /users/search</code></td><td>账号/昵称搜索</td></tr>
+        <tr><td>friend</td><td><code>POST /friends/request</code> · <code>/respond</code> · <code>GET /friends</code> · <code>/pending</code></td><td>申请、接受/拒绝、列表、待处理</td></tr>
+        <tr><td>message</td><td><code>POST /messages/send</code> · <code>GET /messages/history</code> · <code>/offline</code></td><td>HTTP 单聊发送、历史、离线</td></tr>
+        <tr><td>group</td><td><code>POST /groups</code> · <code>GET /groups/search</code> · <code>/info</code> · <code>POST /groups/join</code> · <code>/leave</code> · <code>GET /groups/members</code></td><td>建群、搜群、加退、成员</td></tr>
+        <tr><td>group_message</td><td><code>POST /groups/messages/send</code> · <code>GET /groups/messages/history</code></td><td>群消息发送、历史</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="card-title">每个接口至少验证</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-2)">
+      <span class="tag tag-green">正常请求</span><span class="tag tag-amber">缺 token</span><span class="tag tag-amber">token 过期/错误</span><span class="tag tag-amber">缺少必要参数</span><span class="tag tag-amber">业务状态冲突（重复申请/加群）</span>
+    </div>
+  </div>
+
+  <h3>gRPC remote 模式验证</h3>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">确认连通</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>Gateway 能连到 User/Message/Friend/Group gRPC</li><li>Gateway 能调用 remote PushNotifier</li><li>Push 能反向调用 GatewayPushDeliveryService</li>
+      </ul>
+    </div>
+    <div class="card"><div class="card-title">配置检查</div>
+      <p class="card-text"><code>config/dev.remote-all.json</code> · <code>dev.remote-push.json</code> · 各服务 listen address · Gateway callback address 可被 Push 访问</p>
+    </div>
+  </div>
+</section>
+
+<section id="multi">
+  <div class="section-title"><span class="num">§15</span><h2>多机器分布式部署验证</h2></div>
+  <p>面试和演示阶段需要证明它不是"只在单进程里跑得通"。</p>
+
+  <div class="grid grid-2 reveal">
+    <div class="card" style="border-top:3px solid var(--blue)"><div class="card-title">最小两机器</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li><b>Machine A</b>：Gateway + Web Client</li><li><b>Machine B</b>：User/Message/Friend/Group/Push Services</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--accent)"><div class="card-title">三机器（更真实）</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li><b>Machine A</b>：Gateway</li><li><b>Machine B</b>：5 个服务</li><li><b>Machine C</b>：Redis / PostgreSQL</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>验证顺序</h3>
+  <div class="steps reveal">
+    <div class="step active"><div class="step-title">① 基础网络</div><div class="step-desc">Gateway 机 <code>nc -vz</code> 各服务端口；Push 机 <code>nc -vz</code> Gateway callback 端口</div></div>
+    <div class="step active"><div class="step-title">② 服务启动（顺序重要）</div><div class="step-desc">先 docker compose 启动 Redis/PG → 再启动 5 个服务 → 最后启动 Gateway（启动时要能初始化 remote client）</div></div>
+    <div class="step active"><div class="step-title">③ 功能验证</div><div class="step-desc">health → 注册 A/B → 登录 → 搜索 → 申请 → 接受 → 单聊 push → 离线 → 建群加群 → 群聊 push，每步确认 Gateway 日志走 remote</div></div>
+    <div class="step active"><div class="step-title">④ Push callback 验证（重点）</div><div class="step-desc">A 给在线 B 发单聊 → Push 日志出现 NotifyUser → Gateway callback 日志出现 session lookup/send → B 前端无需刷新收到</div></div>
+  </div>
+
+  <div class="quote reveal"><span class="quote-label">面试表达</span>我没有一开始就强行上 Kubernetes，而是先做了 remote-all 多进程和多机器验证。Gateway 对外协议不变，内部通过配置切到 gRPC。这里最关键的是 Push，因为 WebSocket 连接归 Gateway 持有，所以远程 Push 必须 callback Gateway。多机器验证能证明这个边界不是文档设计，而是真实可运行链路。</div>
+</section>
+
+<section id="trouble">
+  <div class="section-title"><span class="num">§16</span><h2>故障场景与排查手册</h2></div>
+  <p>排查原则：① 先确认入口（HTTP/WS）② 再确认身份（token/uid/device）③ 再确认链路（Gateway/service/Redis/PG/Push）④ 最后确认性能（队列/连接/线程池）。</p>
+
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">HTTP 大量超时（历史问题已修复）<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p><b>定位</b>：/health 纯内存接口也超时，排除业务 DB/Redis；禁用客户端连接复用后延迟恢复，说明 keep-alive 空闲连接占用同步 worker；handler 统计显示业务耗时低，问题在进入 handler 前的 HTTP 接入层。</p><p><b>修复</b>：显式配置 <code>httplib::ThreadPool(64, 1024)</code>；keep-alive timeout 1s；keep-alive max count 1；增加 /stats 输出。</p><p><b>结果</b>：46230 请求失败率 0%，p95 5.81ms。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">WebSocket 建连失败<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>排查顺序：DNS/IP 可达 → TCP connect → TLS 握手 → WS upgrade → token 有效 → Gateway accept。需区分发压机出口限制、云厂商单源 IP/NAT、TLS/accept 排队、Gateway 应用层 bug。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">WebSocket 消息延迟突增<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>200u/1s p95=12.60ms 稳定；200u/500ms p95=21.92ms 稳定；200u/250ms p95=2628ms 极限区排队。已排除建连/协议解析/路由失败。尚未精确定位：业务 handler 耗时、PG 持久化、Push 投递、session 写队列、线程池队列深度。下一步必须补分段指标，不要盲改业务代码。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">登录后 401 或状态过期<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>排查：① 前端是否带 Bearer token ② token 是否过期 ③ Redis 中是否被撤销 ④ device_id/platform 是否一致 ⑤ Gateway 是否错误留在主页面。UX 要求：401 应回登录页或弹可理解提示，不应让用户理解 HTTP 状态码。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">消息需要手动刷新<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>排查：① WS 是否连接 ② 当前用户 session 是否注册到 Gateway ③ Push 是否被触发 ④ remote Push 是否 callback Gateway ⑤ Gateway 是否找到目标 session ⑥ 前端是否正确合并 push。历史能查到但在线收不到 → 持久化正常，问题集中在 Push/WS。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">群消息收不到<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>排查：① 发送者是否在群内 ② 接收者是否在群内 ③ 群成员列表是否正确 ④ group message 是否落库 ⑤ fanout 是否遍历成员 ⑥ Push 是否跳过发送者或错误过滤平台 ⑦ Gateway 是否存在接收者 session。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="pass">
+  <div class="section-title"><span class="num">§标准</span><h2>通过标准与性能口径</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card" style="border-left:3px solid var(--green)"><div class="card-title" style="color:var(--green)">单机 MVP 通过标准</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>两账号完整完成注册→登录→资料→加好友→单聊→离线→建群→加群→群聊</li>
+        <li>WS 在线推送不依赖手动刷新</li><li>日志无崩溃/死锁/连接泄漏</li>
+        <li>/health 和 /stats 可用</li><li>出错提示用户可理解</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--blue)"><div class="card-title" style="color:var(--blue)">性能口径</div>
+      <p class="card-text">双账号验证对应真实用户体感。稳定区间 WSS RTT p95 远低于 200ms 的 Core Web Vitals INP 良好阈值，体感应流畅。极限 200u/250ms 是吞吐拐点，不代表普通聊天场景。</p>
+    </div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">外部参照</span>Google Core Web Vitals INP 良好阈值 200ms 以内；Mattermost 公开模型 30000 并发用户入口约 21 msg/s 但高广播 fanout；ejabberd/Stream 公开百万级连接能力用于说明工业级上限，不应直接对标当前 MVP。</div>
+</section>
+
+<div class="pager">
+  <a href="stack.html"><div class="label">← 上一篇</div><div class="title">核心技术栈与选型</div></a>
+  <a class="next" href="../interview/qa.html"><div class="label">下一篇 →</div><div class="title">高频问答与架构追问</div></a>
+</div>
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§12-16 · 验证与运维</span>
+  </div>
+</footer>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+</body>
+</html>

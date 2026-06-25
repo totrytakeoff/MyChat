@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>术语表 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/animations.css">
+</head>
+<body>
+<div class="read-progress"></div>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="index.html">概览</a>
+      <a class="nav-link" href="architecture/overview.html">架构</a>
+      <a class="nav-link" href="architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="architecture/storage.html">存储</a>
+      <a class="nav-link" href="links/message.html">业务链路</a>
+      <a class="nav-link" href="engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">工具</div>
+    <h1 class="reveal reveal-d1">项目术语表</h1>
+    <p class="desc reveal reveal-d2">MyChat 架构中的核心术语速查，点击术语可展开详细说明与代码位置。</p>
+  </div>
+</header>
+
+<div class="container" style="padding-bottom:var(--sp-8)">
+
+  <h2 class="reveal" style="margin-top:var(--sp-2)"><span style="color:var(--accent)">●</span> Gateway 核心抽象</h2>
+  <div class="reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+    <div class="qa-item"><button class="qa-q">UnifiedMessage<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>Gateway 把 HTTP 请求和 WebSocket envelope 统一转换成的内部消息模型。是 HTTP/WS 殊途同归的关键 —— 不同协议入口汇入同一套命令分发模型。</p><p><b>代码</b>：<code>MessageParser::parse_http_request_enhanced</code> / <code>parse_websocket_message_enhanced</code></p></div></div></div>
+    <div class="qa-item"><button class="qa-q">MessageParser<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>负责把不同协议入口（HTTP catch-all / WS frame）转成 UnifiedMessage，并解析 method/path/token/device/platform/body/query。</p><p><b>代码</b>：<code>gateway/message_processor/message_parser.cpp</code></p></div></div></div>
+    <div class="qa-item"><button class="qa-q">MessageProcessor<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>保存 cmd_id → handler 映射，将消息处理投递到全局线程池，同步执行对应 handler。<b>不做统一强制 token 校验</b>（因为注册/登录是公开入口）。</p><p><b>代码</b>：<code>message_processor.cpp</code> <code>process_message</code> / <code>process_message_sync</code></p></div></div></div>
+    <div class="qa-item"><button class="qa-q">GatewayCommandHandlerRegistry<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>集中注册业务命令（user/message/friend/group）。handler 从 RuntimeRegistry 取依赖，不再持有散落成员。</p><p><b>代码</b>：<code>gateway_command_handler_registry.cpp</code>，注册入口 <code>register_gateway_command_handlers</code></p></div></div></div>
+    <div class="qa-item"><button class="qa-q">GatewayRuntimeRegistry<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>Gateway 运行时依赖表，保存各服务的 local service instance 或 remote service adapter，以及 AuthManager/PushNotifier/MessageWsHandler。handler 通过它选择 local packet dispatcher 或 remote ForwardPacket。</p><p><b>代码</b>：<code>GatewayRuntimeRegistry</code>，<code>GatewayCommandHandlerContext { const GatewayRuntimeRegistry* runtime }</code></p></div></div></div>
+    <div class="qa-item"><button class="qa-q">cmd_id<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>命令标识符，如 CMD_REGISTER / CMD_LOGIN / CMD_SEND_MESSAGE。MessageProcessor 按 cmd_id 找到对应 handler。HTTP 路由通过配置映射到 cmd_id，WS envelope 头部带 cmd_id。</p></div></div></div>
+  </div>
+
+  <h2 class="reveal"><span style="color:var(--blue)">●</span> Packet Boundary</h2>
+  <div class="reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+    <div class="qa-item"><button class="qa-q">Packet Boundary（packet 边界）<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>Gateway 与业务服务之间的统一边界：Gateway 只认识 packet（envelope + cmd_id + payload），不解析业务 payload；Service 自己解析 payload、执行业务、构造响应。这让 HTTP/WS/local/remote 共享同一套服务入口。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">XxxPacketRequest / XxxPacketResponse<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>统一 packet 契约。Request 含 IMHeader + type_name + payload（HTTP 为 application/json，WS 为 protobuf type）；Response 含 BaseResponse + payload + http_status + push_event。</p><p><b>类型</b>：UserPacketRequest / MessagePacketRequest / FriendPacketRequest / GroupPacketRequest</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">ForwardPacket（gRPC）<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>各服务的统一 gRPC RPC：<code>rpc ForwardPacket(XxxPacketRequest) returns (XxxPacketResponse)</code>。remote 模式下 Gateway 通过它把 packet 发给远程服务进程，服务端用自己的 packet dispatcher 解析。<b>不让 Gateway 直接调业务 RPC</b>，否则 Gateway 要理解业务 DTO。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">XxxPacketDispatcher<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>各业务服务的 packet 分发器，解析 payload（HTTP JSON 或 WS protobuf）、执行业务校验、调用 Service、构造 response 和 push_event。local 和 remote 共用同一个 dispatcher。</p><p><b>代码</b>：<code>services/*/*_packet_dispatcher.cpp</code></p></div></div></div>
+    <div class="qa-item"><button class="qa-q">RemoteXxxServiceAdapter<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>remote 模式下的服务适配器，职责很窄：接收 PacketRequest → 设置 gRPC deadline → 调用 ForwardPacket → 检查 transport status → 返回 PacketResponse。<b>不暴露业务方法、不解析 payload</b>。</p></div></div></div>
+  </div>
+
+  <h2 class="reveal"><span style="color:var(--green)">●</span> Push 与鉴权</h2>
+  <div class="reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+    <div class="qa-item"><button class="qa-q">PushNotifier<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>推送调用抽象，本地/远程实现同一接口。Gateway command handler 消费 push_event 后调用它。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">PushRuntime<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>统一 fanout、payload 构造、投递结果处理。查询 session → 应用 fanout policy → 构造 CMD_PUSH_MESSAGE → 发送 → mark_delivered。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">FanoutPolicy<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>选择要投递的 session 子集：AllSessionsFanoutPolicy（全部，默认）、PlatformFilterFanoutPolicy（指定平台）、NewestSessionFanoutPolicy（最新连接）。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">GatewayPushDeliveryService<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>远程 Push 回调 Gateway 的 gRPC 服务，含三个回调：ListUserSessions（查连接）、SendSessionPayload（发送 payload）、MarkMessageDelivered（标记投递）。存在原因：WebSocket session 在 Gateway 内存中，远程 push_server 无法直接访问。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">auth_token_hint<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>User service 在登录/注册成功后返回的提示，Gateway 据此生成 access/refresh token。<b>token 签发属于 Gateway 鉴权边界</b>，不在 User service。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">push_event / push_events<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>Message service 返回 MessagePushEvent（单聊），Group service 返回 repeated GroupPushEvent（群聊 fanout 成员列表）。Gateway 只消费并转交 PushNotifier，<b>不自己计算群成员 fanout</b>。</p></div></div></div>
+  </div>
+
+  <h2 class="reveal"><span style="color:var(--amber)">●</span> 消息语义</h2>
+  <div class="reveal reveal-d1">
+    <div class="qa-item"><button class="qa-q">先持久化再 ack 再 best-effort push<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>核心消息可靠性取舍：消息先落 PostgreSQL → 持久化成功返回 ack → Gateway handoff push_event → Push best-effort 投递。Push 失败不回滚，靠 history/offline 补偿。"发送成功后刷新消失"比"推送稍慢"更不可接受。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">ack / delivered / read<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p><b>ack</b>：服务端已收到并持久化（发送侧语义）。<b>delivered</b>：至少成功投递到一个在线 session 或离线拉取后补标（接收侧）。<b>read</b>：接收方明确阅读后标记。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">best-effort push<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p>Push 是加速路径而非可靠来源：没有在线 session 不报致命错误；session 发送失败不回滚消息；远程 Push RPC 失败不影响已持久化消息。可靠性兜底来自持久化 + history/offline 补偿。</p></div></div></div>
+    <div class="qa-item"><button class="qa-q">local 模式 / remote 模式<span class="chev">+</span></button><div class="qa-a"><div class="qa-a-inner"><p><b>local</b>：Gateway 进程内持有服务对象，调用 XxxPacketDispatcher::handle，适合单机 MVP。<b>remote</b>：通过 RemoteXxxServiceAdapter 调 gRPC ForwardPacket 到独立服务进程。两者共享同一 packet 契约和 dispatcher，外部 HTTP/WS 协议不变。</p></div></div></div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>术语表 · 点击展开</span>
+  </div>
+</footer>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+<script src="assets/js/main.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>核心技术栈与选型 · MyChat</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+<div class="read-progress"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link active" href="benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§03 · 工程篇</div>
+    <h1 class="reveal reveal-d1">核心技术栈与选型</h1>
+    <p class="desc reveal reveal-d2">MyChat 的技术选型围绕 IM 后端的几个核心问题展开：Gateway 用 C++/Asio/Beast 处理 HTTP 和 WebSocket；内部用 Protobuf/gRPC 定义服务边界；Redis 处理 token 和在线临时状态；PostgreSQL/ODB 处理持久业务数据。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#overview">技术栈总览</a>
+  <a href="#cpp">C++ 的价值</a>
+  <a href="#gateway-stack">Gateway 选型</a>
+  <a href="#protobuf">Protobuf 与 gRPC</a>
+  <a href="#storage-stack">Redis 与 PostgreSQL</a>
+  <a href="#push-stack">Push 设计</a>
+  <a href="#test">测试与压测</a>
+</aside>
+
+<main>
+
+<section id="overview">
+  <div class="section-title"><span class="num">§03.1</span><h2 style="margin-top:0">技术栈总览</h2></div>
+  <div class="card reveal" style="background:var(--bg-sunken)">
+    <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">stack</span><button class="code-copy">复制</button></div>
+<pre><code>C++20
+Boost.Asio / Boost.Beast
+HTTP / WebSocket
+Protobuf / gRPC
+Redis / hiredis
+PostgreSQL / ODB
+OpenSSL
+CMake
+GoogleTest / CTest
+React / TypeScript / Vite</code></pre></div>
+  </div>
+
+  <div class="tbl-wrap reveal" style="margin-top:var(--sp-5)">
+    <table>
+      <thead><tr><th>技术</th><th>项目角色</th></tr></thead>
+      <tbody>
+        <tr><td><b>C++20</b></td><td>后端主体语言</td></tr>
+        <tr><td><b>Boost.Asio/Beast</b></td><td>Gateway 网络和 WebSocket 基础</td></tr>
+        <tr><td><b>HTTP</b></td><td>注册、登录、资料、好友、群、历史查询等请求响应接口</td></tr>
+        <tr><td><b>WebSocket</b></td><td>单聊实时发送、ack、在线推送</td></tr>
+        <tr><td><b>Protobuf</b></td><td>WebSocket envelope、gRPC IDL、packet contract</td></tr>
+        <tr><td><b>gRPC</b></td><td>User/Message/Friend/Group/Push 远程服务边界</td></tr>
+        <tr><td><b>Redis</b></td><td>refresh token、撤销状态、在线/session 辅助状态</td></tr>
+        <tr><td><b>PostgreSQL</b></td><td>用户、消息、好友、群组持久化</td></tr>
+        <tr><td><b>ODB</b></td><td>C++ ORM，降低对象/SQL 映射成本</td></tr>
+        <tr><td><b>OpenSSL</b></td><td>PBKDF2、随机数、TLS</td></tr>
+        <tr><td><b>GoogleTest/CTest</b></td><td>单测、dispatcher 测试、remote smoke</td></tr>
+        <tr><td><b>React/Vite</b></td><td>Web 验证客户端</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="cpp">
+  <div class="section-title"><span class="num">§03.2</span><h2>C++ 的价值</h2></div>
+  <p>MyChat 使用 C++ 不是因为聊天软件只能用 C++，而是为了体现网络服务开发能力、长连接和对象生命周期管理、Protobuf/gRPC/Redis/PostgreSQL 在 C++ 工程中的整合、多模块 CMake 工程组织、面向服务边界的后端架构设计。</p>
+  <div class="quote reveal"><span class="quote-label">面试表达</span>我用 C++ 实现 IM 后端，是为了把连接管理、协议编解码、实时推送和服务间通信这些后端基础能力做出来，而不是只写一个 CRUD 服务。</div>
+</section>
+
+<section id="gateway-stack">
+  <div class="section-title"><span class="num">§03.3</span><h2>Gateway 技术选型</h2></div>
+  <p>Gateway 使用 HTTP + WebSocket：HTTP 适合注册、登录、资料、好友、群、历史查询；WebSocket 适合实时消息、在线 push、ack。两者统一进入 MessageParser → UnifiedMessage → MessageProcessor → CommandHandlerRegistry。</p>
+  <div class="card reveal">
+    <div class="mermaid">
+flowchart LR
+    H[HTTP]:::http --> P[MessageParser]:::gw
+    W[WebSocket]:::ws --> P
+    P --> U[UnifiedMessage]:::gw
+    U --> M[MessageProcessor]:::gw
+    M --> R[CommandHandlerRegistry]:::gw
+    R --> S[Service / ForwardPacket]:::svc
+    classDef http fill:#E3EAEF,stroke:#3D5A6C;
+    classDef ws fill:#E6EDE4,stroke:#6B8E6B;
+    classDef gw fill:#F4E3D8,stroke:#D97757;
+    classDef svc fill:#EDE7DE,stroke:#A39B92;
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">比旧方案的优势</span>统一鉴权边界、统一 route/cmd 分发、统一 local/remote packet 转发、Gateway 不解析业务 payload。</div>
+</section>
+
+<section id="protobuf">
+  <div class="section-title"><span class="num">§03.4</span><h2>Protobuf 与 gRPC</h2></div>
+  <p>Protobuf 当前有两类用途：WebSocket envelope 和消息 payload；gRPC 服务 IDL 和 packet contract。</p>
+  <div class="card reveal">
+    <div class="card-title">gRPC 主边界 · ForwardPacket</div>
+    <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">proto</span></div>
+<pre><code>UserService.<span class="tok-fn">ForwardPacket</span>(UserPacketRequest)
+MessageService.<span class="tok-fn">ForwardPacket</span>(MessagePacketRequest)
+FriendService.<span class="tok-fn">ForwardPacket</span>(FriendPacketRequest)
+GroupService.<span class="tok-fn">ForwardPacket</span>(GroupPacketRequest)</code></pre></div>
+  </div>
+  <div class="grid grid-2 reveal" style="margin-top:var(--sp-4)">
+    <div class="card" style="border-left:3px solid var(--green)"><div class="card-title" style="color:var(--green)">设计价值 ✓</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>Gateway 只认识 packet</li><li>Service 自己解析 payload</li><li>local 和 remote 共用同一个 dispatcher</li><li>外部 HTTP/WS 协议不受部署方式影响</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--amber)"><div class="card-title" style="color:var(--amber)">待优化</div>
+      <p class="card-text">packet contract 和业务 proto 仍混在同一个 .proto 文件中。后续应拆出 *_packet.proto 或统一 gateway_packet.proto。</p>
+    </div>
+  </div>
+</section>
+
+<section id="storage-stack">
+  <div class="section-title"><span class="num">§03.5</span><h2>Redis 与 PostgreSQL</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col" style="background:var(--blue-soft);border:1px solid var(--blue-soft)">
+      <div class="compare-label" style="color:var(--blue)">PostgreSQL/ODB · 持久业务状态</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin:var(--sp-2) 0">
+        <span class="tag tag-blue">用户</span><span class="tag tag-blue">单聊消息</span><span class="tag tag-blue">好友关系</span><span class="tag tag-blue">群资料</span><span class="tag tag-blue">群成员</span><span class="tag tag-blue">群消息</span>
+      </div>
+    </div>
+    <div class="compare-col" style="background:var(--amber-soft);border:1px solid var(--amber-soft)">
+      <div class="compare-label" style="color:var(--amber)">Redis · 临时高频状态</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin:var(--sp-2) 0">
+        <span class="tag tag-amber">refresh token 元数据</span><span class="tag tag-amber">token 撤销状态</span><span class="tag tag-amber">token 索引</span><span class="tag tag-amber">session/在线状态</span>
+      </div>
+    </div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">选型原则</span>能恢复、需要事务和长期保存的数据放 PostgreSQL；有 TTL、高频访问、临时状态的数据放 Redis。</div>
+</section>
+
+<section id="push-stack">
+  <div class="section-title"><span class="num">§03.6</span><h2>Push 设计</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">技术点</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>PushNotifier 抽象本地/远程推送</li><li>PushRuntime 统一 fanout、payload 构造和投递结果处理</li><li>FanoutPolicy 支持全部 session、平台过滤、最新 session</li><li>remote push 通过 GatewayPushDeliveryService callback 回到 Gateway 投递</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)"><div class="card-title" style="color:var(--accent-deep)">核心原因</div>
+      <div class="quote" style="margin:0;border:none;padding:0"><p style="margin:0">WebSocket session 在 Gateway 内存中，远程 Push 服务不能直接访问。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="test">
+  <div class="section-title"><span class="num">§03.7</span><h2>测试与压测</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">测试体系</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>GoogleTest/CTest 覆盖 service core</li><li>packet dispatcher 覆盖 Gateway/service packet 边界</li><li>remote adapter 和 gRPC smoke 验证 remote 模式</li><li>Gateway HTTP/WS smoke 验证入口</li><li>benchmark 工具验证 HTTP/WSS 稳定性</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--accent)"><div class="card-title" style="color:var(--accent-deep)">重构后压测基准</div>
+      <div style="display:grid;gap:var(--sp-2);margin-top:var(--sp-3)">
+        <div><span class="tag tag-accent">WSS</span> <b>714.4 msg/s</b>，p95 35.91ms</div>
+        <div><span class="tag tag-accent">HTTP</span> <b>306.86 req/s</b>，失败率 0.00%，p95 3.75ms</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>Web 客户端的定位</h3>
+  <div class="quote reveal">React Web 客户端不是核心技术炫技点，而是验证后端：注册登录、好友申请、单聊实时消息、群聊、个人资料和群资料、WebSocket 推送。它证明后端不是只靠 curl 可用，而能被真实 IM 交互驱动。</div>
+</section>
+
+<div class="pager">
+  <a href="completeness.html"><div class="label">← 上一篇</div><div class="title">功能完成度分析</div></a>
+  <a class="next" href="operations.html"><div class="label">下一篇 →</div><div class="title">验证与运维</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§03 · 核心技术栈与选型</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<a href="#" class="back-top" aria-label="返回顶部" title="返回顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg></a>
+</body>
+</html>
