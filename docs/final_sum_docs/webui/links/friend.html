@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>好友关系链路 · MyChat</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link active" href="friend.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§07 · 业务链路篇</div>
+    <h1 class="reveal reveal-d1">好友关系链路</h1>
+    <p class="desc reveal reveal-d2">MyChat 好友系统以"申请记录 + 状态流转"为核心模型；Gateway 只负责鉴权、可信 uid 注入和 packet 转发，好友业务字段解析和状态机在 Friend service packet dispatcher / FriendService 中完成。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#search-to-add">搜索到申请</a>
+  <a href="#state">申请状态机</a>
+  <a href="#respond">处理申请</a>
+  <a href="#list">列表与待处理</a>
+  <a href="#rules">关键业务规则</a>
+  <a href="#qa">面试追问</a>
+</aside>
+
+<main>
+
+<section id="search-to-add">
+  <div class="section-title"><span class="num">§07.1</span><h2 style="margin-top:0">搜索用户到好友申请</h2></div>
+  <p>正常 IM 体验：<b>搜索账号/昵称 → 展示资料卡 → 确认后添加好友</b>。搜索走 User service，好友关系状态机走 Friend service，职责清晰。</p>
+
+  <div class="flow reveal">
+    <div class="flow-title">申请链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","service","service","store"],"nodes":[{"id":"req","label":"POST /friends/request","group":"client"},{"id":"handler","label":"CMD_ADD_FRIEND handler","group":"gateway"},{"id":"disp","label":"FriendPacketDispatcher","group":"service"},{"id":"svc","label":"FriendService::send_request","group":"service"},{"id":"db","label":"FriendRepository / PG","group":"store"}],"edges":[["req","handler"],["handler","disp"],["disp","svc"],["svc","db"]],"notes":{"req":"<div class=note-title>POST /api/v1/friends/request</div>{ target_uid } + Bearer token","handler":"<div class=note-title>CMD_ADD_FRIEND handler</div>verify_http_user；from_uid = token uid（Gateway 不解析 target_uid，不信任 body 中的 requester）。","disp":"<div class=note-title>FriendPacketDispatcher::handle_add_friend</div>解析 target_uid，调用 FriendService。","svc":"<div class=note-title>FriendService::send_request</div>校验目标用户存在、防自加、防重复 → FriendRepository::create(PENDING)。","db":"<div class=note-title>FriendRepository / PostgreSQL</div>ODB transaction + persist(friend_request)。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+</section>
+
+<section id="state">
+  <div class="section-title"><span class="num">§07.2</span><h2>好友申请状态机</h2></div>
+  <div class="card reveal">
+    <div class="mermaid" style="margin-top:var(--sp-3)">
+stateDiagram-v2
+    [*] --> PENDING: send_request
+    PENDING --> ACCEPTED: target 接受
+    PENDING --> REJECTED: target 拒绝
+    ACCEPTED --> [*]
+    REJECTED --> [*]
+    note right of PENDING
+        不允许:
+        · 非 pending 重复处理
+        · 非目标用户处理
+        · 同一用户重复发起
+        · 添加自己
+    end note
+    </div>
+  </div>
+  <div class="grid grid-3 reveal" style="margin-top:var(--sp-4)">
+    <div class="card" style="border-top:3px solid var(--amber)"><div class="card-title">PENDING</div><p class="card-text">申请已发出，等待目标用户处理</p></div>
+    <div class="card" style="border-top:3px solid var(--green)"><div class="card-title">ACCEPTED</div><p class="card-text">目标用户已接受，双方成为好友</p></div>
+    <div class="card" style="border-top:3px solid var(--red)"><div class="card-title">REJECTED</div><p class="card-text">目标用户已拒绝，申请结束</p></div>
+  </div>
+</section>
+
+<section id="respond">
+  <div class="section-title"><span class="num">§07.3</span><h2>处理好友申请</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">处理申请链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","service","service","store"],"nodes":[{"id":"req","label":"POST /friends/respond","group":"client"},{"id":"handler","label":"CMD_HANDLE_FRIEND_REQUEST","group":"gateway"},{"id":"disp","label":"FriendPacketDispatcher","group":"service"},{"id":"svc","label":"FriendService::respond_to_request","group":"service"},{"id":"db","label":"FriendRepository::update_status","group":"store"}],"edges":[["req","handler"],["handler","disp"],["disp","svc"],["svc","db"]],"notes":{"req":"<div class=note-title>POST /api/v1/friends/respond</div>{ friend_id, accept }","handler":"<div class=note-title>CMD_HANDLE_FRIEND_REQUEST</div>verify_http_user；from_uid = token uid。","disp":"<div class=note-title>FriendPacketDispatcher::handle_friend_response</div>解析 friend_id / accept。","svc":"<div class=note-title>FriendService::respond_to_request</div>find_by_id → 校验 current_uid == target_uid → 校验 status == PENDING → update_status。","db":"<div class=note-title>FriendRepository::update_status</div>更新为 ACCEPTED 或 REJECTED。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <div class="quote reveal" style="border-left-color:var(--red)"><span class="quote-label" style="color:var(--red)">关键安全点</span>只有申请目标用户可以处理申请。非目标用户处理返回 <code>FORBIDDEN</code>。</div>
+</section>
+
+<section id="list">
+  <div class="section-title"><span class="num">§07.4</span><h2>好友列表与待处理申请</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">GET /api/v1/friends · 好友列表</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">http</span></div>
+<pre><code>→ CMD_GET_FRIEND_LIST
+→ FriendPacketDispatcher::handle_friend_list
+→ FriendService::get_friends(from_uid)</code></pre></div>
+    </div>
+    <div class="card"><div class="card-title">GET /api/v1/friends/pending · 待处理</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">http</span></div>
+<pre><code>→ CMD_GET_FRIEND_REQUESTS
+→ FriendPacketDispatcher::handle_pending_friends
+→ FriendService::get_pending_requests(from_uid)</code></pre></div>
+    </div>
+  </div>
+  <p style="margin-top:var(--sp-3);font-size:var(--fs-sm);color:var(--ink-3)">返回字段：friend_id / friend_uid / nickname / status / created_at</p>
+</section>
+
+<section id="rules">
+  <div class="section-title"><span class="num">§07.5</span><h2>关键业务规则</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card" style="border-left:3px solid var(--red)"><div class="card-title">不能添加自己</div><p class="card-text"><code>requester_uid == target_uid → SELF_REQUEST</code></p></div>
+    <div class="card" style="border-left:3px solid var(--red)"><div class="card-title">目标用户必须存在</div><p class="card-text">FriendService 通过 UserService 校验：<code>user_service_->get_profile_by_uid(target_uid)</code>，不存在返回 <code>TARGET_NOT_FOUND</code></p></div>
+    <div class="card" style="border-left:3px solid var(--amber)"><div class="card-title">重复关系拒绝</div><p class="card-text">FriendRepository 检查：<code>find_relationship(requester, target)</code>，已有关系返回 <code>ALREADY_EXISTS</code></p></div>
+    <div class="card" style="border-left:3px solid var(--red)"><div class="card-title">只有目标用户能处理</div><p class="card-text"><code>friend_record.target_uid == current_uid</code>，否则返回 <code>FORBIDDEN</code></p></div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="section-title"><span class="num">§07.6</span><h2>面试追问 · 点击展开</h2></div>
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">为什么好友申请前要先搜索？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为正常 IM 不应该让用户直接输入内部 uid。用户先通过账号/昵称搜索看到资料卡，再发起申请，体验更接近真实产品；后端上搜索走 User service，好友关系状态机走 Friend service，职责也更清晰。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">Gateway 为什么不解析 target_uid？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p><code>target_uid</code> 属于好友业务 payload。Gateway 只需要从 token 中拿到 requester uid 并写入 packet header，目标用户字段由 Friend service 解析和校验，避免 Gateway 混入好友业务逻辑。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">当前好友系统还缺什么？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>缺好友备注、分组、黑名单完整接口、申请附言展示、删除好友、好友变更 push 通知、双向关系更细粒度审计等。这些属于后续扩展，不影响当前 MVP 主链路。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="message.html"><div class="label">← 上一篇</div><div class="title">单聊消息链路</div></a>
+  <a class="next" href="group.html"><div class="label">下一篇 →</div><div class="title">群聊链路</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§07 · 好友关系链路</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+</body>
+</html>

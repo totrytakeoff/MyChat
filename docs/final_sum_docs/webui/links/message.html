@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单聊消息链路 · MyChat</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link active" href="message.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§06 · 业务链路篇 · 核心</div>
+    <h1 class="reveal reveal-d1">单聊消息链路</h1>
+    <p class="desc reveal reveal-d2">单聊消息是 IM 项目的核心链路。MyChat 以 <b>先持久化、再 ack、再 best-effort push</b> 为核心语义；Gateway 只做鉴权、路由和 packet 转发，消息 payload 解析与持久化在 Message service。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#modules">模块职责</a>
+  <a href="#http">HTTP 发送链路</a>
+  <a href="#ws">WS 发送链路</a>
+  <a href="#ack">Ack 语义</a>
+  <a href="#push">Push 语义</a>
+  <a href="#history">历史与离线</a>
+  <a href="#benchmark">性能基准</a>
+  <a href="#qa">面试追问</a>
+</aside>
+
+<main>
+
+<section id="modules">
+  <div class="section-title"><span class="num">§06.1</span><h2 style="margin-top:0">模块职责</h2></div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>模块</th><th>当前职责</th></tr></thead>
+      <tbody>
+        <tr><td><b>Web Client</b></td><td>发送文本、展示 ack、接收 WS push、拉取历史/离线</td></tr>
+        <tr><td><b>Gateway HTTP</b></td><td>catch-all 接入、route→cmd_id、token 校验、packet 转发</td></tr>
+        <tr><td><b>Gateway WebSocket</b></td><td>envelope 解码、token/device 校验、ack 编码</td></tr>
+        <tr><td><b>Message command handler</b></td><td>构造 MessagePacketRequest，选 local/remote</td></tr>
+        <tr><td><b>MessageWsHandler</b></td><td>WS CMD_SEND_MESSAGE 的 Gateway 边界</td></tr>
+        <tr><td><b>MessagePacketDispatcher</b></td><td>解析 HTTP JSON 或 WS protobuf，调用 MessageService</td></tr>
+        <tr><td><b>MessageService</b></td><td>消息校验、持久化、历史/离线查询、delivered/read</td></tr>
+        <tr><td><b>MessageRepository</b></td><td>PostgreSQL/ODB 消息表读写</td></tr>
+        <tr><td><b>PushNotifier</b></td><td>消费 push_event，触发在线投递</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="http">
+  <div class="section-title"><span class="num">§06.2</span><h2>HTTP 单聊发送链路</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">HTTP 发送链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","gateway","service","store"],"nodes":[{"id":"req","label":"POST /messages/send","group":"client"},{"id":"parse","label":"MessageParser","group":"gateway"},{"id":"handler","label":"CMD_SEND_MESSAGE handler","group":"gateway"},{"id":"disp","label":"MessagePacketDispatcher","group":"service"},{"id":"svc","label":"MessageService + PG","group":"store"}],"edges":[["req","parse"],["parse","handler"],["handler","disp"],["disp","svc"]],"notes":{"req":"<div class=note-title>POST /api/v1/messages/send</div>{ receiver_uid, content } + Bearer token","parse":"<div class=note-title>MessageParser</div>解析 HTTP，转 UnifiedMessage，路由到 CMD_SEND_MESSAGE。","handler":"<div class=note-title>CMD_SEND_MESSAGE handler</div>verify_http_user；from_uid = token uid；payload = raw JSON（Gateway 不解析 receiver_uid/content）。","disp":"<div class=note-title>MessagePacketDispatcher::handle_send_http</div>解析 JSON payload，调用 MessageService::send_text_message。","svc":"<div class=note-title>MessageService + MessageRepository</div>消息落库 → 返回 MessagePacketResponse(payload JSON + push_event)。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">关键边界</span>Gateway 不解析 receiver_uid/content；不信任 body 中的 sender；从 token 得到可信 sender uid 写入 packet header；Message service 返回 push_event，Gateway 只负责转交。</div>
+</section>
+
+<section id="ws">
+  <div class="section-title"><span class="num">§06.3</span><h2>WebSocket 单聊发送链路</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">WS 发送链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","gateway","gateway","service"],"nodes":[{"id":"frame","label":"WS frame","group":"client"},{"id":"decode","label":"ProtobufCodec decode","group":"gateway"},{"id":"limit","label":"WSS inflight limit + ThreadPool","group":"gateway"},{"id":"wsh","label":"MessageWsHandler::handle_send","group":"gateway"},{"id":"disp","label":"MessagePacketDispatcher","group":"service"}],"edges":[["frame","decode"],["decode","limit"],["limit","wsh"],["wsh","disp"]],"notes":{"frame":"<div class=note-title>WS frame</div>IMHeader(cmd_id=CMD_SEND_MESSAGE, token, to_uid, device_id, platform) + type_name=im.message.SendMessageRequest + payload=protobuf bytes。","decode":"<div class=note-title>ProtobufCodec::decodeEnvelope</div>解包 envelope。","limit":"<div class=note-title>背压 + 线程池</div>max_ws_inflight_messages 初步背压，每业务任务入队 ThreadPool。","wsh":"<div class=note-title>MessageWsHandler::handle_send</div>verify_access_token；校验 device_id 一致；service_header.from_uid=token uid；to_uid=header.to_uid；构造 MessagePacketRequest。","disp":"<div class=note-title>MessagePacketDispatcher::handle_send_ws</div>解析 protobuf payload（不在 Gateway），调用 MessageService，返回 protobuf ack envelope + push_event。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">注意</span>Gateway 不解析 SendMessageRequest 的 body；WebSocket payload protobuf 解析在 MessagePacketDispatcher 中完成；Gateway 只检查 header 级别的 token、device、receiver 路由信息。</div>
+</section>
+
+<section id="ack">
+  <div class="section-title"><span class="num">§06.4</span><h2>Ack 语义</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col compare-new">
+      <div class="compare-label">ack 成功表示 ✓</div>
+      <p style="font-size:var(--fs-sm);color:var(--ink-2)">消息已经通过 Message service 校验并<b>持久化</b></p>
+    </div>
+    <div class="compare-col compare-old">
+      <div class="compare-label">ack 不表示 ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>对方一定在线</li><li>对方一定收到 push</li><li>对方已经阅读</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">为什么这样设计</span>对方可能离线；WebSocket 推送可能失败；消息持久化成功后才能保证历史可恢复；push 是加速路径，不是消息可靠性的唯一来源。</div>
+</section>
+
+<section id="push">
+  <div class="section-title"><span class="num">§06.5</span><h2>Push 语义</h2></div>
+  <div class="code-block reveal"><div class="code-head"><span class="code-lang">proto · push event</span><button class="code-copy">复制</button></div>
+<pre><code><span class="tok-kw">message</span> <span class="tok-type">MessagePushEvent</span> {
+  <span class="tok-kw">bool</span> enabled = <span class="tok-kw">true</span>;
+  <span class="tok-kw">string</span> receiver_uid;
+  <span class="tok-kw">string</span> msg_id;
+  <span class="tok-kw">string</span> content;
+  <span class="tok-kw">string</span> sender_uid;
+  <span class="tok-kw">string</span> conversation_type = <span class="tok-str">"direct"</span>;
+  <span class="tok-kw">string</span> conversation_id = sender_uid;
+}</code></pre></div>
+  <div class="compare reveal" style="margin-top:var(--sp-4)">
+    <div class="compare-col" style="background:var(--green-soft);border:1px solid var(--green-soft)">
+      <div class="compare-label" style="color:var(--green)">Local push</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">local</span></div>
+<pre><code>PushRuntime
+  → ConnectionManager
+  → WebSocketServer
+  → receiver sessions</code></pre></div>
+    </div>
+    <div class="compare-col" style="background:var(--accent-soft);border:1px solid var(--accent-soft)">
+      <div class="compare-label" style="color:var(--accent-deep)">Remote push</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">remote</span></div>
+<pre><code>RemotePushNotifier
+  → push_server
+  → Gateway callback
+  → Gateway session send</code></pre></div>
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">可靠性兜底</span>Push 失败不回滚消息。后续靠 history/offline 查询补偿：<code>先持久化 → 再 Push → Push 失败 → offline/history 补偿</code></div>
+</section>
+
+<section id="history">
+  <div class="section-title"><span class="num">§06.6</span><h2>历史与离线消息</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">HTTP history · 会话历史</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">http</span></div>
+<pre><code>GET /api/v1/messages/history
+  ?peer_uid=&lt;uid&gt;
+  &before_time=&lt;ms&gt;
+  &limit=&lt;n&gt;
+→ CMD_MESSAGE_HISTORY
+→ MessageService::get_conversation</code></pre></div>
+      <p class="card-text">查询当前用户与 peer 的双向消息</p>
+    </div>
+    <div class="card"><div class="card-title">HTTP offline · 离线拉取</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">http</span></div>
+<pre><code>GET /api/v1/messages/offline
+  ?before_time=&lt;ms&gt;
+  &limit=&lt;n&gt;
+→ CMD_PULL_MESSAGE
+→ MessageService::pull_offline</code></pre></div>
+      <p class="card-text">查 receiver==自己 且 status==SENT，拉取后标记 delivered</p>
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">MVP 边界</span>delivered/read 能力存在，但还不是生产级完整回执体系。缺 client ACK 驱动的端到端送达确认、per-device delivery log、严格消息 sequence。</div>
+</section>
+
+<section id="benchmark">
+  <div class="section-title"><span class="num">§06.7</span><h2>当前性能基准</h2></div>
+  <p>重构后压测中，WSS 单聊有效基准：</p>
+  <div class="grid grid-4 reveal">
+    <div class="card metric"><div class="value" data-count="186.8" data-decimals="1" data-unit=" msg/s">0</div><div class="label">200 users / 1s</div></div>
+    <div class="card metric"><div class="value" data-count="355.9" data-decimals="1" data-unit=" msg/s">0</div><div class="label">200 users / 500ms</div></div>
+    <div class="card metric accent"><div class="value" data-count="714.4" data-decimals="1" data-unit=" msg/s">0</div><div class="label">200 users / 250ms · 峰值</div></div>
+    <div class="card metric"><div class="value" data-count="35.91" data-decimals="2" data-unit="ms">0</div><div class="label">峰值 RTT p95</div></div>
+  </div>
+  <div class="tbl-wrap reveal" style="margin-top:var(--sp-4)">
+    <table>
+      <thead><tr><th>场景</th><th class="num">吞吐</th><th class="num">p50</th><th class="num">p95</th><th class="num">p99</th><th class="num">Errors</th></tr></thead>
+      <tbody>
+        <tr><td>200 users / 1s</td><td class="num">186.8 msg/s</td><td class="num">6.28ms</td><td class="num">8.84ms</td><td class="num">12.35ms</td><td class="num"><b style="color:var(--green)">0</b></td></tr>
+        <tr><td>200 users / 500ms</td><td class="num">355.9 msg/s</td><td class="num">9.89ms</td><td class="num">15.55ms</td><td class="num">20.44ms</td><td class="num"><b style="color:var(--green)">0</b></td></tr>
+        <tr><td>200 users / 250ms</td><td class="num"><b>714.4 msg/s</b></td><td class="num">20.36ms</td><td class="num"><b>35.91ms</b></td><td class="num">45.98ms</td><td class="num"><b style="color:var(--green)">0</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="section-title"><span class="num">§06.8</span><h2>面试追问 · 点击展开</h2></div>
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">为什么 Gateway 不直接解析 SendMessageRequest？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为消息正文属于 Message service 业务 payload。Gateway 只需要检查 token 和 header 路由字段，解析 protobuf body 会把业务规则重新塞回 Gateway，破坏 packet boundary。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">为什么要先持久化再 push？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为 push 只代表在线投递尝试，不能作为可靠存储。先落库才能保证对方离线、推送失败或客户端重连后仍可恢复消息。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">HTTP 和 WS 为什么能共用后端逻辑？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>两者最终都构造成 <code>MessagePacketRequest</code>。HTTP payload 是 <code>application/json</code>，WS payload 是 <code>im.message.SendMessageRequest</code> protobuf，具体解析都在 <code>MessagePacketDispatcher</code>，所以 service 业务逻辑可以复用。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">当前还缺什么生产级能力？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>缺 client_msg_id 幂等去重、会话 sequence、设备级投递日志、客户端 ACK 驱动的 delivered/read、跨 Gateway 在线路由和更完整的消息类型体系。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="auth.html"><div class="label">← 上一篇</div><div class="title">注册登录与鉴权</div></a>
+  <a class="next" href="friend.html"><div class="label">下一篇 →</div><div class="title">好友关系链路</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§06 · 单聊消息链路</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+</body>
+</html>

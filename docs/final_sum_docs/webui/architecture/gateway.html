@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gateway 统一接入与编排 · MyChat</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="overview.html">架构</a>
+      <a class="nav-link active" href="gateway.html">Gateway</a>
+      <a class="nav-link" href="grpc.html">gRPC</a>
+      <a class="nav-link" href="storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§04 · 架构篇 · 核心</div>
+    <h1 class="reveal reveal-d1">Gateway 统一接入与服务编排</h1>
+    <p class="desc reveal reveal-d2">理解项目必须先从 Gateway 入手。它的核心定位是 <b>协议入口 + 鉴权边界 + 连接管理 + cmd 路由 + packet 转发</b>，不再是旧的 HTTP controller 集合，也不再通过 Local/RemoteClient facade 作为主链路。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#main">主链路</a>
+  <a href="#init">初始化顺序</a>
+  <a href="#http">HTTP 链路</a>
+  <a href="#ws">WebSocket 链路</a>
+  <a href="#processor">MessageProcessor</a>
+  <a href="#registry">HandlerRegistry</a>
+  <a href="#boundary">Handler 边界</a>
+  <a href="#commands">业务命令链路</a>
+  <a href="#push">Push 链路</a>
+  <a href="#observe">观测能力</a>
+  <a href="#interview">面试怎么讲</a>
+</aside>
+
+<main>
+
+<!-- §1 主链路 -->
+<section id="main">
+  <div class="section-title"><span class="num">§04.1</span><h2 style="margin-top:0">当前主链路</h2></div>
+  <div class="code-block reveal">
+    <div class="code-head"><span class="code-lang">main pipeline</span><button class="code-copy">复制</button></div>
+<pre><code>HTTP / WebSocket
+  → <span class="tok-fn">MessageParser</span>          <span class="tok-cmt"># 统一解析为 UnifiedMessage</span>
+  → <span class="tok-fn">MessageProcessor</span>       <span class="tok-cmt"># 投递线程池，按 cmd_id 找 handler</span>
+  → <span class="tok-fn">GatewayCommandHandlerRegistry</span>
+  → <span class="tok-fn">GatewayRuntimeRegistry</span>  <span class="tok-cmt"># 选 local 或 remote</span>
+  → local service packet dispatcher 或 remote ForwardPacket gRPC</code></pre>
+  </div>
+  <div class="quote reveal"><span class="quote-label">源码阅读顺序</span>gateway/main.cpp → gateway_server.cpp → message_parser.cpp → message_processor.cpp → gateway_command_handler_registry.cpp → 各 *_command_handlers.cpp → message_ws_handler.cpp → remote_*_service_adapter.cpp → services/*/*_packet_dispatcher.cpp</div>
+</section>
+
+<!-- §2 初始化 -->
+<section id="init">
+  <div class="section-title"><span class="num">§04.2</span><h2>GatewayServer 初始化顺序</h2></div>
+  <p>service runtime 先初始化，再注册 command handlers；HTTP 和 WebSocket 最终都进入同一套 MessageProcessor 命令分发模型。</p>
+  <div class="flow reveal reveal-d1">
+    <div class="flow-title">初始化序列 · 点击查看说明</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["external","gateway","service","store"],"nodes":[{"id":"log","label":"init_logger","group":"external"},{"id":"io","label":"init_io_pool","group":"external"},{"id":"tp","label":"ThreadPool::Init","group":"external"},{"id":"parser","label":"init_msg_parser","group":"gateway"},{"id":"proc","label":"init_msg_processor","group":"gateway"},{"id":"db","label":"init_db_runtime","group":"gateway"},{"id":"rt","label":"init_*_runtime","group":"gateway"},{"id":"ws","label":"init_ws_server","group":"service"},{"id":"http","label":"init_http_server","group":"service"},{"id":"conn","label":"init_conn_mgr","group":"service"},{"id":"reg","label":"register_handlers","group":"store"}],"edges":[["log","io"],["io","tp"],["tp","parser"],["parser","proc"],["proc","db"],["db","rt"],["rt","ws"],["ws","http"],["http","conn"],["conn","reg"]],"notes":{"log":"<div class=note-title>init_logger</div>初始化 LogManager。","io":"<div class=note-title>init_io_service_pool</div>Asio io_context 池。","tp":"<div class=note-title>ThreadPool::Init</div>全局业务线程池。","parser":"<div class=note-title>init_msg_parser</div>MessageParser 负责把 HTTP/WS 转成 UnifiedMessage。","proc":"<div class=note-title>init_msg_processor</div>保存 cmd_id→handler 映射，投递线程池。","db":"<div class=note-title>init_database_runtime</div>PostgreSQL/ODB 与 Redis 连接池。","rt":"<div class=note-title>init_*_runtime</div>user/message/friend/group/group_message runtime，构造 RuntimeRegistry。","ws":"<div class=note-title>init_ws_server</div>绑定 WSS frame callback。","http":"<div class=note-title>init_http_server</div>注册 /api/v1/health、/stats 与 catch-all。","conn":"<div class=note-title>init_conn_mgr</div>WebSocket session 管理。","reg":"<div class=note-title>register_message_handlers</div>按 runtime registry 注册 user/message/friend/group 命令。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+</section>
+
+<!-- §3 HTTP -->
+<section id="http">
+  <div class="section-title"><span class="num">§04.3</span><h2>HTTP 请求链路</h2></div>
+  <p>HTTP 入口不是每个业务模块单独注册 controller route，而是 catch-all 统一进入 MessageProcessor。</p>
+  <div class="flow reveal">
+    <div class="flow-title">HTTP 链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","gateway","gateway","service"],"nodes":[{"id":"http","label":"httplib catch-all","group":"client"},{"id":"parse","label":"MessageParser","group":"gateway"},{"id":"route","label":"RouterManager","group":"gateway"},{"id":"proc","label":"MessageProcessor","group":"gateway"},{"id":"handler","label":"command handler","group":"service"}],"edges":[["http","parse"],["parse","route"],["route","proc"],["proc","handler"]],"notes":{"http":"<div class=note-title>httplib catch-all</div>GatewayServer::init_http_server 注册 /api/v1/health、/api/v1/stats 与 catch-all。","parse":"<div class=note-title>MessageParser::parse_http_request_enhanced</div>解析 method/path/token/device/platform/body/query。","route":"<div class=note-title>RouterManager::parse_http_route</div>根据配置得到 cmd_id，路由来自 config 而非硬编码。","proc":"<div class=note-title>MessageProcessor::process_message</div>投递线程池，process_message_sync 按 cmd_id 找 handler。","handler":"<div class=note-title>command handler</div>鉴权 + 注入身份 + 构造 PacketRequest + 调 local/remote + 构造 HTTP 响应。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <p style="margin-top:var(--sp-4);font-size:var(--fs-sm);color:var(--ink-3)">HTTP 业务路由来自配置：<code>config/dev.json</code>、<code>dev.remote-push.json</code>、<code>dev.remote-all.json</code>、<code>benchmark.json</code>。</p>
+</section>
+
+<!-- §4 WS -->
+<section id="ws">
+  <div class="section-title"><span class="num">§04.4</span><h2>WebSocket 请求链路</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">WS 链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","gateway","gateway","service"],"nodes":[{"id":"frame","label":"WS frame","group":"client"},{"id":"decode","label":"ProtobufCodec::decodeEnvelope","group":"gateway"},{"id":"parse","label":"MessageParser","group":"gateway"},{"id":"limit","label":"WSS inflight limit + ThreadPool","group":"gateway"},{"id":"handler","label":"MessageWsHandler","group":"service"}],"edges":[["frame","decode"],["decode","parse"],["parse","limit"],["limit","handler"]],"notes":{"frame":"<div class=note-title>WebSocket frame</div>二进制 protobuf envelope。","decode":"<div class=note-title>ProtobufCodec::decodeEnvelope</div>解包 IMHeader + type_name + payload + CRC32。","parse":"<div class=note-title>parse_websocket_message_enhanced</div>转 UnifiedMessage。","limit":"<div class=note-title>背压 + 线程池</div>max_ws_inflight_messages 初步背压，每业务任务入队 ThreadPool。","handler":"<div class=note-title>MessageWsHandler::handle_send</div>校验 token/device 一致性，构造 MessagePacketRequest，调 dispatcher 或 ForwardPacket，编码 envelope ack。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="card-title">WSS 已补齐能力</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-3)">
+      <span class="tag tag-green">TLS/WS handshake 观测</span>
+      <span class="tag tag-green">session add/remove 观测</span>
+      <span class="tag tag-green">idle timeout</span>
+      <span class="tag tag-green">keepalive ping</span>
+      <span class="tag tag-green">CMD_HEARTBEAT</span>
+      <span class="tag tag-green">max_ws_inflight_messages 背压</span>
+      <span class="tag tag-green">压测后 session 清理</span>
+    </div>
+  </div>
+</section>
+
+<!-- §5 MessageProcessor -->
+<section id="processor">
+  <div class="section-title"><span class="num">§04.5</span><h2>MessageProcessor 的职责</h2></div>
+  <p>职责很窄：保存 cmd_id→handler 映射、投递线程池、同步执行 handler、处理通用错误。<b>它不做统一强制 token 校验。</b></p>
+  <div class="quote"><span class="quote-label">为什么不在通用层强制验签</span>注册/登录是公开入口，不能强制验签；HTTP 和 WS 鉴权语义不同；handler 需要按命令语义决定是否鉴权，并把 token uid 写入 packet header。所以鉴权位置在 command handler / WS handler 中。</div>
+</section>
+
+<!-- §6 Registry -->
+<section id="registry">
+  <div class="section-title"><span class="num">§04.6</span><h2>GatewayCommandHandlerRegistry</h2></div>
+  <p>集中注册业务命令，handler 不再持有一堆散落成员，而是统一从 runtime registry 取依赖。</p>
+  <div class="code-block reveal">
+    <div class="code-head"><span class="code-lang">cpp</span><button class="code-copy">复制</button></div>
+<pre><code><span class="tok-kw">struct</span> <span class="tok-type">GatewayCommandHandlerContext</span> {
+    <span class="tok-kw">const</span> <span class="tok-type">GatewayRuntimeRegistry</span>* runtime = <span class="tok-kw">nullptr</span>;
+};
+
+<span class="tok-cmt">// 注册入口</span>
+register_gateway_command_handlers
+  → register_user_command_handlers
+  → register_message_command_handlers
+  → register_friend_command_handlers
+  → register_group_command_handlers</code></pre>
+  </div>
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="card-title">GatewayRuntimeRegistry 持有</div>
+    <div class="grid grid-3" style="margin-top:var(--sp-3);font-size:var(--fs-sm);color:var(--ink-2)">
+      <div>local UserService<br>remote UserServiceAdapter</div>
+      <div>local MessageService<br>remote MessageServiceAdapter</div>
+      <div>local FriendService<br>remote FriendServiceAdapter</div>
+      <div>local GroupService<br>local GroupMessageService<br>remote GroupServiceAdapter</div>
+      <div>MultiPlatformAuthManager</div>
+      <div>PushNotifier<br>MessageWsHandler</div>
+    </div>
+  </div>
+</section>
+
+<!-- §7 Handler 边界 -->
+<section id="boundary">
+  <div class="section-title"><span class="num">§04.7</span><h2>Command Handler 的边界</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col compare-new">
+      <div class="compare-label">handler 可以做 ✓</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>检查 service/adapter 是否存在</li>
+        <li>校验 HTTP/WS token</li>
+        <li>从 token 提取可信 uid/device/platform</li>
+        <li>把可信身份写入 packet header</li>
+        <li>构造 XxxPacketRequest</li>
+        <li>调 local dispatcher 或 remote adapter</li>
+        <li>消费 auth_token_hint 生成 token</li>
+        <li>消费 push_event 转交 PushNotifier</li>
+      </ul>
+    </div>
+    <div class="compare-col compare-old">
+      <div class="compare-label">handler 不应该做 ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:1.85;padding-left:var(--sp-4);list-style:disc">
+        <li>解析注册/好友/群/消息正文等业务 payload</li>
+        <li>构造业务 DTO</li>
+        <li>查询业务 repository</li>
+        <li>实现好友/群成员/消息状态业务规则</li>
+        <li>自己计算群 fanout 成员</li>
+        <li>维护业务 response mapper</li>
+      </ul>
+    </div>
+  </div>
+  <div class="quote"><span class="quote-label">一句话</span>Gateway handler 是 packet 转发边界，不是业务 service。</div>
+</section>
+
+<!-- §8 业务命令链路 -->
+<section id="commands">
+  <div class="section-title"><span class="num">§04.8</span><h2>各业务命令链路</h2></div>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>业务</th><th>HTTP / WS</th><th>cmd</th><th>handler</th><th>service 边界</th></tr></thead>
+      <tbody>
+        <tr><td><b>User</b></td><td>HTTP</td><td>CMD_REGISTER / LOGIN / GET_USER_INFO / UPDATE_USER_INFO / SEARCH_USER</td><td>user_command_handlers.cpp</td><td>返回 auth_token_hint，Gateway 注入 token</td></tr>
+        <tr><td><b>Message</b></td><td>HTTP + WS</td><td>CMD_SEND_MESSAGE / MESSAGE_HISTORY / PULL_MESSAGE</td><td>message_command_handlers.cpp / MessageWsHandler</td><td>HTTP=JSON，WS=protobuf；返回 push_event</td></tr>
+        <tr><td><b>Friend</b></td><td>HTTP</td><td>CMD_ADD_FRIEND / HANDLE_FRIEND_REQUEST / GET_FRIEND_LIST / GET_FRIEND_REQUESTS</td><td>friend_command_handlers.cpp</td><td>好友规则全在 service 内</td></tr>
+        <tr><td><b>Group</b></td><td>HTTP</td><td>CMD_CREATE_GROUP / SEARCH / JOIN / QUIT / MEMBERS / SEND_GROUP_MESSAGE ...</td><td>group_command_handlers.cpp</td><td>fanout 在 service 算，返回 push_events</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:var(--fs-sm);color:var(--ink-3);margin-top:var(--sp-3)"><b>特殊点</b>：注册/登录不要求已有 access token；资料查询/更新/搜索需要 access token；token 由 Gateway 签发，是鉴权边界的一部分。</p>
+</section>
+
+<!-- §9 Push -->
+<section id="push">
+  <div class="section-title"><span class="num">§04.9</span><h2>Push 链路 · 分布式边界亮点</h2></div>
+  <p>Push 的输入来自 Message/Group service 返回的 push_event 或 push_events。</p>
+
+  <div class="compare reveal">
+    <div class="compare-col" style="background:var(--green-soft);border:1px solid var(--green-soft)">
+      <div class="compare-label" style="color:var(--green)">Local push</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">local</span></div>
+<pre><code>Gateway handler / MessageWsHandler
+  → <span class="tok-fn">PushNotifier</span>
+  → <span class="tok-fn">PushRuntime</span>
+  → <span class="tok-fn">ConnectionManager</span>
+  → <span class="tok-fn">WebSocketServer::send</span></code></pre></div>
+    </div>
+    <div class="compare-col" style="background:var(--accent-soft);border:1px solid var(--accent-soft)">
+      <div class="compare-label" style="color:var(--accent-deep)">Remote push</div>
+      <div class="code-block" style="margin:0"><div class="code-head"><span class="code-lang">remote</span></div>
+<pre><code>Gateway
+  → <span class="tok-fn">RemotePushNotifier</span>
+  → <span class="tok-fn">push_server NotifyUser</span>
+  → <span class="tok-fn">PushRuntime</span>
+  → <span class="tok-fn">GatewayPushDeliveryService callback</span>
+  → Gateway session lookup / send payload</code></pre></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:var(--sp-6)">Remote Push 时序：为什么必须回调 Gateway</h3>
+  <div class="card reveal">
+    <div class="mermaid">
+sequenceDiagram
+    participant h as Gateway Handler
+    participant rn as RemotePushNotifier
+    participant ps as push_server
+    participant pr as PushRuntime
+    participant cb as GatewayPushDeliveryService
+    participant ws as Gateway WS Session
+    h->>rn: notify_user(uid, msg)
+    rn->>ps: gRPC NotifyUser
+    ps->>pr: fanout + payload 构造
+    Note over pr,ws: WebSocket session 在 Gateway 内存中<br/>push_server 无法直接访问
+    pr->>cb: ListUserSessions(uid)
+    cb-->>pr: sessions[]
+    pr->>cb: SendSessionPayload(session, payload)
+    cb->>ws: session lookup + send
+    ws-->>cb: delivered
+    cb->>cb: MarkMessageDelivered
+    </div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">核心原因</span>WebSocket session 属于 Gateway 进程内存；远程 push_server 不能直接操作 Gateway 的 session map，所以 remote push 只能通过 Gateway 暴露的 delivery callback 回到 Gateway 投递。这是项目里很值得讲的分布式边界设计。</div>
+</section>
+
+<!-- §10 观测 -->
+<section id="observe">
+  <div class="section-title"><span class="num">§04.10</span><h2>Gateway 观测能力</h2></div>
+  <p><code>GET /api/v1/stats</code> 当前输出多维运行状态，让压测时可以把"客户端看到 timeout"和"Gateway 内部是否有堆积"对应起来。</p>
+  <div class="grid grid-3 reveal">
+    <div class="card"><div class="card-title">连接</div><p class="card-text">WSS accept 成功/失败、当前 session 数、TLS/upgrade/accept/session add 耗时</p></div>
+    <div class="card"><div class="card-title">HTTP</div><p class="card-text">请求数、inflight、状态码、route 级 count/avg/max、worker/queue/keep-alive 配置</p></div>
+    <div class="card"><div class="card-title">解析与线程</div><p class="card-text">parser decode/routing 失败数、WSS inflight、线程池线程数/排队/运行任务数</p></div>
+    <div class="card"><div class="card-title">运行时模式</div><p class="card-text">service runtime mode、local/remote bound 状态</p></div>
+  </div>
+</section>
+
+<!-- §11 面试 -->
+<section id="interview">
+  <div class="section-title"><span class="num">§04.11</span><h2>面试时怎么讲</h2></div>
+  <div class="quote reveal">
+    <span class="quote-label">主表述</span>
+    MyChat 的 Gateway 不是传统意义上的一堆 HTTP controller。我把 HTTP 和 WebSocket 都统一成 UnifiedMessage，然后通过 MessageProcessor 按 cmd_id 分发。Gateway handler 只做鉴权、身份注入、packet 转发和 push event 转交，真正的业务 payload 解析在各 service 的 packet dispatcher 中完成。这样 Gateway 的职责很清楚：它是协议入口和服务路由层，不是业务处理层。同时，GatewayRuntimeRegistry 让同一套 handler 可以选择 local service 或 remote ForwardPacket gRPC，所以项目可以从 all-in-one 开发模式平滑切到多进程分布式服务模式。
+  </div>
+  <div class="quote reveal">
+    <span class="quote-label">被追问"为什么要重构掉 controller/client"</span>
+    因为原来的 controller/client 链路让 HTTP 和 WS 走了两套模型，而且 Gateway 中出现了业务字段解析、业务 DTO 构造和 response mapper。这违背了我最初对 Gateway 的设计：Gateway 只做协议入口、鉴权、路由和转发。重构后 HTTP/WS 都回到 MessageParser + MessageProcessor + command handler registry，业务解析下沉到 service packet dispatcher，Gateway 边界更干净，也更利于讲清分布式服务边界。
+  </div>
+  <div class="card reveal" style="border-left:3px solid var(--amber)">
+    <div class="card-title" style="color:var(--amber)">仍需注意的问题</div>
+    <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+      <li>packet contract 和业务 proto 仍混在同一 proto 文件，长期应拆出 *_packet.proto</li>
+      <li>RuntimeRegistry 仍是显式字段，可进一步收敛为泛化 endpoint map</li>
+      <li>/api/v1/stats 目前是文本输出，后续应改为 JSON</li>
+      <li>CLI/config 优先级需修复，避免压测端口被配置覆盖</li>
+    </ul>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="overview.html"><div class="label">← 上一篇</div><div class="title">项目整体架构总览</div></a>
+  <a class="next" href="grpc.html"><div class="label">下一篇 →</div><div class="title">gRPC 服务边界与远程调用</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§04 · Gateway 统一接入与编排</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+</body>
+</html>

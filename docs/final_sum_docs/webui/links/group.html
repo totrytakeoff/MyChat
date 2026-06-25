@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>群聊链路 · MyChat</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link active" href="group.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§08 · 业务链路篇</div>
+    <h1 class="reveal reveal-d1">群聊链路</h1>
+    <p class="desc reveal reveal-d2">MyChat 群聊 MVP 把群资料、群成员、群消息分开建模；Gateway 只做鉴权、可信 uid 注入、packet 转发和 push_events 转交，群资料解析、成员校验、群消息 fanout 成员计算都在 Group service packet dispatcher 中完成。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#create">建群链路</a>
+  <a href="#join">搜群与加群</a>
+  <a href="#info">群资料与成员</a>
+  <a href="#leave">退群链路</a>
+  <a href="#send">群消息发送</a>
+  <a href="#fanout">Fanout 边界</a>
+  <a href="#boundary">MVP 边界</a>
+  <a href="#qa">面试追问</a>
+</aside>
+
+<main>
+
+<section id="create">
+  <div class="section-title"><span class="num">§08.1</span><h2 style="margin-top:0">建群链路</h2></div>
+  <p>创建者来自 token uid；Gateway 不解析 <code>name</code>；建群时同时创建群主成员关系；群主不能直接退群。</p>
+  <div class="flow reveal">
+    <div class="flow-title">建群链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","service","service","store"],"nodes":[{"id":"req","label":"POST /groups","group":"client"},{"id":"handler","label":"CMD_CREATE_GROUP handler","group":"gateway"},{"id":"disp","label":"GroupPacketDispatcher","group":"service"},{"id":"svc","label":"GroupService::create_group","group":"service"},{"id":"db","label":"GroupRepository","group":"store"}],"edges":[["req","handler"],["handler","disp"],["disp","svc"],["svc","db"]],"notes":{"req":"<div class=note-title>POST /api/v1/groups</div>{ name } + Bearer token","handler":"<div class=note-title>CMD_CREATE_GROUP handler</div>verify_http_user；from_uid = token uid；payload = raw JSON（不解析 name）。","disp":"<div class=note-title>GroupPacketDispatcher::handle_create_group</div>解析 name；CreateGroupRequest.creator_uid = from_uid。","svc":"<div class=note-title>GroupService::create_group</div>校验群名非空、创建者存在；创建 Group + GroupMember(OWNER)。","db":"<div class=note-title>GroupRepository::create_group_with_owner</div>ODB transaction，同时持久化群资料和群主成员关系。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+</section>
+
+<section id="join">
+  <div class="section-title"><span class="num">§08.2</span><h2>搜群与加群</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card"><div class="card-title">搜群</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">http</span></div>
+<pre><code>GET /api/v1/groups/search?keyword=
+→ CMD_SEARCH_GROUP
+→ GroupService::search_groups
+→ 返回 groups + joined 状态</code></pre></div>
+    </div>
+    <div class="card"><div class="card-title">加群</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">http</span></div>
+<pre><code>POST /api/v1/groups/join
+{ group_id }
+→ CMD_APPLY_JOIN_GROUP
+→ GroupService::join_group</code></pre></div>
+    </div>
+  </div>
+  <h3>加群失败场景</h3>
+  <div class="tbl-wrap reveal">
+    <table>
+      <thead><tr><th>场景</th><th>错误</th></tr></thead>
+      <tbody>
+        <tr><td>group_id 为空</td><td><span class="tag tag-amber">400</span></td></tr>
+        <tr><td>群不存在</td><td><span class="tag tag-red">GROUP_NOT_FOUND</span></td></tr>
+        <tr><td>用户不存在</td><td><span class="tag tag-red">USER_NOT_FOUND</span></td></tr>
+        <tr><td>已经是成员</td><td><span class="tag tag-amber">ALREADY_MEMBER</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="info">
+  <div class="section-title"><span class="num">§08.3</span><h2>群资料、我的群、成员列表</h2></div>
+  <div class="grid grid-3 reveal">
+    <div class="card"><div class="card-title">群资料</div><p class="card-text"><code>GET /groups/info?group_id=</code> → CMD_GET_GROUP_INFO → 返回 group + joined + members</p></div>
+    <div class="card"><div class="card-title">我的群</div><p class="card-text"><code>GET /groups</code> → CMD_GET_GROUP_LIST → <code>list_my_groups(token_uid)</code></p></div>
+    <div class="card"><div class="card-title">群成员</div><p class="card-text"><code>GET /groups/members?group_id=</code> → 需调用者是群成员；成员昵称由 service 侧解析</p></div>
+  </div>
+</section>
+
+<section id="leave">
+  <div class="section-title"><span class="num">§08.4</span><h2>退群链路</h2></div>
+  <div class="quote reveal"><span class="quote-label">当前规则</span>非成员不能退群；群主不能直接退出（转让群主是后续扩展）。</div>
+  <div class="code-block reveal" style="margin-top:var(--sp-4)"><div class="code-head"><span class="code-lang">cpp</span></div>
+<pre><code>GroupService::<span class="tok-fn">leave_group</span>(group_id, token_uid)
+  → 校验群存在
+  → 校验当前用户是成员
+  → <span class="tok-kw">if</span> (role == OWNER) <span class="tok-kw">return</span> <span class="tok-str">"群主不能退群"</span>
+  → GroupRepository::<span class="tok-fn">remove_member</span></code></pre></div>
+</section>
+
+<section id="send">
+  <div class="section-title"><span class="num">§08.5</span><h2>群消息发送</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">群消息发送链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["client","gateway","service","service","gateway"],"nodes":[{"id":"req","label":"POST /groups/messages/send","group":"client"},{"id":"handler","label":"CMD_SEND_GROUP_MESSAGE","group":"gateway"},{"id":"disp","label":"GroupPacketDispatcher","group":"service"},{"id":"msg","label":"GroupMessageService + PG","group":"service"},{"id":"push","label":"Gateway notify push_events","group":"gateway"}],"edges":[["req","handler"],["handler","disp"],["disp","msg"],["msg","push"]],"notes":{"req":"<div class=note-title>POST /api/v1/groups/messages/send</div>{ group_id, content } + Bearer token","handler":"<div class=note-title>CMD_SEND_GROUP_MESSAGE handler</div>verify_http_user；from_uid = token uid；Gateway 不解析 group_id/content，不计算 fanout。","disp":"<div class=note-title>GroupPacketDispatcher::handle_send_group_message</div>解析 group_id/content；list_members 校验 sender 是成员；调用 GroupMessageService。","msg":"<div class=note-title>GroupMessageService::send_message</div>GroupMessageRepository::create 落库；fill_push_events(members, sender, group_id, msg_id, content) 生成 push_events 列表。","push":"<div class=note-title>Gateway notify_group_push_events</div>遍历 push_events，逐成员调用 PushNotifier::notify_user；默认不向发送者重复推送。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+</section>
+
+<section id="fanout">
+  <div class="section-title"><span class="num">§08.6</span><h2>Fanout 边界 · 关键设计</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col compare-old">
+      <div class="compare-label">✕ Gateway 计算 fanout</div>
+      <p style="font-size:var(--fs-sm);color:var(--ink-3)">Gateway 查询群成员并计算 fanout → 重新耦合群业务规则</p>
+    </div>
+    <div class="compare-col compare-new">
+      <div class="compare-label">✓ Service 返回 push_events</div>
+      <p style="font-size:var(--fs-sm);color:var(--ink-2)">Group service 返回 <code>push_events</code> 列表，Gateway 只负责投递转交</p>
+    </div>
+  </div>
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="mermaid">
+flowchart LR
+    D[GroupPacketDispatcher]:::svc --> M[GroupMessageService 落库]:::svc
+    M --> F["fill_push_events<br/>计算除发送者外的成员"]:::svc
+    F --> R["GroupPacketResponse<br/>push_events[]"]:::svc
+    R --> G[Gateway notify_group_push_events]:::gw
+    G --> P[PushNotifier::notify_user<br/>逐成员投递]:::gw
+    classDef svc fill:#E6EDE4,stroke:#6B8E6B;
+    classDef gw fill:#F4E3D8,stroke:#D97757;
+    </div>
+  </div>
+</section>
+
+<section id="boundary">
+  <div class="section-title"><span class="num">§08.7</span><h2>当前 MVP 边界</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-title" style="color:var(--green)">已实现</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-3)">
+        <span class="tag tag-green">建群</span><span class="tag tag-green">搜群</span><span class="tag tag-green">加群</span><span class="tag tag-green">退群</span><span class="tag tag-green">群资料</span><span class="tag tag-green">我的群列表</span><span class="tag tag-green">群成员</span><span class="tag tag-green">群消息发送</span><span class="tag tag-green">群消息历史</span><span class="tag tag-green">群消息 push_events</span>
+      </div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--ink-4)">
+      <div class="card-title" style="color:var(--ink-3)">未完整实现</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-3)">
+        <span class="tag tag-ghost">群主转让</span><span class="tag tag-ghost">管理员</span><span class="tag tag-ghost">禁言</span><span class="tag tag-ghost">群公告</span><span class="tag tag-ghost">入群审核</span><span class="tag tag-ghost">邀请入群</span><span class="tag tag-ghost">踢人</span><span class="tag tag-ghost">大群 fanout 优化</span><span class="tag tag-ghost">群消息 sequence</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="section-title"><span class="num">§08.8</span><h2>面试追问 · 点击展开</h2></div>
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">群消息 fanout 为什么不在 Gateway 计算？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>群成员关系是 Group service 的业务数据。Gateway 如果自己查询成员并计算 fanout，就会重新耦合群业务规则。当前做法是 Group service 返回 <code>push_events</code>，Gateway 只负责投递转交。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">为什么群消息不走 WebSocket 发送？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>当前 MVP 群消息主要通过 HTTP 验证后端链路和 push fanout。WebSocket 群发送可以作为后续扩展，但底层仍应复用 <code>GroupPacketRequest/GroupPacketDispatcher</code>，不能让 Gateway 解析群消息业务字段。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">当前群聊和生产级群聊差距在哪？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>生产级还需要群权限体系、管理员、入群审核、禁言、踢人、群公告、群消息 sequence、大群 fanout 优化、跨 Gateway 路由和更完整的回执体系。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="friend.html"><div class="label">← 上一篇</div><div class="title">好友关系链路</div></a>
+  <a class="next" href="push.html"><div class="label">下一篇 →</div><div class="title">实时推送与 Push 服务</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§08 · 群聊链路</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+</body>
+</html>

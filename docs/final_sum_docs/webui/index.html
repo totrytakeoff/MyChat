@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyChat · 分布式 IM 后端文档</title>
+<meta name="description" content="基于 C++20 的分布式即时通讯后端系统 — 架构、链路与设计文档">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/components.css">
+<link rel="stylesheet" href="assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+<!-- ============ 导航 ============ -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link active" href="index.html">概览</a>
+      <a class="nav-link" href="architecture/overview.html">架构</a>
+      <a class="nav-link" href="architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="architecture/storage.html">存储</a>
+      <a class="nav-link" href="links/message.html">业务链路</a>
+      <a class="nav-link" href="engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ============ Hero ============ -->
+<header class="hero">
+  <div class="container">
+    <div class="eyebrow reveal">C++20 · 分布式即时通讯后端</div>
+    <h1 class="reveal reveal-d1">把 HTTP 与 WebSocket<br><span class="accent">统一成一条 packet 链路</span></h1>
+    <p class="sub reveal reveal-d2">MyChat 以 Gateway 为唯一外部入口，用统一的 <code>MessageParser → MessageProcessor → CommandHandler</code> 模型分发命令；后端按 User / Message / Friend / Group / Push 拆分服务边界，支持本地 all-in-one 与 gRPC <code>ForwardPacket</code> 远程模式平滑切换。</p>
+    <div class="hero-cta reveal reveal-d3">
+      <a class="btn btn-primary" href="architecture/overview.html">从整体架构开始 <span class="arrow">→</span></a>
+      <a class="btn btn-ghost" href="architecture/gateway.html">深入 Gateway</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ 动态架构总图 ============ -->
+<section class="section">
+  <div class="container-wide">
+    <div class="section-title reveal">
+      <span class="num">§ 总览</span>
+      <h2 style="margin-top:0">四层架构，一条链路</h2>
+    </div>
+    <p class="lead reveal reveal-d1" style="max-width:62ch;margin-bottom:var(--sp-6)">点击图中任意节点查看其职责。橙色粒子沿连线流动，模拟请求从客户端经 Gateway 路由到各业务服务、最终落库的完整路径。</p>
+
+    <div class="flow reveal reveal-d2">
+      <div class="flow-title">系统架构总图 · 可交互</div>
+      <div class="flow-track">
+        <div class="flow-stage" data-flow='{"layout":["client","gateway","service","store"],"nodes":[{"id":"web","label":"Web Client","group":"client"},{"id":"gw","label":"Gateway","group":"gateway"},{"id":"user","label":"User","group":"service"},{"id":"msg","label":"Message","group":"service"},{"id":"friend","label":"Friend","group":"service"},{"id":"group","label":"Group","group":"service"},{"id":"push","label":"Push","group":"service"},{"id":"pg","label":"PostgreSQL","group":"store"},{"id":"redis","label":"Redis","group":"store"}],"edges":[["web","gw"],["gw","user"],["gw","msg"],["gw","friend"],["gw","group"],["gw","push"],["gw","redis"],["user","pg"],["msg","pg"],["friend","pg"],["group","pg"],["push","redis"]],"notes":{"web":"<div class=note-title>Web Client · React</div>后端能力验证入口。只访问 Gateway，不直连任何业务服务；通过 HTTP 调用接口、通过 WebSocket 收发实时消息与在线推送。","gw":"<div class=note-title>Gateway · 统一接入层</div>协议入口 + 鉴权边界 + 连接管理 + cmd 路由 + packet 转发。把 HTTP 与 WebSocket 统一成 UnifiedMessage，按 cmd_id 分发，不解析业务 payload。","user":"<div class=note-title>User Service</div>注册、登录、资料、搜索。密码 PBKDF2-HMAC-SHA256，返回 auth_token_hint 交由 Gateway 签发 token。","msg":"<div class=note-title>Message Service</div>单聊发送、会话历史、离线拉取、delivered/read。先持久化再 ack，返回 push_event 触发在线投递。","friend":"<div class=note-title>Friend Service</div>好友申请状态机（PENDING/ACCEPTED/REJECTED）、好友列表、待处理申请。所有好友规则在此闭环。","group":"<div class=note-title>Group Service</div>群资料、群成员、群消息。群消息 fanout 成员计算在 service 内完成，返回 push_events 列表。","push":"<div class=note-title>Push Service</div>在线投递与 fanout。远程 Push 无法直接操作 Gateway 内存中的 WebSocket session，必须通过 Gateway callback 回到 Gateway 投递。","pg":"<div class=note-title>PostgreSQL + ODB</div>持久业务数据：用户、单聊消息、好友关系、群资料、群成员、群消息。需要可恢复、长期保存、关系查询。","redis":"<div class=note-title>Redis</div>临时高频状态：refresh token 元数据、token 撤销状态、token 索引、session/在线状态辅助。天然 TTL，可由业务状态重建。"}}'></div>
+      </div>
+      <div class="flow-note"></div>
+      <div class="flow-controls">
+        <button class="flow-btn active" data-action="toggle">暂停流光</button>
+        <button class="flow-btn" data-action="replay">重放粒子</button>
+        <span style="font-size:var(--fs-xs);color:var(--ink-4);margin-left:auto">提示：悬停节点高亮相关链路，点击查看职责</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 统一 packet 链路 ============ -->
+<section class="section" style="background:var(--bg-elevated);border-top:1px solid var(--line-soft);border-bottom:1px solid var(--line-soft)">
+  <div class="container">
+    <div class="section-title reveal">
+      <span class="num">§ 核心叙事</span>
+      <h2 style="margin-top:0">统一 packet 链路</h2>
+    </div>
+    <p class="lead reveal reveal-d1" style="margin-bottom:var(--sp-6)">这是整个项目最重要的设计事实。HTTP 与 WebSocket 不再是两套割裂入口，而是汇入同一条命令分发模型；Gateway 只做协议入口与转发，业务解析下沉到各 service 的 packet dispatcher。</p>
+
+    <div class="code-block reveal reveal-d2">
+      <div class="code-head"><span class="code-lang">main pipeline</span><button class="code-copy">复制</button></div>
+<pre><code><span class="tok-cmt"># HTTP 与 WebSocket 殊途同归</span>
+HTTP / WebSocket
+  → <span class="tok-fn">MessageParser</span>          <span class="tok-cmt"># 解析为 UnifiedMessage</span>
+  → <span class="tok-fn">MessageProcessor</span>       <span class="tok-cmt"># 投递线程池，按 cmd_id 找 handler</span>
+  → <span class="tok-fn">CommandHandlerRegistry</span> <span class="tok-cmt"># 鉴权 + 注入可信身份到 packet header</span>
+  → <span class="tok-fn">RuntimeRegistry</span>        <span class="tok-cmt"># 选择 local service 或 remote adapter</span>
+  → <span class="tok-fn">XxxPacketDispatcher</span>    <span class="tok-cmt"># service 内解析 payload、执行业务规则</span>
+  → PostgreSQL / Redis / Push</code></pre>
+    </div>
+
+    <div class="grid grid-3 reveal reveal-d3" style="margin-top:var(--sp-6)">
+      <div class="card card-hover">
+        <div class="card-title"><span class="icon">①</span> 协议入口统一</div>
+        <p class="card-text">HTTP catch-all 与 WS envelope 都经 MessageParser 转成 UnifiedMessage，路由来自配置而非硬编码 controller。</p>
+      </div>
+      <div class="card card-hover">
+        <div class="card-title"><span class="icon">②</span> 鉴权边界清晰</div>
+        <p class="card-text">Gateway 校验 token 并把可信 uid/device/platform 写入 packet header；service 不信任 body 中的发送者。</p>
+      </div>
+      <div class="card card-hover">
+        <div class="card-title"><span class="icon">③</span> 部署模式可切</div>
+        <p class="card-text">同一套 handler 通过 RuntimeRegistry 选择 local dispatcher 或 gRPC ForwardPacket，从 all-in-one 平滑演进到分布式。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 压测亮点 ============ -->
+<section class="section">
+  <div class="container">
+    <div class="section-title reveal">
+      <span class="num">§ 压测基准</span>
+      <h2 style="margin-top:0">重构后的稳定基准</h2>
+    </div>
+    <p class="lead reveal reveal-d1" style="margin-bottom:var(--sp-6)">这不是生产级百万连接结论，而是说明当前 MVP 在 200 在线用户、HTTP 500 VU ramp 的验证口径下，Gateway 主链路稳定、无连接残留、无线程池堆积。</p>
+
+    <div class="grid grid-4 reveal reveal-d2">
+      <div class="card metric accent">
+        <div class="value" data-count="714.4" data-decimals="1" data-unit=" msg/s">0</div>
+        <div class="label">WSS 吞吐 · 200 users / 250ms</div>
+      </div>
+      <div class="card metric">
+        <div class="value" data-count="35.91" data-decimals="2" data-unit="ms">0</div>
+        <div class="label">WSS RTT p95</div>
+      </div>
+      <div class="card metric">
+        <div class="value" data-count="306.86" data-decimals="2" data-unit="/s">0</div>
+        <div class="label">HTTP 平均 RPS</div>
+      </div>
+      <div class="card metric accent">
+        <div class="value" data-count="0" data-decimals="0" data-unit="%">0</div>
+        <div class="label">HTTP 失败率 · 46296 请求</div>
+      </div>
+    </div>
+
+    <div class="card reveal reveal-d3" style="margin-top:var(--sp-5)">
+      <div class="card-title">重构前 vs 重构后 · HTTP ramp</div>
+      <p class="card-text" style="margin-bottom:var(--sp-4)">统一入口与 HTTP 接入修复后，RPS 从 14.44 跃升至 306.86，失败率从 56% 降至 0。</p>
+      <div style="display:grid;gap:var(--sp-4)">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:6px"><span>平均 RPS</span><span><b style="color:var(--ink-4)">14.44</b> → <b style="color:var(--accent-deep)">306.86</b></span></div>
+          <div class="bar-track"><div class="bar-fill" style="--w:96%"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:6px"><span>失败率</span><span><b style="color:var(--red)">56.03%</b> → <b style="color:var(--green)">0.00%</b></span></div>
+          <div class="bar-track"><div class="bar-fill muted" style="--w:100%"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:6px"><span>p95 延迟</span><span><b style="color:var(--red)">59.99s</b> → <b style="color:var(--accent-deep)">3.75ms</b></span></div>
+          <div class="bar-track"><div class="bar-fill" style="--w:100%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 文档导航 ============ -->
+<section class="section" style="background:var(--bg-elevated);border-top:1px solid var(--line-soft)">
+  <div class="container">
+    <div class="section-title reveal">
+      <span class="num">§ 文档</span>
+      <h2 style="margin-top:0">按主题阅读</h2>
+    </div>
+
+    <h3 class="reveal reveal-d1" style="margin-top:var(--sp-5)">架构篇 · 建立全局视角</h3>
+    <div class="grid grid-auto reveal reveal-d2" style="margin-bottom:var(--sp-7)">
+      <a class="card card-hover doc-card" href="architecture/overview.html">
+        <div class="tag-row"><span class="tag tag-accent">§01</span><span class="tag tag-ghost">必读</span></div>
+        <div class="card-title">项目整体架构总览</div>
+        <p class="card-text">一句话定位、四层总架构、模块职责、local/remote 模式、数据与缓存分工。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="architecture/gateway.html">
+        <div class="tag-row"><span class="tag tag-accent">§04</span><span class="tag tag-ghost">核心</span></div>
+        <div class="card-title">Gateway 统一接入与编排</div>
+        <p class="card-text">HTTP/WS 链路、CommandHandler 边界、Push 转交、观测能力。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="architecture/grpc.html">
+        <div class="tag-row"><span class="tag tag-accent">§10</span></div>
+        <div class="card-title">gRPC 服务边界与远程调用</div>
+        <p class="card-text">ForwardPacket 契约、RuntimeRegistry、local/remote 切换、Push callback。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="architecture/storage.html">
+        <div class="tag-row"><span class="tag tag-accent">§11</span></div>
+        <div class="card-title">数据持久化与缓存设计</div>
+        <p class="card-text">PostgreSQL/ODB 与 Redis 分工、各业务数据建模、一致性取舍。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+    </div>
+
+    <h3 class="reveal">业务链路篇 · 逐条追踪调用栈</h3>
+    <div class="grid grid-auto reveal reveal-d1" style="margin-bottom:var(--sp-7)">
+      <a class="card card-hover doc-card" href="links/auth.html">
+        <div class="tag-row"><span class="tag tag-blue">§05</span></div>
+        <div class="card-title">注册登录与鉴权链路</div>
+        <p class="card-text">JWT access + Redis refresh 双 token、多平台策略、auth_token_hint。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="links/message.html">
+        <div class="tag-row"><span class="tag tag-blue">§06</span><span class="tag tag-ghost">核心</span></div>
+        <div class="card-title">单聊消息链路</div>
+        <p class="card-text">HTTP/WS 发送、先持久化再 ack、push 语义、历史与离线。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="links/friend.html">
+        <div class="tag-row"><span class="tag tag-blue">§07</span></div>
+        <div class="card-title">好友关系链路</div>
+        <p class="card-text">申请状态机、防重复、权限校验，规则全在 service 内闭环。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="links/group.html">
+        <div class="tag-row"><span class="tag tag-blue">§08</span></div>
+        <div class="card-title">群聊链路</div>
+        <p class="card-text">群资料/成员/消息三类数据、fanout 成员计算、push_events。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="links/push.html">
+        <div class="tag-row"><span class="tag tag-blue">§09</span><span class="tag tag-ghost">亮点</span></div>
+        <div class="card-title">实时推送与 Push 服务</div>
+        <p class="card-text">PushRuntime、FanoutPolicy、远程 Push 必须回调 Gateway 的分布式边界。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+    </div>
+
+    <h3 class="reveal">工程与面试篇</h3>
+    <div class="grid grid-auto reveal reveal-d1">
+      <a class="card card-hover doc-card" href="engineering/benchmark.html">
+        <div class="tag-row"><span class="tag tag-green">压测</span></div>
+        <div class="card-title">压测基准与可视化</div>
+        <p class="card-text">重构前后对比、WSS/HTTP 全场景数据、修复过程。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="engineering/completeness.html">
+        <div class="tag-row"><span class="tag tag-green">§02</span></div>
+        <div class="card-title">功能完成度分析</div>
+        <p class="card-text">各模块完成度、MVP 边界、后续 TODO。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="engineering/stack.html">
+        <div class="tag-row"><span class="tag tag-green">§03</span></div>
+        <div class="card-title">核心技术栈与选型</div>
+        <p class="card-text">C++20/Boost/Protobuf/gRPC/Redis/PostgreSQL 选型理由。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="interview/qa.html">
+        <div class="tag-row"><span class="tag tag-amber">面试</span><span class="tag tag-ghost">§19+20</span></div>
+        <div class="card-title">高频问答与架构追问</div>
+        <p class="card-text">交互式折叠面板，模拟被追问的递进回答。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+      <a class="card card-hover doc-card" href="interview/resume.html">
+        <div class="tag-row"><span class="tag tag-amber">面试</span><span class="tag tag-ghost">§17+18</span></div>
+        <div class="card-title">简历与自我介绍</div>
+        <p class="card-text">简历描述、亮点分层、2分钟/1分钟/30秒自我介绍。</p>
+        <span class="go">阅读 <span class="arrow">→</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 页脚 ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>
+      <div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div>
+      <span>基于 C++20 的分布式即时通讯后端 · 文档可视化版</span>
+    </div>
+    <span>本站点为原 Markdown 文档的交互式呈现 · 数据截至 2026-06-23</span>
+  </div>
+</footer>
+
+<script src="assets/js/mermaid-init.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/flow-diagram.js"></script>
+<script src="assets/js/counter.js"></script>
+</body>
+</html>

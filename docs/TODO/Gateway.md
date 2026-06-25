@@ -210,3 +210,13 @@ HTTP / WebSocket
 - [ ] `WebSocketServer::do_accept()` 在 accept 出错后应区分关闭态和可恢复错误，可恢复错误继续 accept。
 - [ ] WSS 建连统计从 count/avg/max 扩展为分位数。
 - [ ] `/api/v1/stats` 后续可改为 JSON，便于 benchmark 脚本自动解析。
+- [ ]  这些玩意儿就不应该存在,又把具体的服务逻辑引入gateway了! 应该统一在register中完成对应处理的!
+ ```cpp 
+        init_user_runtime();
+        init_message_runtime();
+        init_friend_runtime();
+        init_group_runtime();
+        init_group_message_runtime(); 
+        init_push_runtime(); 
+```
+- [ ]

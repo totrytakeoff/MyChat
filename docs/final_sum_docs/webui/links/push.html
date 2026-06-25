@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实时推送与 Push 服务 · MyChat</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link active" href="push.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§09 · 业务链路篇 · 架构亮点</div>
+    <h1 class="reveal reveal-d1">实时推送与 Push 服务</h1>
+    <p class="desc reveal reveal-d2">Push 服务负责在线投递编排，但<b>不拥有 WebSocket 连接</b>；Gateway 持有连接，Push 通过本地适配或远程 Gateway callback 完成 session 查询和 payload 发送。这是项目里最典型的分布式边界设计。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#trigger">Push 触发点</a>
+  <a href="#local">本地 Push 模式</a>
+  <a href="#remote">远程 Push 模式</a>
+  <a href="#callback">为什么回调 Gateway</a>
+  <a href="#fanout">FanoutPolicy</a>
+  <a href="#delivered">delivered 语义</a>
+  <a href="#best-effort">best-effort 取舍</a>
+  <a href="#qa">面试追问</a>
+</aside>
+
+<main>
+
+<section id="trigger">
+  <div class="section-title"><span class="num">§09.1</span><h2 style="margin-top:0">Push 触发点</h2></div>
+  <p>Gateway 不计算单聊/群聊业务字段，不计算群成员 fanout；service packet dispatcher 返回明确的 push event 元数据，Gateway 只转交。</p>
+  <div class="grid grid-2 reveal">
+    <div class="card" style="border-left:3px solid var(--blue)">
+      <div class="card-title">单聊触发</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">direct</span></div>
+<pre><code>MessagePacketDispatcher 保存消息
+  → 返回 MessagePacketResponse.push_event
+  → Gateway message_command_handlers
+  → PushNotifier::notify_user</code></pre></div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-title">群聊触发</div>
+      <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">group</span></div>
+<pre><code>GroupPacketDispatcher 保存群消息
+  → 计算除发送者外的成员 push_events
+  → 返回 GroupPacketResponse.push_events
+  → Gateway notify_group_push_events
+  → PushNotifier::notify_user(each)</code></pre></div>
+    </div>
+  </div>
+</section>
+
+<section id="local">
+  <div class="section-title"><span class="num">§09.2</span><h2>本地 Push 模式</h2></div>
+  <p>本地模式适合单机 MVP 和快速调试。</p>
+  <div class="flow reveal">
+    <div class="flow-title">Local Push 链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["gateway","gateway","gateway","gateway","gateway"],"nodes":[{"id":"handler","label":"Gateway handler","group":"gateway"},{"id":"notifier","label":"PushNotifier","group":"gateway"},{"id":"runtime","label":"PushRuntime","group":"gateway"},{"id":"conn","label":"ConnectionManager","group":"gateway"},{"id":"ws","label":"WebSocketServer::send","group":"gateway"}],"edges":[["handler","notifier"],["notifier","runtime"],["runtime","conn"],["conn","ws"]],"notes":{"handler":"<div class=note-title>Gateway command handler / MessageWsHandler</div>消费 push_event，调用 PushNotifier。","notifier":"<div class=note-title>PushNotifier</div>推送调用抽象，本地/远程实现同一接口。","runtime":"<div class=note-title>PushRuntime</div>查询 session、应用 fanout policy、构造 payload、发送、标记 delivered。","conn":"<div class=note-title>ConnectionManager::get_user_sessions</div>Gateway 内部维护 uid → sessions。","ws":"<div class=note-title>WebSocketServer / session->send</div>按 session_id 发送 payload，mark_delivered。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+</section>
+
+<section id="remote">
+  <div class="section-title"><span class="num">§09.3</span><h2>远程 Push 模式 · 独立进程</h2></div>
+  <div class="flow reveal">
+    <div class="flow-title">Remote Push 链路 · 可交互</div>
+    <div class="flow-track">
+      <div class="flow-stage" data-flow='{"layout":["gateway","service","service","gateway","gateway"],"nodes":[{"id":"gw","label":"Gateway","group":"gateway"},{"id":"rpn","label":"RemotePushNotifier","group":"service"},{"id":"ps","label":"push_server NotifyUser","group":"service"},{"id":"cb","label":"GatewayPushDeliveryService","group":"gateway"},{"id":"send","label":"Gateway session send","group":"gateway"}],"edges":[["gw","rpn"],["rpn","ps"],["ps","cb"],["cb","send"]],"notes":{"gw":"<div class=note-title>Gateway</div>触发 remote push。","rpn":"<div class=note-title>RemotePushNotifier</div>调用 push_server。","ps":"<div class=note-title>push_server PushService.NotifyUser</div>PushRuntime fanout + payload 构造。","cb":"<div class=note-title>GatewayPushDeliveryService</div>三个回调：ListUserSessions / SendSessionPayload / MarkMessageDelivered。","send":"<div class=note-title>Gateway session lookup / send</div>实际投递 WebSocket payload。"}}'></div>
+    </div>
+    <div class="flow-note"></div>
+  </div>
+</section>
+
+<section id="callback">
+  <div class="section-title"><span class="num">§09.4</span><h2>为什么必须回调 Gateway</h2></div>
+  <div class="card reveal">
+    <div class="mermaid">
+sequenceDiagram
+    participant h as Gateway Handler
+    participant rn as RemotePushNotifier
+    participant ps as push_server
+    participant pr as PushRuntime
+    participant cb as GatewayPushDeliveryService
+    participant ws as Gateway WS Session
+    h->>rn: notify_user(uid, msg)
+    rn->>ps: gRPC NotifyUser
+    ps->>pr: fanout + payload 构造
+    Note over pr,ws: WebSocket session 在 Gateway 内存中<br/>push_server 无法直接访问
+    pr->>cb: ListUserSessions(uid)
+    cb-->>pr: sessions[]
+    pr->>cb: SendSessionPayload(session, payload)
+    cb->>ws: session lookup + send
+    ws-->>cb: delivered
+    cb->>cb: MarkMessageDelivered
+    </div>
+  </div>
+  <div class="quote reveal" style="border-left-color:var(--accent)"><span class="quote-label">核心原因</span>WebSocket session 是 Gateway 进程内对象。远程 push_server 不能直接访问 Gateway 内存里的 session map，所以 remote push 必须通过 Gateway 暴露的 delivery callback 回到 Gateway 完成实际投递。这是为了在保持 Push 独立服务的同时，<b>不破坏连接所有权</b>。</div>
+</section>
+
+<section id="fanout">
+  <div class="section-title"><span class="num">§09.5</span><h2>FanoutPolicy</h2></div>
+  <div class="grid grid-3 reveal">
+    <div class="card" style="border-top:3px solid var(--accent)"><div class="card-title">AllSessionsFanoutPolicy</div><p class="card-text">推送给用户所有在线 session</p><p style="font-size:var(--fs-xs);color:var(--accent-deep);margin-top:var(--sp-2)">默认策略 · 适合多窗口验证</p></div>
+    <div class="card"><div class="card-title">PlatformFilterFanoutPolicy</div><p class="card-text">只推送给指定平台</p></div>
+    <div class="card"><div class="card-title">NewestSessionFanoutPolicy</div><p class="card-text">只推送给最新连接 session</p></div>
+  </div>
+</section>
+
+<section id="delivered">
+  <div class="section-title"><span class="num">§09.6</span><h2>delivered 语义</h2></div>
+  <div class="compare reveal">
+    <div class="compare-col compare-new">
+      <div class="compare-label">当前 delivered 表示 ✓</div>
+      <p style="font-size:var(--fs-sm);color:var(--ink-2)">至少一个 session 成功接受 push payload，<b>或</b>离线拉取后补标</p>
+    </div>
+    <div class="compare-col compare-old">
+      <div class="compare-label">不等于 ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>所有设备都收到</li><li>用户已读</li><li>端到端强确认</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card reveal" style="margin-top:var(--sp-4);border-left:3px solid var(--amber)">
+    <div class="card-title" style="color:var(--amber)">生产级还需要</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--sp-3)">
+      <span class="tag tag-amber">客户端 ACK</span><span class="tag tag-amber">设备级投递日志</span><span class="tag tag-amber">read receipt</span><span class="tag tag-amber">重试队列</span>
+    </div>
+  </div>
+</section>
+
+<section id="best-effort">
+  <div class="section-title"><span class="num">§09.7</span><h2>best-effort 取舍</h2></div>
+  <p>Push 当前是 best-effort：没有在线 session 时不报致命错误；session 发送失败不回滚消息；远程 Push RPC 失败不影响已持久化消息；Push 成功只提升实时性。</p>
+  <div class="card reveal" style="border-left:3px solid var(--green)">
+    <div class="card-title" style="color:var(--green)">可靠性兜底链路</div>
+    <div class="steps" style="margin:var(--sp-3) 0">
+      <div class="step active"><div class="step-title">先持久化</div><div class="step-desc">消息落 PostgreSQL</div></div>
+      <div class="step active"><div class="step-title">再 Push</div><div class="step-desc">best-effort 在线投递</div></div>
+      <div class="step active"><div class="step-title">Push 失败</div><div class="step-desc">不回滚，不影响已持久化消息</div></div>
+      <div class="step active"><div class="step-title">offline/history 补偿</div><div class="step-desc">用户重连后拉取离线消息</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="qa">
+  <div class="section-title"><span class="num">§09.8</span><h2>面试追问 · 点击展开</h2></div>
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">为什么 Push 不直接放在 MessageService？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为 MessageService 负责消息数据，Push 负责在线投递。把 Push 抽出来后，单聊和群聊可以复用同一套 fanout 和 session 投递逻辑。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">远程 Push 为什么要回调 Gateway？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>因为连接归 Gateway 所有，远程 Push 服务没有 Gateway 进程内的 WebSocket session 对象。callback 是为了在保持 Push 独立服务的同时，不破坏连接所有权。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">Push 失败会丢消息吗？<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>不会。发送成功的语义是消息已持久化，Push 失败只影响实时性，用户可以通过历史或离线拉取补偿。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="group.html"><div class="label">← 上一篇</div><div class="title">群聊链路</div></a>
+  <a class="next" href="../engineering/benchmark.html"><div class="label">下一篇 →</div><div class="title">压测基准与可视化</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§09 · 实时推送与 Push 服务</span>
+  </div>
+</footer>
+
+<script src="../assets/js/mermaid-init.js"></script>
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+/* ==========================================================================
+   MyChat Docs — animations.css
+   动效关键帧 + reveal 滚动显现
+   ========================================================================== */
+
+/* —— 滚动触发显现 —— */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s var(--ease-out), transform .7s var(--ease-out); }
+.reveal.in { opacity: 1; transform: none; }
+.reveal-d1 { transition-delay: .08s; }
+.reveal-d2 { transition-delay: .16s; }
+.reveal-d3 { transition-delay: .24s; }
+.reveal-d4 { transition-delay: .32s; }
+
+/* —— 关键帧 —— */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+@keyframes dash-flow {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes draw-line {
+  from { stroke-dashoffset: var(--len, 600); }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes count-glow {
+  0%   { text-shadow: 0 0 0 transparent; }
+  50%  { text-shadow: 0 0 18px rgba(217,119,87,0.45); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+/* —— 应用类 —— */
+.anim-fade-up { animation: fade-up .8s var(--ease-out) both; }
+.anim-fade-in { animation: fade-in 1s var(--ease-out) both; }
+.anim-float   { animation: float-y 4s ease-in-out infinite; }
+.anim-pulse   { animation: pulse-soft 2.4s ease-in-out infinite; }
+
+/* —— 流光粒子沿路径运动（SMIL fallback 由 JS 控制） —— */
+.flow-particle { transition: none; }
+
+/* —— 数字滚动时的微光 —— */
+.metric .value.counting { animation: count-glow 1.2s ease-out; }
+
+/* —— 架构总图连线绘制动画 —— */
+.draw-path {
+  stroke-dasharray: var(--len, 800);
+  stroke-dashoffset: var(--len, 800);
+  animation: draw-line 1.6s var(--ease-out) forwards;
+}
+
+/* —— hover 光晕 —— */
+.glow-hover { transition: filter .35s; }
+.glow-hover:hover { filter: drop-shadow(0 0 12px rgba(217,119,87,0.35)); }
+
+/* —— 渐进式条形图（压测对比） —— */
+.bar-track { background: var(--bg-sunken); border-radius: var(--r-pill); height: 14px; overflow: hidden; }
+.bar-fill {
+  height: 100%; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--accent), var(--accent-deep));
+  width: 0; transition: width 1.4s var(--ease-out);
+}
+.bar-fill.blue { background: linear-gradient(90deg, #5b7e92, var(--blue)); }
+.bar-fill.muted { background: linear-gradient(90deg, var(--ink-4), var(--ink-3)); }
+.reveal.in .bar-fill { width: var(--w, 50%); }
+
+/* —— Mermaid 主题覆写（匹配 Claude 风格） —— */
+.mermaid { background: transparent !important; }
+.mermaid .node rect, .mermaid .node circle, .mermaid .node polygon {
+  fill: var(--bg-elevated) !important; stroke: var(--line) !important; stroke-width: 1.5px !important;
+}
+.mermaid .nodeLabel { color: var(--ink) !important; font-family: var(--font-sans) !important; }
+.mermaid .edgeLabel { background: var(--bg) !important; color: var(--ink-3) !important; }
+.mermaid .edgePaths path { stroke: var(--ink-4) !important; stroke-width: 1.5px !important; }
+.mermaid .cluster rect { fill: var(--bg-sunken) !important; stroke: var(--line-soft) !important; }
+.mermaid .label text, .mermaid text { fill: var(--ink-2) !important; font-family: var(--font-sans) !important; }
+.mermaid .actor { fill: var(--accent-soft) !important; stroke: var(--accent) !important; }
+.mermaid .messageLine0 { stroke: var(--accent) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .draw-path { animation: none; stroke-dashoffset: 0; }
+  .anim-float, .anim-pulse { animation: none; }
+}

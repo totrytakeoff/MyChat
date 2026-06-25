@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>简历与自我介绍 · MyChat</title>
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/animations.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="../index.html" class="brand"><span class="dot"></span>MyChat</a>
+    <div class="nav-links">
+      <a class="nav-link" href="../index.html">概览</a>
+      <a class="nav-link" href="../architecture/overview.html">架构</a>
+      <a class="nav-link" href="../architecture/gateway.html">Gateway</a>
+      <a class="nav-link" href="../architecture/grpc.html">gRPC</a>
+      <a class="nav-link" href="../architecture/storage.html">存储</a>
+      <a class="nav-link" href="../links/message.html">业务链路</a>
+      <a class="nav-link" href="../engineering/benchmark.html">压测</a>
+      <a class="nav-link active" href="qa.html">面试</a>
+    </div>
+    <button class="nav-toggle" aria-label="菜单"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+  </div>
+</nav>
+
+<header class="page-head">
+  <div class="container">
+    <div class="eyebrow reveal">§17+18 · 面试篇</div>
+    <h1 class="reveal reveal-d1">简历与自我介绍</h1>
+    <p class="desc reveal reveal-d2">简历项目描述、Bullet Points、项目亮点分层，以及面试开场的 2 分钟 / 1 分钟 / 30 秒三档自我介绍版本。</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="layout">
+<aside class="toc">
+  <div class="toc-label">本页目录</div>
+  <a href="#resume">简历描述</a>
+  <a href="#bullets">Bullet Points</a>
+  <a href="#data">可量化数据</a>
+  <a href="#highlights">亮点分层</a>
+  <a href="#dont">不建议写</a>
+  <a href="#intro2">2分钟自我介绍</a>
+  <a href="#intro1">1分钟版本</a>
+  <a href="#intro30">30秒电梯版</a>
+  <a href="#principles">表达原则</a>
+</aside>
+
+<main>
+
+<section id="resume">
+  <div class="section-title"><span class="num">§17.1</span><h2 style="margin-top:0">推荐简历描述</h2></div>
+  <div class="code-block reveal"><div class="code-head"><span class="code-lang">resume</span><button class="code-copy">复制</button></div>
+<pre><code>MyChat - 基于 C++20 的分布式即时通讯后端系统
+
+基于 C++20 实现的分布式 IM 后端，Gateway 统一接入 HTTP/WebSocket，
+内部通过 MessageParser、MessageProcessor 和 command handler registry
+按 cmd_id 分发统一 packet。后端按 User/Message/Friend/Group/Push 拆分服务边界，
+支持本地 in-process 运行和 gRPC ForwardPacket 远程调用，覆盖注册登录、好友、
+单聊、群聊、在线推送和离线补偿，并配套 React Web 客户端完成端到端验证。</code></pre></div>
+  <div class="card reveal" style="margin-top:var(--sp-4)">
+    <div class="card-title">技术栈</div>
+    <div class="code-block" style="margin:var(--sp-3) 0"><div class="code-head"><span class="code-lang">stack</span></div>
+<pre><code>C++20 / Boost.Asio / Boost.Beast / Protobuf / gRPC / PostgreSQL / ODB /
+Redis / JWT / OpenSSL / CMake / GoogleTest / React / TypeScript</code></pre></div>
+  </div>
+</section>
+
+<section id="bullets">
+  <div class="section-title"><span class="num">§17.2</span><h2>推荐 Bullet Points</h2></div>
+  <div class="steps reveal">
+    <div class="step active"><div class="step-title">设计 Gateway 统一接入层</div><div class="step-desc">同时承载 HTTP 和 WebSocket，通过 MessageParser → UnifiedMessage → MessageProcessor → CommandHandlerRegistry 将不同协议收敛为统一命令分发模型</div></div>
+    <div class="step active"><div class="step-title">重构 Gateway 与业务服务边界</div><div class="step-desc">Gateway 只负责鉴权、路由、连接管理和 packet 转发，业务 payload 解析下沉到各 service packet dispatcher，避免接入层耦合业务逻辑</div></div>
+    <div class="step active"><div class="step-title">基于 gRPC ForwardPacket 实现服务远程边界</div><div class="step-desc">同一套 Gateway handler 支持 local service 和 remote service adapter 两种运行模式</div></div>
+    <div class="step active"><div class="step-title">消息链路"先持久化、再 ack、再 best-effort push"</div><div class="step-desc">在线推送失败不回滚消息，通过历史查询和离线拉取补偿</div></div>
+    <div class="step active"><div class="step-title">设计 PushNotifier/PushRuntime/FanoutPolicy</div><div class="step-desc">通过 GatewayPushDeliveryService callback 解决远程 Push 无法直接访问 Gateway WebSocket session 的分布式边界问题</div></div>
+    <div class="step active"><div class="step-title">Redis + PostgreSQL/ODB 分工 + React Web 验证</div><div class="step-desc">Redis 管理 token/session 临时状态，PostgreSQL/ODB 持久化业务数据，React Web 客户端验证双账号好友、单聊、群聊和在线推送</div></div>
+  </div>
+</section>
+
+<section id="data">
+  <div class="section-title"><span class="num">§17.3</span><h2>可量化数据</h2></div>
+  <div class="grid grid-3 reveal">
+    <div class="card metric"><div class="value" data-count="306.86" data-decimals="2" data-unit="/s">0</div><div class="label">HTTP 平均 RPS</div></div>
+    <div class="card metric"><div class="value" data-count="714.4" data-decimals="1" data-unit=" msg/s">0</div><div class="label">WSS 吞吐</div></div>
+    <div class="card metric accent"><div class="value" data-count="0" data-decimals="0" data-unit="%">0</div><div class="label">HTTP 失败率</div></div>
+  </div>
+  <div class="quote reveal"><span class="quote-label">使用口径</span>可以写"完成 Gateway 重构后完整压测和性能对比分析"。不要写"百万连接"或"生产级高并发"。明确这是 MVP 稳定性基准，不是商业 SLA。</div>
+</section>
+
+<section id="highlights">
+  <div class="section-title"><span class="num">§17.4</span><h2>项目亮点分层</h2></div>
+  <div class="grid grid-3 reveal">
+    <div class="card" style="border-top:3px solid var(--accent)"><div class="card-title" style="color:var(--accent-deep)">架构亮点</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>Gateway 统一 packet 架构</li><li>local/remote 共享 packet contract</li><li>gRPC 服务边界和 remote-all 多进程验证</li><li>Push remote callback 解决连接归属问题</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--blue)"><div class="card-title" style="color:var(--blue)">消息亮点</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>先持久化再 push</li><li>ack / delivered / read 语义区分</li><li>online push + offline/history 补偿</li><li>FanoutPolicy 多端策略抽象</li>
+      </ul>
+    </div>
+    <div class="card" style="border-top:3px solid var(--green)"><div class="card-title" style="color:var(--green)">工程亮点</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.8;padding-left:var(--sp-4);list-style:disc">
+        <li>C++20 多模块工程</li><li>Protobuf/gRPC 生成链路</li><li>PostgreSQL/ODB 持久化</li><li>Redis token/session 状态</li><li>GoogleTest/CTest 和 benchmark 压测</li><li>Web 客户端端到端验证</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="dont">
+  <div class="section-title"><span class="num">§17.5</span><h2>不建议写的内容</h2></div>
+  <div class="card reveal" style="border-left:3px solid var(--red)">
+    <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:2;padding-left:var(--sp-4);list-style:disc">
+      <li>不要把旧 <code>HTTP controller + Local/RemoteClient</code> 写成当前架构</li>
+      <li>不要写生产级、百万连接、万人群</li>
+      <li>不要夸大富媒体、群权限、服务发现、监控告警等未完成能力</li>
+      <li>不要把 Web 客户端包装成商业产品，它的定位是后端验证客户端</li>
+    </ul>
+  </div>
+</section>
+
+<section id="intro2">
+  <div class="section-title"><span class="num">§18.1</span><h2>2 分钟自我介绍（推荐）</h2></div>
+  <p style="font-size:var(--fs-sm);color:var(--ink-3);margin-bottom:var(--sp-3)">适用于面试开场"请简单介绍一下你做的项目"</p>
+  <div class="quote reveal">
+    <p>我做了一个 C++ 分布式即时通讯后端项目，叫 MyChat。</p>
+    <p>它的核心架构是 Gateway 统一接入 HTTP 和 WebSocket，后端按 User、Message、Friend、Group、Push 拆分服务边界。Gateway 不直接处理业务逻辑，而是负责协议接入、鉴权、连接管理、cmd 路由和 packet 转发。HTTP 和 WebSocket 请求都会先进入 MessageParser，转换为统一的 UnifiedMessage，再通过 MessageProcessor 进入 GatewayCommandHandlerRegistry，最后由 GatewayRuntimeRegistry 选择本地 service packet dispatcher 或远程 gRPC ForwardPacket。</p>
+    <p>功能上，当前项目已经实现注册登录、个人资料、好友申请、单聊、群聊、在线推送和离线补偿。消息链路采用先持久化再推送：Message 或 Group 服务先把消息落到 PostgreSQL，持久化成功后返回 ack，Gateway 再把服务侧返回的 push_event 交给 Push 服务做在线投递。Push 是 best-effort，失败不回滚消息，用户后续可以通过历史消息或离线拉取补偿。</p>
+    <p>比较有特点的是 Gateway 重构后的 packet boundary。Gateway 只看 envelope 和 cmd_id，不解析业务 payload；真正的业务 protobuf 解析在各个服务自己的 packet dispatcher 中完成。这样 HTTP、WebSocket、本地调用和远程 gRPC 都能走同一套请求模型，新增服务时主要是注册 cmd_id 到服务 endpoint，而不是再写一套 controller 和 client facade。</p>
+    <p>存储上，Redis 负责 token、session 等临时状态，PostgreSQL/ODB 负责用户、消息、好友、群组等持久数据。我还做了一个 React Web 客户端，用两个浏览器窗口真实验证加好友、单聊、群聊和实时推送。最近也完成了一轮压测和网关链路修复：重构后 HTTP 500 VU ramp 失败率为 0，p95 约 3.75ms；WebSocket 200 用户每 250ms 一条消息时吞吐约 714 msg/s，RTT p95 约 35.91ms。</p>
+  </div>
+</section>
+
+<section id="intro1">
+  <div class="section-title"><span class="num">§18.2</span><h2>1 分钟版本</h2></div>
+  <div class="quote reveal">
+    <p>MyChat 是一个 C++ 分布式 IM 后端。Gateway 统一接入 HTTP 和 WebSocket，后端按 User、Message、Friend、Group、Push 拆分服务。当前 Gateway 主链路不是 controller/client facade，而是 MessageParser → UnifiedMessage → MessageProcessor → CommandHandlerRegistry → RuntimeRegistry → local packet dispatcher 或 remote ForwardPacket gRPC。</p>
+    <p>它已经覆盖注册登录、好友、单聊、群聊、在线推送和离线补偿。消息采用先持久化再推送，Push best-effort，失败后通过历史或离线拉取补偿。项目还有 Web 验证客户端和基础压测数据，可以完整演示一个分布式 IM 后端从接入、鉴权、路由、服务转发到实时推送的链路。</p>
+  </div>
+</section>
+
+<section id="intro30">
+  <div class="section-title"><span class="num">§18.3</span><h2>30 秒电梯版本</h2></div>
+  <div class="quote reveal" style="border-left-color:var(--blue)">
+    <p style="margin:0">一个 C++ 分布式 IM 后端。Gateway 统一接入 HTTP/WS，只负责鉴权、路由、连接和 packet 转发；业务解析在 User、Message、Friend、Group、Push 服务侧完成。功能覆盖注册登录、好友、单聊、群聊、在线推送和离线补偿，并配有 Web 验证客户端和压测数据。</p>
+  </div>
+</section>
+
+<section id="principles">
+  <div class="section-title"><span class="num">§18.4</span><h2>面试表达原则</h2></div>
+  <div class="grid grid-2 reveal">
+    <div class="card" style="border-left:3px solid var(--green)"><div class="card-title" style="color:var(--green)">应该做 ✓</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-2);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+        <li>先讲业务目标，再讲架构设计</li><li>先讲 Gateway 统一 packet 主链路，再讲具体服务</li><li>主动说明 MVP 边界和生产级扩展方向</li><li>有压测数据时只说当前基准</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:3px solid var(--red)"><div class="card-title" style="color:var(--red)">不要做 ✕</div>
+      <ul style="font-size:var(--fs-sm);color:var(--ink-3);line-height:1.9;padding-left:var(--sp-4);list-style:disc">
+        <li>再把旧 controller/client facade 当作当前架构亮点</li><li>夸大成生产级容量</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>分模块展开脚本</h3>
+  <div class="reveal">
+    <div class="qa-item">
+      <button class="qa-q">为什么做 Gateway<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Gateway 解决的是客户端接入复杂度。Web 或未来 Qt/Electron 客户端只需要连接 Gateway，不需要知道各服务分别部署在哪里。Gateway 统一处理 token、HTTP/WS 协议、WebSocket session 和 cmd 路由，后端服务只暴露统一 packet 边界。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">消息链路怎么保证不丢<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>MyChat 不承诺绝对的"消息永不丢失"，但 MVP 范围内做了可靠性优先的取舍：1. 发送消息先进入 Message/Group 服务持久化；2. 持久化成功后才返回发送 ack；3. 在线 Push 失败不回滚消息；4. 接收方可以通过历史消息或离线消息拉取补偿。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">Push 回调的具体原理<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>Gateway 持有 WebSocket 连接，Push 服务在远程进程中不能直接访问 Gateway 内存。因此 Push 通过 GatewayPushDeliveryService 回调 Gateway：ListUserSessions 查询用户在线连接，SendSessionPayload 向指定 session 发送 payload，MarkMessageDelivered 在成功投递后标记 delivered。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">local/remote 如何切换<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>当前不要再用"local/remote client facade"解释主链路。更准确的说法是：GatewayRuntimeRegistry 按服务配置和 cmd 路由选择 endpoint。local 模式下 endpoint 调用服务进程内的 packet dispatcher；remote 模式下 endpoint 调用对应服务的 ForwardPacket gRPC。外部 HTTP/WS 契约不变，变化只发生在 Gateway 到服务之间的 runtime endpoint。</p></div></div>
+    </div>
+    <div class="qa-item">
+      <button class="qa-q">当前不足和后续规划<span class="chev">+</span></button>
+      <div class="qa-a"><div class="qa-a-inner"><p>当前是完整可演示的 MVP，但不是生产级 IM：没有富媒体、撤回、编辑、全文搜索；没有多 Gateway 实例下的全局连接路由；没有生产级对象存储、部署编排和监控告警；群管理还缺管理员、踢人、禁言、审核等完整能力。下一步优先级是：补齐面试讲解文档、继续容量压测、完善多机器部署验证、设计多 Gateway 连接路由和消息序列号机制。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<div class="pager">
+  <a href="qa.html"><div class="label">← 上一篇</div><div class="title">高频问答与架构追问</div></a>
+  <a class="next" href="../index.html"><div class="label">回到 →</div><div class="title">首页概览</div></a>
+</div>
+
+</main>
+</div>
+</div>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><div class="brand" style="margin-bottom:4px"><span class="dot"></span>MyChat</div><span>基于 C++20 的分布式即时通讯后端</span></div>
+    <span>§17+18 · 简历与自我介绍</span>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+<script src="../assets/js/flow-diagram.js"></script>
+<script src="../assets/js/counter.js"></script>
+<script>document.querySelectorAll('.qa-q').forEach(function(q){q.addEventListener('click',function(){q.parentElement.classList.toggle('open');});});</script>
+</body>
+</html>
